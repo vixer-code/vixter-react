@@ -11,6 +11,7 @@ const Home = () => {
     companions: 0,
     satisfaction: 0
   });
+  const [activeFAQ, setActiveFAQ] = useState(null);
 
   useEffect(() => {
     // Animate stats counter
@@ -53,18 +54,7 @@ const Home = () => {
   }, []);
 
   const toggleFAQ = (index) => {
-    const faqItems = document.querySelectorAll('.faq-item');
-    const clickedItem = faqItems[index];
-    
-    // Close all other items
-    faqItems.forEach((item, i) => {
-      if (i !== index) {
-        item.classList.remove('active');
-      }
-    });
-    
-    // Toggle clicked item
-    clickedItem.classList.toggle('active');
+    setActiveFAQ(activeFAQ === index ? null : index);
   };
 
   return (
@@ -226,7 +216,7 @@ const Home = () => {
           <div className="vixie-profile">
             <div className="vixie-image">
               <div className="status-badge online">Online</div>
-              <img src="/images/vixies/vixie1.jpg" alt="Vixie profile" />
+              <img src="/images/defpfp1.png" alt="Vixie profile" />
             </div>
             <div className="vixie-info">
               <h3>Amanda, 24</h3>
@@ -254,7 +244,7 @@ const Home = () => {
           <div className="vixie-profile">
             <div className="vixie-image">
               <div className="status-badge busy">Em sessão</div>
-              <img src="/images/vixies/vixie2.jpg" alt="Vixie profile" />
+              <img src="/images/defpfp2.png" alt="Vixie profile" />
             </div>
             <div className="vixie-info">
               <h3>Julia, 22</h3>
@@ -282,7 +272,7 @@ const Home = () => {
           <div className="vixie-profile">
             <div className="vixie-image">
               <div className="status-badge online">Online</div>
-              <img src="/images/vixies/vixie3.jpg" alt="Vixie profile" />
+              <img src="/images/defpfp3.png" alt="Vixie profile" />
             </div>
             <div className="vixie-info">
               <h3>Larissa, 26</h3>
@@ -310,7 +300,7 @@ const Home = () => {
           <div className="vixie-profile">
             <div className="vixie-image">
               <div className="status-badge offline">Offline</div>
-              <img src="/images/vixies/vixie4.jpg" alt="Vixie profile" />
+              <img src="/images/admin.png" alt="Vixie profile" />
             </div>
             <div className="vixie-info">
               <h3>Camila, 23</h3>
@@ -351,7 +341,7 @@ const Home = () => {
         <div className="testimonials-grid">
           <div className="testimonial-card">
             <div className="testimonial-avatar">
-              <img src="/images/testimonials/user1.jpg" alt="User testimonial" />
+              <img src="/images/defpfp1.png" alt="User testimonial" />
             </div>
             <div className="testimonial-content">
               <div className="testimonial-rating">
@@ -371,7 +361,7 @@ const Home = () => {
           
           <div className="testimonial-card">
             <div className="testimonial-avatar">
-              <img src="/images/testimonials/user2.jpg" alt="User testimonial" />
+              <img src="/images/defpfp2.png" alt="User testimonial" />
             </div>
             <div className="testimonial-content">
               <div className="testimonial-rating">
@@ -391,7 +381,7 @@ const Home = () => {
           
           <div className="testimonial-card">
             <div className="testimonial-avatar">
-              <img src="/images/testimonials/user3.jpg" alt="User testimonial" />
+              <img src="/images/defpfp3.png" alt="User testimonial" />
             </div>
             <div className="testimonial-content">
               <div className="testimonial-rating">
@@ -411,7 +401,7 @@ const Home = () => {
           
           <div className="testimonial-card">
             <div className="testimonial-avatar">
-              <img src="/images/testimonials/user4.jpg" alt="User testimonial" />
+              <img src="/images/admin.png" alt="User testimonial" />
             </div>
             <div className="testimonial-content">
               <div className="testimonial-rating">
@@ -456,7 +446,7 @@ const Home = () => {
         </div>
         
         <div className="faq-accordion">
-          <div className="faq-item" onClick={() => toggleFAQ(0)}>
+          <div className={`faq-item ${activeFAQ === 0 ? 'active' : ''}`} onClick={() => toggleFAQ(0)}>
             <div className="faq-question">
               <h3>O que é a Vixter?</h3>
               <span className="faq-toggle"><i className="fas fa-chevron-down"></i></span>
@@ -466,7 +456,7 @@ const Home = () => {
             </div>
           </div>
           
-          <div className="faq-item" onClick={() => toggleFAQ(1)}>
+          <div className={`faq-item ${activeFAQ === 1 ? 'active' : ''}`} onClick={() => toggleFAQ(1)}>
             <div className="faq-question">
               <h3>Como funcionam os Vixter Points (VP)?</h3>
               <span className="faq-toggle"><i className="fas fa-chevron-down"></i></span>
@@ -476,7 +466,7 @@ const Home = () => {
             </div>
           </div>
           
-          <div className="faq-item" onClick={() => toggleFAQ(2)}>
+          <div className={`faq-item ${activeFAQ === 2 ? 'active' : ''}`} onClick={() => toggleFAQ(2)}>
             <div className="faq-question">
               <h3>É seguro contratar serviços na Vixter?</h3>
               <span className="faq-toggle"><i className="fas fa-chevron-down"></i></span>
@@ -486,7 +476,7 @@ const Home = () => {
             </div>
           </div>
           
-          <div className="faq-item" onClick={() => toggleFAQ(3)}>
+          <div className={`faq-item ${activeFAQ === 3 ? 'active' : ''}`} onClick={() => toggleFAQ(3)}>
             <div className="faq-question">
               <h3>Posso me tornar um prestador de serviços?</h3>
               <span className="faq-toggle"><i className="fas fa-chevron-down"></i></span>
@@ -496,7 +486,7 @@ const Home = () => {
             </div>
           </div>
           
-          <div className="faq-item" onClick={() => toggleFAQ(4)}>
+          <div className={`faq-item ${activeFAQ === 4 ? 'active' : ''}`} onClick={() => toggleFAQ(4)}>
             <div className="faq-question">
               <h3>Quais jogos são suportados na plataforma?</h3>
               <span className="faq-toggle"><i className="fas fa-chevron-down"></i></span>
