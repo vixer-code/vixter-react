@@ -104,6 +104,12 @@
   left: 0.75rem;
   color: #8A2BE2;
   z-index: 1;
+  transition: opacity 0.2s ease;
+}
+
+.input-group input:not(:placeholder-shown) + .input-icon,
+.input-group input:focus + .input-icon {
+  opacity: 0;
 }
 
 .password-toggle {
