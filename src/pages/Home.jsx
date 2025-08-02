@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import './Home.css';
 
 const Home = () => {
-  const { currentUser } = useAuth();
   const [stats, setStats] = useState({
     users: 0,
     duos: 0,
@@ -59,8 +57,6 @@ const Home = () => {
 
   return (
     <main className="home-container">
-      {/* Firebase Test Component - Remove after testing */}
-      <FirebaseTest />
       
       {/* Hero Section */}
       <section className="hero-section">
