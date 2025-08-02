@@ -246,12 +246,12 @@ const Profile = () => {
 
     try {
       setUploading(true);
-      const fileRef = storageRef(storage, `profiles/${currentUser.uid}/${type}_${Date.now()}`);
+      const fileRef = storageRef(storage, type === 'avatar' ? `profilePictures/${currentUser.uid}` : `coverPhotos/${currentUser.uid}`);
       await uploadBytes(fileRef, file);
       const downloadURL = await getDownloadURL(fileRef);
       
       const updateData = {};
-      updateData[type === 'avatar' ? 'photoURL' : 'coverURL'] = downloadURL;
+      updateData[type === 'avatar' ? 'profilePictureURL' : 'coverPhotoURL'] = downloadURL;
       
       await update(ref(database, `users/${currentUser.uid}`), updateData);
       await loadProfile(); // Reload profile to show new image
@@ -321,7 +321,7 @@ const Profile = () => {
         timestamp: Date.now(),
         authorId: currentUser.uid,
         authorName: profile?.displayName || currentUser.displayName,
-        authorPhoto: profile?.photoURL || currentUser.photoURL,
+        authorPhoto: profile?.profilePictureURL || currentUser.photoURL,
         images: selectedImages
       };
 
@@ -417,7 +417,7 @@ const Profile = () => {
   return (
     <div className="profile-container">
       <div className="profile-card">
-        <div className="cover-photo" style={{ backgroundImage: `url(${profile.coverURL || '/images/default-cover.jpg'})` }}>
+        <div className="cover-photo" style={{ backgroundImage: profile.coverPhotoURL ? `url(${profile.coverPhotoURL})` : 'none' }}>
           {isOwner && (
             <label className="cover-upload-btn">
               <input
@@ -434,7 +434,7 @@ const Profile = () => {
         <div className="profile-header">
           <div className="profile-avatar">
             <img 
-              src={profile.photoURL || '/images/default-avatar.jpg'} 
+              src={profile.profilePictureURL || '/images/defpfp1.png'} 
               alt="Avatar de Perfil"
             />
             {isOwner && (
@@ -632,7 +632,7 @@ const Profile = () => {
                   {followers.slice(0, 6).map((follower) => (
                     <div key={follower.id} className="friend-item">
                       <div className="friend-avatar">
-                        <img src={follower.photoURL || '/images/default-avatar.jpg'} alt={follower.displayName} />
+                        <img src={follower.profilePictureURL || '/images/defpfp2.png'} alt={follower.displayName} />
                       </div>
                       <div className="friend-name">{follower.displayName}</div>
                     </div>
@@ -649,7 +649,7 @@ const Profile = () => {
             {isOwner && (
               <div className="create-post-card">
                 <div className="create-post-avatar">
-                  <img src={profile.photoURL || '/images/default-avatar.jpg'} alt="Avatar" />
+                  <img src={profile.profilePictureURL || '/images/defpfp3.png'} alt="Avatar" />
                 </div>
                 <div className="create-post-body">
                   <textarea
@@ -886,7 +886,7 @@ const Profile = () => {
                 <div key={review.id} className="review-item">
                   <div className="review-header">
                     <div className="reviewer-avatar">
-                      <img src={review.reviewerPhoto || '/images/default-avatar.jpg'} alt={review.reviewerName} />
+                      <img src={review.reviewerPhoto || '/images/defpfp3.png'} alt={review.reviewerName} />
                     </div>
                     <div className="review-meta">
                       <div className="reviewer-name">{review.reviewerName}</div>
@@ -923,7 +923,7 @@ const Profile = () => {
                 {followers.map((follower) => (
                   <div key={follower.id} className="modal-follower-item">
                     <div className="modal-follower-avatar">
-                      <img src={follower.photoURL || '/images/default-avatar.jpg'} alt={follower.displayName} />
+                      <img src={follower.profilePictureURL || '/images/defpfp1.png'} alt={follower.displayName} />
                     </div>
                     <div className="modal-follower-name">{follower.displayName}</div>
                     <div className="modal-follower-username">@{follower.username}</div>

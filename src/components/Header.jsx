@@ -48,6 +48,12 @@ const Header = () => {
     }
   };
 
+  const handleVpBalanceClick = () => {
+    if (currentUser) {
+      navigate('/wallet');
+    }
+  };
+
   const isActive = (path) => {
     return location.pathname === path;
   };
@@ -55,13 +61,12 @@ const Header = () => {
   return (
     <header>
       <nav>
-        <div className="logo">
+        <Link to="/" className="logo">
           <img src="/images/Flor-Colorida.png" alt="Vixter logo" className="logo-icon" />
           <span>Vixter</span>
-        </div>
+        </Link>
 
         <ul className="nav-links">
-          <li><Link to="/" className={isActive('/') ? 'active' : ''}>Início</Link></li>
           <li><Link to="/vixies" className={isActive('/vixies') ? 'active' : ''}>Vixies</Link></li>
           <li><Link to="/vixink" className={isActive('/vixink') ? 'active' : ''}>Vixink</Link></li>
           <li><Link to="/feed" className={isActive('/feed') ? 'active' : ''}>Comunidade</Link></li>
@@ -75,7 +80,7 @@ const Header = () => {
             <>
               {/* VP Balance Display */}
               <li className="auth-hide logged-in">
-                <div className="vp-balance">
+                <div className="vp-balance" onClick={handleVpBalanceClick}>
                   <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
                     {/* Glow background */}
                     <defs>
@@ -177,9 +182,9 @@ const Header = () => {
                 <a href="#" className="profile-trigger">
                   <div className="profile-picture-container">
                     <div className="profile-picture" id="navbar-profile-pic">
-                      {userProfile?.photoURL ? (
+                      {userProfile?.profilePictureURL ? (
                         <img 
-                          src={userProfile.photoURL} 
+                          src={userProfile.profilePictureURL || '/images/defpfp1.png'} 
                           alt={userProfile.displayName || 'Profile'} 
                         />
                       ) : userProfile?.displayName ? (

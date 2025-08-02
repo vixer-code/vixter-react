@@ -32,6 +32,8 @@ nav {
   align-items: center;
   gap: 12px;
   transition: all 0.3s ease;
+  cursor: pointer;
+  text-decoration: none;
 }
 
 .logo:hover {
@@ -109,6 +111,7 @@ nav {
   border: 1px solid #2D2D44;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .vp-balance::before {
@@ -160,8 +163,8 @@ nav {
 
 .vp-icon {
   margin-right: 8px;
-  height: 24px;
-  width: 24px;
+  height: 18px;
+  width: 18px;
   position: relative;
   z-index: 1;
 }
@@ -443,8 +446,8 @@ nav {
   }
   
   .vp-icon {
-    height: 20px;
-    width: 20px;
+    height: 16px;
+    width: 16px;
     margin-right: 6px;
   }
   

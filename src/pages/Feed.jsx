@@ -226,7 +226,7 @@ const Feed = () => {
   const renderProviderCard = (provider) => (
     <div key={provider.id} className="provider-card">
       <div className="provider-avatar">
-        <img src={provider.photoURL || '/images/default-avatar.jpg'} alt={provider.displayName} />
+                        <img src={provider.profilePictureURL || '/images/defpfp2.png'} alt={provider.displayName} />
       </div>
       <div className="provider-info">
         <h3>{provider.displayName}</h3>
