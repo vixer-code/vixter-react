@@ -79,10 +79,12 @@ const Register = () => {
     const password = formData.password;
     if (password.length === 0) {
       setPasswordStrength('Muito fraca');
-    } else if (password.length < 6) {
-      setPasswordStrength('Muito fraca');
     } else if (password.length < 8) {
-      setPasswordStrength('Fraca');
+      setPasswordStrength('Muito fraca');
+    } else if (!/[A-Z]/.test(password)) {
+      setPasswordStrength('Fraca - precisa de maiúscula');
+    } else if (!/\d/.test(password)) {
+      setPasswordStrength('Fraca - precisa de número');
     } else if (password.length < 10) {
       setPasswordStrength('Média');
     } else if (password.length < 12) {
@@ -96,11 +98,25 @@ const Register = () => {
   const getPasswordStrengthClass = () => {
     const password = formData.password;
     if (password.length === 0) return '';
-    if (password.length < 6) return 'very-weak';
-    if (password.length < 8) return 'weak';
+    if (password.length < 8) return 'very-weak';
+    if (!/[A-Z]/.test(password) || !/\d/.test(password)) return 'weak';
     if (password.length < 10) return 'medium';
     if (password.length < 12) return 'strong';
     return 'very-strong';
+  };
+
+  // Validate password meets Firebase requirements
+  const validatePassword = (password) => {
+    if (password.length < 8) {
+      return { isValid: false, message: 'A senha deve ter pelo menos 8 caracteres' };
+    }
+    if (!/[A-Z]/.test(password)) {
+      return { isValid: false, message: 'A senha deve conter pelo menos uma letra maiúscula' };
+    }
+    if (!/\d/.test(password)) {
+      return { isValid: false, message: 'A senha deve conter pelo menos um número' };
+    }
+    return { isValid: true, message: 'Senha válida' };
   };
 
   // CPF validation function (from vanilla JS)
@@ -316,6 +332,31 @@ const Register = () => {
   };
 
   const nextStep = () => {
+    // Validate step 1 data before proceeding
+    if (currentStep === 1) {
+      // Check if all required fields are filled
+      if (!formData.displayName || !formData.username || !formData.birthDate || !formData.email || !formData.password || !formData.confirmPassword) {
+        setError('Por favor, preencha todos os campos obrigatórios');
+        return;
+      }
+
+      // Validate password meets requirements
+      const passwordValidation = validatePassword(formData.password);
+      if (!passwordValidation.isValid) {
+        setError(passwordValidation.message);
+        return;
+      }
+
+      // Validate passwords match
+      if (formData.password !== formData.confirmPassword) {
+        setError('As senhas não coincidem');
+        return;
+      }
+
+      // Clear any previous errors
+      setError('');
+    }
+
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     }
@@ -464,9 +505,10 @@ const Register = () => {
       return;
     }
 
-    // Validate password strength
-    if (formData.password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres');
+    // Validate password meets Firebase requirements
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.message);
       setLoading(false);
       return;
     }
@@ -628,9 +670,9 @@ const Register = () => {
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="     Mínimo 6 caracteres"
+            placeholder="     Mínimo 8 caracteres"
             required
-            minLength="6"
+            minLength="8"
           />
           <button
             type="button"
@@ -644,7 +686,7 @@ const Register = () => {
           <div className={`strength-bar ${getPasswordStrengthClass()}`}></div>
           <span className="strength-text">Nível de segurança da senha: {passwordStrength}</span>
         </div>
-        <small>Use pelo menos 8 caracteres, incluindo letras e números</small>
+        <small>Use pelo menos 8 caracteres, incluindo pelo menos uma letra maiúscula e um número</small>
       </div>
 
       <div className="form-group">
@@ -685,6 +727,13 @@ const Register = () => {
           Essas informações serão mantidas em sigilo e usadas apenas para melhorar sua experiência.
         </p>
       </div>
+
+      {error && (
+        <div className="error-message">
+          <span className="error-icon">⚠️</span>
+          {error}
+        </div>
+      )}
 
       <button type="submit" className="auth-button">Continuar</button>
     </form>

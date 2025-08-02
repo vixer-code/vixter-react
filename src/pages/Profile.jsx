@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { ref, get, update } from 'firebase/database';
+import { ref, get, update, set, remove, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,6 +14,17 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('perfil');
+  const [followers, setFollowers] = useState([]);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [posts, setPosts] = useState([]);
+  const [newPostContent, setNewPostContent] = useState('');
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [userStatus, setUserStatus] = useState('offline');
+  const [services, setServices] = useState([]);
+  const [packs, setPacks] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [reviews, setReviews] = useState([]);
 
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -29,6 +40,11 @@ const Profile = () => {
 
   useEffect(() => {
     loadProfile();
+    return () => {
+      // Cleanup listeners
+      const userRef = ref(database, `users/${userId || currentUser?.uid}`);
+      off(userRef);
+    };
   }, [userId, currentUser]);
 
   const loadProfile = async () => {
@@ -41,28 +57,186 @@ const Profile = () => {
         return;
       }
 
+      // Check if current user is blocked
+      if (currentUser && currentUser.uid !== targetUserId) {
+        const blockedSnap = await get(ref(database, `blocked/${targetUserId}/${currentUser.uid}`));
+        if (blockedSnap.exists()) {
+          setLoading(false);
+          return;
+        }
+      }
+
       const userRef = ref(database, `users/${targetUserId}`);
       const snapshot = await get(userRef);
       
-      if (snapshot.exists()) {
-        const userData = snapshot.val();
-        setProfile(userData);
-        setFormData({
-          displayName: userData.displayName || '',
-          username: userData.username || '',
-          bio: userData.bio || '',
-          location: userData.location || '',
-          website: userData.website || '',
-          twitter: userData.twitter || '',
-          instagram: userData.instagram || '',
-          youtube: userData.youtube || ''
-        });
+      if (!snapshot.exists()) {
+        setLoading(false);
+        return;
       }
+
+      const userData = snapshot.val();
+      setProfile(userData);
+      setFormData({
+        displayName: userData.displayName || '',
+        username: userData.username || '',
+        bio: userData.bio || '',
+        location: userData.location || '',
+        website: userData.website || '',
+        twitter: userData.twitter || '',
+        instagram: userData.instagram || '',
+        youtube: userData.youtube || ''
+      });
+
+      // Load additional data
+      await Promise.all([
+        loadFollowers(targetUserId),
+        loadPosts(targetUserId),
+        loadUserStatus(targetUserId),
+        loadServices(targetUserId),
+        loadPacks(targetUserId),
+        loadSubscriptions(targetUserId),
+        loadReviews(targetUserId)
+      ]);
       
       setLoading(false);
     } catch (error) {
       console.error('Error loading profile:', error);
       setLoading(false);
+    }
+  };
+
+  const loadFollowers = async (targetUserId) => {
+    try {
+      const followersRef = ref(database, `followers/${targetUserId}`);
+      const snapshot = await get(followersRef);
+      
+      if (snapshot.exists()) {
+        const followersData = snapshot.val();
+        const followerIds = Object.keys(followersData);
+        
+        // Fetch follower profiles
+        const followerPromises = followerIds.map(async (followerId) => {
+          const userRef = ref(database, `users/${followerId}`);
+          const userSnapshot = await get(userRef);
+          if (userSnapshot.exists()) {
+            return { id: followerId, ...userSnapshot.val() };
+          }
+          return null;
+        });
+        
+        const followers = (await Promise.all(followerPromises)).filter(f => f !== null);
+        setFollowers(followers);
+        
+        // Check if current user is following
+        if (currentUser) {
+          setIsFollowing(followerIds.includes(currentUser.uid));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading followers:', error);
+    }
+  };
+
+  const loadPosts = async (targetUserId) => {
+    try {
+      const postsRef = ref(database, `posts/${targetUserId}`);
+      const snapshot = await get(postsRef);
+      
+      if (snapshot.exists()) {
+        const postsData = snapshot.val();
+        const postsArray = Object.entries(postsData).map(([id, post]) => ({
+          id,
+          ...post
+        })).sort((a, b) => b.timestamp - a.timestamp);
+        setPosts(postsArray);
+      }
+    } catch (error) {
+      console.error('Error loading posts:', error);
+    }
+  };
+
+  const loadUserStatus = async (targetUserId) => {
+    try {
+      const statusRef = ref(database, `userStatus/${targetUserId}`);
+      onValue(statusRef, (snapshot) => {
+        if (snapshot.exists()) {
+          setUserStatus(snapshot.val().status || 'offline');
+        }
+      });
+    } catch (error) {
+      console.error('Error loading user status:', error);
+    }
+  };
+
+  const loadServices = async (targetUserId) => {
+    try {
+      const servicesRef = ref(database, `services/${targetUserId}`);
+      const snapshot = await get(servicesRef);
+      
+      if (snapshot.exists()) {
+        const servicesData = snapshot.val();
+        const servicesArray = Object.entries(servicesData).map(([id, service]) => ({
+          id,
+          ...service
+        }));
+        setServices(servicesArray);
+      }
+    } catch (error) {
+      console.error('Error loading services:', error);
+    }
+  };
+
+  const loadPacks = async (targetUserId) => {
+    try {
+      const packsRef = ref(database, `packs/${targetUserId}`);
+      const snapshot = await get(packsRef);
+      
+      if (snapshot.exists()) {
+        const packsData = snapshot.val();
+        const packsArray = Object.entries(packsData).map(([id, pack]) => ({
+          id,
+          ...pack
+        }));
+        setPacks(packsArray);
+      }
+    } catch (error) {
+      console.error('Error loading packs:', error);
+    }
+  };
+
+  const loadSubscriptions = async (targetUserId) => {
+    try {
+      const subsRef = ref(database, `subscriptions/${targetUserId}`);
+      const snapshot = await get(subsRef);
+      
+      if (snapshot.exists()) {
+        const subsData = snapshot.val();
+        const subsArray = Object.entries(subsData).map(([id, sub]) => ({
+          id,
+          ...sub
+        }));
+        setSubscriptions(subsArray);
+      }
+    } catch (error) {
+      console.error('Error loading subscriptions:', error);
+    }
+  };
+
+  const loadReviews = async (targetUserId) => {
+    try {
+      const reviewsRef = ref(database, `reviews/${targetUserId}`);
+      const snapshot = await get(reviewsRef);
+      
+      if (snapshot.exists()) {
+        const reviewsData = snapshot.val();
+        const reviewsArray = Object.entries(reviewsData).map(([id, review]) => ({
+          id,
+          ...review
+        }));
+        setReviews(reviewsArray);
+      }
+    } catch (error) {
+      console.error('Error loading reviews:', error);
     }
   };
 
@@ -86,6 +260,29 @@ const Profile = () => {
     } catch (error) {
       console.error('Error uploading image:', error);
       setUploading(false);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!currentUser) return;
+
+    try {
+      const targetUserId = userId || currentUser.uid;
+      const followRef = ref(database, `followers/${targetUserId}/${currentUser.uid}`);
+      
+      if (isFollowing) {
+        await remove(followRef);
+        setIsFollowing(false);
+      } else {
+        await set(followRef, {
+          followedAt: Date.now()
+        });
+        setIsFollowing(true);
+      }
+      
+      await loadFollowers(targetUserId);
+    } catch (error) {
+      console.error('Error following/unfollowing:', error);
     }
   };
 
@@ -113,6 +310,90 @@ const Profile = () => {
       youtube: profile?.youtube || ''
     });
     setEditing(false);
+  };
+
+  const handleCreatePost = async () => {
+    if (!currentUser || !newPostContent.trim()) return;
+
+    try {
+      const postData = {
+        content: newPostContent,
+        timestamp: Date.now(),
+        authorId: currentUser.uid,
+        authorName: profile?.displayName || currentUser.displayName,
+        authorPhoto: profile?.photoURL || currentUser.photoURL,
+        images: selectedImages
+      };
+
+      const postsRef = ref(database, `posts/${currentUser.uid}`);
+      const newPostRef = ref(postsRef);
+      await set(newPostRef, postData);
+
+      setNewPostContent('');
+      setSelectedImages([]);
+      await loadPosts(currentUser.uid);
+    } catch (error) {
+      console.error('Error creating post:', error);
+    }
+  };
+
+  const handleImageSelect = (event) => {
+    const files = Array.from(event.target.files);
+    setSelectedImages(prev => [...prev, ...files]);
+  };
+
+  const renderAccountBadges = () => {
+    if (!profile) return null;
+
+    const levelMap = {
+      iron: 'iron.png', bronze: 'bronze.png', silver: 'silver.png',
+      gold: 'gold.png', platinum: 'platinum.png',
+      emerald: 'emerald.png', diamond: 'diamond.png', master: 'master.png'
+    };
+
+    const badges = [];
+    const levelKey = (profile.accountLevel || '').toLowerCase();
+    
+    if (levelMap[levelKey]) {
+      badges.push({
+        src: `/images/${levelMap[levelKey]}`,
+        alt: `${profile.accountLevel} badge`,
+        label: `Esse usuário é nível ${profile.accountLevel}!`
+      });
+    }
+
+    if (profile.admin === true) {
+      badges.push({
+        src: '/images/admin.png',
+        alt: 'Admin badge',
+        label: 'Esse é um dos nossos administradores!'
+      });
+    }
+
+    return (
+      <div className="account-badges">
+        {badges.map((badge, index) => (
+          <span key={index} className="badge-icon" data-label={badge.label}>
+            <img src={badge.src} alt={badge.alt} />
+          </span>
+        ))}
+      </div>
+    );
+  };
+
+  const renderStatusIndicator = () => {
+    const statusColors = {
+      online: '#00FFCA',
+      away: '#FFD700',
+      busy: '#FF2E63',
+      offline: '#B8B8B8'
+    };
+
+    return (
+      <div className="status-indicator" style={{ backgroundColor: statusColors[userStatus] }}>
+        <span className="status-text">{userStatus}</span>
+      </div>
+    );
   };
 
   const isOwner = currentUser?.uid === (userId || currentUser?.uid);
@@ -167,9 +448,11 @@ const Profile = () => {
                 <i className="fas fa-camera"></i>
               </label>
             )}
+            {renderStatusIndicator()}
           </div>
           
           <div className="profile-info">
+            {renderAccountBadges()}
             <h1 className="profile-name">
               {editing ? (
                 <input
@@ -236,9 +519,9 @@ const Profile = () => {
             </div>
           </div>
           
-          {isOwner && (
-            <div className="profile-actions">
-              {editing ? (
+          <div className="profile-actions">
+            {isOwner ? (
+              editing ? (
                 <>
                   <button className="save-profile-btn" onClick={handleSave}>
                     <i className="fa-solid fa-check"></i> Salvar
@@ -251,9 +534,24 @@ const Profile = () => {
                 <button className="edit-profile-btn" onClick={() => setEditing(true)}>
                   <i className="fa-solid fa-pen"></i> Editar Perfil
                 </button>
-              )}
-            </div>
-          )}
+              )
+            ) : (
+              currentUser && (
+                <div className="visitor-actions">
+                  <button 
+                    className={`follow-btn ${isFollowing ? 'following' : ''}`}
+                    onClick={handleFollow}
+                  >
+                    <i className={`fa-solid ${isFollowing ? 'fa-user-check' : 'fa-user-plus'}`}></i>
+                    {isFollowing ? 'Seguindo' : 'Seguir'}
+                  </button>
+                  <button className="message-btn">
+                    <i className="fa-solid fa-envelope"></i> Mensagem
+                  </button>
+                </div>
+              )
+            )}
+          </div>
         </div>
         
         <div className="profile-tabs">
@@ -296,6 +594,7 @@ const Profile = () => {
         </div>
       </div>
       
+      {/* Perfil Tab */}
       <div className={`tab-content ${activeTab === 'perfil' ? 'active' : ''}`}>
         <div className="perfil-tab-content">
           <div className="profile-sidebar">
@@ -317,155 +616,324 @@ const Profile = () => {
             </div>
             
             <div className="friends-section">
-              <div className="section-header">
-                <i className="fa-solid fa-users"></i> Amigos
+              <div className="section-header friends-header">
+                <div>
+                  <i className="fa-solid fa-users"></i> Seguidores
+                  <div className="friend-count">{followers.length} Seguidores</div>
+                </div>
+                {followers.length > 0 && (
+                  <button className="view-all-link" onClick={() => setShowFollowersModal(true)}>
+                    Todos os seguidores
+                  </button>
+                )}
               </div>
               <div className="section-content">
-                <div className="friends-count">
-                  <span className="friends-number">{profile.friendsCount || 0}</span>
-                  <span className="friends-label">amigos</span>
+                <div className="friends-grid">
+                  {followers.slice(0, 6).map((follower) => (
+                    <div key={follower.id} className="friend-item">
+                      <div className="friend-avatar">
+                        <img src={follower.photoURL || '/images/default-avatar.jpg'} alt={follower.displayName} />
+                      </div>
+                      <div className="friend-name">{follower.displayName}</div>
+                    </div>
+                  ))}
+                  {followers.length === 0 && (
+                    <div className="empty-state">Nenhum seguidor ainda.</div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
           
-          <div className="profile-main">
-            <div className="profile-details">
-              <h3>Detalhes do Perfil</h3>
-              <div className="detail-item">
-                <span className="detail-label">Website:</span>
-                {editing ? (
-                  <input
-                    type="url"
-                    value={formData.website}
-                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                    className="edit-input"
-                    placeholder="https://..."
+          <div className="profile-posts">
+            {isOwner && (
+              <div className="create-post-card">
+                <div className="create-post-avatar">
+                  <img src={profile.photoURL || '/images/default-avatar.jpg'} alt="Avatar" />
+                </div>
+                <div className="create-post-body">
+                  <textarea
+                    value={newPostContent}
+                    onChange={(e) => setNewPostContent(e.target.value)}
+                    placeholder="O que você está pensando?"
+                    maxLength={1000}
+                    rows={3}
                   />
-                ) : (
-                  <span className="detail-value">
-                    {profile.website ? (
-                      <a href={profile.website} target="_blank" rel="noopener noreferrer">
-                        {profile.website}
-                      </a>
-                    ) : (
-                      'Não especificado'
-                    )}
-                  </span>
-                )}
+                  <div className="create-post-actions">
+                    <label className="action-btn">
+                      <i className="fa-solid fa-image"></i> Imagem
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageSelect}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                    <button onClick={handleCreatePost} className="btn primary">
+                      Publicar
+                    </button>
+                  </div>
+                  {selectedImages.length > 0 && (
+                    <div className="selected-images-preview">
+                      {selectedImages.map((image, index) => (
+                        <img
+                          key={index}
+                          src={URL.createObjectURL(image)}
+                          alt="Preview"
+                          style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px' }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-              
-              <div className="social-links">
-                <h4>Redes Sociais</h4>
-                <div className="social-item">
-                  <i className="fab fa-twitter"></i>
-                  {editing ? (
-                    <input
-                      type="text"
-                      value={formData.twitter}
-                      onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
-                      className="edit-input"
-                      placeholder="@username"
-                    />
-                  ) : (
-                    <span className="social-value">
-                      {profile.twitter ? (
-                        <a href={`https://twitter.com/${profile.twitter}`} target="_blank" rel="noopener noreferrer">
-                          @{profile.twitter}
-                        </a>
-                      ) : (
-                        'Não especificado'
+            )}
+            
+            <div className="posts-container">
+              {posts.length > 0 ? (
+                posts.map((post) => (
+                  <div key={post.id} className="post-card">
+                    <div className="post-header">
+                      <div className="post-author-avatar">
+                        <img src={post.authorPhoto || '/images/default-avatar.jpg'} alt={post.authorName} />
+                      </div>
+                      <div className="post-meta">
+                        <div className="post-author-name">{post.authorName}</div>
+                        <div className="post-date">
+                          {new Date(post.timestamp).toLocaleDateString('pt-BR')}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="post-content">
+                      <p>{post.content}</p>
+                      {post.images && post.images.length > 0 && (
+                        <div className="post-image-container">
+                          {post.images.map((image, index) => (
+                            <img key={index} src={image} alt="Post" className="post-image" />
+                          ))}
+                        </div>
                       )}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="social-item">
-                  <i className="fab fa-instagram"></i>
-                  {editing ? (
-                    <input
-                      type="text"
-                      value={formData.instagram}
-                      onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
-                      className="edit-input"
-                      placeholder="@username"
-                    />
-                  ) : (
-                    <span className="social-value">
-                      {profile.instagram ? (
-                        <a href={`https://instagram.com/${profile.instagram}`} target="_blank" rel="noopener noreferrer">
-                          @{profile.instagram}
-                        </a>
-                      ) : (
-                        'Não especificado'
-                      )}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="social-item">
-                  <i className="fab fa-youtube"></i>
-                  {editing ? (
-                    <input
-                      type="text"
-                      value={formData.youtube}
-                      onChange={(e) => setFormData({ ...formData, youtube: e.target.value })}
-                      className="edit-input"
-                      placeholder="Canal do YouTube"
-                    />
-                  ) : (
-                    <span className="social-value">
-                      {profile.youtube ? (
-                        <a href={`https://youtube.com/${profile.youtube}`} target="_blank" rel="noopener noreferrer">
-                          {profile.youtube}
-                        </a>
-                      ) : (
-                        'Não especificado'
-                      )}
-                    </span>
-                  )}
-                </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">Nenhuma publicação ainda.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* About Tab */}
+      <div className={`tab-content ${activeTab === 'about' ? 'active' : ''}`}>
+        <div className="about-tab-content">
+          <h3>Sobre mim</h3>
+          <p className="bio-text">{profile.bio || 'Nenhuma bio disponível.'}</p>
+          
+          <div className="profile-details">
+            <div className="detail-group">
+              <h3>Idiomas</h3>
+              <p>{profile.languages || 'Não especificado'}</p>
+            </div>
+            
+            <div className="detail-group">
+              <h3>Habilidades</h3>
+              <div className="skills-container">
+                {profile.skills && profile.skills.length > 0 ? (
+                  profile.skills.map((skill, index) => (
+                    <span key={index} className="skill-tag">{skill}</span>
+                  ))
+                ) : (
+                  <span className="empty-state">Nenhuma habilidade adicionada ainda</span>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
       
-      {/* Other tab contents would go here */}
-      <div className={`tab-content ${activeTab === 'about' ? 'active' : ''}`}>
-        <div className="about-tab-content">
-          <h3>Sobre</h3>
-          <p>Conteúdo sobre o usuário será exibido aqui.</p>
-        </div>
-      </div>
-      
+      {/* Services Tab */}
       <div className={`tab-content ${activeTab === 'services' ? 'active' : ''}`}>
         <div className="services-tab-content">
-          <h3>Serviços</h3>
-          <p>Lista de serviços oferecidos será exibida aqui.</p>
+          <div className="services-header">
+            <h3>Serviços</h3>
+            {isOwner && (
+              <button className="btn primary">
+                <i className="fa-solid fa-plus"></i> Criar Novo Serviço
+              </button>
+            )}
+          </div>
+          
+          <div className="services-grid">
+            {services.length > 0 ? (
+              services.map((service) => (
+                <div key={service.id} className="service-card">
+                  <div className="service-cover">
+                    <img src={service.coverImageURL || '/images/default-service.jpg'} alt={service.title} />
+                  </div>
+                  <div className="service-info">
+                    <h3 className="service-title">{service.title}</h3>
+                    <p className="service-price">R$ {service.price?.toFixed(2)}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="empty-state">
+                <i className="fa-solid fa-briefcase"></i>
+                <p>Nenhum serviço cadastrado.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
+      {/* Packs Tab */}
       <div className={`tab-content ${activeTab === 'packs' ? 'active' : ''}`}>
         <div className="packs-tab-content">
-          <h3>Packs</h3>
-          <p>Packs disponíveis serão exibidos aqui.</p>
+          <div className="packs-header">
+            <h3>Packs</h3>
+            {isOwner && (
+              <button className="btn primary">
+                <i className="fa-solid fa-plus"></i> Criar Novo Pack
+              </button>
+            )}
+          </div>
+          
+          <div className="packs-description">
+            <p>Packs oferecem descontos especiais.</p>
+          </div>
+          
+          <div className="packs-grid">
+            {packs.length > 0 ? (
+              packs.map((pack) => (
+                <div key={pack.id} className="pack-card">
+                  <div className="pack-cover">
+                    <img src={pack.coverImage || '/images/default-pack.jpg'} alt={pack.title} />
+                  </div>
+                  <div className="pack-info">
+                    <h3 className="pack-title">{pack.title}</h3>
+                    <p className="pack-price">
+                      R$ {pack.price?.toFixed(2)}
+                      {pack.discount && <span className="pack-discount">(-{pack.discount}%)</span>}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="empty-state">
+                <i className="fa-solid fa-box-open"></i>
+                <p>Nenhum pack cadastrado.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
+      {/* Subscriptions Tab */}
       <div className={`tab-content ${activeTab === 'subscriptions' ? 'active' : ''}`}>
         <div className="subscriptions-tab-content">
-          <h3>Assinaturas</h3>
-          <p>Assinaturas ativas serão exibidas aqui.</p>
+          <div className="subscriptions-header">
+            <h3>Assinaturas</h3>
+            {isOwner && (
+              <button className="btn primary">
+                <i className="fa-solid fa-plus"></i> Criar Nova Assinatura
+              </button>
+            )}
+          </div>
+          
+          <div className="subscriptions-grid">
+            {subscriptions.length > 0 ? (
+              subscriptions.map((sub) => (
+                <div key={sub.id} className="subscription-card">
+                  <div className="subscription-cover">
+                    <img src={sub.coverImageUrl || '/images/default-subscription.jpg'} alt={sub.title} />
+                  </div>
+                  <div className="subscription-info">
+                    <h3 className="subscription-title">{sub.title}</h3>
+                    <p className="subscription-price">R$ {sub.mensalPrice?.toFixed(2)} / mês</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="empty-state">
+                <i className="fa-solid fa-newspaper"></i>
+                <p>Nenhuma assinatura cadastrada.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
+      {/* Reviews Tab */}
       <div className={`tab-content ${activeTab === 'reviews' ? 'active' : ''}`}>
         <div className="reviews-tab-content">
           <h3>Avaliações</h3>
-          <p>Avaliações recebidas serão exibidas aqui.</p>
+          
+          <div className="reviews-summary">
+            <div className="rating-breakdown">
+              <div className="rating-value-large">{profile.rating || 0.0}</div>
+              <div className="rating-stars-large">
+                <div className="stars-display-large">★★★★★</div>
+                <div className="reviews-count">({reviews.length} avaliações)</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="reviews-list">
+            {reviews.length > 0 ? (
+              reviews.map((review) => (
+                <div key={review.id} className="review-item">
+                  <div className="review-header">
+                    <div className="reviewer-avatar">
+                      <img src={review.reviewerPhoto || '/images/default-avatar.jpg'} alt={review.reviewerName} />
+                    </div>
+                    <div className="review-meta">
+                      <div className="reviewer-name">{review.reviewerName}</div>
+                      <div className="review-date">
+                        {new Date(review.timestamp).toLocaleDateString('pt-BR')}
+                      </div>
+                    </div>
+                    <div className="review-rating">
+                      {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                    </div>
+                  </div>
+                  <div className="review-content">
+                    <p>{review.comment}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="empty-state">Nenhuma avaliação ainda.</div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Followers Modal */}
+      {showFollowersModal && (
+        <div className="modal-overlay" onClick={() => setShowFollowersModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Seguidores</h2>
+              <button className="modal-close" onClick={() => setShowFollowersModal(false)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-followers-grid">
+                {followers.map((follower) => (
+                  <div key={follower.id} className="modal-follower-item">
+                    <div className="modal-follower-avatar">
+                      <img src={follower.photoURL || '/images/default-avatar.jpg'} alt={follower.displayName} />
+                    </div>
+                    <div className="modal-follower-name">{follower.displayName}</div>
+                    <div className="modal-follower-username">@{follower.username}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

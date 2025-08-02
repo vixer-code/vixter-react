@@ -220,6 +220,14 @@
   font-size: 0.875rem;
   font-weight: 500;
   margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.error-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 /* Multi-step form styles */
