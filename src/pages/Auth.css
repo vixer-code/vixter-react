@@ -4,18 +4,36 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  background-color: #0F0F1A;
+  background-image: 
+    radial-gradient(circle at 90% 10%, rgba(138, 43, 226, 0.15) 0%, transparent 30%),
+    radial-gradient(circle at 10% 90%, rgba(0, 255, 202, 0.1) 0%, transparent 30%);
+  background-attachment: fixed;
   padding: 2rem 1rem;
 }
 
 .auth-container {
-  background: white;
+  background: rgba(26, 26, 46, 0.7);
+  backdrop-filter: blur(10px);
   border-radius: 1rem;
-  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.3);
   padding: 2.5rem;
   width: 100%;
   max-width: 400px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(138, 43, 226, 0.2);
+  position: relative;
+}
+
+.auth-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(138, 43, 226, 0.1) 0%, rgba(0, 255, 202, 0.05) 100%);
+  border-radius: 1rem;
+  z-index: -1;
 }
 
 .auth-header {
@@ -26,12 +44,12 @@
 .auth-header h1 {
   font-size: 2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: #FCFCFC;
   margin-bottom: 0.5rem;
 }
 
 .auth-header p {
-  color: #6b7280;
+  color: #B3B3CC;
   font-size: 1rem;
 }
 
@@ -49,7 +67,7 @@
 
 .form-group label {
   font-weight: 600;
-  color: #374151;
+  color: #FCFCFC;
   font-size: 0.875rem;
 }
 
@@ -63,27 +81,28 @@
   width: 100%;
   padding: 0.75rem 1rem;
   padding-left: 3rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid rgba(138, 43, 226, 0.2);
   border-radius: 0.5rem;
   font-size: 1rem;
   transition: all 0.3s ease;
-  background: white;
+  background: rgba(22, 22, 42, 0.8);
+  color: #FCFCFC;
 }
 
 .input-group input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #8A2BE2;
+  box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.2);
 }
 
 .input-group input::placeholder {
-  color: #9ca3af;
+  color: #6C6C8B;
 }
 
 .input-icon {
   position: absolute;
   left: 0.75rem;
-  color: #9ca3af;
+  color: #8A2BE2;
   z-index: 1;
 }
 
@@ -92,7 +111,7 @@
   right: 0.75rem;
   background: none;
   border: none;
-  color: #9ca3af;
+  color: #6C6C8B;
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 0.25rem;
@@ -100,7 +119,7 @@
 }
 
 .password-toggle:hover {
-  color: #667eea;
+  color: #8A2BE2;
 }
 
 .form-options {
@@ -109,7 +128,7 @@
 }
 
 .forgot-password {
-  color: #667eea;
+  color: #00FFCA;
   text-decoration: none;
   font-size: 0.875rem;
   font-weight: 500;
@@ -117,12 +136,12 @@
 }
 
 .forgot-password:hover {
-  color: #5a67d8;
+  color: #00D4AA;
   text-decoration: underline;
 }
 
 .auth-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8A2BE2 0%, #6A0DAD 100%);
   color: white;
   border: none;
   padding: 0.875rem 1.5rem;
@@ -132,11 +151,12 @@
   cursor: pointer;
   transition: all 0.3s ease;
   margin-top: 0.5rem;
+  box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
 }
 
 .auth-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 10px 25px rgba(138, 43, 226, 0.6);
 }
 
 .auth-button:disabled {
@@ -149,31 +169,31 @@
   text-align: center;
   margin-top: 2rem;
   padding-top: 2rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid rgba(138, 43, 226, 0.2);
 }
 
 .auth-footer p {
-  color: #6b7280;
+  color: #B3B3CC;
   font-size: 0.875rem;
 }
 
 .auth-link {
-  color: #667eea;
+  color: #00FFCA;
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s ease;
 }
 
 .auth-link:hover {
-  color: #5a67d8;
+  color: #00D4AA;
   text-decoration: underline;
 }
 
 /* Error Messages */
 .error-message {
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
+  background-color: rgba(255, 56, 100, 0.1);
+  border: 1px solid rgba(255, 56, 100, 0.3);
+  color: #FF3864;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
   margin-bottom: 1rem;
@@ -184,7 +204,7 @@
 
 /* Loading State */
 .auth-button:disabled {
-  background: #9ca3af;
+  background: rgba(108, 108, 139, 0.6);
   cursor: not-allowed;
 }
 
