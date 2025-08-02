@@ -107,13 +107,14 @@
   transition: opacity 0.2s ease;
 }
 
+/* Hide the left icon (Lock) when there's content */
 .input-group.has-content .input-icon {
-  opacity: 0;
+  opacity: 0 !important;
 }
 
-/* Keep the password toggle visible even when there's content */
+/* Keep the password toggle (Eye/EyeOff) visible even when there's content */
 .input-group.has-content .password-toggle {
-  opacity: 1;
+  opacity: 1 !important;
 }
 
 .password-toggle {
