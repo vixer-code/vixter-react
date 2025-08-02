@@ -9,6 +9,7 @@
 .section-header {
   text-align: center;
   margin-bottom: 3rem;
+  width: 100%;
 }
 
 .section-header h2 {
@@ -20,7 +21,9 @@
   background-clip: text;
   color: transparent;
   position: relative;
-  display: inline-block;
+  display: block;
+  text-align: center;
+  width: 100%;
 }
 
 .section-header p {
@@ -326,6 +329,7 @@
 .how-section {
   padding: 6rem 8%;
   background: radial-gradient(circle at 10% 80%, rgba(138, 43, 226, 0.1) 0%, rgba(13, 16, 33, 0) 70%);
+  text-align: center;
 }
 
 .how-steps {
@@ -393,6 +397,7 @@
 .featured-vixies-section {
   padding: 6rem 8%;
   background: radial-gradient(circle at 90% 50%, rgba(0, 255, 202, 0.1) 0%, rgba(13, 16, 33, 0) 70%);
+  text-align: center;
 }
 
 .vixies-slider {
@@ -870,6 +875,13 @@
   
   .section-header h2 {
     font-size: 2rem;
+    text-align: center;
+    width: 100%;
+  }
+  
+  .section-header {
+    text-align: center;
+    width: 100%;
   }
   
   .service-card p {
@@ -895,6 +907,17 @@
 @media (max-width: 480px) {
   .hero-content h1 {
     font-size: 2rem;
+  }
+  
+  .section-header h2 {
+    font-size: 1.8rem;
+    text-align: center;
+    width: 100%;
+  }
+  
+  .section-header {
+    text-align: center;
+    width: 100%;
   }
   
   .hero-cta,
