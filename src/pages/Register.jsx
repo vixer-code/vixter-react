@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User, MapPin, FileText, Globe, Calendar, AtSign } from 'lucide-react';
+import { ref, set, update } from 'firebase/database';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { database, storage } from '../config/firebase';
 import './Auth.css';
 
 const Register = () => {
@@ -45,6 +48,12 @@ const Register = () => {
   const [error, setError] = useState('');
   const [isMinor, setIsMinor] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState('Muito fraca');
+  const [cpfVerificationState, setCpfVerificationState] = useState({
+    isVerified: false,
+    isVerifying: false,
+    isValid: false,
+    message: ''
+  });
 
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -92,6 +101,133 @@ const Register = () => {
     if (password.length < 10) return 'medium';
     if (password.length < 12) return 'strong';
     return 'very-strong';
+  };
+
+  // CPF validation function (from vanilla JS)
+  const validateCPF = (cpf) => {
+    // Remove caracteres não numéricos
+    const cleanCpf = cpf.replace(/\D/g, '');
+    
+    // Verifica se tem 11 dígitos
+    if (cleanCpf.length !== 11) {
+      return { isValid: false, message: 'CPF deve ter 11 dígitos' };
+    }
+    
+    // Verifica se todos os dígitos são iguais
+    if (/^(\d)\1{10}$/.test(cleanCpf)) {
+      return { isValid: false, message: 'CPF inválido (todos os dígitos são iguais)' };
+    }
+    
+    // Calcula o primeiro dígito verificador
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      sum += parseInt(cleanCpf.charAt(i)) * (10 - i);
+    }
+    let remainder = sum % 11;
+    let digit1 = remainder < 2 ? 0 : 11 - remainder;
+    
+    // Verifica o primeiro dígito
+    if (digit1 !== parseInt(cleanCpf.charAt(9))) {
+      return { isValid: false, message: 'CPF inválido (primeiro dígito verificador)' };
+    }
+    
+    // Calcula o segundo dígito verificador
+    sum = 0;
+    for (let i = 0; i < 10; i++) {
+      sum += parseInt(cleanCpf.charAt(i)) * (11 - i);
+    }
+    remainder = sum % 11;
+    let digit2 = remainder < 2 ? 0 : 11 - remainder;
+    
+    // Verifica o segundo dígito
+    if (digit2 !== parseInt(cleanCpf.charAt(10))) {
+      return { isValid: false, message: 'CPF inválido (segundo dígito verificador)' };
+    }
+    
+    return { isValid: true, message: 'CPF válido' };
+  };
+
+  // CPF verification with Serpro API
+  const verifyCPF = async () => {
+    const cpfRaw = formData.cpf.replace(/\D/g, '');
+    const name = formData.fullName.trim();
+    const birthDate = formData.birthDate;
+
+    if (!cpfRaw || !name || !birthDate) {
+      setCpfVerificationState({
+        isVerified: false,
+        isVerifying: false,
+        isValid: false,
+        message: 'Preencha todos os campos obrigatórios antes de verificar.'
+      });
+      return;
+    }
+
+    // First validate CPF mathematically
+    const validation = validateCPF(formData.cpf);
+    if (!validation.isValid) {
+      setCpfVerificationState({
+        isVerified: false,
+        isVerifying: false,
+        isValid: false,
+        message: validation.message
+      });
+      return;
+    }
+
+    setCpfVerificationState(prev => ({ ...prev, isVerifying: true }));
+
+    try {
+      const response = await fetch('http://localhost:3000/api/verify-id', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cpf: cpfRaw,
+          name: name,
+          birthDate: birthDate
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.verified) {
+        setCpfVerificationState({
+          isVerified: true,
+          isVerifying: false,
+          isValid: true,
+          message: 'CPF verificado com sucesso!'
+        });
+      } else {
+        setCpfVerificationState({
+          isVerified: false,
+          isVerifying: false,
+          isValid: false,
+          message: data.message || 'Falha na verificação do CPF'
+        });
+      }
+    } catch (error) {
+      console.error('CPF verification error:', error);
+      setCpfVerificationState({
+        isVerified: false,
+        isVerifying: false,
+        isValid: false,
+        message: 'Erro na verificação. Tente novamente.'
+      });
+    }
+  };
+
+  // Calculate age
+  const calculateAge = (birthDate) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age;
   };
 
   // Handle disappearing icons logic
@@ -191,6 +327,131 @@ const Register = () => {
     }
   };
 
+  // Create complete user profile in Firebase (like vanilla JS)
+  const createUserProfile = async (userId, withVerification = false) => {
+    try {
+      console.log('[createUserProfile] Creating profile for user:', userId);
+      
+      const age = calculateAge(formData.birthDate);
+      const isAdult = age >= 18;
+      
+      // Create reference to the user in the database
+      const userRef = ref(database, `users/${userId}`);
+      
+      // Prepare profile data
+      const profileData = {
+        displayName: formData.displayName || '',
+        username: formData.username || '',
+        birthDate: formData.birthDate || null,
+        age: age || null,
+        isAdult: isAdult || false,
+        specialAssistance: formData.specialAssistance || false,
+        location: formData.location || 'Vixora',
+        bio: formData.bio || '',
+        languages: formData.languages || '',
+        interests: formData.interests || [],
+        accountType: formData.accountType || '',
+        communicationPreferences: {
+          emailNotifications: formData.emailNotifications,
+          marketingUpdates: formData.marketingUpdates
+        },
+        avatarType: formData.avatarChoice || null,
+        idVerified: false,
+        profileComplete: true,
+        accountRestrictions: isAdult ? [] : ['adult_content', 'unsupervised_transfers', 'unverified_chat'],
+        registeredAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      
+      // Add verification data if provided
+      if (withVerification && cpfVerificationState.isVerified) {
+        profileData.verification = {
+          fullName: formData.fullName,
+          cpf: formData.cpf.replace(/\D/g, ''),
+          submittedAt: Date.now(),
+          verificationStatus: 'pending'
+        };
+      } else {
+        profileData.verification = {
+          verificationStatus: 'skipped',
+          skippedAt: Date.now()
+        };
+      }
+      
+      // Update data in the database
+      await set(userRef, profileData);
+      
+      console.log('[createUserProfile] User profile created successfully');
+      return true;
+    } catch (error) {
+      console.error('[createUserProfile] Error creating user profile:', error);
+      throw new Error(`Falha ao criar perfil do usuário: ${error.message}`);
+    }
+  };
+
+  // Upload profile picture
+  const uploadProfilePicture = async (userId) => {
+    if (!formData.customAvatar) {
+      console.log('[uploadProfilePicture] No custom avatar to upload');
+      return null;
+    }
+    
+    try {
+      console.log('[uploadProfilePicture] Uploading profile picture for user:', userId);
+      
+      const profilePictureRef = storageRef(storage, `profilePictures/${userId}`);
+      const snapshot = await uploadBytes(profilePictureRef, formData.customAvatar);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      
+      console.log('[uploadProfilePicture] Profile picture uploaded successfully:', downloadURL);
+      return downloadURL;
+    } catch (error) {
+      console.error('[uploadProfilePicture] Error uploading profile picture:', error);
+      throw error;
+    }
+  };
+
+  // Upload verification documents
+  const uploadVerificationDocuments = async (userId) => {
+    try {
+      console.log('[uploadVerificationDocuments] Uploading verification documents for user:', userId);
+      
+      const promises = [];
+      const documentURLs = {};
+      
+      if (formData.documents.front) {
+        const docFrontRef = storageRef(storage, `verification/${userId}/doc-front`);
+        const snapshot = await uploadBytes(docFrontRef, formData.documents.front);
+        documentURLs.front = await getDownloadURL(snapshot.ref);
+      }
+      
+      if (formData.documents.back) {
+        const docBackRef = storageRef(storage, `verification/${userId}/doc-back`);
+        const snapshot = await uploadBytes(docBackRef, formData.documents.back);
+        documentURLs.back = await getDownloadURL(snapshot.ref);
+      }
+      
+      if (formData.documents.selfie) {
+        const selfieRef = storageRef(storage, `verification/${userId}/selfie`);
+        const snapshot = await uploadBytes(selfieRef, formData.documents.selfie);
+        documentURLs.selfie = await getDownloadURL(snapshot.ref);
+      }
+      
+      // Update user profile with document URLs
+      const userRef = ref(database, `users/${userId}/verification`);
+      await update(userRef, {
+        documents: documentURLs,
+        uploadedAt: Date.now()
+      });
+      
+      console.log('[uploadVerificationDocuments] Verification documents uploaded successfully');
+      return documentURLs;
+    } catch (error) {
+      console.error('[uploadVerificationDocuments] Error uploading verification documents:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -210,8 +471,52 @@ const Register = () => {
       return;
     }
 
+    // Validate age
+    const age = calculateAge(formData.birthDate);
+    if (age < 13) {
+      setError('Você deve ter pelo menos 13 anos para criar uma conta');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await register(formData.displayName, formData.email, formData.password);
+      // Register user with Firebase Auth
+      const result = await register(formData.displayName, formData.email, formData.password);
+      const user = result.user;
+      
+      console.log('[handleSubmit] User registered successfully:', user.uid);
+      
+      // Create complete user profile in Firebase Database
+      const withVerification = cpfVerificationState.isVerified;
+      await createUserProfile(user.uid, withVerification);
+      
+      // Upload profile picture if custom avatar selected
+      if (formData.customAvatar) {
+        const profilePictureURL = await uploadProfilePicture(user.uid);
+        if (profilePictureURL) {
+          const userRef = ref(database, `users/${user.uid}`);
+          await update(userRef, { profilePictureURL });
+        }
+      }
+      
+      // Upload verification documents if provided
+      if (withVerification && formData.documents.front && age >= 18) {
+        await uploadVerificationDocuments(user.uid);
+      }
+      
+      // Determine success message
+      let message;
+      if (age < 18) {
+        message = 'Conta criada com sucesso! Como você é menor de idade, algumas funcionalidades estarão restritas para sua segurança.';
+      } else if (withVerification) {
+        message = 'Registro realizado com sucesso! Seus documentos estão sendo analisados e você receberá uma notificação em breve.';
+      } else {
+        message = 'Registro realizado com sucesso! Você pode completar a verificação de identidade a qualquer momento em suas configurações.';
+      }
+      
+      console.log('[handleSubmit] Registration completed successfully');
+      
+      // Navigate to home page
       navigate('/');
     } catch (error) {
       console.error('Registration error:', error);
@@ -657,18 +962,111 @@ const Register = () => {
               placeholder="     000.000.000-00"
               maxLength="14"
             />
-            <span id="cpf-status" className="status-icon"></span>
+            <span id="cpf-status" className={`status-icon ${cpfVerificationState.isVerified ? 'verified' : ''}`}></span>
           </div>
-          <button type="button" id="verify-cpf-btn" className="btn-verify-cpf" disabled>
-            <span className="verify-text">Verificar CPF</span>
+          <button 
+            type="button" 
+            className={`btn-verify-cpf ${cpfVerificationState.isVerified ? 'verified' : ''} ${cpfVerificationState.isVerifying ? 'verifying' : ''}`}
+            onClick={verifyCPF}
+            disabled={cpfVerificationState.isVerifying || cpfVerificationState.isVerified || !formData.fullName || !formData.cpf || !formData.birthDate}
+          >
+            {cpfVerificationState.isVerifying ? (
+              <>
+                <span className="verify-loading">
+                  <svg className="loading-spinner" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="31.416" strokeDashoffset="31.416">
+                      <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
+                      <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
+                    </circle>
+                  </svg>
+                  Verificando...
+                </span>
+              </>
+            ) : (
+              <span className="verify-text">
+                {cpfVerificationState.isVerified ? 'CPF Verificado' : 'Verificar CPF'}
+              </span>
+            )}
           </button>
         </div>
         <small>Informe apenas números, a formatação será aplicada automaticamente</small>
+        {cpfVerificationState.message && (
+          <div className={`cpf-feedback ${cpfVerificationState.isValid ? 'success' : 'error'}`}>
+            <div className="feedback-content">
+              <span className="feedback-icon">
+                {cpfVerificationState.isValid ? '✅' : '❌'}
+              </span>
+              <span className="feedback-message">{cpfVerificationState.message}</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="form-footer">
+      <div className="form-group documents-section documents-verification-section">
+        <label>Documentos de Verificação</label>
+        <p className="verification-description">
+          Envie 3 fotos conforme especificado abaixo. Certifique-se de que todas as informações estejam legíveis e que as fotos estejam bem iluminadas.
+        </p>
+        
+        <div className="example-photo">
+          <div className="example-header">
+            <div className="example-icon">📸</div>
+            <h4>Como tirar a selfie com documento</h4>
+          </div>
+          <div className="example-content">
+            <img src="/images/uploadCorreto.png" alt="Example photo" />
+          </div>
+          
+          <div className="photo-upload-item" id="doc-front-upload">
+            <input 
+              type="file" 
+              id="doc-front" 
+              accept="image/*"
+              onChange={(e) => handleDocumentChange('front', e.target.files[0])}
+            />
+            <div className="photo-upload-icon">📄</div>
+            <div className="photo-upload-title">Frente do Documento</div>
+            <div className="photo-upload-description">
+              Foto da frente do RG, CNH ou outro documento com foto que contenha seu CPF
+            </div>
+          </div>
+          
+          <div className="photo-upload-item" id="doc-back-upload">
+            <input 
+              type="file" 
+              id="doc-back" 
+              accept="image/*"
+              onChange={(e) => handleDocumentChange('back', e.target.files[0])}
+            />
+            <div className="photo-upload-icon">📄</div>
+            <div className="photo-upload-title">Verso do Documento</div>
+            <div className="photo-upload-description">
+              Foto do verso do mesmo documento usado na frente
+            </div>
+          </div>
+          
+          <div className="photo-upload-item" id="selfie-doc-upload">
+            <input 
+              type="file" 
+              id="selfie-doc" 
+              accept="image/*"
+              onChange={(e) => handleDocumentChange('selfie', e.target.files[0])}
+            />
+            <div className="photo-upload-icon">🤳</div>
+            <div className="photo-upload-title">Selfie com Documento</div>
+            <div className="photo-upload-description">
+              Foto sua segurando o documento ao lado do rosto, ambos devem estar visíveis
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="form-footer step4-footer-section">
         <button type="button" className="btn secondary" onClick={prevStep}>Voltar</button>
-        <button type="button" className="skip-verification">
+        <button type="button" className="skip-verification" onClick={() => {
+          setCpfVerificationState(prev => ({ ...prev, isVerified: false }));
+          handleSubmit(new Event('submit'));
+        }}>
           Pular Verificação (concluir depois)
         </button>
         <button type="submit" className="btn primary">Concluir Verificação</button>
