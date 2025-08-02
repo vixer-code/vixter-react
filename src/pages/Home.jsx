@@ -351,7 +351,7 @@ const Home = () => {
                 <i className="fas fa-star"></i>
                 <i className="fas fa-star"></i>
               </div>
-              <p className="testimonial-text">"Encontrei uma duo parceira incrível no LoL que me ajudou a subir de patente. Além de ser uma ótima jogadora, me deu várias dicas. Vale cada VP investido!"</p>
+              <p className="testimonial-text">"Encontrei uma duo parceira incrível no LoL que me ajudou a subir de elo. Além de ser uma ótima player, me deu várias dicas. Vale cada VP investido!"</p>
               <div className="testimonial-author">
                 <span className="author-name">Rafael S.</span>
                 <span className="author-date">Há 3 dias</span>
@@ -391,7 +391,7 @@ const Home = () => {
                 <i className="fas fa-star"></i>
                 <i className="fas fa-star"></i>
               </div>
-              <p className="testimonial-text">"As sessions de coaching me ajudaram muito a melhorar meu gameplay. Meu coach é super atencioso e me ensinou estratégias que eu nunca teria descoberto sozinho."</p>
+              <p className="testimonial-text">"As sessões de coaching me ajudaram muito a melhorar meu gameplay. Meu coach é super atencioso e me ensinou estratégias que eu nunca teria descoberto sozinha."</p>
               <div className="testimonial-author">
                 <span className="author-name">Mariana C.</span>
                 <span className="author-date">Há 2 semanas</span>
