@@ -111,6 +111,11 @@
   opacity: 0;
 }
 
+/* Keep the password toggle visible even when there's content */
+.input-group.has-content .password-toggle {
+  opacity: 1;
+}
+
 .password-toggle {
   position: absolute;
   right: 0.75rem;
