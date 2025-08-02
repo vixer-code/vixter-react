@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import FirebaseTest from '../components/FirebaseTest';
 import './Home.css';
 
 const Home = () => {
@@ -59,6 +60,9 @@ const Home = () => {
 
   return (
     <main className="home-container">
+      {/* Firebase Test Component - Remove after testing */}
+      <FirebaseTest />
+      
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-content">

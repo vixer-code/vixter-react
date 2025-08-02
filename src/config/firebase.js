@@ -15,13 +15,29 @@ const firebaseConfig = {
   measurementId: "G-Z0FBX7E8RY"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase with proper error handling
+let app, auth, database, storage;
 
-// Initialize Firebase services
-export const auth = getAuth(app);
-export const database = getDatabase(app);
-export const storage = getStorage(app);
+try {
+  console.log("Initializing Firebase...");
+  app = initializeApp(firebaseConfig);
+  console.log("Firebase initialized successfully");
+  
+  // Initialize Firebase services
+  auth = getAuth(app);
+  database = getDatabase(app);
+  storage = getStorage(app);
+  
+  console.log("Firebase services initialized:", {
+    auth: !!auth,
+    database: !!database,
+    storage: !!storage
+  });
+  
+} catch (error) {
+  console.error("Error initializing Firebase:", error);
+  throw new Error(`Firebase initialization failed: ${error.message}`);
+}
 
 // Development emulators (uncomment if you want to use them)
 // if (import.meta.env.DEV) {
@@ -30,4 +46,5 @@ export const storage = getStorage(app);
 //   connectStorageEmulator(storage, "localhost", 9199);
 // }
 
+export { auth, database, storage };
 export default app;

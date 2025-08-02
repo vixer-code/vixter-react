@@ -7,7 +7,8 @@ import {
   sendPasswordResetEmail,
   updateProfile
 } from 'firebase/auth';
-import { auth } from '../config/firebase';
+import { ref, set, get } from 'firebase/database';
+import { auth, database } from '../config/firebase';
 
 const AuthContext = createContext({});
 
@@ -23,30 +24,183 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
+  const [usernameCache] = useState(new Map());
 
-  // Login function
-  const login = async (email, password) => {
+  // Helper function to check if input is email or username
+  const isEmail = (input) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(input);
+  };
+
+  // Function to find email by username (with robust fallback)
+  const findEmailByUsername = async (username) => {
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      return result;
+      console.log('[findEmailByUsername] Searching for username:', username);
+      
+      if (!database) {
+        throw new Error('Database not initialized');
+      }
+
+      // Check cache first
+      if (usernameCache.has(username.toLowerCase())) {
+        console.log('[findEmailByUsername] Found in cache:', username);
+        return usernameCache.get(username.toLowerCase());
+      }
+
+      // Method 1: Try optimized query (exact)
+      try {
+        const usersRef = ref(database, 'users');
+        const snapshot = await get(usersRef);
+        
+        if (snapshot.exists()) {
+          const users = snapshot.val();
+          // Find user by username
+          const userId = Object.keys(users).find(key => 
+            users[key].username === username || users[key].username === username.toLowerCase()
+          );
+          
+          if (userId) {
+            const user = users[userId];
+            
+            // Save to cache
+            usernameCache.set(username.toLowerCase(), user.email);
+            
+            console.log('[findEmailByUsername] Found user (exact) with username:', username, 'email:', user.email);
+            return user.email;
+          }
+        }
+      } catch (queryError) {
+        console.warn('[findEmailByUsername] Query method failed, trying fallback:', queryError.message);
+      }
+
+      console.log('[findEmailByUsername] Username not found:', username);
+      return null;
+      
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[findEmailByUsername] Error searching for username:', error);
+      
+      // If it's a permission error, give a more friendly message
+      if (error.message && error.message.includes('permission_denied')) {
+        console.error('[findEmailByUsername] Permission denied - suggest using email instead');
+        throw new Error('Não foi possível verificar o username. Por favor, tente fazer login com seu email.');
+      }
+      
       throw error;
     }
   };
 
-  // Register function
-  const register = async (email, password, displayName) => {
+  // Create user profile in database
+  const createUserProfile = async (uid, name, email) => {
+    console.log('[createUserProfile] uid:', uid, 'name:', name, 'email:', email);
+  
     try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const userRef = ref(database, `users/${uid}`);
+      console.log('[createUserProfile] userRef:', userRef.toString(), '— About to call set');
+  
+      await set(userRef, {
+        name,
+        email,
+        createdAt: Date.now(),
+        profileComplete: false
+      });
+  
+      console.log('[createUserProfile] set successful!');
+    } catch (error) {
+      console.error('[createUserProfile] Error creating user profile:', error);
+      throw error;
+    }
+  };
+
+  // Login function with username/email support
+  const login = async (emailOrUsername, password) => {
+    try {
+      let email = emailOrUsername.trim();
       
-      // Update the user's display name
-      if (displayName) {
-        await updateProfile(result.user, {
-          displayName: displayName
-        });
+      // Check if input is username instead of email
+      if (!isEmail(email)) {
+        console.log('[login] Input appears to be username, searching for email...');
+        
+        try {
+          const foundEmail = await findEmailByUsername(email);
+          
+          if (!foundEmail) {
+            throw new Error('Username não encontrado. Verifique se o username está correto ou tente usar seu email.');
+          }
+          
+          email = foundEmail;
+          console.log('[login] Found email for username:', email);
+          
+        } catch (usernameError) {
+          // If username lookup failed, suggest using email
+          if (usernameError.message.includes('Username não encontrado')) {
+            throw usernameError;
+          } else {
+            throw new Error('Erro ao verificar username. Tente fazer login com seu email: ' + usernameError.message);
+          }
+        }
       }
       
+      console.log('[login] Attempting login with email:', email);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Save to cache for next time (if it was a username login)
+      if (!isEmail(emailOrUsername.trim()) && result.user) {
+        usernameCache.set(emailOrUsername.toLowerCase(), email);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Login error:', error);
+      
+      // Handle custom username/email errors
+      if (error.message.includes('Username não encontrado') || 
+          error.message.includes('Erro ao verificar username')) {
+        throw error;
+      }
+      
+      // Handle Firebase auth errors
+      switch (error.code) {
+        case 'auth/user-not-found':
+          throw new Error('Email não encontrado. Verifique suas credenciais.');
+        case 'auth/wrong-password':
+          throw new Error('Senha incorreta. Tente novamente.');
+        case 'auth/invalid-email':
+          throw new Error('Email inválido. Por favor, digite um email válido.');
+        case 'auth/user-disabled':
+          throw new Error('Esta conta foi desabilitada. Entre em contato com o suporte.');
+        case 'auth/too-many-requests':
+          throw new Error('Muitas tentativas de login. Tente novamente mais tarde.');
+        case 'auth/network-request-failed':
+          throw new Error('Erro de conexão. Verifique sua internet e tente novamente.');
+        default:
+          throw error;
+      }
+    }
+  };
+
+  // Register function with profile creation
+  const register = async (name, email, password) => {
+    try {
+      console.log('[register] Received name:', name, 'email:', email);
+      
+      // Create user in Firebase Auth
+      console.log('[register] About to createUserWithEmailAndPassword...');
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      console.log('[register] Finished createUserWithEmailAndPassword. result:', result);
+  
+      const user = result.user;
+      console.log('[register] Got user:', user ? user.uid : null);
+  
+      // Set display name
+      console.log('[register] Updating displayName in Auth profile...');
+      await updateProfile(user, { displayName: name });
+      console.log('[register] displayName update done');
+  
+      // Create user profile in database
+      console.log('[register] Calling createUserProfile...');
+      await createUserProfile(user.uid, name, email);
+      console.log('[register] createUserProfile finished successfully!');
+  
       return result;
     } catch (error) {
       console.error('Registration error:', error);
@@ -58,19 +212,37 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await signOut(auth);
+      setToken(null);
+      
+      // Clear username cache
+      usernameCache.clear();
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
     }
   };
 
-  // Reset password function
+  // Reset password function with better error handling
   const resetPassword = async (email) => {
     try {
+      console.log('[resetPassword] Sending password reset email to:', email);
       await sendPasswordResetEmail(auth, email);
+      console.log('[resetPassword] Password reset email sent successfully');
+      return true;
     } catch (error) {
-      console.error('Password reset error:', error);
-      throw error;
+      console.error('[resetPassword] Error sending password reset email:', error);
+      
+      // Re-throw with more specific error information
+      switch (error.code) {
+        case 'auth/user-not-found':
+          throw new Error('Não existe uma conta com este email.');
+        case 'auth/invalid-email':
+          throw new Error('Email inválido.');
+        case 'auth/too-many-requests':
+          throw new Error('Muitas tentativas de reset. Tente novamente mais tarde.');
+        default:
+          throw error;
+      }
     }
   };
 
@@ -92,6 +264,7 @@ export const AuthProvider = ({ children }) => {
   // Listen for auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('Auth state changed:', user ? 'User logged in' : 'User logged out');
       setCurrentUser(user);
       
       if (user) {

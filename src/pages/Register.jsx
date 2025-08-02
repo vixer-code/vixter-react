@@ -211,11 +211,11 @@ const Register = () => {
     }
 
     try {
-      await register(formData.email, formData.password, formData.displayName);
+      await register(formData.displayName, formData.email, formData.password);
       navigate('/');
     } catch (error) {
       console.error('Registration error:', error);
-      setError(getErrorMessage(error.code));
+      setError(error.message || getErrorMessage(error.code));
     } finally {
       setLoading(false);
     }
