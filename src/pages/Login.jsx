@@ -69,7 +69,7 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label htmlFor="email">Email</label>
-            <div className="input-group">
+            <div className={`input-group ${formData.email ? 'has-content' : ''}`}>
               <Mail className="input-icon" size={20} />
               <input
                 type="email"
@@ -85,7 +85,7 @@ const Login = () => {
 
           <div className="form-group">
             <label htmlFor="password">Senha</label>
-            <div className="input-group">
+            <div className={`input-group ${formData.password ? 'has-content' : ''}`}>
               <Lock className="input-icon" size={20} />
               <input
                 type={showPassword ? 'text' : 'password'}

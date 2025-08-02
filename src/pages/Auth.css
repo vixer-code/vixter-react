@@ -107,8 +107,7 @@
   transition: opacity 0.2s ease;
 }
 
-.input-group input:not(:placeholder-shown) + .input-icon,
-.input-group input:focus + .input-icon {
+.input-group.has-content .input-icon {
   opacity: 0;
 }
 
