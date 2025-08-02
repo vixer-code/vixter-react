@@ -357,7 +357,7 @@
 
 /* Optional labels */
 .optional-label {
-  color: #6C6C8B;
+  color: #B3B3CC;
   font-weight: normal;
   font-size: 0.9em;
   font-style: italic;
@@ -367,9 +367,10 @@
 .helper-text {
   display: block;
   margin-top: 4px;
-  color: #6C6C8B;
-  font-size: 0.9em;
+  color: #B3B3CC;
+  font-size: 0.875rem;
   line-height: 1.4;
+  font-weight: 400;
 }
 
 /* Checkbox container */
@@ -429,6 +430,7 @@
   background: rgba(138, 43, 226, 0.2);
   border-radius: 2px;
   overflow: hidden;
+  position: relative;
 }
 
 .strength-bar::before {
@@ -436,14 +438,61 @@
   display: block;
   height: 100%;
   background: #ff4757;
-  width: 20%;
+  width: 0%;
   transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+/* Password strength levels */
+.strength-bar.very-weak::before {
+  width: 20%;
+  background: #ff4757;
+}
+
+.strength-bar.weak::before {
+  width: 40%;
+  background: #ffa502;
+}
+
+.strength-bar.medium::before {
+  width: 60%;
+  background: #ffa502;
+}
+
+.strength-bar.strong::before {
+  width: 80%;
+  background: #2ed573;
+}
+
+.strength-bar.very-strong::before {
+  width: 100%;
+  background: #2ed573;
 }
 
 .strength-text {
   font-size: 0.75rem;
-  color: #6C6C8B;
+  color: #B3B3CC;
   white-space: nowrap;
+  font-weight: 500;
+}
+
+/* Make small text more visible */
+.form-group small,
+.helper-text {
+  display: block;
+  margin-top: 4px;
+  color: #B3B3CC;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+/* Optional labels */
+.optional-label {
+  color: #B3B3CC;
+  font-weight: normal;
+  font-size: 0.9em;
+  font-style: italic;
 }
 
 /* Profile picture options */

@@ -83,6 +83,17 @@ const Register = () => {
     }
   }, [formData.password]);
 
+  // Get password strength class for CSS
+  const getPasswordStrengthClass = () => {
+    const password = formData.password;
+    if (password.length === 0) return '';
+    if (password.length < 6) return 'very-weak';
+    if (password.length < 8) return 'weak';
+    if (password.length < 10) return 'medium';
+    if (password.length < 12) return 'strong';
+    return 'very-strong';
+  };
+
   // Handle disappearing icons logic
   useEffect(() => {
     const handleInputContent = () => {
@@ -268,7 +279,6 @@ const Register = () => {
       <div className="form-group">
         <label htmlFor="birthDate">Data de Nascimento</label>
         <div className={`input-group ${formData.birthDate ? 'has-content' : ''}`}>
-          <Calendar className="input-icon" size={20} />
           <input
             type="date"
             id="birthDate"
@@ -326,7 +336,7 @@ const Register = () => {
           </button>
         </div>
         <div className="password-strength">
-          <div className="strength-bar"></div>
+          <div className={`strength-bar ${getPasswordStrengthClass()}`}></div>
           <span className="strength-text">Nível de segurança da senha: {passwordStrength}</span>
         </div>
         <small>Use pelo menos 8 caracteres, incluindo letras e números</small>
