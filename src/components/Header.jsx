@@ -82,7 +82,7 @@ const Header = () => {
               {/* VP Balance Display */}
               <li className="auth-hide logged-in">
                 <div className="vp-balance" onClick={handleVpBalanceClick}>
-                  <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="vp-icon" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
                     {/* Glow background */}
                     <defs>
                       <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
