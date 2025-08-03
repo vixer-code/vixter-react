@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react';
-
 // Image cache utility for Firebase Storage images
 class ImageCache {
   constructor() {
@@ -197,90 +195,6 @@ export const preloadImage = (url) => {
     
     img.src = url;
   });
-};
-
-// Hook for using cached images
-export const useCachedImage = (url, fallbackUrl = null) => {
-  const [imageSrc, setImageSrc] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (!url) {
-      setImageSrc(fallbackUrl);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    preloadImage(url)
-      .then((cachedUrl) => {
-        setImageSrc(cachedUrl);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.warn('Failed to load cached image:', err);
-        setImageSrc(fallbackUrl);
-        setError(err);
-        setLoading(false);
-      });
-  }, [url, fallbackUrl]);
-
-  return { imageSrc, loading, error };
-};
-
-// Component for cached images
-export const CachedImage = ({ 
-  src, 
-  fallbackSrc, 
-  alt, 
-  className, 
-  style, 
-  onLoad, 
-  onError,
-  ...props 
-}) => {
-  const { imageSrc, loading, error } = useCachedImage(src, fallbackSrc);
-
-  const handleLoad = (e) => {
-    if (onLoad) onLoad(e);
-  };
-
-  const handleError = (e) => {
-    if (onError) onError(e);
-  };
-
-  if (loading) {
-    return (
-      <div 
-        className={`cached-image-loading ${className || ''}`}
-        style={{ 
-          backgroundColor: '#f0f0f0', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          ...style 
-        }}
-        {...props}
-      >
-        <div className="loading-spinner">⏳</div>
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={imageSrc}
-      alt={alt}
-      className={className}
-      style={style}
-      onLoad={handleLoad}
-      onError={handleError}
-      {...props}
-    />
-  );
 };
 
 // Export the cache instance for direct access
