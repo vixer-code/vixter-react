@@ -985,9 +985,14 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                     <h3>Opções Complementares</h3>
                     {formData.complementaryOptions.map((option, index) => (
                       <div key={index} className="preview-option">
-                        <div className="option-title">{option.title}</div>
-                        <div className="option-description">{option.description}</div>
-                        <div className="option-price">{formatVC(option.price)}</div>
+                        <div className="option-info">
+                          <div className="option-title">{option.title}</div>
+                          <div className="option-description">{option.description}</div>
+                        </div>
+                        <div className="option-pricing">
+                          <div className="option-price-main">+{formatVP(convertVCtoVP(option.price))}</div>
+                          <div className="option-price-secondary">Você recebe: +{formatVC(option.price)}</div>
+                        </div>
                       </div>
                     ))}
                   </div>
