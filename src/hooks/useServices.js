@@ -168,8 +168,8 @@ export const useServices = () => {
   // Upload file to storage
   const uploadFile = async (file, path) => {
     try {
-      const storageRef = ref(storage, path);
-      const snapshot = await uploadBytes(storageRef, file);
+      const fileRef = storageRef(storage, path);
+      const snapshot = await uploadBytes(fileRef, file);
       return await getDownloadURL(snapshot.ref);
     } catch (error) {
       console.error('Error uploading file:', error);

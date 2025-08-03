@@ -10,6 +10,9 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   const { currentUser } = useAuth();
   const { createService, uploadFile, createServiceWithId } = useServices();
   const { showSuccess, showError } = useNotification();
+  
+  // Debug notification context
+  console.log('Notification context functions:', { showSuccess: !!showSuccess, showError: !!showError });
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
@@ -413,6 +416,10 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   };
 
   const handleSubmit = async () => {
+    console.log('🚀 Starting service creation...');
+    console.log('Current user:', currentUser);
+    console.log('Database instance:', database);
+    
     if (!currentUser || isSubmitting) return;
 
     // Validate all form data before submission
@@ -464,8 +471,17 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
 
     try {
       // Generate a unique service ID for file uploads
-      const tempRef = ref(database, 'services').push();
-      const serviceId = tempRef.key;
+      if (!database) {
+        throw new Error('Firebase database not initialized');
+      }
+      
+      const tempRef = ref(database, 'services');
+      const newServiceRef = push(tempRef);
+      const serviceId = newServiceRef.key;
+
+      if (!serviceId) {
+        throw new Error('Failed to generate service ID');
+      }
 
       console.log(`🔑 Using ServiceID: ${serviceId}`);
 
