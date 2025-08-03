@@ -164,14 +164,33 @@ nav {
   border-color: #8A2BE2;
 }
 
-.vp-icon {
+/* VP Icon - Header specific styling with high specificity */
+.vp-balance .vp-icon,
+header .vp-balance .vp-icon {
   margin-right: 12px;
-  height: 32px;
-  width: 32px;
+  height: 32px !important;
+  width: 32px !important;
+  min-height: 32px !important;
+  min-width: 32px !important;
+  max-height: 32px !important;
+  max-width: 32px !important;
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+}
+
+/* Ensure SVG inside the icon respects the container size */
+.vp-balance .vp-icon svg,
+header .vp-balance .vp-icon svg {
+  height: 100% !important;
+  width: 100% !important;
+  min-height: 32px !important;
+  min-width: 32px !important;
+  max-height: 32px !important;
+  max-width: 32px !important;
+  flex-shrink: 0;
 }
 
 #vp-amount {
@@ -456,10 +475,29 @@ nav {
     height: 36px;
   }
   
-  .vp-icon {
-    height: 28px;
-    width: 28px;
+  /* Mobile VP Icon - Header specific styling with high specificity */
+  .vp-balance .vp-icon,
+  header .vp-balance .vp-icon {
+    height: 28px !important;
+    width: 28px !important;
+    min-height: 28px !important;
+    min-width: 28px !important;
+    max-height: 28px !important;
+    max-width: 28px !important;
     margin-right: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Ensure SVG inside the icon respects the container size on mobile */
+  .vp-balance .vp-icon svg,
+  header .vp-balance .vp-icon svg {
+    height: 100% !important;
+    width: 100% !important;
+    min-height: 28px !important;
+    min-width: 28px !important;
+    max-height: 28px !important;
+    max-width: 28px !important;
+    flex-shrink: 0;
   }
   
   #vp-amount {
