@@ -1,0 +1,271 @@
+.email-verification-status {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e1e5e9;
+  transition: all 0.3s ease;
+}
+
+.email-verification-status.compact {
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.email-verification-status.verified {
+  border-color: #00d4aa;
+  background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+}
+
+.email-verification-status.unverified {
+  border-color: #ffd700;
+  background: linear-gradient(135deg, #fffbf0 0%, #fff8e1 100%);
+}
+
+.email-verification-status.error {
+  border-color: #ff2e63;
+  background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+}
+
+/* Status Indicator (Compact Mode) */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status-indicator.verified {
+  color: #00d4aa;
+}
+
+.status-indicator.unverified {
+  color: #ff8c00;
+}
+
+.status-icon {
+  font-size: 16px;
+}
+
+.status-text {
+  flex: 1;
+}
+
+/* Status Content (Full Mode) */
+.status-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.status-description {
+  margin: 0;
+  font-size: 14px;
+  color: #4a5568;
+  line-height: 1.5;
+}
+
+.status-description p {
+  margin: 0 0 8px 0;
+}
+
+.last-sent {
+  font-size: 12px;
+  color: #718096;
+  font-style: italic;
+}
+
+/* Status Actions */
+.status-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.action-btn.primary {
+  background: #8a2be2;
+  color: white;
+}
+
+.action-btn.primary:hover:not(:disabled) {
+  background: #7c3aed;
+  transform: translateY(-1px);
+}
+
+.action-btn.secondary {
+  background: transparent;
+  color: #8a2be2;
+  border: 1px solid #8a2be2;
+}
+
+.action-btn.secondary:hover:not(:disabled) {
+  background: #8a2be2;
+  color: white;
+}
+
+.action-btn.retry-btn {
+  background: #ff2e63;
+  color: white;
+}
+
+.action-btn.retry-btn:hover:not(:disabled) {
+  background: #e53e3e;
+}
+
+.action-btn.resend-btn {
+  background: #ffd700;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.action-btn.resend-btn:hover:not(:disabled) {
+  background: #ffed4e;
+}
+
+/* Error State */
+.error-message {
+  text-align: center;
+}
+
+.error-message h4 {
+  color: #ff2e63;
+  margin: 0 0 8px 0;
+}
+
+.error-message p {
+  color: #718096;
+  margin: 0 0 12px 0;
+}
+
+/* Theme Variations */
+.email-verification-status.theme-minimal {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 8px 0;
+}
+
+.email-verification-status.theme-minimal .status-content {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.email-verification-status.theme-minimal .status-header {
+  flex-direction: row;
+  align-items: center;
+}
+
+.email-verification-status.theme-minimal .status-description {
+  flex: 1;
+}
+
+.email-verification-status.theme-card {
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.email-verification-status.theme-card .status-header h4 {
+  font-size: 18px;
+}
+
+.email-verification-status.theme-card .status-description {
+  font-size: 15px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .email-verification-status {
+    padding: 12px;
+  }
+  
+  .status-actions {
+    flex-direction: column;
+  }
+  
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .email-verification-status.theme-minimal .status-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Animation */
+.email-verification-status {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading State */
+.action-btn:disabled {
+  position: relative;
+}
+
+.action-btn:disabled::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+} 

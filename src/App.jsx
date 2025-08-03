@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { StatusProvider } from './contexts/StatusContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import NotificationContainer from './components/NotificationContainer';
@@ -11,6 +12,7 @@ import Register from './pages/Register';
 import Feed from './pages/Feed';
 import Profile from './pages/Profile';
 import Wallet from './pages/Wallet';
+import VerifyEmail from './pages/VerifyEmail';
 import NotFound from './pages/NotFound';
 
 import './App.css';
@@ -18,7 +20,8 @@ import './App.css';
 function App() {
   return (
     <AuthProvider>
-      <NotificationProvider>
+      <StatusProvider>
+        <NotificationProvider>
         <Router>
           <div className="App">
             <Header />
@@ -31,6 +34,7 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/profile/:userId" element={<Profile />} />
                 <Route path="/wallet" element={<Wallet />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
                 {/* Placeholder routes for other pages */}
                 <Route path="/vixies" element={<div>Vixies Page - Coming Soon</div>} />
                 <Route path="/vixink" element={<div>Vixink Page - Coming Soon</div>} />
@@ -46,7 +50,8 @@ function App() {
             <NotificationContainer />
           </div>
         </Router>
-      </NotificationProvider>
+        </NotificationProvider>
+      </StatusProvider>
     </AuthProvider>
   );
 }

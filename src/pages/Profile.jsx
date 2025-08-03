@@ -5,11 +5,16 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import { database, storage } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getDefaultImage } from '../utils/defaultImages';
+import EmailVerificationStatus from '../components/EmailVerificationStatus';
+import { useEmailVerification } from '../hooks/useEmailVerification';
+import StatusIndicator from '../components/StatusIndicator';
+import UserStatusDisplay from '../components/UserStatusDisplay';
 import './Profile.css';
 
 const Profile = () => {
   const { userId } = useParams();
   const { currentUser } = useAuth();
+  const { isVerified, isChecking } = useEmailVerification();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -26,6 +31,7 @@ const Profile = () => {
   const [packs, setPacks] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -383,17 +389,13 @@ const Profile = () => {
   };
 
   const renderStatusIndicator = () => {
-    const statusColors = {
-      online: '#00FFCA',
-      away: '#FFD700',
-      busy: '#FF2E63',
-      offline: '#B8B8B8'
-    };
-
     return (
-      <div className="status-indicator" style={{ backgroundColor: statusColors[userStatus] }}>
-        <span className="status-text">{userStatus}</span>
-      </div>
+      <StatusIndicator 
+        userId={userId || currentUser?.uid}
+        isOwner={isOwner}
+        size="large"
+        showText={false}
+      />
     );
   };
 
@@ -417,6 +419,25 @@ const Profile = () => {
 
   return (
     <div className="profile-container">
+      {/* Email Verification Banner - Only show for unverified emails */}
+      {isOwner && !isVerified && !isChecking && !bannerDismissed && (
+        <div className="email-verification-banner">
+          <div className="banner-content">
+            <div className="banner-icon">📧</div>
+            <div className="banner-text">
+              <strong>E-mail não verificado</strong>
+              <p>Verifique sua caixa de entrada e clique no link de verificação para acessar todos os recursos.</p>
+            </div>
+            <div className="banner-actions">
+              <button className="btn-verify" onClick={() => window.location.href = '/verify-email'}>
+                Verificar agora
+              </button>
+              <button className="btn-dismiss" onClick={() => setBannerDismissed(true)}>×</button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="profile-card">
         <div className="cover-photo" style={{ backgroundImage: profile.coverPhotoURL ? `url(${profile.coverPhotoURL})` : 'none' }}>
           {isOwner && (
@@ -491,6 +512,31 @@ const Profile = () => {
                 profile.bio || 'Mensagem de status aqui'
               )}
             </p>
+            
+            {/* Status Display */}
+            {isOwner && (
+              <div className="profile-status-display">
+                <UserStatusDisplay 
+                  userId={currentUser?.uid}
+                  showIcon={true}
+                  showText={true}
+                  size="medium"
+                />
+              </div>
+            )}
+            
+            {/* Email Verification Status - Only show for profile owner */}
+            {isOwner && (
+              <div className="profile-email-verification">
+                <EmailVerificationStatus 
+                  showActions={true}
+                  compact={false}
+                  theme="default"
+                  autoRefresh={true}
+                  refreshInterval={30000}
+                />
+              </div>
+            )}
             
             <div className="profile-meta">
               <span className="profile-location">
@@ -599,6 +645,19 @@ const Profile = () => {
       <div className={`tab-content ${activeTab === 'perfil' ? 'active' : ''}`}>
         <div className="perfil-tab-content">
           <div className="profile-sidebar">
+            {/* Email Verification Status - Compact version for sidebar */}
+            {isOwner && (
+              <div className="email-verification-sidebar">
+                <EmailVerificationStatus 
+                  showActions={true}
+                  compact={true}
+                  theme="minimal"
+                  autoRefresh={true}
+                  refreshInterval={30000}
+                />
+              </div>
+            )}
+            
             <div className="interests-section">
               <div className="section-header">
                 <i className="fa-solid fa-tags"></i> Interesses
@@ -634,6 +693,11 @@ const Profile = () => {
                     <div key={follower.id} className="friend-item">
                       <div className="friend-avatar">
                         <img src={follower.profilePictureURL || getDefaultImage('PROFILE_2')} alt={follower.displayName} />
+                        <StatusIndicator 
+                          userId={follower.id}
+                          isOwner={false}
+                          size="small"
+                        />
                       </div>
                       <div className="friend-name">{follower.displayName}</div>
                     </div>
@@ -925,6 +989,11 @@ const Profile = () => {
                   <div key={follower.id} className="modal-follower-item">
                     <div className="modal-follower-avatar">
                       <img src={follower.profilePictureURL || getDefaultImage('PROFILE_1')} alt={follower.displayName} />
+                      <StatusIndicator 
+                        userId={follower.id}
+                        isOwner={false}
+                        size="small"
+                      />
                     </div>
                     <div className="modal-follower-name">{follower.displayName}</div>
                     <div className="modal-follower-username">@{follower.username}</div>
