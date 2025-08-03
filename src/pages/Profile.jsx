@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ref, get, update, set, remove, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../config/firebase';
@@ -11,6 +11,7 @@ import './Profile.css';
 
 const Profile = () => {
   const { userId } = useParams();
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { isVerified, isChecking } = useEmailVerification();
   const [profile, setProfile] = useState(null);
@@ -489,13 +490,16 @@ const Profile = () => {
             </h1>
             <p className="profile-username">
               {editing ? (
-                <input
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="edit-input"
-                  placeholder="@username"
-                />
+                <div className="username-edit-disabled">
+                  <input
+                    type="text"
+                    value={formData.username}
+                    className="edit-input disabled"
+                    placeholder="@username"
+                    disabled
+                  />
+                  <small className="username-note">Nome de usuário não pode ser alterado</small>
+                </div>
               ) : (
                 `@${profile.username || 'username'}`
               )}
@@ -652,7 +656,7 @@ const Profile = () => {
               <div className="section-content">
                 <div className="friends-grid">
                   {followers.slice(0, 6).map((follower) => (
-                    <div key={follower.id} className="friend-item">
+                    <div key={follower.id} className="friend-item" onClick={() => navigate(`/profile/${follower.id}`)}>
                       <div className="friend-avatar">
                         <img src={follower.profilePictureURL || getDefaultImage('PROFILE_2')} alt={follower.displayName} />
                         <StatusIndicator 
@@ -786,7 +790,7 @@ const Profile = () => {
           <div className="services-header">
             <h3>Serviços</h3>
             {isOwner && (
-              <button className="btn primary">
+              <button className="btn primary" onClick={() => navigate('/create-service')}>
                 <i className="fa-solid fa-plus"></i> Criar Novo Serviço
               </button>
             )}
@@ -821,7 +825,7 @@ const Profile = () => {
           <div className="packs-header">
             <h3>Packs</h3>
             {isOwner && (
-              <button className="btn primary">
+              <button className="btn primary" onClick={() => navigate('/create-pack')}>
                 <i className="fa-solid fa-plus"></i> Criar Novo Pack
               </button>
             )}
@@ -863,7 +867,7 @@ const Profile = () => {
           <div className="subscriptions-header">
             <h3>Assinaturas</h3>
             {isOwner && (
-              <button className="btn primary">
+              <button className="btn primary" onClick={() => navigate('/create-subscription')}>
                 <i className="fa-solid fa-plus"></i> Criar Nova Assinatura
               </button>
             )}
@@ -948,7 +952,10 @@ const Profile = () => {
             <div className="modal-body">
               <div className="modal-followers-grid">
                 {followers.map((follower) => (
-                  <div key={follower.id} className="modal-follower-item">
+                  <div key={follower.id} className="modal-follower-item" onClick={() => {
+                    setShowFollowersModal(false);
+                    navigate(`/profile/${follower.id}`);
+                  }}>
                     <div className="modal-follower-avatar">
                       <img src={follower.profilePictureURL || getDefaultImage('PROFILE_1')} alt={follower.displayName} />
                       <StatusIndicator 

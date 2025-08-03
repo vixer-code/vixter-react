@@ -50,6 +50,11 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  opacity: 0;
+}
+
+.cover-photo:hover .cover-upload-btn {
+  opacity: 1;
 }
 
 .cover-upload-btn:hover {
@@ -123,6 +128,12 @@
   padding: 6px;
   font-size: 18px;
   z-index: 3;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.avatar-upload-btn:hover i {
+  opacity: 1;
 }
 
 /* Status Indicator positioning for profile avatar */
@@ -638,10 +649,13 @@
   text-align: center;
   cursor: pointer;
   transition: transform 0.2s ease;
+  padding: 10px;
+  border-radius: 8px;
 }
 
 .friend-item:hover {
   transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .friend-avatar {
@@ -1164,11 +1178,13 @@
   border-radius: 12px;
   transition: all 0.2s ease;
   cursor: pointer;
+  border: 1px solid transparent;
 }
 
 .modal-follower-item:hover {
   background: rgba(255, 255, 255, 0.05);
   transform: translateY(-3px);
+  border-color: rgba(0, 255, 202, 0.3);
 }
 
 .modal-follower-avatar {
@@ -1260,6 +1276,24 @@
 .edit-input::placeholder,
 .edit-textarea::placeholder {
   color: #B8B8B8;
+}
+
+.username-edit-disabled {
+  position: relative;
+}
+
+.edit-input.disabled {
+  background: rgba(255, 255, 255, 0.05);
+  color: #B8B8B8;
+  cursor: not-allowed;
+}
+
+.username-note {
+  display: block;
+  margin-top: 5px;
+  color: #FF2E63;
+  font-size: 0.8rem;
+  font-style: italic;
 }
 
 /* Button Styles */

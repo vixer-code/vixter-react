@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStatus } from '../contexts/StatusContext';
-import { useUserStatus } from '../hooks/useUserStatus';
+import { usePresence } from '../hooks/usePresence';
 import './StatusIndicator.css';
 
 const StatusIndicator = ({ userId, isOwner = false, size = 'medium', showText = false }) => {
@@ -8,9 +8,9 @@ const StatusIndicator = ({ userId, isOwner = false, size = 'medium', showText = 
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
   
-  // Use the hook to get the user's status
-  const otherUserStatus = useUserStatus(isOwner ? null : userId);
-  const status = isOwner ? userStatus : otherUserStatus;
+  // Use the presence hook to get the user's status
+  const { status: presenceStatus } = usePresence(userId);
+  const status = isOwner ? userStatus : presenceStatus;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
