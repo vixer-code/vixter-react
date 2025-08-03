@@ -100,8 +100,9 @@ nav {
 .vp-balance {
   display: flex;
   align-items: center;
+  justify-content: center;
   background-color: #1A1A2E;
-  padding: 2px 20px;
+  padding: 1px 24px;
   border-radius: 8px;
   color: #FCFCFC;
   font-weight: 600;
@@ -112,7 +113,8 @@ nav {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
   cursor: pointer;
-  min-width: 140px;
+  min-width: 160px;
+  height: 28px;
 }
 
 .vp-balance::before {
@@ -168,6 +170,8 @@ nav {
   width: 14px;
   position: relative;
   z-index: 1;
+  display: flex;
+  align-items: center;
 }
 
 #vp-amount {
@@ -181,6 +185,9 @@ nav {
   color: transparent;
   text-shadow: 0 0 5px rgba(0, 255, 202, 0.5);
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  line-height: 1;
 }
 
 /* Profile Dropdown */
@@ -444,8 +451,9 @@ nav {
   
   .vp-balance {
     margin-right: 10px;
-    padding: 2px 16px;
-    min-width: 120px;
+    padding: 1px 20px;
+    min-width: 140px;
+    height: 24px;
   }
   
   .vp-icon {
