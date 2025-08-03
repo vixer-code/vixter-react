@@ -22,7 +22,7 @@
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   width: 100%;
-  max-width: 1200px;
+  max-width: 1400px; /* Increased from 1200px to use more screen space */
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -1148,6 +1148,7 @@
     border-radius: 12px;
     width: 100%;
     margin: 0;
+    max-width: 100%; /* Use full width on mobile */
   }
   
   .modal-header,
@@ -1202,6 +1203,7 @@
   .create-service-modal {
     max-height: calc(100vh - 20px);
     border-radius: 8px;
+    max-width: 100%; /* Use full width on small mobile */
   }
   
   .modal-header,
@@ -1245,6 +1247,35 @@
   .form-group textarea {
     padding: 10px 12px;
     font-size: 0.95rem;
+  }
+}
+
+/* Large screen optimization */
+@media (min-width: 1200px) {
+  .create-service-modal {
+    max-width: 1600px; /* Even larger on very wide screens */
+  }
+  
+  .modal-content {
+    padding: 40px;
+  }
+  
+  .modal-header,
+  .modal-actions {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+  
+  .modal-progress {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+}
+
+/* Extra large screen optimization */
+@media (min-width: 1600px) {
+  .create-service-modal {
+    max-width: 1800px; /* Maximum width for very large screens */
   }
 }
 
