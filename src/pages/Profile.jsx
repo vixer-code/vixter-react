@@ -452,25 +452,25 @@ const Profile = () => {
         </div>
         
         <div className="profile-header">
-          <div className="status-indicator-floating">
+          <div className="status-indicator-floating status-indicator-left">
             {renderStatusIndicator()}
           </div>
           <div className="profile-avatar">
-            <img 
-              src={profile.profilePictureURL || getDefaultImage('PROFILE_1')} 
-              alt="Avatar de Perfil"
-            />
-            {isOwner && (
-              <label className="avatar-upload-btn">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload(e, 'avatar')}
-                  style={{ display: 'none' }}
-                />
+            <label className="avatar-upload-btn">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageUpload(e, 'avatar')}
+                style={{ display: 'none' }}
+              />
+              <img 
+                src={profile.profilePictureURL || getDefaultImage('PROFILE_1')} 
+                alt="Avatar de Perfil"
+              />
+              {isOwner && (
                 <i className="fas fa-camera"></i>
-              </label>
-            )}
+              )}
+            </label>
           </div>
           
           <div className="profile-info">
