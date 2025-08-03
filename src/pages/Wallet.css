@@ -523,6 +523,19 @@
   transform: translateY(-2px);
 }
 
+/* VP-specific button styling to match the currency tag */
+.vp-earning .btn-action {
+  background: rgba(138, 43, 226, 0.2);
+  color: #f5f5f5;
+  border: 1px solid rgba(138, 43, 226, 0.5);
+}
+
+.vp-earning .btn-action:hover {
+  background: rgba(138, 43, 226, 0.3);
+  border: 1px solid rgba(138, 43, 226, 0.7);
+  transform: translateY(-2px);
+}
+
 .btn-claim {
   background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
   color: #0F0F1A;
