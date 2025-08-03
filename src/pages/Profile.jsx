@@ -7,7 +7,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import { useEmailVerification } from '../hooks/useEmailVerification';
 import StatusIndicator from '../components/StatusIndicator';
-import UserStatusDisplay from '../components/UserStatusDisplay';
 import './Profile.css';
 
 const Profile = () => {
@@ -511,18 +510,6 @@ const Profile = () => {
                 profile.bio || 'Mensagem de status aqui'
               )}
             </p>
-            
-            {/* Status Display */}
-            {isOwner && (
-              <div className="profile-status-display">
-                <UserStatusDisplay 
-                  userId={currentUser?.uid}
-                  showIcon={true}
-                  showText={false}
-                  size="medium"
-                />
-              </div>
-            )}
             
             <div className="profile-meta">
               <span className="profile-location">

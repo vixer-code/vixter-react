@@ -159,15 +159,15 @@
   animation: statusPulse 2s infinite;
 }
 
-/* Profile-specific positioning - Fixed to be visible */
+/* Profile-specific positioning - Fixed to be in front of picture */
 .profile-avatar .status-indicator-container {
   position: absolute;
-  bottom: 12px;
-  right: 12px;
-  z-index: 20;
+  bottom: 8px;
+  right: 8px;
+  z-index: 25;
 }
 
-/* Status dropdown - Improved positioning */
+/* Status dropdown - Improved positioning to appear correctly */
 .status-dropdown {
   position: absolute;
   bottom: 100%;
@@ -185,11 +185,11 @@
   backdrop-filter: blur(10px);
 }
 
-/* Profile-specific dropdown positioning */
+/* Profile-specific dropdown positioning - Ensure it's not hidden */
 .profile-avatar .status-dropdown {
   bottom: 100%;
-  right: -10px;
-  margin-bottom: 15px;
+  right: -20px;
+  margin-bottom: 20px;
 }
 
 /* Friend list positioning */

@@ -76,7 +76,7 @@
   width: 140px;
   height: 140px;
   border-radius: 50%;
-  border: 6px solid #ffffff;
+  border: 3px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
   background: #8A2BE2;
   margin-right: 0;
@@ -196,15 +196,6 @@
   margin: 0 0 12px 0;
   line-height: 1.4;
   max-width: 500px;
-}
-
-.profile-status-display {
-  margin: 8px 0 12px 0;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  display: inline-block;
 }
 
 /* Email Verification Banner - Much more subtle */
