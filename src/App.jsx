@@ -9,6 +9,7 @@ import Register from './pages/Register';
 import Feed from './pages/Feed';
 import Profile from './pages/Profile';
 import Wallet from './pages/Wallet';
+import NotFound from './pages/NotFound';
 
 import './App.css';
 
@@ -33,7 +34,9 @@ function App() {
               <Route path="/settings" element={<div>Settings Page - Coming Soon</div>} />
               <Route path="/my-services" element={<div>My Services Page - Coming Soon</div>} />
               <Route path="/services" element={<div>Services Page - Coming Soon</div>} />
-
+              
+              {/* Catch-all route - must be last */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
           <Footer />
