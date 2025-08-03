@@ -207,19 +207,6 @@
   display: inline-block;
 }
 
-.profile-email-verification {
-  margin: 16px 0;
-  max-width: 100%;
-}
-
-.email-verification-sidebar {
-  margin-bottom: 20px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
 /* Email Verification Banner - Much more subtle */
 .email-verification-banner {
   background: rgba(255, 193, 7, 0.08);

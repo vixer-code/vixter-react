@@ -5,7 +5,6 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import { database, storage } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getDefaultImage } from '../utils/defaultImages';
-import EmailVerificationStatus from '../components/EmailVerificationStatus';
 import { useEmailVerification } from '../hooks/useEmailVerification';
 import StatusIndicator from '../components/StatusIndicator';
 import UserStatusDisplay from '../components/UserStatusDisplay';
@@ -525,19 +524,6 @@ const Profile = () => {
               </div>
             )}
             
-            {/* Email Verification Status - Only show for profile owner */}
-            {isOwner && (
-              <div className="profile-email-verification">
-                <EmailVerificationStatus 
-                  showActions={true}
-                  compact={false}
-                  theme="default"
-                  autoRefresh={true}
-                  refreshInterval={30000}
-                />
-              </div>
-            )}
-            
             <div className="profile-meta">
               <span className="profile-location">
                 <i className="fa-solid fa-location-dot"></i>
@@ -645,19 +631,6 @@ const Profile = () => {
       <div className={`tab-content ${activeTab === 'perfil' ? 'active' : ''}`}>
         <div className="perfil-tab-content">
           <div className="profile-sidebar">
-            {/* Email Verification Status - Compact version for sidebar */}
-            {isOwner && (
-              <div className="email-verification-sidebar">
-                <EmailVerificationStatus 
-                  showActions={true}
-                  compact={true}
-                  theme="minimal"
-                  autoRefresh={true}
-                  refreshInterval={30000}
-                />
-              </div>
-            )}
-            
             <div className="interests-section">
               <div className="section-header">
                 <i className="fa-solid fa-tags"></i> Interesses
