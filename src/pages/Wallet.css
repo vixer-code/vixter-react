@@ -448,8 +448,8 @@
 }
 
 .vp-icon-style {
-  background: linear-gradient(135deg, rgba(0, 255, 202, 0.2), rgba(0, 212, 170, 0.2));
-  color: #00FFCA;
+  background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(106, 13, 173, 0.2));
+  color: #8a2be2;
 }
 
 .earning-info h3 {
@@ -470,7 +470,7 @@
   font-size: 1.2rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
-  color: #00FFCA;
+  color: #8a2be2;
 }
 
 .vbp-earning .earning-amount {
