@@ -480,8 +480,22 @@
     font-size: 1.5rem;
   }
   
-  .balance-amount {
+  .balance-card.vp-balance .balance-amount {
     font-size: 2.5rem;
+    background: linear-gradient(135deg, #8A2BE2, #00FFCA);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
+  }
+  
+  .balance-card.vbp-balance .balance-amount {
+    font-size: 2.5rem;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
   }
   
   .wallet-actions {
@@ -551,8 +565,22 @@
     font-size: 1.3rem;
   }
   
-  .balance-amount {
+  .balance-card.vp-balance .balance-amount {
     font-size: 2rem;
+    background: linear-gradient(135deg, #8A2BE2, #00FFCA);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
+  }
+  
+  .balance-card.vbp-balance .balance-amount {
+    font-size: 2rem;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
   }
   
   .transactions-section {
