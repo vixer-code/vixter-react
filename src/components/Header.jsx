@@ -92,98 +92,98 @@ const Header = () => {
               {/* VP Balance Display */}
               <li className="auth-hide logged-in">
                 <div className="vp-balance" onClick={handleVpBalanceClick}>
-                  <svg className="vp-icon" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-                    {/* Glow background */}
-                    <defs>
-                      <filter id="header-glow" x="-30%" y="-30%" width="160%" height="160%">
-                        <feGaussianBlur stdDeviation="4" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                      </filter>
-                      
-                      {/* Glitch filter */}
-                      <filter id="header-glitch" x="-10%" y="-10%" width="120%" height="120%">
-                        <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" result="noise" />
-                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
-                      </filter>
-                      
-                      {/* Linear gradient for the hexagon */}
-                      <linearGradient id="header-hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#0F0F1A" />
-                        <stop offset="100%" stopColor="#1A1A2E" />
-                      </linearGradient>
-                      
-                      {/* Radial gradient for glow */}
-                      <radialGradient id="header-glowGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                        <stop offset="0%" stopColor="#8A2BE2" stopOpacity="0.7" />
-                        <stop offset="100%" stopColor="#8A2BE2" stopOpacity="0" />
-                      </radialGradient>
-                      
-                      {/* Linear gradient for neon text */}
-                      <linearGradient id="header-textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#00FFCA" />
-                        <stop offset="100%" stopColor="#00D4AA" />
-                      </linearGradient>
-                    </defs>
-                    
-                    {/* Glow background */}
-                    <circle cx="64" cy="64" r="60" fill="url(#header-glowGradient)" />
-                    
-                    {/* Background hexagon */}
-                    <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
-                          fill="url(#header-hexGradient)" 
-                          stroke="#8A2BE2" 
-                          strokeWidth="2" 
-                          filter="url(#header-glow)" />
-                    
-                    {/* Hexagon border with secondary color */}
-                    <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
-                          fill="none" 
-                          stroke="#00FFCA" 
-                          strokeWidth="1.5" 
-                          strokeDasharray="4,4"
-                          opacity="0.8" />
-                          
-                    {/* Inner hexagon */}
-                    <path d="M64 32 L92 48 L92 80 L64 96 L36 80 L36 48 Z" 
-                          fill="none" 
-                          stroke="#FF2E63" 
-                          strokeWidth="1.5" 
-                          opacity="0.8" />
-                    
-                    {/* VP Text with glow effect */}
-                    <g filter="url(#header-glow)">
-                      <text x="64" y="72" 
-                            fontFamily="'Press Start 2P', monospace" 
-                            fontSize="24" 
-                            fill="url(#header-textGradient)"
-                            textAnchor="middle"
-                            fontWeight="bold">VP</text>
-                    </g>
-                    
-                    {/* Digital circuit lines */}
-                    <path d="M40 60 H28 V70 H36" fill="none" stroke="#00FFCA" strokeWidth="1" />
-                    <path d="M88 60 H100 V70 H92" fill="none" stroke="#00FFCA" strokeWidth="1" />
-                    <path d="M64 32 V24" fill="none" stroke="#00FFCA" strokeWidth="1" />
-                    <path d="M64 96 V104" fill="none" stroke="#00FFCA" strokeWidth="1" />
-                    
-                    {/* Digital nodes/connectors */}
-                    <circle cx="28" cy="60" r="2" fill="#00FFCA" />
-                    <circle cx="36" cy="70" r="2" fill="#00FFCA" />
-                    <circle cx="100" cy="60" r="2" fill="#00FFCA" />
-                    <circle cx="92" cy="70" r="2" fill="#00FFCA" />
-                    <circle cx="64" cy="24" r="2" fill="#00FFCA" />
-                    <circle cx="64" cy="104" r="2" fill="#00FFCA" />
-                    
-                    {/* Animated pulse effect */}
-                    <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
-                          fill="none" 
-                          stroke="#B14AFF" 
-                          strokeWidth="1" 
-                          opacity="0.5">
-                      <animate attributeName="opacity" values="0.1;0.5;0.1" dur="3s" repeatCount="indefinite" />
-                      <animate attributeName="stroke-width" values="1;3;1" dur="3s" repeatCount="indefinite" />
-                    </path>
-                  </svg>
+                                     <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                     {/* Glow background */}
+                     <defs>
+                       <filter id="header-glow" x="-30%" y="-30%" width="160%" height="160%">
+                         <feGaussianBlur stdDeviation="2" result="blur" />
+                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                       </filter>
+                       
+                       {/* Glitch filter */}
+                       <filter id="header-glitch" x="-10%" y="-10%" width="120%" height="120%">
+                         <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" result="noise" />
+                         <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" xChannelSelector="R" yChannelSelector="G" />
+                       </filter>
+                       
+                       {/* Linear gradient for the hexagon */}
+                       <linearGradient id="header-hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                         <stop offset="0%" stopColor="#0F0F1A" />
+                         <stop offset="100%" stopColor="#1A1A2E" />
+                       </linearGradient>
+                       
+                       {/* Radial gradient for glow */}
+                       <radialGradient id="header-glowGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                         <stop offset="0%" stopColor="#8A2BE2" stopOpacity="0.7" />
+                         <stop offset="100%" stopColor="#8A2BE2" stopOpacity="0" />
+                       </radialGradient>
+                       
+                       {/* Linear gradient for neon text */}
+                       <linearGradient id="header-textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                         <stop offset="0%" stopColor="#00FFCA" />
+                         <stop offset="100%" stopColor="#00D4AA" />
+                       </linearGradient>
+                     </defs>
+                     
+                     {/* Glow background */}
+                     <circle cx="64" cy="64" r="58" fill="url(#header-glowGradient)" />
+                     
+                     {/* Background hexagon */}
+                     <path d="M64 8 L108 32 L108 96 L64 120 L20 96 L20 32 Z" 
+                           fill="url(#header-hexGradient)" 
+                           stroke="#8A2BE2" 
+                           strokeWidth="1.5" 
+                           filter="url(#header-glow)" />
+                     
+                     {/* Hexagon border with secondary color */}
+                     <path d="M64 8 L108 32 L108 96 L64 120 L20 96 L20 32 Z" 
+                           fill="none" 
+                           stroke="#00FFCA" 
+                           strokeWidth="1" 
+                           strokeDasharray="3,3"
+                           opacity="0.8" />
+                           
+                     {/* Inner hexagon */}
+                     <path d="M64 24 L88 36 L88 88 L64 100 L40 88 L40 36 Z" 
+                           fill="none" 
+                           stroke="#FF2E63" 
+                           strokeWidth="1" 
+                           opacity="0.8" />
+                     
+                     {/* VP Text with glow effect */}
+                     <g filter="url(#header-glow)">
+                       <text x="64" y="70" 
+                             fontFamily="'Press Start 2P', monospace" 
+                             fontSize="16" 
+                             fill="url(#header-textGradient)"
+                             textAnchor="middle"
+                             fontWeight="bold">VP</text>
+                     </g>
+                     
+                     {/* Digital circuit lines */}
+                     <path d="M32 60 H20 V68 H28" fill="none" stroke="#00FFCA" strokeWidth="0.8" />
+                     <path d="M96 60 H108 V68 H100" fill="none" stroke="#00FFCA" strokeWidth="0.8" />
+                     <path d="M64 24 V18" fill="none" stroke="#00FFCA" strokeWidth="0.8" />
+                     <path d="M64 100 V106" fill="none" stroke="#00FFCA" strokeWidth="0.8" />
+                     
+                     {/* Digital nodes/connectors */}
+                     <circle cx="20" cy="60" r="1.5" fill="#00FFCA" />
+                     <circle cx="28" cy="68" r="1.5" fill="#00FFCA" />
+                     <circle cx="108" cy="60" r="1.5" fill="#00FFCA" />
+                     <circle cx="100" cy="68" r="1.5" fill="#00FFCA" />
+                     <circle cx="64" cy="18" r="1.5" fill="#00FFCA" />
+                     <circle cx="64" cy="106" r="1.5" fill="#00FFCA" />
+                     
+                     {/* Animated pulse effect */}
+                     <path d="M64 8 L108 32 L108 96 L64 120 L20 96 L20 32 Z" 
+                           fill="none" 
+                           stroke="#B14AFF" 
+                           strokeWidth="0.8" 
+                           opacity="0.5">
+                       <animate attributeName="opacity" values="0.1;0.5;0.1" dur="3s" repeatCount="indefinite" />
+                       <animate attributeName="stroke-width" values="0.8;2;0.8" dur="3s" repeatCount="indefinite" />
+                     </path>
+                   </svg>
                   <span id="vp-amount">{vpBalance.toLocaleString()}</span>
                 </div>
               </li>
