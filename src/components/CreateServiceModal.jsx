@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ref, push } from 'firebase/database';
 import { useAuth } from '../contexts/AuthContext';
 import { useServices } from '../hooks/useServices';
+import { useNotification } from '../contexts/NotificationContext';
+import { database } from '../config/firebase';
 import './CreateServiceModal.css';
 
 const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService = null }) => {
   const { currentUser } = useAuth();
-  const { createService, uploadFile } = useServices();
+  const { createService, uploadFile, createServiceWithId } = useServices();
+  const { showSuccess, showError } = useNotification();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
@@ -334,7 +338,15 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   };
 
   const uploadFileToStorage = async (file, path) => {
-    return await uploadFile(file, path);
+    try {
+      console.log(`📤 Uploading file: ${file.name} to path: ${path}`);
+      const url = await uploadFile(file, path);
+      console.log(`✅ File uploaded successfully: ${url}`);
+      return url;
+    } catch (error) {
+      console.error(`❌ Error uploading file ${file.name}:`, error);
+      throw error;
+    }
   };
 
   const validateCurrentStep = () => {
@@ -403,60 +415,126 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   const handleSubmit = async () => {
     if (!currentUser || isSubmitting) return;
 
+    // Validate all form data before submission
+    if (!formData.title.trim()) {
+      showError('Por favor, insira um título para o serviço');
+      return;
+    }
+
+    if (!formData.category) {
+      showError('Por favor, selecione uma categoria');
+      return;
+    }
+
+    if (!formData.description.trim() || formData.description.length < 50) {
+      showError('A descrição deve ter pelo menos 50 caracteres');
+      return;
+    }
+
+    if (!formData.price || parseFloat(formData.price) < 10) {
+      showError('O preço mínimo é 10,00 VC');
+      return;
+    }
+
+    // Check if cover image is provided
+    if (!coverImageFile && !formData.coverImage) {
+      showError('Você deve carregar uma imagem de capa para o serviço');
+      return;
+    }
+
+    // Validate complementary options if any
+    for (let i = 0; i < formData.complementaryOptions.length; i++) {
+      const option = formData.complementaryOptions[i];
+      if (!option.title.trim()) {
+        showError(`Por favor, insira um título para a opção complementar ${i + 1}`);
+        return;
+      }
+      if (!option.description.trim()) {
+        showError(`Por favor, insira uma descrição para a opção complementar ${i + 1}`);
+        return;
+      }
+      if (!option.price || parseFloat(option.price) < 1) {
+        showError(`O preço mínimo para a opção complementar ${i + 1} é 1,00 VC`);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     setUploadingFiles(true);
 
     try {
+      // Generate a unique service ID for file uploads
+      const tempRef = ref(database, 'services').push();
+      const serviceId = tempRef.key;
+
+      console.log(`🔑 Using ServiceID: ${serviceId}`);
+
+      // Prepare base service data
       const serviceData = {
         title: formData.title,
         category: formData.category,
         description: formData.description,
-        price: parseFloat(formData.price),
+        price: parseFloat(formData.price), // Price in VC
         features: formData.features,
         complementaryOptions: formData.complementaryOptions,
         tags: formData.tags,
         providerId: currentUser.uid,
         status: 'active',
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        currency: 'VC' // Indicates prices are in VC
       };
 
       // Upload cover image
       if (coverImageFile) {
-        const coverImagePath = `services/${currentUser.uid}/covers/${Date.now()}_${coverImageFile.name}`;
+        const coverImagePath = `servicesMedia/${currentUser.uid}/${serviceId}/cover-${Date.now()}-${coverImageFile.name}`;
+        console.log('📷 Uploading cover image...');
         serviceData.coverImageURL = await uploadFileToStorage(coverImageFile, coverImagePath);
+        console.log('✅ Cover image uploaded:', serviceData.coverImageURL);
       } else if (formData.coverImage) {
         serviceData.coverImageURL = formData.coverImage;
+        console.log('📷 Reusing existing cover image:', serviceData.coverImageURL);
       }
 
       // Upload showcase photos
       const photoUrls = [...formData.showcasePhotos];
       for (let i = 0; i < showcasePhotoFiles.length; i++) {
-        const photoPath = `services/${currentUser.uid}/photos/${Date.now()}_${i}_${showcasePhotoFiles[i].name}`;
+        const photoPath = `servicesMedia/${currentUser.uid}/${serviceId}/photo-${Date.now()}-${i}-${showcasePhotoFiles[i].name}`;
+        console.log(`📸 Uploading showcase photo ${i + 1}...`);
         const photoUrl = await uploadFileToStorage(showcasePhotoFiles[i], photoPath);
         photoUrls.push(photoUrl);
+        console.log(`✅ Showcase photo ${i + 1} uploaded:`, photoUrl);
       }
-      serviceData.showcasePhotos = photoUrls;
+      serviceData.showcasePhotosURLs = photoUrls;
 
       // Upload showcase videos
       const videoUrls = [...formData.showcaseVideos];
       for (let i = 0; i < showcaseVideoFiles.length; i++) {
-        const videoPath = `services/${currentUser.uid}/videos/${Date.now()}_${i}_${showcaseVideoFiles[i].name}`;
+        const videoPath = `servicesMedia/${currentUser.uid}/${serviceId}/video-${Date.now()}-${i}-${showcaseVideoFiles[i].name}`;
+        console.log(`🎥 Uploading showcase video ${i + 1}...`);
         const videoUrl = await uploadFileToStorage(showcaseVideoFiles[i], videoPath);
         videoUrls.push(videoUrl);
+        console.log(`✅ Showcase video ${i + 1} uploaded:`, videoUrl);
       }
-      serviceData.showcaseVideos = videoUrls;
+      serviceData.showcaseVideosURLs = videoUrls;
 
-      // Create service using the hook
-      const createdService = await createService(serviceData);
+      // Create service with the pre-generated ID
+      console.log('📝 Creating service with Firebase...');
+      const createdService = await createServiceWithId(currentUser.uid, serviceId, serviceData);
+      console.log('✅ Service created successfully:', createdService);
 
       // Clear draft after successful creation
       localStorage.removeItem(`service-draft-${currentUser.uid}`);
 
+      // Show success message
+      showSuccess('Serviço criado com sucesso!');
+
       onServiceCreated(createdService);
       onClose();
     } catch (error) {
-      console.error('Error creating service:', error);
-      alert('Erro ao criar serviço. Tente novamente.');
+      console.error('❌ Error creating service:', error);
+      const errorMessage = `Falha ao criar serviço: ${error.message}`;
+      showError(errorMessage);
     } finally {
       setIsSubmitting(false);
       setUploadingFiles(false);
