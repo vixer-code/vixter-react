@@ -9,6 +9,7 @@ import { useEmailVerification } from '../hooks/useEmailVerification';
 import { useServices } from '../hooks/useServices';
 import StatusIndicator from '../components/StatusIndicator';
 import CreateServiceModal from '../components/CreateServiceModal';
+import CachedImage from '../components/CachedImage';
 import './Profile.css';
 
 const Profile = () => {
