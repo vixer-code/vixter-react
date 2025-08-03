@@ -9,6 +9,8 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState('saved'); // 'saving', 'saved', 'error'
+  const [showPriceSuggestions, setShowPriceSuggestions] = useState(false);
   
   // Form data state
   const [formData, setFormData] = useState({
@@ -36,6 +38,7 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   // Input refs
   const featuresInputRef = useRef(null);
   const tagsInputRef = useRef(null);
+  const autoSaveTimeoutRef = useRef(null);
 
   const steps = [
     { id: 'basic', title: 'Informações Básicas' },
@@ -75,11 +78,115 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     fortuneTelling: 'Leitura de Sorte'
   };
 
+  // Price suggestions based on category
+  const getPriceSuggestions = (category) => {
+    const suggestions = {
+      games: [
+        { vc: 15, description: 'Jogo casual (15-30 min)' },
+        { vc: 25, description: 'Jogo competitivo (30-60 min)' },
+        { vc: 40, description: 'Jogo complexo (1-2 horas)' }
+      ],
+      chat: [
+        { vc: 10, description: 'Conversa casual (15 min)' },
+        { vc: 20, description: 'Conversa profunda (30 min)' },
+        { vc: 35, description: 'Sessão de terapia (1 hora)' }
+      ],
+      emotionalSupport: [
+        { vc: 20, description: 'Apoio básico (30 min)' },
+        { vc: 35, description: 'Sessão completa (1 hora)' },
+        { vc: 50, description: 'Acompanhamento intensivo (2 horas)' }
+      ],
+      drawing: [
+        { vc: 25, description: 'Desenho simples (30 min)' },
+        { vc: 40, description: 'Desenho detalhado (1 hora)' },
+        { vc: 60, description: 'Ilustração complexa (2+ horas)' }
+      ],
+      default: [
+        { vc: 15, description: 'Serviço básico (30 min)' },
+        { vc: 25, description: 'Serviço padrão (1 hora)' },
+        { vc: 40, description: 'Serviço premium (2 horas)' }
+      ]
+    };
+    return suggestions[category] || suggestions.default;
+  };
+
+  // Auto-save functionality
+  const autoSave = async () => {
+    if (!currentUser || !formData.title.trim()) return;
+    
+    setAutoSaveStatus('saving');
+    
+    try {
+      const draftData = {
+        ...formData,
+        providerId: currentUser.uid,
+        isDraft: true,
+        lastSaved: Date.now()
+      };
+      
+      // Save to localStorage as backup
+      localStorage.setItem(`service-draft-${currentUser.uid}`, JSON.stringify(draftData));
+      
+      setAutoSaveStatus('saved');
+      
+      // Clear saved status after 3 seconds
+      setTimeout(() => setAutoSaveStatus('saved'), 3000);
+    } catch (error) {
+      console.error('Auto-save error:', error);
+      setAutoSaveStatus('error');
+    }
+  };
+
+  // Load draft from localStorage
+  const loadDraft = () => {
+    if (!currentUser) return;
+    
+    try {
+      const draft = localStorage.getItem(`service-draft-${currentUser.uid}`);
+      if (draft) {
+        const draftData = JSON.parse(draft);
+        setFormData({
+          title: draftData.title || '',
+          category: draftData.category || '',
+          description: draftData.description || '',
+          price: draftData.price || '',
+          features: draftData.features || [],
+          complementaryOptions: draftData.complementaryOptions || [],
+          coverImage: draftData.coverImage || null,
+          showcasePhotos: draftData.showcasePhotos || [],
+          showcaseVideos: draftData.showcaseVideos || [],
+          tags: draftData.tags || []
+        });
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error);
+    }
+  };
+
   useEffect(() => {
     if (editingService) {
       populateFormWithServiceData(editingService);
+    } else {
+      loadDraft();
     }
   }, [editingService]);
+
+  // Auto-save on form data changes
+  useEffect(() => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    if (formData.title.trim()) {
+      autoSaveTimeoutRef.current = setTimeout(autoSave, 2000);
+    }
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [formData]);
 
   const populateFormWithServiceData = (service) => {
     setFormData({
@@ -247,6 +354,40 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     }
   };
 
+  const getPriceValidationError = () => {
+    if (!formData.price) {
+      return 'Por favor, insira um preço para o serviço';
+    }
+    const price = parseFloat(formData.price);
+    if (isNaN(price)) {
+      return 'Por favor, insira um valor numérico válido';
+    }
+    if (price < 10) {
+      return `O preço mínimo é 10,00 VC (${formatVP(convertVCtoVP(10))} VP)`;
+    }
+    if (price > 10000) {
+      return 'O preço máximo é 10.000,00 VC';
+    }
+    return null;
+  };
+
+  const getOptionPriceValidationError = (price) => {
+    if (!price) {
+      return 'Por favor, insira um preço para esta opção';
+    }
+    const numPrice = parseFloat(price);
+    if (isNaN(numPrice)) {
+      return 'Por favor, insira um valor numérico válido';
+    }
+    if (numPrice < 1) {
+      return `O preço mínimo é 1,00 VC (${formatVP(convertVCtoVP(1))} VP)`;
+    }
+    if (numPrice > 5000) {
+      return 'O preço máximo é 5.000,00 VC';
+    }
+    return null;
+  };
+
   const nextStep = () => {
     if (validateCurrentStep() && currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
@@ -308,6 +449,9 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       // Create service using the hook
       const createdService = await createService(serviceData);
 
+      // Clear draft after successful creation
+      localStorage.removeItem(`service-draft-${currentUser.uid}`);
+
       onServiceCreated(createdService);
       onClose();
     } catch (error) {
@@ -335,6 +479,11 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     return `${formatCurrency(amount)} VP`;
   };
 
+  const handlePriceSuggestion = (suggestion) => {
+    handleInputChange('price', suggestion.vc.toString());
+    setShowPriceSuggestions(false);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -342,7 +491,24 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       <div className="create-service-modal">
         <div className="modal-header">
           <h2>{editingService ? 'Editar Serviço' : 'Criar Novo Serviço'}</h2>
-          <button className="close-btn" onClick={onClose}>&times;</button>
+          <div className="header-actions">
+            {autoSaveStatus === 'saving' && (
+              <span className="auto-save-status saving">
+                <i className="fas fa-spinner fa-spin"></i> Salvando...
+              </span>
+            )}
+            {autoSaveStatus === 'saved' && (
+              <span className="auto-save-status saved">
+                <i className="fas fa-check"></i> Salvo
+              </span>
+            )}
+            {autoSaveStatus === 'error' && (
+              <span className="auto-save-status error">
+                <i className="fas fa-exclamation-triangle"></i> Erro ao salvar
+              </span>
+            )}
+            <button className="close-btn" onClick={onClose}>&times;</button>
+          </div>
         </div>
 
         <div className="modal-progress">
@@ -455,31 +621,77 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
               
               <div className="form-group">
                 <label htmlFor="service-price">Preço Base (VC) *</label>
-                <input
-                  type="number"
-                  id="service-price"
-                  value={formData.price}
-                  onChange={(e) => handleInputChange('price', e.target.value)}
-                  min="10"
-                  step="0.01"
-                  placeholder="10.00"
-                />
+                <div className="price-input-container">
+                  <input
+                    type="number"
+                    id="service-price"
+                    value={formData.price}
+                    onChange={(e) => handleInputChange('price', e.target.value)}
+                    min="10"
+                    step="0.01"
+                    placeholder="10.00"
+                    className={getPriceValidationError() ? 'error' : ''}
+                  />
+                  {formData.category && (
+                    <button 
+                      type="button" 
+                      className="price-suggestions-btn"
+                      onClick={() => setShowPriceSuggestions(!showPriceSuggestions)}
+                    >
+                      <i className="fas fa-lightbulb"></i>
+                      Sugestões
+                    </button>
+                  )}
+                </div>
+                
+                {showPriceSuggestions && formData.category && (
+                  <div className="price-suggestions">
+                    <h4>Sugestões de Preço para {categoryLabels[formData.category]}</h4>
+                    <div className="suggestions-grid">
+                      {getPriceSuggestions(formData.category).map((suggestion, index) => (
+                        <button
+                          key={index}
+                          className="price-suggestion"
+                          onClick={() => handlePriceSuggestion(suggestion)}
+                        >
+                          <div className="suggestion-price">
+                            <div className="currency-icon vc-icon"></div>
+                            {formatVC(suggestion.vc)}
+                          </div>
+                          <div className="suggestion-vp">
+                            <div className="currency-icon vp-icon"></div>
+                            {formatVP(convertVCtoVP(suggestion.vc))}
+                          </div>
+                          <div className="suggestion-desc">{suggestion.description}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 <small>Preço mínimo 10,00 VC</small>
                 
-                {formData.price && (
+                {getPriceValidationError() && (
+                  <div className="validation-error">
+                    <i className="fas fa-exclamation-triangle"></i>
+                    {getPriceValidationError()}
+                  </div>
+                )}
+                
+                {formData.price && !getPriceValidationError() && (
                   <div className="currency-display">
                     <div className="currency-row">
                       <span>Você recebe:</span>
                       <span className="currency-value vc">
-                        <span className="currency-icon">VC</span>
-                        {formatVC(formData.price)} VC
+                        <div className="currency-icon vc-icon"></div>
+                        {formatVC(formData.price)}
                       </span>
                     </div>
                     <div className="currency-row">
                       <span>Cliente paga:</span>
                       <span className="currency-value vp">
-                        <span className="currency-icon">VP</span>
-                        {formatVP(convertVCtoVP(formData.price))} VP
+                        <div className="currency-icon vp-icon"></div>
+                        {formatVP(convertVCtoVP(formData.price))}
                       </span>
                     </div>
                     <div className="conversion-note">
@@ -493,49 +705,80 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                 <label>Opções Complementares</label>
                 <p>Adicione extras que os clientes podem adquirir para melhorar o serviço base.</p>
                 
-                {formData.complementaryOptions.map((option, index) => (
-                  <div key={index} className="complementary-option">
-                    <div className="option-header">
-                      <h4>Opção Complementar</h4>
-                      <button 
-                        type="button" 
-                        className="remove-option"
-                        onClick={() => removeComplementaryOption(index)}
-                      >
-                        ×
-                      </button>
+                {formData.complementaryOptions.map((option, index) => {
+                  const optionPriceError = getOptionPriceValidationError(option.price);
+                  return (
+                    <div key={index} className="complementary-option">
+                      <div className="option-header">
+                        <h4>Opção Complementar</h4>
+                        <button 
+                          type="button" 
+                          className="remove-option"
+                          onClick={() => removeComplementaryOption(index)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <div className="form-group">
+                        <input
+                          type="text"
+                          value={option.title}
+                          onChange={(e) => updateComplementaryOption(index, 'title', e.target.value)}
+                          placeholder="Título da Opção"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <textarea
+                          value={option.description}
+                          onChange={(e) => updateComplementaryOption(index, 'description', e.target.value)}
+                          placeholder="Descrição da Opção"
+                          rows={2}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <input
+                          type="number"
+                          value={option.price}
+                          onChange={(e) => updateComplementaryOption(index, 'price', e.target.value)}
+                          placeholder="Preço Adicional (VC)"
+                          min="1"
+                          step="0.01"
+                          required
+                          className={optionPriceError ? 'error' : ''}
+                        />
+                        <small>Preço mínimo 1,00 VC</small>
+                        
+                        {optionPriceError && (
+                          <div className="validation-error">
+                            <i className="fas fa-exclamation-triangle"></i>
+                            {optionPriceError}
+                          </div>
+                        )}
+                        
+                        {option.price && !optionPriceError && (
+                          <div className="currency-display option-currency-display">
+                            <div className="currency-row">
+                              <span>Você recebe:</span>
+                              <span className="currency-value vc">
+                                <div className="currency-icon vc-icon"></div>
+                                {formatVC(option.price)}
+                              </span>
+                            </div>
+                            <div className="currency-row">
+                              <span>Cliente paga:</span>
+                              <span className="currency-value vp">
+                                <div className="currency-icon vp-icon"></div>
+                                {formatVP(convertVCtoVP(option.price))}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="form-group">
-                      <input
-                        type="text"
-                        value={option.title}
-                        onChange={(e) => updateComplementaryOption(index, 'title', e.target.value)}
-                        placeholder="Título da Opção"
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <textarea
-                        value={option.description}
-                        onChange={(e) => updateComplementaryOption(index, 'description', e.target.value)}
-                        placeholder="Descrição da Opção"
-                        rows={2}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <input
-                        type="number"
-                        value={option.price}
-                        onChange={(e) => updateComplementaryOption(index, 'price', e.target.value)}
-                        placeholder="Preço Adicional (VC)"
-                        min="1"
-                        step="0.01"
-                        required
-                      />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 
                 <button type="button" onClick={addComplementaryOption} className="btn secondary">
                   Adicionar Opção Complementar
