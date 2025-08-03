@@ -209,34 +209,34 @@ const Wallet = () => {
           <div className="balance-icon">
             <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+                <filter id="vp-glow" x="-30%" y="-30%" width="160%" height="160%">
                   <feGaussianBlur stdDeviation="4" result="blur" />
                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
                 
-                <linearGradient id="hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="vp-hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#0F0F1A" />
                   <stop offset="100%" stopColor="#1A1A2E" />
                 </linearGradient>
                 
-                <radialGradient id="glowGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                <radialGradient id="vp-glowGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                   <stop offset="0%" stopColor="#8A2BE2" stopOpacity="0.7" />
                   <stop offset="100%" stopColor="#8A2BE2" stopOpacity="0" />
                 </radialGradient>
                 
-                <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="vp-textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#00FFCA" />
                   <stop offset="100%" stopColor="#00D4AA" />
                 </linearGradient>
               </defs>
               
-              <circle cx="64" cy="64" r="60" fill="url(#glowGradient)" />
+              <circle cx="64" cy="64" r="60" fill="url(#vp-glowGradient)" />
               
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
-                    fill="url(#hexGradient)" 
+                    fill="url(#vp-hexGradient)" 
                     stroke="#8A2BE2" 
                     strokeWidth="2" 
-                    filter="url(#glow)" />
+                    filter="url(#vp-glow)" />
               
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="none" 
@@ -251,11 +251,11 @@ const Wallet = () => {
                     strokeWidth="1.5" 
                     opacity="0.8" />
               
-              <g filter="url(#glow)">
+              <g filter="url(#vp-glow)">
                 <text x="64" y="72" 
                       fontFamily="'Press Start 2P', monospace" 
                       fontSize="24" 
-                      fill="url(#textGradient)"
+                      fill="url(#vp-textGradient)"
                       textAnchor="middle"
                       fontWeight="bold">VP</text>
               </g>
@@ -272,34 +272,34 @@ const Wallet = () => {
           <div className="balance-icon">
             <svg className="vbp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <filter id="glow-vbp" x="-30%" y="-30%" width="160%" height="160%">
+                <filter id="vbp-glow" x="-30%" y="-30%" width="160%" height="160%">
                   <feGaussianBlur stdDeviation="4" result="blur" />
                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
                 
-                <linearGradient id="hexGradient-vbp" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="vbp-hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#1A0F1A" />
                   <stop offset="100%" stopColor="#2E1A2E" />
                 </linearGradient>
                 
-                <radialGradient id="glowGradient-vbp" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                <radialGradient id="vbp-glowGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                   <stop offset="0%" stopColor="#FFD700" stopOpacity="0.7" />
                   <stop offset="100%" stopColor="#FFD700" stopOpacity="0" />
                 </radialGradient>
                 
-                <linearGradient id="textGradient-vbp" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="vbp-textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#FFD700" />
                   <stop offset="100%" stopColor="#FFA500" />
                 </linearGradient>
               </defs>
               
-              <circle cx="64" cy="64" r="60" fill="url(#glowGradient-vbp)" />
+              <circle cx="64" cy="64" r="60" fill="url(#vbp-glowGradient)" />
               
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
-                    fill="url(#hexGradient-vbp)" 
+                    fill="url(#vbp-hexGradient)" 
                     stroke="#FFD700" 
                     strokeWidth="2" 
-                    filter="url(#glow-vbp)" />
+                    filter="url(#vbp-glow)" />
               
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="none" 
@@ -314,11 +314,11 @@ const Wallet = () => {
                     strokeWidth="1.5" 
                     opacity="0.8" />
               
-              <g filter="url(#glow-vbp)">
+              <g filter="url(#vbp-glow)">
                 <text x="64" y="72" 
                       fontFamily="'Press Start 2P', monospace" 
                       fontSize="20" 
-                      fill="url(#textGradient-vbp)"
+                      fill="url(#vbp-textGradient)"
                       textAnchor="middle"
                       fontWeight="bold">VBP</text>
               </g>

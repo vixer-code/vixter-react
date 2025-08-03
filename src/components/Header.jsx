@@ -85,45 +85,45 @@ const Header = () => {
                   <svg className="vp-icon" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
                     {/* Glow background */}
                     <defs>
-                      <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+                      <filter id="header-glow" x="-30%" y="-30%" width="160%" height="160%">
                         <feGaussianBlur stdDeviation="4" result="blur" />
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                       </filter>
                       
                       {/* Glitch filter */}
-                      <filter id="glitch" x="-10%" y="-10%" width="120%" height="120%">
+                      <filter id="header-glitch" x="-10%" y="-10%" width="120%" height="120%">
                         <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" result="noise" />
                         <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
                       </filter>
                       
                       {/* Linear gradient for the hexagon */}
-                      <linearGradient id="hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <linearGradient id="header-hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stopColor="#0F0F1A" />
                         <stop offset="100%" stopColor="#1A1A2E" />
                       </linearGradient>
                       
                       {/* Radial gradient for glow */}
-                      <radialGradient id="glowGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                      <radialGradient id="header-glowGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                         <stop offset="0%" stopColor="#8A2BE2" stopOpacity="0.7" />
                         <stop offset="100%" stopColor="#8A2BE2" stopOpacity="0" />
                       </radialGradient>
                       
                       {/* Linear gradient for neon text */}
-                      <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <linearGradient id="header-textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stopColor="#00FFCA" />
                         <stop offset="100%" stopColor="#00D4AA" />
                       </linearGradient>
                     </defs>
                     
                     {/* Glow background */}
-                    <circle cx="64" cy="64" r="60" fill="url(#glowGradient)" />
+                    <circle cx="64" cy="64" r="60" fill="url(#header-glowGradient)" />
                     
                     {/* Background hexagon */}
                     <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
-                          fill="url(#hexGradient)" 
+                          fill="url(#header-hexGradient)" 
                           stroke="#8A2BE2" 
                           strokeWidth="2" 
-                          filter="url(#glow)" />
+                          filter="url(#header-glow)" />
                     
                     {/* Hexagon border with secondary color */}
                     <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
@@ -141,11 +141,11 @@ const Header = () => {
                           opacity="0.8" />
                     
                     {/* VP Text with glow effect */}
-                    <g filter="url(#glow)">
+                    <g filter="url(#header-glow)">
                       <text x="64" y="72" 
                             fontFamily="'Press Start 2P', monospace" 
                             fontSize="24" 
-                            fill="url(#textGradient)"
+                            fill="url(#header-textGradient)"
                             textAnchor="middle"
                             fontWeight="bold">VP</text>
                     </g>
