@@ -11,7 +11,7 @@
   border: 3px solid #ffffff;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   position: relative;
-  z-index: 2;
+  z-index: 10;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
@@ -67,22 +67,9 @@
   transform: scale(0.95);
 }
 
-/* Status text inside circle */
+/* Status text inside circle - Hidden by default */
 .status-text {
-  font-size: 0.6rem;
-  color: #ffffff;
-  font-weight: bold;
-  text-transform: uppercase;
-  text-align: center;
-  line-height: 1;
-}
-
-.status-indicator-small .status-text {
-  font-size: 0.4rem;
-}
-
-.status-indicator-large .status-text {
-  font-size: 0.7rem;
+  display: none;
 }
 
 /* Status dropdown */
@@ -172,11 +159,37 @@
   animation: statusPulse 2s infinite;
 }
 
-/* Profile-specific positioning */
+/* Profile-specific positioning - Fixed to be visible */
 .profile-avatar .status-indicator-container {
   position: absolute;
-  bottom: 5px;
-  left: 5px;
+  bottom: 12px;
+  right: 12px;
+  z-index: 20;
+}
+
+/* Status dropdown - Improved positioning */
+.status-dropdown {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background-color: #1A1A2E;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 180px;
+  padding: 10px 0;
+  margin-bottom: 10px;
+  z-index: 1000;
+  transform: translateY(0);
+  opacity: 1;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* Profile-specific dropdown positioning */
+.profile-avatar .status-dropdown {
+  bottom: 100%;
+  right: -10px;
+  margin-bottom: 15px;
 }
 
 /* Friend list positioning */

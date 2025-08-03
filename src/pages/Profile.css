@@ -220,26 +220,27 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Email Verification Banner */
+/* Email Verification Banner - Much more subtle */
 .email-verification-banner {
-  background: linear-gradient(135deg, #fffbf0 0%, #fff8e1 100%);
-  border: 1px solid #ffd700;
+  background: rgba(255, 193, 7, 0.08);
+  border: 1px solid rgba(255, 193, 7, 0.2);
   border-radius: 8px;
-  margin-bottom: 20px;
-  padding: 16px;
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  box-shadow: 0 1px 4px rgba(255, 193, 7, 0.1);
 }
 
 .banner-content {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   max-width: 100%;
 }
 
 .banner-icon {
-  font-size: 24px;
+  font-size: 14px;
   flex-shrink: 0;
+  color: #ff9800;
 }
 
 .banner-text {
@@ -248,57 +249,58 @@
 }
 
 .banner-text strong {
-  display: block;
-  color: #2d3748;
-  font-size: 16px;
+  display: inline;
+  color: #ff9800;
+  font-size: 12px;
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-right: 4px;
 }
 
 .banner-text p {
+  display: inline;
   margin: 0;
-  color: #4a5568;
-  font-size: 14px;
-  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 .banner-actions {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
 .btn-verify {
-  background: #8a2be2;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
+  background: rgba(255, 152, 0, 0.2);
+  color: #ff9800;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .btn-verify:hover {
-  background: #7c3aed;
-  transform: translateY(-1px);
+  background: rgba(255, 152, 0, 0.3);
+  border-color: rgba(255, 152, 0, 0.5);
 }
 
 .btn-dismiss {
   background: transparent;
-  color: #718096;
-  border: 1px solid #e2e8f0;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 16px;
+  color: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .btn-dismiss:hover {
-  background: #f7fafc;
-  color: #4a5568;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* Responsive banner */

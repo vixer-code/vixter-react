@@ -73,9 +73,7 @@ const StatusIndicator = ({ userId, isOwner = false, size = 'medium', showText = 
         onClick={() => isOwner && setShowDropdown(!showDropdown)}
         title={getStatusText(status)}
       >
-        {showText && (
-          <span className="status-text">{getStatusText(status)}</span>
-        )}
+        {/* Text removed - only show colored circle */}
       </div>
       
       {isOwner && showDropdown && (

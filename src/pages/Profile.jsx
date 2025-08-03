@@ -519,7 +519,7 @@ const Profile = () => {
                 <UserStatusDisplay 
                   userId={currentUser?.uid}
                   showIcon={true}
-                  showText={true}
+                  showText={false}
                   size="medium"
                 />
               </div>
