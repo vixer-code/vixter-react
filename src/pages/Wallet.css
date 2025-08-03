@@ -27,6 +27,7 @@
   align-items: center;
   gap: 2rem;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .balance-card.vp-card {
@@ -93,6 +94,57 @@
 .vbp-card .currency {
   color: #FFD700;
   text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+/* Currency Type Markers */
+.currency-marker {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: 'Press Start 2P', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+  animation: markerGlow 2s ease-in-out infinite alternate;
+}
+
+.vp-card .currency-marker {
+  background: linear-gradient(135deg, rgba(138, 43, 226, 0.9), rgba(0, 255, 202, 0.9));
+  color: #fff;
+  border: 1px solid rgba(0, 255, 202, 0.5);
+}
+
+.vbp-card .currency-marker {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.9), rgba(255, 165, 0, 0.9));
+  color: #1a1a2e;
+  border: 1px solid rgba(255, 215, 0, 0.5);
+}
+
+@keyframes markerGlow {
+  0% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 5px rgba(0, 255, 202, 0.3);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 10px rgba(0, 255, 202, 0.5);
+  }
+}
+
+.vbp-card .currency-marker {
+  animation: markerGlowVBP 2s ease-in-out infinite alternate;
+}
+
+@keyframes markerGlowVBP {
+  0% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 5px rgba(255, 215, 0, 0.3);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 215, 0, 0.5);
+  }
 }
 
 /* Wallet Actions Section */
@@ -426,19 +478,32 @@
 }
 
 .currency-tag {
-  display: inline-block;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
   padding: 0.25rem 0.75rem;
-  background: rgba(138, 43, 226, 0.2);
-  border-radius: 15px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #8A2BE2;
-  margin-bottom: 1rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: 'Press Start 2P', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+  animation: markerGlow 2s ease-in-out infinite alternate;
+}
+
+.vp-earning .currency-tag {
+  background: linear-gradient(135deg, rgba(138, 43, 226, 0.9), rgba(0, 255, 202, 0.9));
+  color: #fff;
+  border: 1px solid rgba(0, 255, 202, 0.5);
 }
 
 .vbp-earning .currency-tag {
-  background: rgba(255, 215, 0, 0.2);
-  color: #FFD700;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.9), rgba(255, 165, 0, 0.9));
+  color: #1a1a2e;
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  animation: markerGlowVBP 2s ease-in-out infinite alternate;
 }
 
 /* Buttons */
