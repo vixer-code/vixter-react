@@ -481,32 +481,21 @@
   position: absolute;
   top: 1rem;
   right: 1rem;
-  padding: 0.5rem 1rem;
-  border-radius: 25px;
-  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
   font-weight: 700;
   font-family: 'Press Start 2P', monospace;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-  z-index: 10;
-  animation: markerGlow 2s ease-in-out infinite alternate;
-  border: 2px solid;
 }
 
 .vp-earning .currency-tag {
-  background: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%);
-  color: #fff;
-  border-color: #00FFCA;
-  text-shadow: 0 0 5px rgba(0, 255, 202, 0.5);
+  background: rgba(138, 43, 226, 0.1);
+  color: #8a2be2;
 }
 
 .vbp-earning .currency-tag {
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  color: #1a1a2e;
-  border-color: #FFD700;
-  text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
-  animation: markerGlowVBP 2s ease-in-out infinite alternate;
+  background: rgba(255, 215, 0, 0.1);
+  color: #FFD700;
 }
 
 /* Buttons */
