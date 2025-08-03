@@ -4,6 +4,7 @@ import { ref, get, update, set, remove, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { getDefaultImage } from '../utils/defaultImages';
 import './Profile.css';
 
 const Profile = () => {
@@ -434,7 +435,7 @@ const Profile = () => {
         <div className="profile-header">
           <div className="profile-avatar">
             <img 
-              src={profile.profilePictureURL || '/images/defpfp1.png'} 
+              src={profile.profilePictureURL || getDefaultImage('PROFILE_1')} 
               alt="Avatar de Perfil"
             />
             {isOwner && (
@@ -632,7 +633,7 @@ const Profile = () => {
                   {followers.slice(0, 6).map((follower) => (
                     <div key={follower.id} className="friend-item">
                       <div className="friend-avatar">
-                        <img src={follower.profilePictureURL || '/images/defpfp2.png'} alt={follower.displayName} />
+                        <img src={follower.profilePictureURL || getDefaultImage('PROFILE_2')} alt={follower.displayName} />
                       </div>
                       <div className="friend-name">{follower.displayName}</div>
                     </div>
@@ -649,7 +650,7 @@ const Profile = () => {
             {isOwner && (
               <div className="create-post-card">
                 <div className="create-post-avatar">
-                  <img src={profile.profilePictureURL || '/images/defpfp3.png'} alt="Avatar" />
+                  <img src={profile.profilePictureURL || getDefaultImage('PROFILE_3')} alt="Avatar" />
                 </div>
                 <div className="create-post-body">
                   <textarea
@@ -886,7 +887,7 @@ const Profile = () => {
                 <div key={review.id} className="review-item">
                   <div className="review-header">
                     <div className="reviewer-avatar">
-                      <img src={review.reviewerPhoto || '/images/defpfp3.png'} alt={review.reviewerName} />
+                      <img src={review.reviewerPhoto || getDefaultImage('PROFILE_3')} alt={review.reviewerName} />
                     </div>
                     <div className="review-meta">
                       <div className="reviewer-name">{review.reviewerName}</div>
@@ -923,7 +924,7 @@ const Profile = () => {
                 {followers.map((follower) => (
                   <div key={follower.id} className="modal-follower-item">
                     <div className="modal-follower-avatar">
-                      <img src={follower.profilePictureURL || '/images/defpfp1.png'} alt={follower.displayName} />
+                      <img src={follower.profilePictureURL || getDefaultImage('PROFILE_1')} alt={follower.displayName} />
                     </div>
                     <div className="modal-follower-name">{follower.displayName}</div>
                     <div className="modal-follower-username">@{follower.username}</div>

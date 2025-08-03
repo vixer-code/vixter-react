@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ref, get, query, orderByChild, limitToFirst } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { getDefaultImage } from '../utils/defaultImages';
 import './Feed.css';
 
 const Feed = () => {
@@ -226,7 +227,7 @@ const Feed = () => {
   const renderProviderCard = (provider) => (
     <div key={provider.id} className="provider-card">
       <div className="provider-avatar">
-                        <img src={provider.profilePictureURL || '/images/defpfp2.png'} alt={provider.displayName} />
+                        <img src={provider.profilePictureURL || getDefaultImage('PROFILE_2')} alt={provider.displayName} />
       </div>
       <div className="provider-info">
         <h3>{provider.displayName}</h3>

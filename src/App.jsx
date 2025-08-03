@@ -9,7 +9,7 @@ import Register from './pages/Register';
 import Feed from './pages/Feed';
 import Profile from './pages/Profile';
 import Wallet from './pages/Wallet';
-import DefaultImageUploader from './components/DefaultImageUploader';
+
 import './App.css';
 
 function App() {
@@ -33,7 +33,7 @@ function App() {
               <Route path="/settings" element={<div>Settings Page - Coming Soon</div>} />
               <Route path="/my-services" element={<div>My Services Page - Coming Soon</div>} />
               <Route path="/services" element={<div>Services Page - Coming Soon</div>} />
-              <Route path="/upload-defaults" element={<DefaultImageUploader />} />
+
             </Routes>
           </main>
           <Footer />

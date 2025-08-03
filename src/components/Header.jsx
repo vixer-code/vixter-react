@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ref, get } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { getDefaultImage } from '../utils/defaultImages';
 import './Header.css';
 
 const Header = () => {
@@ -184,7 +185,7 @@ const Header = () => {
                     <div className="profile-picture" id="navbar-profile-pic">
                       {userProfile?.profilePictureURL ? (
                         <img 
-                          src={userProfile.profilePictureURL || '/images/defpfp1.png'} 
+                          src={userProfile.profilePictureURL || getDefaultImage('PROFILE_1')} 
                           alt={userProfile.displayName || 'Profile'} 
                         />
                       ) : userProfile?.displayName ? (
