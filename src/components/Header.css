@@ -83,6 +83,24 @@ nav {
   background-color: rgba(0, 255, 202, 0.1);
 }
 
+/* Mobile menu button */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: #FCFCFC;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-btn:hover {
+  color: #00FFCA;
+  background-color: rgba(0, 255, 202, 0.08);
+}
+
 /* Auth visibility classes */
 .auth-hide {
   display: none;
@@ -457,57 +475,185 @@ header .vp-balance .vp-icon svg,
   }
 }
 
+/* Mobile Navigation */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 15, 26, 0.95);
+  backdrop-filter: blur(20px);
+  z-index: 200;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.mobile-nav.active {
+  transform: translateX(0);
+}
+
+.mobile-nav-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-nav-close {
+  background: none;
+  border: none;
+  color: #FCFCFC;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-close:hover {
+  color: #FF2E63;
+  background-color: rgba(255, 46, 99, 0.1);
+}
+
+.mobile-nav-links {
+  list-style: none;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.mobile-nav-links li {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-nav-links li:last-child {
+  border-bottom: none;
+}
+
+.mobile-nav-links a {
+  display: flex;
+  align-items: center;
+  padding: 20px 0;
+  color: #FCFCFC;
+  font-weight: 500;
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-links a:hover {
+  color: #00FFCA;
+  background-color: rgba(0, 255, 202, 0.05);
+  padding-left: 10px;
+}
+
+.mobile-nav-links a.active {
+  color: #00FFCA;
+  background-color: rgba(0, 255, 202, 0.1);
+  padding-left: 15px;
+}
+
+.mobile-nav-links a i {
+  margin-right: 15px;
+  width: 20px;
+  text-align: center;
+  color: #00FFCA;
+}
+
+.mobile-nav-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 15, 26, 0.8);
+}
+
+.mobile-vp-balance {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1A1A2E;
+  padding: 12px 20px;
+  border-radius: 12px;
+  color: #FCFCFC;
+  font-weight: 600;
+  border: 1px solid #2D2D44;
+  margin-bottom: 15px;
+}
+
+.mobile-vp-balance .vp-icon {
+  margin-right: 10px;
+  height: 24px;
+  width: 24px;
+}
+
+.mobile-profile-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 0;
+}
+
+.mobile-profile-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #00FFCA;
+}
+
+.mobile-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mobile-profile-info {
+  flex: 1;
+}
+
+.mobile-profile-name {
+  font-weight: 600;
+  color: #FCFCFC;
+  margin-bottom: 2px;
+}
+
+.mobile-profile-username {
+  font-size: 0.9rem;
+  color: #00FFCA;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   nav {
     padding: 12px 16px;
   }
   
-  .nav-links {
-    gap: 16px;
+  .logo {
+    font-size: 1.5rem;
   }
   
-  .nav-links a {
-    font-size: 0.9rem;
-    padding: 6px 6px;
-  }
-  
-  .vp-balance {
-    margin-right: 10px;
-    padding: 3px 16px;
-    min-width: 160px;
+  .logo-icon {
+    width: 36px;
     height: 36px;
   }
   
-  /* Mobile VP Icon - Header specific styling with maximum specificity */
-  header nav .nav-links .vp-balance .vp-icon,
-  header .vp-balance .vp-icon,
-  .vp-balance .vp-icon {
-    height: 28px !important;
-    width: 28px !important;
-    min-height: 28px !important;
-    min-width: 28px !important;
-    max-height: 28px !important;
-    max-width: 28px !important;
-    margin-right: 8px !important;
-    flex-shrink: 0 !important;
-  }
-
-  /* Ensure SVG inside the icon respects the container size on mobile with maximum specificity */
-  header nav .nav-links .vp-balance .vp-icon svg,
-  header .vp-balance .vp-icon svg,
-  .vp-balance .vp-icon svg {
-    height: 100% !important;
-    width: 100% !important;
-    min-height: 28px !important;
-    min-width: 28px !important;
-    max-height: 28px !important;
-    max-width: 28px !important;
-    flex-shrink: 0 !important;
+  .nav-links {
+    display: none;
   }
   
-  #vp-amount {
-    font-size: 0.85rem;
+  .mobile-menu-btn {
+    display: block;
+  }
+  
+  .vp-balance {
+    display: none;
   }
   
   .profile-picture-container {
@@ -531,25 +677,78 @@ header .vp-balance .vp-icon svg,
 }
 
 @media (max-width: 576px) {
-  .nav-links {
-    gap: 12px;
+  nav {
+    padding: 10px 12px;
   }
   
   .logo {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
   
   .logo-icon {
-    width: 36px;
-    height: 36px;
-  }
-  
-  .vp-balance {
-    display: none;
+    width: 32px;
+    height: 32px;
   }
   
   .profile-dropdown-content {
     right: -20px;
     min-width: 160px;
+  }
+  
+  .mobile-nav-links a {
+    font-size: 1rem;
+    padding: 18px 0;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  nav {
+    padding: 14px 24px;
+  }
+  
+  .nav-links {
+    gap: 20px;
+  }
+  
+  .nav-links a {
+    font-size: 1rem;
+    padding: 6px 6px;
+  }
+  
+  .vp-balance {
+    margin-right: 12px;
+    padding: 3px 18px;
+    min-width: 170px;
+    height: 38px;
+  }
+  
+  /* Tablet VP Icon */
+  header nav .nav-links .vp-balance .vp-icon,
+  header .vp-balance .vp-icon,
+  .vp-balance .vp-icon {
+    height: 30px !important;
+    width: 30px !important;
+    min-height: 30px !important;
+    min-width: 30px !important;
+    max-height: 30px !important;
+    max-width: 30px !important;
+    margin-right: 10px !important;
+  }
+
+  /* Ensure SVG inside the icon respects the container size on tablet */
+  header nav .nav-links .vp-balance .vp-icon svg,
+  header .vp-balance .vp-icon svg,
+  .vp-balance .vp-icon svg {
+    height: 100% !important;
+    width: 100% !important;
+    min-height: 30px !important;
+    min-width: 30px !important;
+    max-height: 30px !important;
+    max-width: 30px !important;
+  }
+  
+  #vp-amount {
+    font-size: 0.85rem;
   }
 }

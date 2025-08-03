@@ -77,6 +77,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .search-btn:hover {
@@ -423,27 +424,74 @@
   color: #00FFCA;
 }
 
-/* Responsive Design */
+/* Enhanced Responsive Design */
 @media (max-width: 768px) {
   .feed-container {
     padding: 15px;
   }
   
+  .feed-header {
+    padding: 20px 0;
+    margin-bottom: 30px;
+  }
+  
   .feed-header h1 {
-    font-size: 2rem;
+    font-size: clamp(1.8rem, 8vw, 2.5rem);
   }
   
   .feed-header p {
-    font-size: 1rem;
+    font-size: clamp(0.9rem, 4vw, 1.1rem);
+  }
+  
+  .feed-controls {
+    padding: 20px;
+    margin-bottom: 25px;
+  }
+  
+  .search-section {
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .search-input {
+    padding: 12px 15px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .search-btn {
+    padding: 12px 20px;
+    width: 100%;
+    justify-content: center;
   }
   
   .filters-section {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
   
   .filter-select {
     min-width: auto;
+    width: 100%;
+    padding: 12px 15px;
+  }
+  
+  .reset-btn {
+    width: 100%;
+    padding: 12px 20px;
+    text-align: center;
+  }
+  
+  .feed-tabs {
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px;
+  }
+  
+  .tab-btn {
+    padding: 12px 15px;
+    font-size: 0.95rem;
   }
   
   .services-grid,
@@ -452,31 +500,308 @@
     gap: 20px;
   }
   
+  .service-card,
+  .provider-card {
+    margin: 0;
+  }
+  
+  .service-info,
+  .provider-card {
+    padding: 15px;
+  }
+  
+  .service-info h3 {
+    font-size: 1.2rem;
+  }
+  
+  .provider-info h3 {
+    font-size: 1.3rem;
+  }
+  
+  .provider-avatar {
+    width: 80px;
+    height: 80px;
+  }
+  
   .pagination-controls {
     flex-direction: column;
     gap: 15px;
+    padding: 20px;
+  }
+  
+  .pagination-btn {
+    width: 100%;
+    padding: 12px 20px;
   }
 }
 
 @media (max-width: 480px) {
+  .feed-container {
+    padding: 10px;
+  }
+  
   .feed-header {
-    padding: 20px 0;
+    padding: 15px 0;
+    margin-bottom: 20px;
   }
   
   .feed-header h1 {
-    font-size: 1.8rem;
+    font-size: clamp(1.5rem, 10vw, 2rem);
+  }
+  
+  .feed-header p {
+    font-size: clamp(0.8rem, 4vw, 1rem);
   }
   
   .feed-controls {
-    padding: 20px;
+    padding: 15px;
+    border-radius: 12px;
   }
   
   .search-section {
-    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .search-input {
+    padding: 10px 12px;
+    font-size: 16px;
+  }
+  
+  .search-btn {
+    padding: 10px 15px;
+    font-size: 0.9rem;
+  }
+  
+  .filters-section {
+    gap: 10px;
+  }
+  
+  .filter-select {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+  
+  .reset-btn {
+    padding: 10px 15px;
+    font-size: 0.9rem;
+  }
+  
+  .feed-tabs {
+    padding: 8px;
+  }
+  
+  .tab-btn {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+  
+  .services-grid,
+  .providers-grid {
+    gap: 15px;
   }
   
   .service-card,
   .provider-card {
-    margin: 0 10px;
+    border-radius: 12px;
+  }
+  
+  .service-image {
+    height: 150px;
+  }
+  
+  .service-info,
+  .provider-card {
+    padding: 12px;
+  }
+  
+  .service-info h3 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+  }
+  
+  .service-description {
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+  
+  .service-meta {
+    margin-bottom: 12px;
+  }
+  
+  .service-category {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+  }
+  
+  .service-price {
+    font-size: 1.1rem;
+  }
+  
+  .provider-info h3 {
+    font-size: 1.2rem;
+  }
+  
+  .provider-username {
+    font-size: 0.85rem;
+  }
+  
+  .provider-bio {
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+  }
+  
+  .provider-avatar {
+    width: 70px;
+    height: 70px;
+    margin-bottom: 15px;
+  }
+  
+  .provider-meta {
+    gap: 15px;
+  }
+  
+  .provider-rating,
+  .provider-services {
+    font-size: 0.85rem;
+  }
+  
+  .pagination-controls {
+    padding: 15px;
+    gap: 12px;
+  }
+  
+  .pagination-btn {
+    padding: 10px 15px;
+    font-size: 0.85rem;
+  }
+  
+  .page-info {
+    font-size: 0.85rem;
+    min-width: 100px;
+  }
+  
+  .no-results {
+    padding: 40px 15px;
+  }
+  
+  .no-results p {
+    font-size: 1rem;
+  }
+  
+  .loading-spinner {
+    height: 300px;
+    font-size: 1rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .feed-container {
+    padding: 20px;
+  }
+  
+  .feed-header h1 {
+    font-size: clamp(2rem, 6vw, 2.5rem);
+  }
+  
+  .feed-header p {
+    font-size: clamp(1rem, 3vw, 1.1rem);
+  }
+  
+  .services-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  
+  .providers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  
+  .search-section {
+    gap: 12px;
+  }
+  
+  .filters-section {
+    gap: 12px;
+  }
+  
+  .filter-select {
+    min-width: 140px;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-height: 500px) and (orientation: landscape) {
+  .feed-header {
+    padding: 15px 0;
+    margin-bottom: 20px;
+  }
+  
+  .feed-header h1 {
+    font-size: clamp(1.5rem, 6vw, 2rem);
+  }
+  
+  .feed-controls {
+    padding: 15px;
+  }
+  
+  .search-section {
+    flex-direction: row;
+    gap: 10px;
+  }
+  
+  .search-btn {
+    width: auto;
+    padding: 10px 20px;
+  }
+  
+  .filters-section {
+    flex-direction: row;
+    gap: 10px;
+  }
+  
+  .filter-select {
+    min-width: 120px;
+  }
+  
+  .reset-btn {
+    width: auto;
+    padding: 10px 15px;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .service-image img,
+  .provider-avatar img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Touch-friendly improvements */
+@media (max-width: 768px) {
+  .service-card,
+  .provider-card {
+    /* Ensure cards are large enough for touch */
+    min-height: 200px;
+  }
+  
+  .tab-btn,
+  .pagination-btn {
+    /* Ensure buttons are large enough for touch */
+    min-height: 44px;
+  }
+  
+  /* Improve touch targets */
+  .service-card,
+  .provider-card {
+    cursor: pointer;
+  }
+  
+  .service-card:active,
+  .provider-card:active {
+    transform: scale(0.98);
   }
 } 

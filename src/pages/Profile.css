@@ -1385,10 +1385,11 @@
   color: #0F0F1A;
 }
 
-/* Responsive Design */
+/* Enhanced Responsive Design */
 @media (max-width: 900px) {
   .perfil-tab-content {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
   
   .profile-sidebar {
@@ -1402,14 +1403,33 @@
   .modal-followers-grid {
     grid-template-columns: repeat(3, 1fr);
   }
+  
+  .profile-container {
+    padding: 15px;
+  }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+  .profile-container {
+    padding: 10px;
+  }
+  
+  .profile-card {
+    margin-bottom: 15px;
+  }
+  
+  .cover-photo {
+    height: 180px;
+    padding-bottom: 8px;
+    padding-left: 15px;
+  }
+  
   .profile-header {
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 0 20px 20px;
+    padding: 0 15px 15px;
+    margin-top: -50px;
   }
   
   .profile-avatar {
@@ -1424,64 +1444,434 @@
     padding-left: 0;
     margin-left: 0;
     border-left: none;
+    text-align: center;
   }
   
   .profile-name {
-    font-size: 1.6rem;
+    font-size: clamp(1.4rem, 6vw, 1.6rem);
+  }
+  
+  .profile-username {
+    font-size: 0.9rem;
+  }
+  
+  .profile-status {
+    font-size: 0.85rem;
   }
   
   .profile-meta {
     justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .profile-meta span {
+    font-size: 0.85rem;
   }
   
   .profile-actions {
     margin-left: 0;
-    margin-top: 20px;
+    margin-top: 15px;
     padding-left: 0;
     border-left: none;
+    width: 100%;
   }
   
   .visitor-actions {
     flex-direction: column;
     width: 100%;
+    gap: 10px;
+  }
+  
+  .follow-btn,
+  .message-btn,
+  .visitor-menu-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 20px;
   }
   
   .profile-tabs {
-    padding: 0 20px;
+    padding: 0 15px;
     overflow-x: auto;
+    flex-wrap: nowrap;
   }
   
   .profile-tab {
-    padding: 15px 20px;
+    padding: 12px 15px;
     white-space: nowrap;
+    font-size: 0.9rem;
+    min-width: 100px;
   }
   
   .tab-content {
-    padding: 20px;
-  }
-  
-  .cover-photo {
-    height: 200px;
-    padding-bottom: 10px;
-    padding-left: 20px;
+    padding: 15px;
   }
   
   .friends-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .friend-avatar {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .friend-name {
+    font-size: 0.75rem;
   }
   
   .services-grid,
   .packs-grid,
   .subscriptions-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .service-card,
+  .pack-card,
+  .subscription-card {
+    margin-bottom: 15px;
+  }
+  
+  .service-cover,
+  .pack-cover,
+  .subscription-cover {
+    height: 120px;
+  }
+  
+  .service-info,
+  .pack-info,
+  .subscription-info {
+    padding: 12px;
+  }
+  
+  .service-title,
+  .pack-title,
+  .subscription-title {
+    font-size: 1rem;
+  }
+  
+  .service-price,
+  .pack-price,
+  .subscription-price {
+    font-size: 1.1rem;
+  }
+  
+  .service-actions {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  
+  .action-btn {
+    width: 100px;
+    height: 36px;
+    font-size: 0.8rem;
   }
   
   .modal-followers-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
   }
   
   .modal-content {
     width: 95%;
+    margin: 10px;
+  }
+  
+  .modal-follower-avatar {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .modal-follower-name {
+    font-size: 0.9rem;
+  }
+  
+  .modal-follower-username {
+    font-size: 0.8rem;
+  }
+  
+  .create-post-card {
+    padding: 15px;
+    gap: 12px;
+  }
+  
+  .create-post-avatar img {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .create-post-body textarea {
+    min-height: 60px;
+    font-size: 0.9rem;
+  }
+  
+  .create-post-actions {
+    gap: 10px;
+  }
+  
+  .action-btn {
+    font-size: 0.8rem;
+  }
+  
+  .post-card {
+    padding: 15px;
+  }
+  
+  .post-header {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  
+  .post-author-avatar {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .post-author-name {
+    font-size: 0.9rem;
+  }
+  
+  .post-date {
+    font-size: 0.75rem;
+  }
+  
+  .post-content {
+    font-size: 0.9rem;
+  }
+  
+  .post-image {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-container {
+    padding: 5px;
+  }
+  
+  .profile-card {
+    margin-bottom: 10px;
+    border-radius: 12px;
+  }
+  
+  .cover-photo {
+    height: 150px;
+    padding-bottom: 5px;
+    padding-left: 10px;
+  }
+  
+  .profile-header {
+    padding: 0 10px 10px;
+    margin-top: -40px;
+  }
+  
+  .profile-avatar {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 10px;
+  }
+  
+  .profile-name {
+    font-size: clamp(1.2rem, 8vw, 1.4rem);
+  }
+  
+  .profile-username {
+    font-size: 0.85rem;
+  }
+  
+  .profile-status {
+    font-size: 0.8rem;
+  }
+  
+  .profile-meta {
+    gap: 8px;
+  }
+  
+  .profile-meta span {
+    font-size: 0.8rem;
+  }
+  
+  .profile-actions {
+    margin-top: 10px;
+  }
+  
+  .follow-btn,
+  .message-btn,
+  .visitor-menu-btn {
+    padding: 10px 15px;
+    font-size: 0.85rem;
+  }
+  
+  .profile-tabs {
+    padding: 0 10px;
+  }
+  
+  .profile-tab {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    min-width: 80px;
+  }
+  
+  .tab-content {
+    padding: 10px;
+  }
+  
+  .friends-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .friend-avatar {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .friend-name {
+    font-size: 0.7rem;
+  }
+  
+  .services-grid,
+  .packs-grid,
+  .subscriptions-grid {
+    gap: 10px;
+  }
+  
+  .service-cover,
+  .pack-cover,
+  .subscription-cover {
+    height: 100px;
+  }
+  
+  .service-info,
+  .pack-info,
+  .subscription-info {
+    padding: 10px;
+  }
+  
+  .service-title,
+  .pack-title,
+  .subscription-title {
+    font-size: 0.9rem;
+  }
+  
+  .service-price,
+  .pack-price,
+  .subscription-price {
+    font-size: 1rem;
+  }
+  
+  .service-actions {
+    padding: 6px 10px;
+    gap: 4px;
+  }
+  
+  .action-btn {
+    width: 80px;
+    height: 32px;
+    font-size: 0.75rem;
+  }
+  
+  .modal-followers-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .modal-content {
+    width: 98%;
+    margin: 5px;
+  }
+  
+  .modal-follower-avatar {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .modal-follower-name {
+    font-size: 0.8rem;
+  }
+  
+  .modal-follower-username {
+    font-size: 0.75rem;
+  }
+  
+  .create-post-card {
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  .create-post-avatar img {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .create-post-body textarea {
+    min-height: 50px;
+    font-size: 0.85rem;
+    padding: 8px;
+  }
+  
+  .create-post-actions {
+    gap: 8px;
+  }
+  
+  .action-btn {
+    font-size: 0.75rem;
+  }
+  
+  .post-card {
+    padding: 10px;
+  }
+  
+  .post-header {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  
+  .post-author-avatar {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .post-author-name {
+    font-size: 0.85rem;
+  }
+  
+  .post-date {
+    font-size: 0.7rem;
+  }
+  
+  .post-content {
+    font-size: 0.85rem;
+  }
+  
+  .email-verification-banner {
+    padding: 6px 10px;
+    margin-bottom: 10px;
+  }
+  
+  .banner-content {
+    gap: 6px;
+  }
+  
+  .banner-text strong {
+    font-size: 11px;
+  }
+  
+  .banner-text p {
+    font-size: 10px;
+  }
+  
+  .btn-verify {
+    padding: 3px 6px;
+    font-size: 9px;
+  }
+  
+  .btn-dismiss {
+    padding: 3px 5px;
+    font-size: 11px;
   }
 } 
 

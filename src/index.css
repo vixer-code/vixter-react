@@ -17,6 +17,45 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* Mobile-first responsive variables */
+  --container-padding: 1rem;
+  --section-padding: 2rem;
+  --border-radius: 8px;
+  --font-size-base: 1rem;
+  --font-size-small: 0.875rem;
+  --font-size-large: 1.125rem;
+}
+
+/* Mobile-first responsive breakpoints */
+@media (min-width: 640px) {
+  :root {
+    --container-padding: 1.5rem;
+    --section-padding: 3rem;
+    --font-size-base: 1rem;
+    --font-size-small: 0.9rem;
+    --font-size-large: 1.25rem;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --container-padding: 2rem;
+    --section-padding: 4rem;
+    --font-size-base: 1rem;
+    --font-size-small: 0.9rem;
+    --font-size-large: 1.375rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --container-padding: 2.5rem;
+    --section-padding: 5rem;
+    --font-size-base: 1rem;
+    --font-size-small: 0.9rem;
+    --font-size-large: 1.5rem;
+  }
 }
 
 body {
@@ -26,11 +65,15 @@ body {
   background: linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 100%);
   color: #FFFFFF;
   font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  overflow-x: hidden; /* Prevent horizontal scroll on mobile */
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 a {
@@ -48,19 +91,51 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Inter', sans-serif;
   font-weight: 700;
   color: #FFFFFF;
+  line-height: 1.2;
+}
+
+/* Responsive typography */
+h1 {
+  font-size: clamp(1.5rem, 5vw, 3rem);
+}
+
+h2 {
+  font-size: clamp(1.25rem, 4vw, 2.5rem);
+}
+
+h3 {
+  font-size: clamp(1.125rem, 3vw, 1.875rem);
+}
+
+h4 {
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+h5 {
+  font-size: clamp(0.875rem, 2vw, 1.25rem);
+}
+
+h6 {
+  font-size: clamp(0.75rem, 1.5vw, 1rem);
 }
 
 button {
-  border-radius: 8px;
+  border-radius: var(--border-radius);
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
-  font-size: 1em;
+  font-size: var(--font-size-base);
   font-weight: 500;
   font-family: inherit;
   background-color: rgba(138, 43, 226, 0.2);
   color: #FFFFFF;
   cursor: pointer;
   transition: all 0.3s ease;
+  /* Improve touch targets on mobile */
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 button:hover {
@@ -72,6 +147,17 @@ button:focus,
 button:focus-visible {
   outline: 2px solid #00FFCA;
   outline-offset: 2px;
+}
+
+/* Mobile-specific button improvements */
+@media (max-width: 768px) {
+  button {
+    padding: 0.75em 1.5em;
+    font-size: var(--font-size-base);
+    /* Ensure buttons are large enough for touch */
+    min-height: 48px;
+    min-width: 48px;
+  }
 }
 
 /* Scrollbar styling */
@@ -129,4 +215,148 @@ button:focus-visible {
 .backdrop-blur {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+}
+
+/* Mobile-first responsive utilities */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--container-padding);
+}
+
+.section {
+  padding: var(--section-padding) 0;
+}
+
+/* Grid utilities */
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
+.grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* Responsive grid */
+@media (min-width: 640px) {
+  .sm\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .sm\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 768px) {
+  .md\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .md\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .md\:grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .lg\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .lg\:grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Flex utilities */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.gap-6 { gap: 1.5rem; }
+.gap-8 { gap: 2rem; }
+
+/* Responsive flex */
+@media (max-width: 768px) {
+  .mobile\:flex-col { flex-direction: column; }
+  .mobile\:items-stretch { align-items: stretch; }
+  .mobile\:text-center { text-align: center; }
+}
+
+/* Spacing utilities */
+.p-1 { padding: 0.25rem; }
+.p-2 { padding: 0.5rem; }
+.p-3 { padding: 0.75rem; }
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+.p-8 { padding: 2rem; }
+
+.m-1 { margin: 0.25rem; }
+.m-2 { margin: 0.5rem; }
+.m-3 { margin: 0.75rem; }
+.m-4 { margin: 1rem; }
+.m-6 { margin: 1.5rem; }
+.m-8 { margin: 2rem; }
+
+/* Text utilities */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.text-sm { font-size: var(--font-size-small); }
+.text-base { font-size: var(--font-size-base); }
+.text-lg { font-size: var(--font-size-large); }
+
+/* Hide/show utilities */
+.hidden { display: none; }
+.block { display: block; }
+.inline-block { display: inline-block; }
+
+/* Mobile-specific utilities */
+@media (max-width: 768px) {
+  .mobile\:hidden { display: none; }
+  .mobile\:block { display: block; }
+  .mobile\:text-sm { font-size: var(--font-size-small); }
+  .mobile\:p-2 { padding: 0.5rem; }
+  .mobile\:p-4 { padding: 1rem; }
+}
+
+@media (min-width: 769px) {
+  .desktop\:hidden { display: none; }
+  .desktop\:block { display: block; }
+}
+
+/* Touch-friendly improvements */
+@media (max-width: 768px) {
+  /* Increase touch targets */
+  input, select, textarea {
+    min-height: 44px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  /* Improve form spacing */
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  /* Better card spacing */
+  .card {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Prevent horizontal scroll */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Improve mobile performance */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Better mobile animations */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
