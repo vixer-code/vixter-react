@@ -23,6 +23,7 @@ const Wallet = () => {
   const [showSendModal, setShowSendModal] = useState(false);
   const [showRedeemModal, setShowRedeemModal] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('credit-card');
   
   // Form states
   const [sendForm, setSendForm] = useState({
@@ -384,6 +385,36 @@ const Wallet = () => {
     alert(`${type.toUpperCase()}: ${message}`);
   };
 
+  const handlePackageSelection = (packageData) => {
+    setSelectedPackage(packageData);
+  };
+
+  const handlePaymentMethodChange = (method) => {
+    if (method === 'pix') {
+      showNotification('🚧 PIX estará disponível em breve! Utilize cartão de crédito por enquanto.', 'info');
+      return;
+    }
+    setSelectedPaymentMethod(method);
+  };
+
+  const handleBuyVP = () => {
+    if (!selectedPackage) {
+      showNotification('Por favor, selecione um pacote de VP.', 'error');
+      return;
+    }
+
+    if (selectedPaymentMethod === 'pix') {
+      showNotification('🚧 Pagamento via PIX estará disponível em breve! Por enquanto, utilize cartão de crédito.', 'info');
+      setSelectedPaymentMethod('credit-card');
+      return;
+    }
+
+    // Simulate payment process (in real implementation, this would redirect to Stripe)
+    showNotification(`Redirecionando para pagamento: ${selectedPackage.amount} VP por ${selectedPackage.price}`, 'success');
+    setShowBuyVPModal(false);
+    setSelectedPackage(null);
+  };
+
   const getCurrentPageTransactions = () => {
     const startIndex = (currentPage - 1) * TRANSACTIONS_PER_PAGE;
     const endIndex = startIndex + TRANSACTIONS_PER_PAGE;
@@ -402,11 +433,6 @@ const Wallet = () => {
 
   return (
     <div className="wallet-container">
-      <div className="wallet-header">
-        <h1>Minha Carteira</h1>
-        <p>Gerencie seus Vixter Points (VP) e Vixter Bonus Points (VBP)</p>
-      </div>
-
       {/* Balance Cards */}
       <section className="wallet-header">
         {/* VP Balance Card */}
@@ -951,99 +977,50 @@ const Wallet = () => {
               </p>
 
               <div className="vp-packages">
-                <div className="package-card" data-package-id="pack-20">
-                  <div className="package-name">Pacote Iniciante</div>
-                  <div className="package-amount">30 VP</div>
-                  <div className="package-price">R$ 20,00</div>
-                  <button className="btn-buy-package">Selecionar</button>
-                </div>
-
-                <div className="package-card" data-package-id="pack-45">
-                  <div className="package-name">Pacote Essencial</div>
-                  <div className="package-amount">66 VP</div>
-                  <div className="package-price">R$ 45,00</div>
-                  <button className="btn-buy-package">Selecionar</button>
-                </div>
-
-                <div className="package-card" data-package-id="pack-60">
-                  <div className="package-name">Pacote Bronze</div>
-                  <div className="package-amount">85 VP</div>
-                  <div className="package-bonus">+ 10 VBP</div>
-                  <div className="package-price">R$ 60,00</div>
-                  <button className="btn-buy-package">Selecionar</button>
-                </div>
-
-                <div className="package-card popular" data-package-id="pack-85">
-                  <div className="popular-tag">Mais Popular</div>
-                  <div className="package-name">Pacote Prata</div>
-                  <div className="package-amount">120 VP</div>
-                  <div className="package-bonus">+ 22 VBP</div>
-                  <div className="package-price">R$ 85,00</div>
-                  <button className="btn-buy-package">Selecionar</button>
-                </div>
-
-                <div className="package-card" data-package-id="pack-96">
-                  <div className="package-name">Pacote Safira</div>
-                  <div className="package-amount">138 VP</div>
-                  <div className="package-bonus">+ 36 VBP</div>
-                  <div className="package-price">R$ 96,00</div>
-                  <button className="btn-buy-package">Selecionar</button>
-                </div>
-
-                <div className="package-card" data-package-id="pack-120">
-                  <div className="package-name">Pacote Ouro</div>
-                  <div className="package-amount">168 VP</div>
-                  <div className="package-bonus">+ 50 VBP</div>
-                  <div className="package-price">R$ 120,00</div>
-                  <button className="btn-buy-package">Selecionar</button>
-                </div>
-
-                <div className="package-card premium" data-package-id="pack-150">
-                  <div className="package-name">Pacote Platina</div>
-                  <div className="package-amount">218 VP</div>
-                  <div className="package-bonus">+ 65 VBP</div>
-                  <div className="package-price">R$ 150,00</div>
-                  <button className="btn-buy-package">Selecionar</button>
-                </div>
-
-                <div className="package-card premium" data-package-id="pack-200">
-                  <div className="package-name">Pacote Diamante</div>
-                  <div className="package-amount">288 VP</div>
-                  <div className="package-bonus">+ 85 VBP</div>
-                  <div className="package-price">R$ 200,00</div>
-                  <button className="btn-buy-package">Selecionar</button>
-                </div>
-
-                <div className="package-card elite" data-package-id="pack-255">
-                  <div className="package-name">Pacote Épico</div>
-                  <div className="package-amount">370 VP</div>
-                  <div className="package-bonus">+ 110 VBP</div>
-                  <div className="package-price">R$ 255,00</div>
-                  <button className="btn-buy-package">Selecionar</button>
-                </div>
-
-                <div className="package-card elite" data-package-id="pack-290">
-                  <div className="package-name">Pacote Lendário</div>
-                  <div className="package-amount">415 VP</div>
-                  <div className="package-bonus">+ 135 VBP</div>
-                  <div className="package-price">R$ 290,00</div>
-                  <button className="btn-buy-package">Selecionar</button>
-                </div>
-
-                <div className="package-card elite" data-package-id="pack-320">
-                  <div className="package-name">Pacote Mítico</div>
-                  <div className="package-amount">465 VP</div>
-                  <div className="package-bonus">+ 155 VBP</div>
-                  <div className="package-price">R$ 320,00</div>
-                  <button className="btn-buy-package">Selecionar</button>
-                </div>
+                {[
+                  { id: 'pack-20', name: 'Pacote Iniciante', amount: '30 VP', price: 'R$ 20,00', bonus: null },
+                  { id: 'pack-45', name: 'Pacote Essencial', amount: '66 VP', price: 'R$ 45,00', bonus: null },
+                  { id: 'pack-60', name: 'Pacote Bronze', amount: '85 VP', price: 'R$ 60,00', bonus: '+ 10 VBP' },
+                  { id: 'pack-85', name: 'Pacote Prata', amount: '120 VP', price: 'R$ 85,00', bonus: '+ 22 VBP', popular: true },
+                  { id: 'pack-96', name: 'Pacote Safira', amount: '138 VP', price: 'R$ 96,00', bonus: '+ 36 VBP' },
+                  { id: 'pack-120', name: 'Pacote Ouro', amount: '168 VP', price: 'R$ 120,00', bonus: '+ 50 VBP' },
+                  { id: 'pack-150', name: 'Pacote Platina', amount: '218 VP', price: 'R$ 150,00', bonus: '+ 65 VBP', premium: true },
+                  { id: 'pack-200', name: 'Pacote Diamante', amount: '288 VP', price: 'R$ 200,00', bonus: '+ 85 VBP', premium: true },
+                  { id: 'pack-255', name: 'Pacote Épico', amount: '370 VP', price: 'R$ 255,00', bonus: '+ 110 VBP', elite: true },
+                  { id: 'pack-290', name: 'Pacote Lendário', amount: '415 VP', price: 'R$ 290,00', bonus: '+ 135 VBP', elite: true },
+                  { id: 'pack-320', name: 'Pacote Mítico', amount: '465 VP', price: 'R$ 320,00', bonus: '+ 155 VBP', elite: true }
+                ].map((pkg) => (
+                  <div 
+                    key={pkg.id}
+                    className={`package-card ${pkg.popular ? 'popular' : ''} ${pkg.premium ? 'premium' : ''} ${pkg.elite ? 'elite' : ''} ${selectedPackage?.id === pkg.id ? 'selected' : ''}`}
+                    data-package-id={pkg.id}
+                  >
+                    {pkg.popular && <div className="popular-tag">Mais Popular</div>}
+                    <div className="package-name">{pkg.name}</div>
+                    <div className="package-amount">{pkg.amount}</div>
+                    {pkg.bonus && <div className="package-bonus">{pkg.bonus}</div>}
+                    <div className="package-price">{pkg.price}</div>
+                    <button 
+                      className="btn-buy-package"
+                      onClick={() => handlePackageSelection(pkg)}
+                    >
+                      {selectedPackage?.id === pkg.id ? 'Selecionado ✓' : 'Selecionar'}
+                    </button>
+                  </div>
+                ))}
               </div>
               
               <div className="payment-methods">
                 <h3>Métodos de Pagamento</h3>
                 <div className="payment-options">
                   <label className="payment-option">
-                    <input type="radio" name="payment" value="credit-card" defaultChecked />
+                    <input 
+                      type="radio" 
+                      name="payment" 
+                      value="credit-card" 
+                      checked={selectedPaymentMethod === 'credit-card'}
+                      onChange={() => handlePaymentMethodChange('credit-card')}
+                    />
                     <div className="option-content">
                       <i className="fas fa-credit-card"></i>
                       <span>Cartão de Crédito</span>
@@ -1051,7 +1028,13 @@ const Wallet = () => {
                   </label>
                   
                   <label className="payment-option">
-                    <input type="radio" name="payment" value="pix" />
+                    <input 
+                      type="radio" 
+                      name="payment" 
+                      value="pix" 
+                      checked={selectedPaymentMethod === 'pix'}
+                      onChange={() => handlePaymentMethodChange('pix')}
+                    />
                     <div className="option-content">
                       <i className="fas fa-qrcode"></i>
                       <span>PIX</span>
@@ -1063,13 +1046,18 @@ const Wallet = () => {
             <div className="modal-footer">
               <button 
                 className="btn-secondary"
-                onClick={() => setShowBuyVPModal(false)}
+                onClick={() => {
+                  setShowBuyVPModal(false);
+                  setSelectedPackage(null);
+                  setSelectedPaymentMethod('credit-card');
+                }}
               >
                 Cancelar
               </button>
               <button 
                 className="btn-primary"
                 disabled={!selectedPackage}
+                onClick={handleBuyVP}
               >
                 {selectedPackage ? `Comprar ${selectedPackage.amount} por ${selectedPackage.price}` : 'Selecione um pacote'}
               </button>
