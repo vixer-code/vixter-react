@@ -101,7 +101,7 @@ nav {
   display: flex;
   align-items: center;
   background-color: #1A1A2E;
-  padding: 6px 12px;
+  padding: 4px 16px;
   border-radius: 8px;
   color: #FCFCFC;
   font-weight: 600;
@@ -112,6 +112,7 @@ nav {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
   cursor: pointer;
+  min-width: 120px;
 }
 
 .vp-balance::before {
@@ -162,9 +163,9 @@ nav {
 }
 
 .vp-icon {
-  margin-right: 8px;
-  height: 18px;
-  width: 18px;
+  margin-right: 10px;
+  height: 16px;
+  width: 16px;
   position: relative;
   z-index: 1;
 }
@@ -173,12 +174,13 @@ nav {
   position: relative;
   z-index: 1;
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   background: linear-gradient(to right, #B14AFF, #00FFCA);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   text-shadow: 0 0 5px rgba(0, 255, 202, 0.5);
+  white-space: nowrap;
 }
 
 /* Profile Dropdown */
@@ -442,7 +444,8 @@ nav {
   
   .vp-balance {
     margin-right: 10px;
-    padding: 4px 8px;
+    padding: 3px 12px;
+    min-width: 100px;
   }
   
   .vp-icon {

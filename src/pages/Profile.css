@@ -28,6 +28,11 @@
   z-index: 1;
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding-bottom: 20px;
+  padding-left: 30px;
 }
 
 .cover-upload-btn {
@@ -59,6 +64,11 @@
   position: relative;
   margin-top: -80px;
   z-index: 2;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0 0 16px 16px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: none;
 }
 
 .profile-avatar {
@@ -69,8 +79,9 @@
   border: 6px solid #ffffff;
   overflow: hidden;
   background: #8A2BE2;
-  margin-right: 30px;
+  margin-right: 0;
   flex-shrink: 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .profile-avatar img {
@@ -125,6 +136,9 @@
 .profile-info {
   flex: 1;
   padding-top: 20px;
+  padding-left: 20px;
+  margin-left: 20px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Account Badges */
@@ -181,6 +195,7 @@
   font-weight: 700;
   margin: 0 0 10px 0;
   color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .profile-username {
@@ -188,6 +203,7 @@
   color: #00FFCA;
   margin: 0 0 15px 0;
   font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .profile-status {
@@ -241,6 +257,8 @@
 .profile-actions {
   margin-left: auto;
   padding-top: 20px;
+  padding-left: 20px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .edit-profile-btn,
@@ -374,6 +392,7 @@
   display: flex;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 0 30px;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .profile-tab {
@@ -411,6 +430,11 @@
 .tab-content {
   display: none;
   padding: 30px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  margin-top: 20px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tab-content.active {
@@ -1204,6 +1228,9 @@
   
   .profile-info {
     padding-top: 0;
+    padding-left: 0;
+    margin-left: 0;
+    border-left: none;
   }
   
   .profile-name {
@@ -1217,6 +1244,8 @@
   .profile-actions {
     margin-left: 0;
     margin-top: 20px;
+    padding-left: 0;
+    border-left: none;
   }
   
   .visitor-actions {
@@ -1240,6 +1269,8 @@
   
   .cover-photo {
     height: 200px;
+    padding-bottom: 10px;
+    padding-left: 20px;
   }
   
   .friends-grid {
