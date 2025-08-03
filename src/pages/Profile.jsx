@@ -452,6 +452,9 @@ const Profile = () => {
         </div>
         
         <div className="profile-header">
+          <div className="status-indicator-floating">
+            {renderStatusIndicator()}
+          </div>
           <div className="profile-avatar">
             <img 
               src={profile.profilePictureURL || getDefaultImage('PROFILE_1')} 
@@ -468,7 +471,6 @@ const Profile = () => {
                 <i className="fas fa-camera"></i>
               </label>
             )}
-            {renderStatusIndicator()}
           </div>
           
           <div className="profile-info">

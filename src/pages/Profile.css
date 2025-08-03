@@ -1374,3 +1374,14 @@
     width: 95%;
   }
 } 
+
+.status-indicator-floating {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 30;
+  /* Adjust these values as needed to be just outside the profile image */
+  transform: translate(60%, -40%);
+  /* Optional: add a subtle drop shadow for visibility */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+} 
