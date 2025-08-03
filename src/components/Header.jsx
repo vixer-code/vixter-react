@@ -150,29 +150,29 @@ const Header = () => {
                            strokeWidth="1" 
                            opacity="0.8" />
                      
-                     {/* VP Text with glow effect */}
-                     <g filter="url(#header-glow)">
-                       <text x="64" y="70" 
-                             fontFamily="'Press Start 2P', monospace" 
-                             fontSize="16" 
-                             fill="url(#header-textGradient)"
-                             textAnchor="middle"
-                             fontWeight="bold">VP</text>
-                     </g>
+                                           {/* VP Text with glow effect */}
+                      <g filter="url(#header-glow)">
+                        <text x="64" y="72" 
+                              fontFamily="'Press Start 2P', monospace" 
+                              fontSize="20" 
+                              fill="url(#header-textGradient)"
+                              textAnchor="middle"
+                              fontWeight="bold">VP</text>
+                      </g>
+                      
+                      {/* Digital circuit lines */}
+                      <path d="M32 60 H20 V68 H28" fill="none" stroke="#00FFCA" strokeWidth="1.5" />
+                      <path d="M96 60 H108 V68 H100" fill="none" stroke="#00FFCA" strokeWidth="1.5" />
+                      <path d="M64 24 V18" fill="none" stroke="#00FFCA" strokeWidth="1.5" />
+                      <path d="M64 100 V106" fill="none" stroke="#00FFCA" strokeWidth="1.5" />
                      
-                     {/* Digital circuit lines */}
-                     <path d="M32 60 H20 V68 H28" fill="none" stroke="#00FFCA" strokeWidth="0.8" />
-                     <path d="M96 60 H108 V68 H100" fill="none" stroke="#00FFCA" strokeWidth="0.8" />
-                     <path d="M64 24 V18" fill="none" stroke="#00FFCA" strokeWidth="0.8" />
-                     <path d="M64 100 V106" fill="none" stroke="#00FFCA" strokeWidth="0.8" />
-                     
-                     {/* Digital nodes/connectors */}
-                     <circle cx="20" cy="60" r="1.5" fill="#00FFCA" />
-                     <circle cx="28" cy="68" r="1.5" fill="#00FFCA" />
-                     <circle cx="108" cy="60" r="1.5" fill="#00FFCA" />
-                     <circle cx="100" cy="68" r="1.5" fill="#00FFCA" />
-                     <circle cx="64" cy="18" r="1.5" fill="#00FFCA" />
-                     <circle cx="64" cy="106" r="1.5" fill="#00FFCA" />
+                                           {/* Digital nodes/connectors */}
+                      <circle cx="20" cy="60" r="2" fill="#00FFCA" />
+                      <circle cx="28" cy="68" r="2" fill="#00FFCA" />
+                      <circle cx="108" cy="60" r="2" fill="#00FFCA" />
+                      <circle cx="100" cy="68" r="2" fill="#00FFCA" />
+                      <circle cx="64" cy="18" r="2" fill="#00FFCA" />
+                      <circle cx="64" cy="106" r="2" fill="#00FFCA" />
                      
                      {/* Animated pulse effect */}
                      <path d="M64 8 L108 32 L108 96 L64 120 L20 96 L20 32 Z" 
