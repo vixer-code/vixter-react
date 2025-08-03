@@ -33,6 +33,11 @@ const Header = () => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
+  // Debug mobile menu state
+  useEffect(() => {
+    console.log('Mobile menu state changed:', mobileMenuOpen);
+  }, [mobileMenuOpen]);
+
   const loadUserData = async () => {
     try {
       // Set up real-time listener for VP balance (matching vanilla JS implementation)
@@ -72,6 +77,7 @@ const Header = () => {
   };
 
   const toggleMobileMenu = () => {
+    console.log('Toggle mobile menu clicked, current state:', mobileMenuOpen);
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
@@ -247,6 +253,7 @@ const Header = () => {
           {/* Mobile Menu Button */}
           <button className="mobile-menu-btn" onClick={toggleMobileMenu}>
             <i className={`fas ${mobileMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
+            <span style={{fontSize: '10px', marginLeft: '5px'}}>{mobileMenuOpen ? 'Close' : 'Menu'}</span>
           </button>
         </nav>
       </header>

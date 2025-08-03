@@ -86,14 +86,18 @@ nav {
 /* Mobile menu button */
 .mobile-menu-btn {
   display: none;
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #FCFCFC;
   font-size: 1.5rem;
   cursor: pointer;
-  padding: 8px;
+  padding: 8px 12px;
   border-radius: 4px;
   transition: all 0.2s ease;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
 }
 
 .mobile-menu-btn:hover {
@@ -477,21 +481,36 @@ header .vp-balance .vp-icon svg,
 
 /* Mobile Navigation */
 .mobile-nav {
-  display: none;
+  display: flex;
+  flex-direction: column;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 15, 26, 0.95);
+  background: rgba(15, 15, 26, 0.98);
   backdrop-filter: blur(20px);
   z-index: 200;
   transform: translateX(-100%);
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
+  visibility: hidden;
+  opacity: 0;
+  overflow-y: auto;
+  height: 100vh;
 }
 
 .mobile-nav.active {
   transform: translateX(0);
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Ensure mobile nav is always visible when active */
+.mobile-nav.active {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: translateX(0) !important;
 }
 
 .mobile-nav-header {
@@ -500,6 +519,7 @@ header .vp-balance .vp-icon svg,
   align-items: center;
   padding: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
 }
 
 .mobile-nav-close {
@@ -524,6 +544,8 @@ header .vp-balance .vp-icon svg,
   display: flex;
   flex-direction: column;
   gap: 0;
+  margin: 0;
+  flex: 1;
 }
 
 .mobile-nav-links li {
@@ -564,14 +586,27 @@ header .vp-balance .vp-icon svg,
   color: #00FFCA;
 }
 
+/* Ensure mobile nav links are properly styled */
+.mobile-nav-links a {
+  display: flex;
+  align-items: center;
+  padding: 20px 0;
+  color: #FCFCFC;
+  font-weight: 500;
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .mobile-nav-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   padding: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(15, 15, 26, 0.8);
+  flex-shrink: 0;
+  margin-top: auto;
 }
 
 .mobile-vp-balance {
@@ -649,7 +684,7 @@ header .vp-balance .vp-icon svg,
   }
   
   .mobile-menu-btn {
-    display: block;
+    display: flex !important;
   }
   
   .vp-balance {
