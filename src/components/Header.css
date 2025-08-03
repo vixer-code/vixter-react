@@ -166,8 +166,8 @@ nav {
 
 .vp-icon {
   margin-right: 12px;
-  height: 14px;
-  width: 14px;
+  height: 20px;
+  width: 20px;
   position: relative;
   z-index: 1;
   display: flex;
@@ -457,8 +457,8 @@ nav {
   }
   
   .vp-icon {
-    height: 12px;
-    width: 12px;
+    height: 18px;
+    width: 18px;
     margin-right: 8px;
   }
   

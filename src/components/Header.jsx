@@ -21,12 +21,11 @@ const Header = () => {
 
   const loadUserData = async () => {
     try {
-      // Load VP balance
-      const walletRef = ref(database, `wallets/${currentUser.uid}`);
-      const walletSnapshot = await get(walletRef);
-      if (walletSnapshot.exists()) {
-        const walletData = walletSnapshot.val();
-        setVpBalance(walletData.vpBalance || 0);
+      // Load VP balance from users path (matching vanilla JS implementation)
+      const vpRef = ref(database, `users/${currentUser.uid}/vpBalance`);
+      const vpSnapshot = await get(vpRef);
+      if (vpSnapshot.exists()) {
+        setVpBalance(vpSnapshot.val() || 0);
       }
 
       // Load user profile
