@@ -424,11 +424,11 @@
 }
 
 .vp-earning {
-  border-color: rgba(0, 255, 202, 0.3);
+  border-color: rgba(138, 43, 226, 0.3);
 }
 
 .vp-earning:hover {
-  box-shadow: 0 20px 40px rgba(0, 255, 202, 0.2);
+  box-shadow: 0 20px 40px rgba(138, 43, 226, 0.2);
 }
 
 .earning-icon {
