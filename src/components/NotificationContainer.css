@@ -1,0 +1,211 @@
+.notification-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+.notification {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 300px;
+  max-width: 400px;
+  border-left: 4px solid #ddd;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  animation: slideInRight 0.3s ease-out;
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.notification:hover {
+  transform: translateX(-5px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.notification-success {
+  border-left-color: #10b981;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.notification-error {
+  border-left-color: #ef4444;
+  background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+}
+
+.notification-warning {
+  border-left-color: #f59e0b;
+  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+}
+
+.notification-info {
+  border-left-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+}
+
+.notification-icon {
+  font-size: 20px;
+  font-weight: bold;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.notification-success .notification-icon {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.notification-error .notification-icon {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.notification-warning .notification-icon {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.notification-info .notification-icon {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.notification-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.notification-message {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.notification-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #6b7280;
+}
+
+/* Animation for sliding in from right */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Animation for sliding out to right */
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .notification-container {
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+  
+  .notification {
+    min-width: auto;
+    max-width: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .notification {
+    background: #1f2937;
+    color: #f9fafb;
+    border-left-color: #374151;
+  }
+  
+  .notification-success {
+    background: linear-gradient(135deg, #064e3b 0%, #1f2937 100%);
+  }
+  
+  .notification-error {
+    background: linear-gradient(135deg, #7f1d1d 0%, #1f2937 100%);
+  }
+  
+  .notification-warning {
+    background: linear-gradient(135deg, #78350f 0%, #1f2937 100%);
+  }
+  
+  .notification-info {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1f2937 100%);
+  }
+  
+  .notification-title {
+    color: #f9fafb;
+  }
+  
+  .notification-message {
+    color: #d1d5db;
+  }
+  
+  .notification-close {
+    color: #9ca3af;
+  }
+  
+  .notification-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #d1d5db;
+  }
+} 

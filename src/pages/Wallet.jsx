@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { ref, get, set, push } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 import './Wallet.css';
 
 const Wallet = () => {
   const { currentUser } = useAuth();
+  const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -130,10 +132,10 @@ const Wallet = () => {
       await set(ref(database, `users/${currentUser.uid}/lastDailyBonus`), Date.now());
       
       setDailyBonusClaimed(true);
-      showNotification(`Bônus diário recebido! ${bonusAmount} VBP foram adicionados à sua conta.`, 'success');
+      showSuccess(`Bônus diário recebido! ${bonusAmount} VBP foram adicionados à sua conta.`, 'Bônus Diário');
     } catch (error) {
       console.error('Error claiming daily bonus:', error);
-      showNotification('Erro ao receber bônus diário. Tente novamente.', 'error');
+      showError('Erro ao receber bônus diário. Tente novamente.', 'Erro');
     }
   };
 
@@ -192,13 +194,13 @@ const Wallet = () => {
 
   const handleSendVP = async () => {
     if (!sendForm.username || !sendForm.amount) {
-      showNotification('Por favor, preencha todos os campos obrigatórios.', 'error');
+      showError('Por favor, preencha todos os campos obrigatórios.', 'Erro de Validação');
       return;
     }
 
     const amount = parseInt(sendForm.amount);
     if (amount <= 0 || amount > (wallet?.vpBalance || 0)) {
-      showNotification('Quantidade inválida ou saldo insuficiente.', 'error');
+      showError('Quantidade inválida ou saldo insuficiente.', 'Erro de Validação');
       return;
     }
 
@@ -211,16 +213,16 @@ const Wallet = () => {
       
       setSendForm({ username: '', amount: '', message: '' });
       setShowSendModal(false);
-      showNotification(`Transferência realizada com sucesso! ${amount.toLocaleString()} VP foram enviados para @${sendForm.username}.`, 'success');
+      showSuccess(`Transferência realizada com sucesso! ${amount.toLocaleString()} VP foram enviados para @${sendForm.username}.`, 'Transferência Realizada');
     } catch (error) {
       console.error('Error sending VP:', error);
-      showNotification('Erro ao enviar VP. Tente novamente.', 'error');
+      showError('Erro ao enviar VP. Tente novamente.', 'Erro');
     }
   };
 
   const handleRedeemCode = async () => {
     if (!redeemCode || redeemCode.length < 19) {
-      showNotification('Por favor, insira um código válido.', 'error');
+      showError('Por favor, insira um código válido.', 'Código Inválido');
       return;
     }
 
@@ -238,10 +240,10 @@ const Wallet = () => {
       
       setRedeemCode('');
       setShowRedeemModal(false);
-      showNotification(`Código resgatado com sucesso! ${redeemAmount.toLocaleString()} ${currencyType} foram adicionados à sua conta.`, 'success');
+      showSuccess(`Código resgatado com sucesso! ${redeemAmount.toLocaleString()} ${currencyType} foram adicionados à sua conta.`, 'Código Resgatado');
     } catch (error) {
       console.error('Error redeeming code:', error);
-      showNotification('Erro ao resgatar código. Tente novamente.', 'error');
+      showError('Erro ao resgatar código. Tente novamente.', 'Erro');
     }
   };
 
@@ -380,10 +382,7 @@ const Wallet = () => {
     }
   };
 
-  const showNotification = (message, type = 'success') => {
-    // Simple notification implementation
-    alert(`${type.toUpperCase()}: ${message}`);
-  };
+
 
   const handlePackageSelection = (packageData) => {
     setSelectedPackage(packageData);
@@ -391,7 +390,7 @@ const Wallet = () => {
 
   const handlePaymentMethodChange = (method) => {
     if (method === 'pix') {
-      showNotification('🚧 PIX estará disponível em breve! Utilize cartão de crédito por enquanto.', 'info');
+      showInfo('🚧 PIX estará disponível em breve! Utilize cartão de crédito por enquanto.', 'PIX Em Breve');
       return;
     }
     setSelectedPaymentMethod(method);
@@ -399,18 +398,18 @@ const Wallet = () => {
 
   const handleBuyVP = () => {
     if (!selectedPackage) {
-      showNotification('Por favor, selecione um pacote de VP.', 'error');
+      showError('Por favor, selecione um pacote de VP.', 'Pacote Não Selecionado');
       return;
     }
 
     if (selectedPaymentMethod === 'pix') {
-      showNotification('🚧 Pagamento via PIX estará disponível em breve! Por enquanto, utilize cartão de crédito.', 'info');
+      showInfo('🚧 Pagamento via PIX estará disponível em breve! Por enquanto, utilize cartão de crédito.', 'PIX Em Breve');
       setSelectedPaymentMethod('credit-card');
       return;
     }
 
     // Simulate payment process (in real implementation, this would redirect to Stripe)
-    showNotification(`Redirecionando para pagamento: ${selectedPackage.amount} VP por ${selectedPackage.price}`, 'success');
+    showSuccess(`Redirecionando para pagamento: ${selectedPackage.amount} VP por ${selectedPackage.price}`, 'Pagamento');
     setShowBuyVPModal(false);
     setSelectedPackage(null);
   };
