@@ -39,6 +39,8 @@ const Profile = () => {
     services, 
     loading: servicesLoading, 
     getServicesByProvider, 
+    getServicesByProviderOnce,
+    setupServicesListener,
     deleteService, 
     updateServiceStatus 
   } = useServices();
@@ -63,6 +65,15 @@ const Profile = () => {
       off(userRef);
     };
   }, [userId, currentUser]);
+
+  // Set up real-time services listener
+  useEffect(() => {
+    const targetUserId = userId || currentUser?.uid;
+    if (targetUserId) {
+      const cleanup = setupServicesListener(targetUserId);
+      return cleanup;
+    }
+  }, [userId, currentUser, setupServicesListener]);
 
   const loadProfile = async () => {
     try {
@@ -113,9 +124,6 @@ const Profile = () => {
         loadSubscriptions(targetUserId),
         loadReviews(targetUserId)
       ]);
-
-      // Load services for the target user
-      await getServicesByProvider(targetUserId);
       
       setLoading(false);
     } catch (error) {

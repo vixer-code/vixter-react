@@ -10,8 +10,45 @@ export const useServices = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Get all services for a specific provider
+  // Get all services for a specific provider with real-time updates
   const getServicesByProvider = async (providerId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const servicesRef = ref(database, `services/${providerId}`);
+      
+      // Set up real-time listener
+      onValue(servicesRef, (snapshot) => {
+        if (!snapshot.exists()) {
+          setServices([]);
+          return;
+        }
+        
+        const servicesData = snapshot.val();
+        const servicesArray = Object.entries(servicesData).map(([id, service]) => ({
+          id,
+          ...service
+        }));
+        
+        setServices(servicesArray);
+      }, (error) => {
+        console.error('Error in real-time services listener:', error);
+        setError(error.message);
+      });
+      
+      return services;
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      setError(error.message);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get all services for a specific provider (one-time fetch)
+  const getServicesByProviderOnce = async (providerId) => {
     try {
       setLoading(true);
       setError(null);
@@ -38,6 +75,39 @@ export const useServices = () => {
       return [];
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Set up real-time listener for services
+  const setupServicesListener = (providerId) => {
+    try {
+      const servicesRef = ref(database, `services/${providerId}`);
+      
+      onValue(servicesRef, (snapshot) => {
+        if (!snapshot.exists()) {
+          setServices([]);
+          return;
+        }
+        
+        const servicesData = snapshot.val();
+        const servicesArray = Object.entries(servicesData).map(([id, service]) => ({
+          id,
+          ...service
+        }));
+        
+        setServices(servicesArray);
+      }, (error) => {
+        console.error('Error in real-time services listener:', error);
+        setError(error.message);
+      });
+      
+      // Return cleanup function
+      return () => {
+        off(servicesRef);
+      };
+    } catch (error) {
+      console.error('Error setting up services listener:', error);
+      setError(error.message);
     }
   };
 
@@ -220,10 +290,13 @@ export const useServices = () => {
     }
   };
 
-  // Load services for current user on mount
+  // Load services for current user on mount with real-time updates
   useEffect(() => {
     if (currentUser) {
-      getServicesByProvider(currentUser.uid);
+      const cleanup = setupServicesListener(currentUser.uid);
+      
+      // Cleanup function
+      return cleanup;
     }
   }, [currentUser]);
 
@@ -232,6 +305,8 @@ export const useServices = () => {
     loading,
     error,
     getServicesByProvider,
+    getServicesByProviderOnce,
+    setupServicesListener,
     getServiceById,
     createService,
     updateService,

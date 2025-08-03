@@ -8,7 +8,7 @@ import './CreateServiceModal.css';
 
 const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService = null }) => {
   const { currentUser } = useAuth();
-  const { createService, uploadFile, createServiceWithId } = useServices();
+  const { createService, uploadFile, createServiceWithId, updateService } = useServices();
   const { showSuccess, showError } = useNotification();
   
   // Debug notification context
@@ -173,8 +173,10 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   useEffect(() => {
     if (editingService) {
       populateFormWithServiceData(editingService);
+      setCurrentStep(0); // Reset to first step when editing
     } else {
       loadDraft();
+      setCurrentStep(0); // Reset to first step when creating new
     }
   }, [editingService]);
 
@@ -203,21 +205,48 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       price: service.price || '',
       features: service.features || [],
       complementaryOptions: service.complementaryOptions || [],
-      coverImage: service.coverImageURL || null,
-      showcasePhotos: service.showcasePhotos || [],
-      showcaseVideos: service.showcaseVideos || [],
+      coverImage: service.coverImageURL || service.coverImage || null,
+      showcasePhotos: service.showcasePhotosURLs || service.showcasePhotos || [],
+      showcaseVideos: service.showcaseVideosURLs || service.showcaseVideos || [],
       tags: service.tags || []
     });
 
-    if (service.coverImageURL) {
-      setCoverImagePreview(service.coverImageURL);
+    // Clear file upload states
+    setCoverImageFile(null);
+    setShowcasePhotoFiles([]);
+    setShowcaseVideoFiles([]);
+
+    if (service.coverImageURL || service.coverImage) {
+      setCoverImagePreview(service.coverImageURL || service.coverImage);
     }
-    if (service.showcasePhotos) {
-      setShowcasePhotoPreviews(service.showcasePhotos);
+    if (service.showcasePhotosURLs || service.showcasePhotos) {
+      setShowcasePhotoPreviews(service.showcasePhotosURLs || service.showcasePhotos);
     }
-    if (service.showcaseVideos) {
-      setShowcaseVideoPreviews(service.showcaseVideos);
+    if (service.showcaseVideosURLs || service.showcaseVideos) {
+      setShowcaseVideoPreviews(service.showcaseVideosURLs || service.showcaseVideos);
     }
+  };
+
+  const clearForm = () => {
+    setFormData({
+      title: '',
+      category: '',
+      description: '',
+      price: '',
+      features: [],
+      complementaryOptions: [],
+      coverImage: null,
+      showcasePhotos: [],
+      showcaseVideos: [],
+      tags: []
+    });
+    setCoverImageFile(null);
+    setCoverImagePreview('');
+    setShowcasePhotoFiles([]);
+    setShowcasePhotoPreviews([]);
+    setShowcaseVideoFiles([]);
+    setShowcaseVideoPreviews([]);
+    setCurrentStep(0);
   };
 
   const handleInputChange = (field, value) => {
@@ -416,9 +445,10 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   };
 
   const handleSubmit = async () => {
-    console.log('🚀 Starting service creation...');
+    console.log('🚀 Starting service creation/update...');
     console.log('Current user:', currentUser);
     console.log('Database instance:', database);
+    console.log('Editing service:', editingService);
     
     if (!currentUser || isSubmitting) return;
 
@@ -470,21 +500,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     setUploadingFiles(true);
 
     try {
-      // Generate a unique service ID for file uploads
-      if (!database) {
-        throw new Error('Firebase database not initialized');
-      }
-      
-      const tempRef = ref(database, 'services');
-      const newServiceRef = push(tempRef);
-      const serviceId = newServiceRef.key;
-
-      if (!serviceId) {
-        throw new Error('Failed to generate service ID');
-      }
-
-      console.log(`🔑 Using ServiceID: ${serviceId}`);
-
       // Prepare base service data
       const serviceData = {
         title: formData.title,
@@ -496,10 +511,32 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
         tags: formData.tags,
         providerId: currentUser.uid,
         status: 'active',
-        createdAt: Date.now(),
         updatedAt: Date.now(),
         currency: 'VC' // Indicates prices are in VC
       };
+
+      // If creating a new service, add creation timestamp
+      if (!editingService) {
+        serviceData.createdAt = Date.now();
+      }
+
+      // Generate a unique service ID for file uploads (only for new services)
+      let serviceId = editingService?.id;
+      if (!serviceId) {
+        if (!database) {
+          throw new Error('Firebase database not initialized');
+        }
+        
+        const tempRef = ref(database, 'services');
+        const newServiceRef = push(tempRef);
+        serviceId = newServiceRef.key;
+
+        if (!serviceId) {
+          throw new Error('Failed to generate service ID');
+        }
+      }
+
+      console.log(`🔑 Using ServiceID: ${serviceId}`);
 
       // Upload cover image
       if (coverImageFile) {
@@ -534,22 +571,30 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       }
       serviceData.showcaseVideosURLs = videoUrls;
 
-      // Create service with the pre-generated ID
-      console.log('📝 Creating service with Firebase...');
-      const createdService = await createServiceWithId(currentUser.uid, serviceId, serviceData);
-      console.log('✅ Service created successfully:', createdService);
+      let resultService;
+      
+      if (editingService) {
+        // Update existing service
+        console.log('📝 Updating existing service...');
+        resultService = await updateService(serviceId, serviceData);
+        console.log('✅ Service updated successfully:', resultService);
+        showSuccess('Serviço atualizado com sucesso!');
+      } else {
+        // Create new service
+        console.log('📝 Creating new service...');
+        resultService = await createServiceWithId(currentUser.uid, serviceId, serviceData);
+        console.log('✅ Service created successfully:', resultService);
+        showSuccess('Serviço criado com sucesso!');
+      }
 
-      // Clear draft after successful creation
+      // Clear draft after successful creation/update
       localStorage.removeItem(`service-draft-${currentUser.uid}`);
 
-      // Show success message
-      showSuccess('Serviço criado com sucesso!');
-
-      onServiceCreated(createdService);
+      onServiceCreated(resultService);
       onClose();
     } catch (error) {
-      console.error('❌ Error creating service:', error);
-      const errorMessage = `Falha ao criar serviço: ${error.message}`;
+      console.error('❌ Error creating/updating service:', error);
+      const errorMessage = `Falha ao ${editingService ? 'atualizar' : 'criar'} serviço: ${error.message}`;
       showError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -601,7 +646,10 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                 <i className="fas fa-exclamation-triangle"></i> Erro ao salvar
               </span>
             )}
-            <button className="close-btn" onClick={onClose}>&times;</button>
+            <button className="close-btn" onClick={() => {
+              clearForm();
+              onClose();
+            }}>&times;</button>
           </div>
         </div>
 
@@ -1163,7 +1211,7 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
               className="btn primary"
               disabled={isSubmitting || uploadingFiles}
             >
-              {isSubmitting ? 'Criando...' : uploadingFiles ? 'Fazendo upload...' : (editingService ? 'Atualizar Serviço' : 'Criar Serviço')}
+              {isSubmitting ? (editingService ? 'Atualizando...' : 'Criando...') : uploadingFiles ? 'Fazendo upload...' : (editingService ? 'Atualizar Serviço' : 'Criar Serviço')}
             </button>
           )}
         </div>
