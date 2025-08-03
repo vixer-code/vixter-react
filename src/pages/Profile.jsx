@@ -498,9 +498,12 @@ const Profile = () => {
                 onChange={(e) => handleImageUpload(e, 'avatar')}
                 style={{ display: 'none' }}
               />
-              <img 
-                src={profile.profilePictureURL || getDefaultImage('PROFILE_1')} 
+              <CachedImage 
+                src={profile.profilePictureURL}
+                defaultType="PROFILE_1"
                 alt="Avatar de Perfil"
+                className="profile-avatar-img"
+                showLoading={true}
               />
               {isOwner && (
                 <i className="fas fa-camera"></i>
@@ -689,7 +692,13 @@ const Profile = () => {
                   {followers.slice(0, 6).map((follower) => (
                     <div key={follower.id} className="friend-item">
                       <div className="friend-avatar">
-                        <img src={follower.profilePictureURL || getDefaultImage('PROFILE_2')} alt={follower.displayName} />
+                        <CachedImage 
+                          src={follower.profilePictureURL}
+                          defaultType="PROFILE_2"
+                          alt={follower.displayName}
+                          className="friend-avatar-img"
+                          showLoading={false}
+                        />
                         <StatusIndicator 
                           userId={follower.id}
                           isOwner={false}
@@ -711,7 +720,13 @@ const Profile = () => {
             {isOwner && (
               <div className="create-post-card">
                 <div className="create-post-avatar">
-                  <img src={profile.profilePictureURL || getDefaultImage('PROFILE_3')} alt="Avatar" />
+                  <CachedImage 
+                    src={profile.profilePictureURL}
+                    defaultType="PROFILE_3"
+                    alt="Avatar"
+                    className="create-post-avatar-img"
+                    showLoading={false}
+                  />
                 </div>
                 <div className="create-post-body">
                   <textarea
@@ -843,7 +858,13 @@ const Profile = () => {
               services.map((service) => (
                 <div key={service.id} className="service-card">
                   <div className="service-cover">
-                    <img src={service.coverImageURL || '/images/default-service.jpg'} alt={service.title} />
+                    <CachedImage 
+                      src={service.coverImageURL}
+                      fallbackSrc="/images/default-service.jpg"
+                      alt={service.title}
+                      className="service-cover-img"
+                      showLoading={false}
+                    />
                     {service.status && service.status !== 'active' && (
                       <div className={`service-status-badge ${service.status}`}>
                         {service.status}

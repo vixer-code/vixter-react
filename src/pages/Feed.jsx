@@ -3,6 +3,7 @@ import { ref, get, query, orderByChild, limitToFirst } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getDefaultImage } from '../utils/defaultImages';
+import CachedImage from '../components/CachedImage';
 import './Feed.css';
 
 const Feed = () => {
@@ -203,7 +204,13 @@ const Feed = () => {
   const renderServiceCard = (service) => (
     <div key={service.id} className="service-card">
       <div className="service-image">
-        <img src={service.imageUrl || '/images/default-service.jpg'} alt={service.title} />
+        <CachedImage 
+          src={service.imageUrl}
+          fallbackSrc="/images/default-service.jpg"
+          alt={service.title}
+          className="service-image-img"
+          showLoading={false}
+        />
       </div>
       <div className="service-info">
         <h3>{service.title}</h3>
@@ -227,7 +234,13 @@ const Feed = () => {
   const renderProviderCard = (provider) => (
     <div key={provider.id} className="provider-card">
       <div className="provider-avatar">
-                        <img src={provider.profilePictureURL || getDefaultImage('PROFILE_2')} alt={provider.displayName} />
+        <CachedImage 
+          src={provider.profilePictureURL}
+          defaultType="PROFILE_2"
+          alt={provider.displayName}
+          className="provider-avatar-img"
+          showLoading={false}
+        />
       </div>
       <div className="provider-info">
         <h3>{provider.displayName}</h3>

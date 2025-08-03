@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -14,10 +14,18 @@ import Profile from './pages/Profile';
 import Wallet from './pages/Wallet';
 import VerifyEmail from './pages/VerifyEmail';
 import NotFound from './pages/NotFound';
+import { preloadCommonImages } from './utils/imagePreloader';
 
 import './App.css';
 
 function App() {
+  // Preload common images when the app starts
+  useEffect(() => {
+    preloadCommonImages().catch(error => {
+      console.warn('Failed to preload common images:', error);
+    });
+  }, []);
+
   return (
     <AuthProvider>
       <StatusProvider>
