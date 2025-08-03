@@ -301,8 +301,11 @@ const Wallet = () => {
     }
   };
 
-  const formatCurrency = (amount, currency) => {
-    return new Intl.NumberFormat('pt-BR').format(amount) + ' ' + currency;
+  const formatCurrency = (amount, currency = '') => {
+    if (currency) {
+      return new Intl.NumberFormat('pt-BR').format(amount) + ' ' + currency;
+    }
+    return new Intl.NumberFormat('pt-BR').format(amount);
   };
 
   const formatDate = (timestamp) => {
@@ -405,39 +408,40 @@ const Wallet = () => {
       </div>
 
       {/* Balance Cards */}
-      <div className="wallet-balances">
-        <div className="balance-card vp-balance">
-          <div className="balance-icon">
-            <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+      <section className="wallet-header">
+        {/* VP Balance Card */}
+        <div className="balance-card vp-card">
+          <div className="vp-token">
+            <svg className="vp-token-large" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <filter id="vp-glow" x="-30%" y="-30%" width="160%" height="160%">
+                <filter id="glow-large" x="-30%" y="-30%" width="160%" height="160%">
                   <feGaussianBlur stdDeviation="4" result="blur" />
                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
                 
-                <linearGradient id="vp-hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="hexGradient-large" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#0F0F1A" />
                   <stop offset="100%" stopColor="#1A1A2E" />
                 </linearGradient>
                 
-                <radialGradient id="vp-glowGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                <radialGradient id="glowGradient-large" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                   <stop offset="0%" stopColor="#8A2BE2" stopOpacity="0.7" />
                   <stop offset="100%" stopColor="#8A2BE2" stopOpacity="0" />
                 </radialGradient>
                 
-                <linearGradient id="vp-textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="textGradient-large" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#00FFCA" />
                   <stop offset="100%" stopColor="#00D4AA" />
                 </linearGradient>
               </defs>
               
-              <circle cx="64" cy="64" r="60" fill="url(#vp-glowGradient)" />
+              <circle cx="64" cy="64" r="60" fill="url(#glowGradient-large)" />
               
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
-                    fill="url(#vp-hexGradient)" 
+                    fill="url(#hexGradient-large)" 
                     stroke="#8A2BE2" 
                     strokeWidth="2" 
-                    filter="url(#vp-glow)" />
+                    filter="url(#glow-large)" />
               
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="none" 
@@ -452,62 +456,86 @@ const Wallet = () => {
                     strokeWidth="1.5" 
                     opacity="0.8" />
               
-              <g filter="url(#vp-glow)">
+              <g filter="url(#glow-large)">
                 <text x="64" y="72" 
                       fontFamily="'Press Start 2P', monospace" 
-                      fontSize="20" 
-                      fill="url(#vp-textGradient)"
+                      fontSize="24" 
+                      fill="url(#textGradient-large)"
                       textAnchor="middle"
                       fontWeight="bold">VP</text>
               </g>
+              
+              <path d="M40 60 H28 V70 H36" fill="none" stroke="#00FFCA" strokeWidth="1" />
+              <path d="M88 60 H100 V70 H92" fill="none" stroke="#00FFCA" strokeWidth="1" />
+              <path d="M64 32 V24" fill="none" stroke="#00FFCA" strokeWidth="1" />
+              <path d="M64 96 V104" fill="none" stroke="#00FFCA" strokeWidth="1" />
+              
+              <circle cx="28" cy="60" r="2" fill="#00FFCA" />
+              <circle cx="36" cy="70" r="2" fill="#00FFCA" />
+              <circle cx="100" cy="60" r="2" fill="#00FFCA" />
+              <circle cx="92" cy="70" r="2" fill="#00FFCA" />
+              <circle cx="64" cy="24" r="2" fill="#00FFCA" />
+              <circle cx="64" cy="104" r="2" fill="#00FFCA" />
+              
+              <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
+                    fill="none" 
+                    stroke="#B14AFF" 
+                    strokeWidth="1" 
+                    opacity="0.5">
+                <animate attributeName="opacity" values="0.1;0.5;0.1" dur="3s" repeatCount="indefinite" />
+                <animate attributeName="stroke-width" values="1;3;1" dur="3s" repeatCount="indefinite" />
+              </path>
             </svg>
           </div>
           <div className="balance-info">
-            <h3>Vixter Points</h3>
-            <div className="balance-amount">{formatCurrency(wallet?.vpBalance || 0, 'VP')}</div>
-            <p>Moeda principal para contratar serviços</p>
+            <h2>Vixter Points</h2>
+            <p className="balance-description">Para comprar serviços de criadores</p>
+            <div className="balance-amount">
+              <span id="wallet-vp-amount">{formatCurrency(wallet?.vpBalance || 0, '')}</span>
+              <span className="currency">VP</span>
+            </div>
             <button 
-              className="action-btn add-funds-btn"
+              className="btn-primary small"
               onClick={() => setShowBuyVPModal(true)}
             >
-              <i className="fas fa-shopping-cart"></i>
-              Comprar VP
+              <i className="fas fa-shopping-cart"></i> Comprar VP
             </button>
           </div>
         </div>
 
-        <div className="balance-card vbp-balance">
-          <div className="balance-icon">
-            <svg className="vbp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+        {/* VBP Balance Card */}
+        <div className="balance-card vbp-card">
+          <div className="vbp-token">
+            <svg className="vbp-token-large" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <filter id="vbp-glow" x="-30%" y="-30%" width="160%" height="160%">
+                <filter id="glow-large-vbp" x="-30%" y="-30%" width="160%" height="160%">
                   <feGaussianBlur stdDeviation="4" result="blur" />
                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
                 
-                <linearGradient id="vbp-hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#1A0F1A" />
-                  <stop offset="100%" stopColor="#2E1A2E" />
+                <linearGradient id="hexGradient-large-vbp" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#1A0F0F" />
+                  <stop offset="100%" stopColor="#2E1A1A" />
                 </linearGradient>
                 
-                <radialGradient id="vbp-glowGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                <radialGradient id="glowGradient-large-vbp" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                   <stop offset="0%" stopColor="#FFD700" stopOpacity="0.7" />
                   <stop offset="100%" stopColor="#FFD700" stopOpacity="0" />
                 </radialGradient>
                 
-                <linearGradient id="vbp-textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="textGradient-large-vbp" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#FFD700" />
                   <stop offset="100%" stopColor="#FFA500" />
                 </linearGradient>
               </defs>
               
-              <circle cx="64" cy="64" r="60" fill="url(#vbp-glowGradient)" />
+              <circle cx="64" cy="64" r="60" fill="url(#glowGradient-large-vbp)" />
               
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
-                    fill="url(#vbp-hexGradient)" 
+                    fill="url(#hexGradient-large-vbp)" 
                     stroke="#FFD700" 
                     strokeWidth="2" 
-                    filter="url(#vbp-glow)" />
+                    filter="url(#glow-large-vbp)" />
               
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="none" 
@@ -522,49 +550,70 @@ const Wallet = () => {
                     strokeWidth="1.5" 
                     opacity="0.8" />
               
-              <g filter="url(#vbp-glow)">
+              <g filter="url(#glow-large-vbp)">
                 <text x="64" y="72" 
                       fontFamily="'Press Start 2P', monospace" 
                       fontSize="20" 
-                      fill="url(#vbp-textGradient)"
+                      fill="url(#textGradient-large-vbp)"
                       textAnchor="middle"
                       fontWeight="bold">VBP</text>
               </g>
+              
+              <path d="M40 60 H28 V70 H36" fill="none" stroke="#FFA500" strokeWidth="1" />
+              <path d="M88 60 H100 V70 H92" fill="none" stroke="#FFA500" strokeWidth="1" />
+              <path d="M64 32 V24" fill="none" stroke="#FFA500" strokeWidth="1" />
+              <path d="M64 96 V104" fill="none" stroke="#FFA500" strokeWidth="1" />
+              
+              <circle cx="28" cy="60" r="2" fill="#FFA500" />
+              <circle cx="36" cy="70" r="2" fill="#FFA500" />
+              <circle cx="100" cy="60" r="2" fill="#FFA500" />
+              <circle cx="92" cy="70" r="2" fill="#FFA500" />
+              <circle cx="64" cy="24" r="2" fill="#FFA500" />
+              <circle cx="64" cy="104" r="2" fill="#FFA500" />
+              
+              <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
+                    fill="none" 
+                    stroke="#FFFF00" 
+                    strokeWidth="1" 
+                    opacity="0.5">
+                <animate attributeName="opacity" values="0.1;0.5;0.1" dur="3s" repeatCount="indefinite" />
+                <animate attributeName="stroke-width" values="1;3;1" dur="3s" repeatCount="indefinite" />
+              </path>
             </svg>
           </div>
           <div className="balance-info">
-            <h3>Vixter Bonus Points</h3>
-            <div className="balance-amount">{formatCurrency(wallet?.vbpBalance || 0, 'VBP')}</div>
-            <p>Pontos bônus para recompensas especiais</p>
+            <h2>Vixter Bonus Points</h2>
+            <p className="balance-description">Ganhos através de atividades na plataforma</p>
+            <div className="balance-amount">
+              <span id="wallet-vbp-amount">{formatCurrency(wallet?.vbpBalance || 0, '')}</span>
+              <span className="currency">VBP</span>
+            </div>
             <button 
-              className="action-btn vbp-info-btn"
+              className="btn-info small"
               disabled
             >
-              <i className="fas fa-info-circle"></i>
-              VBP Grátis
+              <i className="fas fa-info-circle"></i> VBP Grátis
             </button>
             <small className="vbp-info">Ganhe VBP através de login diário, referências e desafios!</small>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Wallet Actions */}
-      <div className="wallet-actions">
+      <section className="wallet-actions-section">
         <button 
-          className="action-btn send-btn"
+          className="btn-secondary"
           onClick={() => setShowSendModal(true)}
         >
-          <i className="fas fa-paper-plane"></i>
-          Enviar VP
+          <i className="fas fa-paper-plane"></i> Enviar VP
         </button>
         <button 
-          className="action-btn redeem-btn"
+          className="btn-secondary"
           onClick={() => setShowRedeemModal(true)}
         >
-          <i className="fas fa-gift"></i>
-          Resgatar Código
+          <i className="fas fa-gift"></i> Resgatar Código
         </button>
-      </div>
+      </section>
 
       {/* Tabs */}
       <div className="wallet-tabs">
