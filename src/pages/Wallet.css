@@ -178,7 +178,7 @@
 }
 
 .tab-btn.active {
-  color: #E6E6FA;
+  color: #9B59B6;
 }
 
 .tab-btn.active::after {
@@ -188,7 +188,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #8A2BE2, #9370DB);
+  background: #8B5A9B;
 }
 
 .tab-content {
