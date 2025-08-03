@@ -1,5 +1,4 @@
-import React from 'react';
-import { useFirebaseImage } from '../hooks/useFirebaseImage';
+import React, { useState, useEffect } from 'react';
 import { getDefaultImage } from '../utils/defaultImages';
 import './CachedImage.css';
 
@@ -37,7 +36,44 @@ const CachedImage = ({
   // Use default image if no fallback is provided
   const finalFallbackSrc = fallbackSrc || getDefaultImage(defaultType);
   
-  const { imageSrc, loading, error } = useFirebaseImage(src, finalFallbackSrc, enableCache);
+  const [imageSrc, setImageSrc] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      // If no src provided, use fallback immediately
+      if (!src || src === '') {
+        setImageSrc(finalFallbackSrc);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        let imageUrl;
+
+        // If it's already a URL, use it directly
+        if (typeof src === 'string' && src.startsWith('http')) {
+          imageUrl = src;
+        } else {
+          // For any other case, use the fallback
+          imageUrl = finalFallbackSrc;
+        }
+
+        setImageSrc(imageUrl);
+        setLoading(false);
+      } catch (err) {
+        setImageSrc(finalFallbackSrc);
+        setError(err);
+        setLoading(false);
+      }
+    };
+
+    loadImage();
+  }, [src, finalFallbackSrc]);
 
   const handleLoad = (e) => {
     if (onLoad) onLoad(e);
