@@ -50,11 +50,6 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  opacity: 0;
-}
-
-.cover-photo:hover .cover-upload-btn {
-  opacity: 1;
 }
 
 .cover-upload-btn:hover {
@@ -128,12 +123,6 @@
   padding: 6px;
   font-size: 18px;
   z-index: 3;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.avatar-upload-btn:hover i {
-  opacity: 1;
 }
 
 /* Status Indicator positioning for profile avatar */
@@ -649,13 +638,10 @@
   text-align: center;
   cursor: pointer;
   transition: transform 0.2s ease;
-  padding: 10px;
-  border-radius: 8px;
 }
 
 .friend-item:hover {
   transform: translateY(-3px);
-  background: rgba(255, 255, 255, 0.05);
 }
 
 .friend-avatar {
@@ -926,6 +912,7 @@
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
+  position: relative;
 }
 
 .service-card:hover,
@@ -940,6 +927,7 @@
 .subscription-cover {
   height: 150px;
   overflow: hidden;
+  position: relative;
 }
 
 .service-cover img,
@@ -948,6 +936,29 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.service-status-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.service-status-badge.draft {
+  background: rgba(255, 193, 7, 0.9);
+  color: #000000;
+}
+
+.service-status-badge.paused {
+  background: rgba(255, 152, 0, 0.9);
+  color: #ffffff;
 }
 
 .service-info,
@@ -972,13 +983,85 @@
   font-size: 1.2rem;
   font-weight: 700;
   color: #00FFCA;
+  margin: 0 0 5px 0;
+}
+
+.service-category {
+  font-size: 0.85rem;
+  color: #B8B8B8;
   margin: 0;
+  text-transform: capitalize;
 }
 
 .pack-discount {
   color: #FF2E63;
   font-size: 0.9rem;
   margin-left: 8px;
+}
+
+.service-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.action-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #B8B8B8;
+  border: none;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+.action-btn.edit-btn:hover {
+  background: rgba(0, 255, 202, 0.2);
+  color: #00FFCA;
+}
+
+.action-btn.status-btn:hover {
+  background: rgba(138, 43, 226, 0.2);
+  color: #8A2BE2;
+}
+
+.action-btn.delete-btn:hover {
+  background: rgba(255, 46, 99, 0.2);
+  color: #FF2E63;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #B8B8B8;
+  grid-column: 1 / -1;
+}
+
+.loading-state i {
+  font-size: 2rem;
+  margin-bottom: 15px;
+  color: #00FFCA;
+}
+
+.loading-state p {
+  margin: 0;
+  font-size: 1rem;
 }
 
 .packs-description {
@@ -1178,13 +1261,11 @@
   border-radius: 12px;
   transition: all 0.2s ease;
   cursor: pointer;
-  border: 1px solid transparent;
 }
 
 .modal-follower-item:hover {
   background: rgba(255, 255, 255, 0.05);
   transform: translateY(-3px);
-  border-color: rgba(0, 255, 202, 0.3);
 }
 
 .modal-follower-avatar {
@@ -1276,24 +1357,6 @@
 .edit-input::placeholder,
 .edit-textarea::placeholder {
   color: #B8B8B8;
-}
-
-.username-edit-disabled {
-  position: relative;
-}
-
-.edit-input.disabled {
-  background: rgba(255, 255, 255, 0.05);
-  color: #B8B8B8;
-  cursor: not-allowed;
-}
-
-.username-note {
-  display: block;
-  margin-top: 5px;
-  color: #FF2E63;
-  font-size: 0.8rem;
-  font-style: italic;
 }
 
 /* Button Styles */

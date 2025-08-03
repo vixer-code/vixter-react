@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { ref, get, update, set, remove, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import { useEmailVerification } from '../hooks/useEmailVerification';
+import { useServices } from '../hooks/useServices';
 import StatusIndicator from '../components/StatusIndicator';
+import CreateServiceModal from '../components/CreateServiceModal';
 import './Profile.css';
 
 const Profile = () => {
   const { userId } = useParams();
-  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { isVerified, isChecking } = useEmailVerification();
   const [profile, setProfile] = useState(null);
@@ -26,11 +27,21 @@ const Profile = () => {
   const [newPostContent, setNewPostContent] = useState('');
   const [selectedImages, setSelectedImages] = useState([]);
   const [userStatus, setUserStatus] = useState('offline');
-  const [services, setServices] = useState([]);
   const [packs, setPacks] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [showCreateServiceModal, setShowCreateServiceModal] = useState(false);
+  const [editingService, setEditingService] = useState(null);
+
+  // Services hook
+  const { 
+    services, 
+    loading: servicesLoading, 
+    getServicesByProvider, 
+    deleteService, 
+    updateServiceStatus 
+  } = useServices();
 
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -98,11 +109,13 @@ const Profile = () => {
         loadFollowers(targetUserId),
         loadPosts(targetUserId),
         loadUserStatus(targetUserId),
-        loadServices(targetUserId),
         loadPacks(targetUserId),
         loadSubscriptions(targetUserId),
         loadReviews(targetUserId)
       ]);
+
+      // Load services for the target user
+      await getServicesByProvider(targetUserId);
       
       setLoading(false);
     } catch (error) {
@@ -174,21 +187,33 @@ const Profile = () => {
     }
   };
 
-  const loadServices = async (targetUserId) => {
-    try {
-      const servicesRef = ref(database, `services/${targetUserId}`);
-      const snapshot = await get(servicesRef);
-      
-      if (snapshot.exists()) {
-        const servicesData = snapshot.val();
-        const servicesArray = Object.entries(servicesData).map(([id, service]) => ({
-          id,
-          ...service
-        }));
-        setServices(servicesArray);
+  const handleServiceCreated = (newService) => {
+    // The services hook will automatically update the services list
+    console.log('Service created:', newService);
+  };
+
+  const handleEditService = (service) => {
+    setEditingService(service);
+    setShowCreateServiceModal(true);
+  };
+
+  const handleDeleteService = async (serviceId) => {
+    if (window.confirm('Tem certeza que deseja excluir este serviço?')) {
+      try {
+        await deleteService(serviceId);
+      } catch (error) {
+        console.error('Error deleting service:', error);
+        alert('Erro ao excluir serviço. Tente novamente.');
       }
+    }
+  };
+
+  const handleServiceStatusChange = async (serviceId, newStatus) => {
+    try {
+      await updateServiceStatus(serviceId, newStatus);
     } catch (error) {
-      console.error('Error loading services:', error);
+      console.error('Error updating service status:', error);
+      alert('Erro ao atualizar status do serviço. Tente novamente.');
     }
   };
 
@@ -490,16 +515,13 @@ const Profile = () => {
             </h1>
             <p className="profile-username">
               {editing ? (
-                <div className="username-edit-disabled">
-                  <input
-                    type="text"
-                    value={formData.username}
-                    className="edit-input disabled"
-                    placeholder="@username"
-                    disabled
-                  />
-                  <small className="username-note">Nome de usuário não pode ser alterado</small>
-                </div>
+                <input
+                  type="text"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  className="edit-input"
+                  placeholder="@username"
+                />
               ) : (
                 `@${profile.username || 'username'}`
               )}
@@ -656,7 +678,7 @@ const Profile = () => {
               <div className="section-content">
                 <div className="friends-grid">
                   {followers.slice(0, 6).map((follower) => (
-                    <div key={follower.id} className="friend-item" onClick={() => navigate(`/profile/${follower.id}`)}>
+                    <div key={follower.id} className="friend-item">
                       <div className="friend-avatar">
                         <img src={follower.profilePictureURL || getDefaultImage('PROFILE_2')} alt={follower.displayName} />
                         <StatusIndicator 
@@ -790,23 +812,68 @@ const Profile = () => {
           <div className="services-header">
             <h3>Serviços</h3>
             {isOwner && (
-              <button className="btn primary" onClick={() => navigate('/create-service')}>
+              <button 
+                className="btn primary"
+                onClick={() => {
+                  setEditingService(null);
+                  setShowCreateServiceModal(true);
+                }}
+              >
                 <i className="fa-solid fa-plus"></i> Criar Novo Serviço
               </button>
             )}
           </div>
           
           <div className="services-grid">
-            {services.length > 0 ? (
+            {servicesLoading ? (
+              <div className="loading-state">
+                <i className="fa-solid fa-spinner fa-spin"></i>
+                <p>Carregando serviços...</p>
+              </div>
+            ) : services.length > 0 ? (
               services.map((service) => (
                 <div key={service.id} className="service-card">
                   <div className="service-cover">
                     <img src={service.coverImageURL || '/images/default-service.jpg'} alt={service.title} />
+                    {service.status && service.status !== 'active' && (
+                      <div className={`service-status-badge ${service.status}`}>
+                        {service.status}
+                      </div>
+                    )}
                   </div>
                   <div className="service-info">
                     <h3 className="service-title">{service.title}</h3>
-                    <p className="service-price">R$ {service.price?.toFixed(2)}</p>
+                    <p className="service-price">VP {service.price?.toFixed(2)}</p>
+                    <p className="service-category">{service.category}</p>
                   </div>
+                  {isOwner && (
+                    <div className="service-actions">
+                      <button 
+                        className="action-btn edit-btn"
+                        onClick={() => handleEditService(service)}
+                        title="Editar"
+                      >
+                        <i className="fa-solid fa-edit"></i>
+                      </button>
+                      <button 
+                        className="action-btn status-btn"
+                        onClick={() => {
+                          const newStatus = service.status === 'active' ? 'paused' : 'active';
+                          handleServiceStatusChange(service.id, newStatus);
+                        }}
+                        title="Alterar Status"
+                      >
+                        <i className="fa-solid fa-toggle-on"></i>
+                      </button>
+                      <button 
+                        className="action-btn delete-btn"
+                        onClick={() => handleDeleteService(service.id)}
+                        title="Excluir"
+                      >
+                        <i className="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))
             ) : (
@@ -825,7 +892,7 @@ const Profile = () => {
           <div className="packs-header">
             <h3>Packs</h3>
             {isOwner && (
-              <button className="btn primary" onClick={() => navigate('/create-pack')}>
+              <button className="btn primary">
                 <i className="fa-solid fa-plus"></i> Criar Novo Pack
               </button>
             )}
@@ -867,7 +934,7 @@ const Profile = () => {
           <div className="subscriptions-header">
             <h3>Assinaturas</h3>
             {isOwner && (
-              <button className="btn primary" onClick={() => navigate('/create-subscription')}>
+              <button className="btn primary">
                 <i className="fa-solid fa-plus"></i> Criar Nova Assinatura
               </button>
             )}
@@ -952,10 +1019,7 @@ const Profile = () => {
             <div className="modal-body">
               <div className="modal-followers-grid">
                 {followers.map((follower) => (
-                  <div key={follower.id} className="modal-follower-item" onClick={() => {
-                    setShowFollowersModal(false);
-                    navigate(`/profile/${follower.id}`);
-                  }}>
+                  <div key={follower.id} className="modal-follower-item">
                     <div className="modal-follower-avatar">
                       <img src={follower.profilePictureURL || getDefaultImage('PROFILE_1')} alt={follower.displayName} />
                       <StatusIndicator 
@@ -973,6 +1037,17 @@ const Profile = () => {
           </div>
         </div>
       )}
+
+      {/* Create Service Modal */}
+      <CreateServiceModal
+        isOpen={showCreateServiceModal}
+        onClose={() => {
+          setShowCreateServiceModal(false);
+          setEditingService(null);
+        }}
+        onServiceCreated={handleServiceCreated}
+        editingService={editingService}
+      />
     </div>
   );
 };
