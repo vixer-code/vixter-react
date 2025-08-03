@@ -246,7 +246,7 @@ const Feed = () => {
   if (loading) {
     return (
       <div className="feed-container">
-        <div className="loading-spinner">Carregando...</div>
+        <div className="loading-text">Carregando...</div>
       </div>
     );
   }

@@ -402,7 +402,7 @@ const Profile = () => {
   if (loading) {
     return (
       <div className="profile-container">
-        <div className="loading-spinner">Carregando...</div>
+        <div className="loading-text">Carregando...</div>
       </div>
     );
   }

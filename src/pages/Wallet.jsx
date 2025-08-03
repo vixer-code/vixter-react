@@ -426,7 +426,7 @@ const Wallet = () => {
   if (loading) {
     return (
       <div className="wallet-container">
-        <div className="loading-spinner">Carregando...</div>
+        <div className="loading-text">Carregando...</div>
       </div>
     );
   }
