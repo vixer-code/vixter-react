@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ref, get } from 'firebase/database';
+import { ref, get, onValue, off } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getDefaultImage } from '../utils/defaultImages';
@@ -17,18 +17,29 @@ const Header = () => {
     if (currentUser) {
       loadUserData();
     }
+
+    // Cleanup function to remove listeners when component unmounts
+    return () => {
+      if (currentUser) {
+        const vpRef = ref(database, `users/${currentUser.uid}/vpBalance`);
+        off(vpRef);
+      }
+    };
   }, [currentUser]);
 
   const loadUserData = async () => {
     try {
-      // Load VP balance from users path (matching vanilla JS implementation)
+      // Set up real-time listener for VP balance (matching vanilla JS implementation)
       const vpRef = ref(database, `users/${currentUser.uid}/vpBalance`);
-      const vpSnapshot = await get(vpRef);
-      if (vpSnapshot.exists()) {
-        setVpBalance(vpSnapshot.val() || 0);
-      }
+      onValue(vpRef, (snapshot) => {
+        if (snapshot.exists()) {
+          setVpBalance(snapshot.val() || 0);
+        } else {
+          setVpBalance(0);
+        }
+      });
 
-      // Load user profile
+      // Load user profile (one-time fetch)
       const userRef = ref(database, `users/${currentUser.uid}`);
       const userSnapshot = await get(userRef);
       if (userSnapshot.exists()) {
