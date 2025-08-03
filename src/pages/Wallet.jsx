@@ -254,7 +254,7 @@ const Wallet = () => {
               <g filter="url(#vp-glow)">
                 <text x="64" y="72" 
                       fontFamily="'Press Start 2P', monospace" 
-                      fontSize="24" 
+                      fontSize="20" 
                       fill="url(#vp-textGradient)"
                       textAnchor="middle"
                       fontWeight="bold">VP</text>
