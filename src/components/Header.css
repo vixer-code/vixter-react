@@ -101,7 +101,7 @@ nav {
   display: flex;
   align-items: center;
   background-color: #1A1A2E;
-  padding: 4px 16px;
+  padding: 2px 20px;
   border-radius: 8px;
   color: #FCFCFC;
   font-weight: 600;
@@ -112,7 +112,7 @@ nav {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
   cursor: pointer;
-  min-width: 120px;
+  min-width: 140px;
 }
 
 .vp-balance::before {
@@ -163,9 +163,9 @@ nav {
 }
 
 .vp-icon {
-  margin-right: 10px;
-  height: 16px;
-  width: 16px;
+  margin-right: 12px;
+  height: 14px;
+  width: 14px;
   position: relative;
   z-index: 1;
 }
@@ -174,7 +174,7 @@ nav {
   position: relative;
   z-index: 1;
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   background: linear-gradient(to right, #B14AFF, #00FFCA);
   -webkit-background-clip: text;
   background-clip: text;
@@ -444,14 +444,14 @@ nav {
   
   .vp-balance {
     margin-right: 10px;
-    padding: 3px 12px;
-    min-width: 100px;
+    padding: 2px 16px;
+    min-width: 120px;
   }
   
   .vp-icon {
-    height: 16px;
-    width: 16px;
-    margin-right: 6px;
+    height: 12px;
+    width: 12px;
+    margin-right: 8px;
   }
   
   #vp-amount {

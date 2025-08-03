@@ -20,7 +20,7 @@
 }
 
 .cover-photo {
-  height: 300px;
+  height: 280px;
   background-image: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%);
   background-size: cover;
   background-position: center;
@@ -31,7 +31,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: flex-start;
-  padding-bottom: 20px;
+  padding-bottom: 15px;
   padding-left: 30px;
 }
 
@@ -60,9 +60,9 @@
 .profile-header {
   display: flex;
   align-items: flex-end;
-  padding: 0 30px 30px;
+  padding: 0 30px 25px;
   position: relative;
-  margin-top: -80px;
+  margin-top: -60px;
   z-index: 2;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 0 0 16px 16px;
@@ -73,8 +73,8 @@
 
 .profile-avatar {
   position: relative;
-  width: 160px;
-  height: 160px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
   border: 6px solid #ffffff;
   overflow: hidden;
@@ -135,10 +135,10 @@
 
 .profile-info {
   flex: 1;
-  padding-top: 20px;
-  padding-left: 20px;
-  margin-left: 20px;
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 15px;
+  padding-left: 25px;
+  margin-left: 0;
+  border-left: none;
 }
 
 /* Account Badges */
@@ -191,33 +191,33 @@
 }
 
 .profile-name {
-  font-size: 2.5rem;
+  font-size: 1.8rem;
   font-weight: 700;
-  margin: 0 0 10px 0;
+  margin: 0 0 5px 0;
   color: #ffffff;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .profile-username {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: #00FFCA;
-  margin: 0 0 15px 0;
+  margin: 0 0 10px 0;
   font-weight: 500;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .profile-status {
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: #B8B8B8;
-  margin: 0 0 20px 0;
-  line-height: 1.5;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
   max-width: 500px;
 }
 
 .profile-meta {
   display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
+  gap: 15px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
 }
 
@@ -256,9 +256,9 @@
 
 .profile-actions {
   margin-left: auto;
-  padding-top: 20px;
-  padding-left: 20px;
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 15px;
+  padding-left: 25px;
+  border-left: none;
 }
 
 .edit-profile-btn,
@@ -1221,9 +1221,9 @@
   
   .profile-avatar {
     margin-right: 0;
-    margin-bottom: 20px;
-    width: 120px;
-    height: 120px;
+    margin-bottom: 15px;
+    width: 100px;
+    height: 100px;
   }
   
   .profile-info {
@@ -1234,7 +1234,7 @@
   }
   
   .profile-name {
-    font-size: 2rem;
+    font-size: 1.6rem;
   }
   
   .profile-meta {
