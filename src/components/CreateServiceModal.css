@@ -149,12 +149,45 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+}
+
+.progress-step:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .progress-step.active {
   background: rgba(0, 255, 202, 0.1);
   color: #00FFCA;
   border: 1px solid rgba(0, 255, 202, 0.3);
+}
+
+.progress-step.active:hover {
+  background: rgba(0, 255, 202, 0.15);
+  color: #00FFCA;
+}
+
+.progress-step.completed {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.progress-step.completed:hover {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4CAF50;
+}
+
+.progress-step.completed::after {
+  content: '✓';
+  position: absolute;
+  top: 2px;
+  right: 8px;
+  font-size: 0.7rem;
+  font-weight: bold;
 }
 
 /* Modal Content - Fixed alignment and responsiveness */

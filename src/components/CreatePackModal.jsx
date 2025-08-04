@@ -395,6 +395,13 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     }
   };
 
+  const handleStepClick = (stepIndex) => {
+    // Only allow navigation to steps that have been completed or are the current step
+    if (stepIndex <= currentStep) {
+      setCurrentStep(stepIndex);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!currentUser || isSubmitting) return;
 
@@ -555,7 +562,9 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
             {steps.map((step, index) => (
               <div 
                 key={step.id}
-                className={`progress-step ${index <= currentStep ? 'active' : ''}`}
+                className={`progress-step ${index <= currentStep ? 'active' : ''} ${index < currentStep ? 'completed' : ''}`}
+                onClick={() => handleStepClick(index)}
+                title={`Ir para: ${step.title}`}
               >
                 {step.title}
               </div>

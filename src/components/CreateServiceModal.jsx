@@ -444,6 +444,13 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     }
   };
 
+  const handleStepClick = (stepIndex) => {
+    // Only allow navigation to steps that have been completed or are the current step
+    if (stepIndex <= currentStep) {
+      setCurrentStep(stepIndex);
+    }
+  };
+
   const handleSubmit = async () => {
     console.log('🚀 Starting service creation/update...');
     console.log('Current user:', currentUser);
@@ -664,7 +671,9 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
             {steps.map((step, index) => (
               <div 
                 key={step.id}
-                className={`progress-step ${index <= currentStep ? 'active' : ''}`}
+                className={`progress-step ${index <= currentStep ? 'active' : ''} ${index < currentStep ? 'completed' : ''}`}
+                onClick={() => handleStepClick(index)}
+                title={`Ir para: ${step.title}`}
               >
                 {step.title}
               </div>
