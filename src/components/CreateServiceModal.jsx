@@ -797,11 +797,11 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                           onClick={() => handlePriceSuggestion(suggestion)}
                         >
                           <div className="suggestion-price">
-                            <div className="currency-icon vc-icon"></div>
+                            <div className="currency-icon vc-icon">VC</div>
                             {formatVC(suggestion.vc)}
                           </div>
                           <div className="suggestion-vp">
-                            <div className="currency-icon vp-icon"></div>
+                            <div className="currency-icon vp-icon">VP</div>
                             {formatVP(convertVCtoVP(suggestion.vc))}
                           </div>
                           <div className="suggestion-desc">{suggestion.description}</div>
@@ -823,16 +823,16 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                 {formData.price && !getPriceValidationError() && (
                   <div className="currency-display">
                     <div className="currency-row">
-                      <span>Você recebe:</span>
+                      <span className="currency-label">Você recebe:</span>
                       <span className="currency-value vc">
-                        <div className="currency-icon vc-icon"></div>
+                        <div className="currency-icon vc-icon">VC</div>
                         {formatVC(formData.price)}
                       </span>
                     </div>
                     <div className="currency-row">
-                      <span>Cliente paga:</span>
+                      <span className="currency-label">Cliente paga:</span>
                       <span className="currency-value vp">
-                        <div className="currency-icon vp-icon"></div>
+                        <div className="currency-icon vp-icon">VP</div>
                         {formatVP(convertVCtoVP(formData.price))}
                       </span>
                     </div>
@@ -902,16 +902,16 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                         {option.price && !optionPriceError && (
                           <div className="currency-display option-currency-display">
                             <div className="currency-row">
-                              <span>Você recebe:</span>
+                              <span className="currency-label">Você recebe:</span>
                               <span className="currency-value vc">
-                                <div className="currency-icon vc-icon"></div>
+                                <div className="currency-icon vc-icon">VC</div>
                                 {formatVC(option.price)}
                               </span>
                             </div>
                             <div className="currency-row">
-                              <span>Cliente paga:</span>
+                              <span className="currency-label">Cliente paga:</span>
                               <span className="currency-value vp">
-                                <div className="currency-icon vp-icon"></div>
+                                <div className="currency-icon vp-icon">VP</div>
                                 {formatVP(convertVCtoVP(option.price))}
                               </span>
                             </div>
