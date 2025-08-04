@@ -1127,10 +1127,10 @@
 
 .pack-actions {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 8px;
+  right: 8px;
   display: flex;
-  gap: 5px;
+  gap: 4px;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -1140,50 +1140,51 @@
 }
 
 .service-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
   display: flex;
-  gap: 8px;
-  padding: 10px 15px;
-  background: rgba(255, 255, 255, 0.02);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  position: relative;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+  border: none;
   z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.service-card:hover .service-actions {
+  opacity: 1;
 }
 
 .action-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: #B8B8B8;
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffffff;
   border: none;
   border-radius: 6px;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 0.9rem;
-  flex: 1;
+  font-size: 0.8rem;
+  backdrop-filter: blur(4px);
 }
 
 .action-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
   transform: scale(1.1);
 }
 
-.action-btn.edit-btn:hover {
-  background: rgba(0, 255, 202, 0.2);
-  color: #00FFCA;
-}
-
 .action-btn.status-btn:hover {
-  background: rgba(138, 43, 226, 0.2);
-  color: #8A2BE2;
+  background: rgba(138, 43, 226, 0.9);
+  color: #ffffff;
 }
 
 .action-btn.delete-btn:hover {
-  background: rgba(255, 46, 99, 0.2);
-  color: #FF2E63;
+  background: rgba(255, 46, 99, 0.9);
+  color: #ffffff;
 }
 
 .loading-state {

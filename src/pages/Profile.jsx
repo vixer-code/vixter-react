@@ -820,13 +820,6 @@ const Profile = () => {
                   {isOwner && (
                     <div className="service-actions" onClick={(e) => e.stopPropagation()}>
                       <button 
-                        className="action-btn edit-btn"
-                        onClick={() => handleEditService(service)}
-                        title="Editar"
-                      >
-                        <i className="fa-solid fa-edit"></i>
-                      </button>
-                      <button 
                         className="action-btn status-btn"
                         onClick={() => {
                           const newStatus = service.status === 'active' ? 'paused' : 'active';
@@ -913,13 +906,6 @@ const Profile = () => {
                   </div>
                   {isOwner && (
                     <div className="pack-actions" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className="action-btn edit-btn"
-                        onClick={() => handleEditPack(pack)}
-                        title="Editar"
-                      >
-                        <i className="fa-solid fa-edit"></i>
-                      </button>
                       <button 
                         className="action-btn delete-btn"
                         onClick={() => handleDeletePack(pack.id)}
