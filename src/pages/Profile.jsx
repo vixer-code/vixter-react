@@ -9,8 +9,6 @@ import { useEmailVerification } from '../hooks/useEmailVerification';
 import { useServices } from '../hooks/useServices';
 import StatusIndicator from '../components/StatusIndicator';
 import CreateServiceModal from '../components/CreateServiceModal';
-import CreatePackModal from '../components/CreatePackModal';
-import EditProfileModal from '../components/EditProfileModal';
 import CachedImage from '../components/CachedImage';
 import './Profile.css';
 
@@ -20,8 +18,8 @@ const Profile = () => {
   const { isVerified, isChecking } = useEmailVerification();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [activeTab, setActiveTab] = useState('perfil');
   const [followers, setFollowers] = useState([]);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -36,8 +34,6 @@ const Profile = () => {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [showCreateServiceModal, setShowCreateServiceModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
-  const [showCreatePackModal, setShowCreatePackModal] = useState(false);
-  const [editingPack, setEditingPack] = useState(null);
 
   // Services hook
   const { 
@@ -50,7 +46,17 @@ const Profile = () => {
     updateServiceStatus 
   } = useServices();
 
-
+  // Form state for editing
+  const [formData, setFormData] = useState({
+    displayName: '',
+    username: '',
+    bio: '',
+    location: '',
+    website: '',
+    twitter: '',
+    instagram: '',
+    youtube: ''
+  });
 
   useEffect(() => {
     loadProfile();
@@ -99,6 +105,16 @@ const Profile = () => {
 
       const userData = snapshot.val();
       setProfile(userData);
+      setFormData({
+        displayName: userData.displayName || '',
+        username: userData.username || '',
+        bio: userData.bio || '',
+        location: userData.location || '',
+        website: userData.website || '',
+        twitter: userData.twitter || '',
+        instagram: userData.instagram || '',
+        youtube: userData.youtube || ''
+      });
 
       // Load additional data
       await Promise.all([
@@ -210,28 +226,6 @@ const Profile = () => {
     }
   };
 
-  const handlePackCreated = (newPack) => {
-    // The packs will be automatically updated through the loadPacks function
-    console.log('Pack created:', newPack);
-  };
-
-  const handleEditPack = (pack) => {
-    setEditingPack(pack);
-    setShowCreatePackModal(true);
-  };
-
-  const handleDeletePack = async (packId) => {
-    if (window.confirm('Tem certeza que deseja excluir este pack?')) {
-      try {
-        const packRef = ref(database, `packs/${currentUser.uid}/${packId}`);
-        await remove(packRef);
-      } catch (error) {
-        console.error('Error deleting pack:', error);
-        alert('Erro ao excluir pack. Tente novamente.');
-      }
-    }
-  };
-
   const loadPacks = async (targetUserId) => {
     try {
       const packsRef = ref(database, `packs/${targetUserId}`);
@@ -332,8 +326,30 @@ const Profile = () => {
     }
   };
 
-  const handleProfileUpdated = () => {
-    loadProfile();
+  const handleSave = async () => {
+    if (!currentUser) return;
+
+    try {
+      await update(ref(database, `users/${currentUser.uid}`), formData);
+      await loadProfile();
+      setEditing(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
+  };
+
+  const handleCancel = () => {
+    setFormData({
+      displayName: profile?.displayName || '',
+      username: profile?.username || '',
+      bio: profile?.bio || '',
+      location: profile?.location || '',
+      website: profile?.website || '',
+      twitter: profile?.twitter || '',
+      instagram: profile?.instagram || '',
+      youtube: profile?.youtube || ''
+    });
+    setEditing(false);
   };
 
   const handleCreatePost = async () => {
@@ -498,19 +514,57 @@ const Profile = () => {
           <div className="profile-info">
             {renderAccountBadges()}
             <h1 className="profile-name">
-              {profile.displayName || 'Nome do Usuário'}
+              {editing ? (
+                <input
+                  type="text"
+                  value={formData.displayName}
+                  onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                  className="edit-input"
+                />
+              ) : (
+                profile.displayName || 'Nome do Usuário'
+              )}
             </h1>
             <p className="profile-username">
-              {`@${profile.username || 'username'}`}
+              {editing ? (
+                <input
+                  type="text"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  className="edit-input"
+                  placeholder="@username"
+                />
+              ) : (
+                `@${profile.username || 'username'}`
+              )}
             </p>
             <p className="profile-status">
-              {profile.bio || 'Mensagem de status aqui'}
+              {editing ? (
+                <textarea
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  className="edit-textarea"
+                  placeholder="Mensagem de status aqui"
+                />
+              ) : (
+                profile.bio || 'Mensagem de status aqui'
+              )}
             </p>
             
             <div className="profile-meta">
               <span className="profile-location">
                 <i className="fa-solid fa-location-dot"></i>
-                {profile.location || 'Nenhuma localização especificada'}
+                {editing ? (
+                  <input
+                    type="text"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    className="edit-input"
+                    placeholder="Nenhuma localização especificada"
+                  />
+                ) : (
+                  profile.location || 'Nenhuma localização especificada'
+                )}
               </span>
               <span className="profile-joined">
                 <i className="fa-solid fa-calendar"></i>
@@ -527,9 +581,20 @@ const Profile = () => {
           
           <div className="profile-actions">
             {isOwner ? (
-              <button className="edit-profile-btn" onClick={() => setShowEditProfileModal(true)}>
-                <i className="fa-solid fa-pen"></i> Editar Perfil
-              </button>
+              editing ? (
+                <>
+                  <button className="save-profile-btn" onClick={handleSave}>
+                    <i className="fa-solid fa-check"></i> Salvar
+                  </button>
+                  <button className="cancel-profile-btn" onClick={handleCancel}>
+                    <i className="fa-solid fa-times"></i> Cancelar
+                  </button>
+                </>
+              ) : (
+                <button className="edit-profile-btn" onClick={() => setEditing(true)}>
+                  <i className="fa-solid fa-pen"></i> Editar Perfil
+                </button>
+              )
             ) : (
               currentUser && (
                 <div className="visitor-actions">
@@ -791,11 +856,7 @@ const Profile = () => {
               </div>
             ) : services.length > 0 ? (
               services.map((service) => (
-                <div 
-                  key={service.id} 
-                  className={`service-card ${isOwner ? 'clickable' : ''}`}
-                  onClick={isOwner ? () => handleEditService(service) : undefined}
-                >
+                <div key={service.id} className="service-card">
                   <div className="service-cover">
                     <CachedImage 
                       src={service.coverImageURL}
@@ -813,12 +874,17 @@ const Profile = () => {
                   <div className="service-info">
                     <h3 className="service-title">{service.title}</h3>
                     <p className="service-price">VP {service.price?.toFixed(2)}</p>
-                    <div className="service-category-container">
-                      <span className="service-category">{service.category}</span>
-                    </div>
+                    <p className="service-category">{service.category}</p>
                   </div>
                   {isOwner && (
-                    <div className="service-actions" onClick={(e) => e.stopPropagation()}>
+                    <div className="service-actions">
+                      <button 
+                        className="action-btn edit-btn"
+                        onClick={() => handleEditService(service)}
+                        title="Editar"
+                      >
+                        <i className="fa-solid fa-edit"></i>
+                      </button>
                       <button 
                         className="action-btn status-btn"
                         onClick={() => {
@@ -856,13 +922,7 @@ const Profile = () => {
           <div className="packs-header">
             <h3>Packs</h3>
             {isOwner && (
-              <button 
-                className="btn primary"
-                onClick={() => {
-                  setEditingPack(null);
-                  setShowCreatePackModal(true);
-                }}
-              >
+              <button className="btn primary">
                 <i className="fa-solid fa-plus"></i> Criar Novo Pack
               </button>
             )}
@@ -875,46 +935,17 @@ const Profile = () => {
           <div className="packs-grid">
             {packs.length > 0 ? (
               packs.map((pack) => (
-                <div 
-                  key={pack.id} 
-                  className={`pack-card ${isOwner ? 'clickable' : ''}`}
-                  onClick={isOwner ? () => handleEditPack(pack) : undefined}
-                >
+                <div key={pack.id} className="pack-card">
                   <div className="pack-cover">
-                    <CachedImage 
-                      src={pack.coverImage}
-                      fallbackSrc="/images/default-pack.jpg"
-                      alt={pack.title}
-                      className="pack-cover-img"
-                      showLoading={false}
-                    />
-                    {pack.status && pack.status !== 'active' && (
-                      <div className={`pack-status-badge ${pack.status}`}>
-                        {pack.status}
-                      </div>
-                    )}
+                    <img src={pack.coverImage || '/images/default-pack.jpg'} alt={pack.title} />
                   </div>
                   <div className="pack-info">
                     <h3 className="pack-title">{pack.title}</h3>
                     <p className="pack-price">
-                      VP {pack.price?.toFixed(2)}
+                      R$ {pack.price?.toFixed(2)}
                       {pack.discount && <span className="pack-discount">(-{pack.discount}%)</span>}
                     </p>
-                    <div className="pack-category-container">
-                      <span className="pack-category">{pack.category}</span>
-                    </div>
                   </div>
-                  {isOwner && (
-                    <div className="pack-actions" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className="action-btn delete-btn"
-                        onClick={() => handleDeletePack(pack.id)}
-                        title="Excluir"
-                      >
-                        <i className="fa-solid fa-trash"></i>
-                      </button>
-                    </div>
-                  )}
                 </div>
               ))
             ) : (
@@ -1046,25 +1077,6 @@ const Profile = () => {
         }}
         onServiceCreated={handleServiceCreated}
         editingService={editingService}
-      />
-
-      {/* Create Pack Modal */}
-      <CreatePackModal
-        isOpen={showCreatePackModal}
-        onClose={() => {
-          setShowCreatePackModal(false);
-          setEditingPack(null);
-        }}
-        onPackCreated={handlePackCreated}
-        editingPack={editingPack}
-      />
-
-      {/* Edit Profile Modal */}
-      <EditProfileModal
-        isOpen={showEditProfileModal}
-        onClose={() => setShowEditProfileModal(false)}
-        profile={profile}
-        onProfileUpdated={handleProfileUpdated}
       />
     </div>
   );

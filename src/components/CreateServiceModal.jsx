@@ -444,13 +444,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     }
   };
 
-  const handleStepClick = (stepIndex) => {
-    // Only allow navigation to steps that have been completed or are the current step
-    if (stepIndex <= currentStep) {
-      setCurrentStep(stepIndex);
-    }
-  };
-
   const handleSubmit = async () => {
     console.log('🚀 Starting service creation/update...');
     console.log('Current user:', currentUser);
@@ -671,9 +664,7 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
             {steps.map((step, index) => (
               <div 
                 key={step.id}
-                className={`progress-step ${index <= currentStep ? 'active' : ''} ${index < currentStep ? 'completed' : ''}`}
-                onClick={() => handleStepClick(index)}
-                title={`Ir para: ${step.title}`}
+                className={`progress-step ${index <= currentStep ? 'active' : ''}`}
               >
                 {step.title}
               </div>
@@ -806,11 +797,11 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                           onClick={() => handlePriceSuggestion(suggestion)}
                         >
                           <div className="suggestion-price">
-                            <div className="currency-icon vc-icon">VC</div>
+                            <div className="currency-icon vc-icon"></div>
                             {formatVC(suggestion.vc)}
                           </div>
                           <div className="suggestion-vp">
-                            <div className="currency-icon vp-icon">VP</div>
+                            <div className="currency-icon vp-icon"></div>
                             {formatVP(convertVCtoVP(suggestion.vc))}
                           </div>
                           <div className="suggestion-desc">{suggestion.description}</div>
@@ -832,16 +823,16 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                 {formData.price && !getPriceValidationError() && (
                   <div className="currency-display">
                     <div className="currency-row">
-                      <span className="currency-label">Você recebe:</span>
+                      <span>Você recebe:</span>
                       <span className="currency-value vc">
-                        <div className="currency-icon vc-icon">VC</div>
+                        <div className="currency-icon vc-icon"></div>
                         {formatVC(formData.price)}
                       </span>
                     </div>
                     <div className="currency-row">
-                      <span className="currency-label">Cliente paga:</span>
+                      <span>Cliente paga:</span>
                       <span className="currency-value vp">
-                        <div className="currency-icon vp-icon">VP</div>
+                        <div className="currency-icon vp-icon"></div>
                         {formatVP(convertVCtoVP(formData.price))}
                       </span>
                     </div>
@@ -911,16 +902,16 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                         {option.price && !optionPriceError && (
                           <div className="currency-display option-currency-display">
                             <div className="currency-row">
-                              <span className="currency-label">Você recebe:</span>
+                              <span>Você recebe:</span>
                               <span className="currency-value vc">
-                                <div className="currency-icon vc-icon">VC</div>
+                                <div className="currency-icon vc-icon"></div>
                                 {formatVC(option.price)}
                               </span>
                             </div>
                             <div className="currency-row">
-                              <span className="currency-label">Cliente paga:</span>
+                              <span>Cliente paga:</span>
                               <span className="currency-value vp">
-                                <div className="currency-icon vp-icon">VP</div>
+                                <div className="currency-icon vp-icon"></div>
                                 {formatVP(convertVCtoVP(option.price))}
                               </span>
                             </div>
