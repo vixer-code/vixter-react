@@ -856,7 +856,13 @@ const Profile = () => {
               </div>
             ) : services.length > 0 ? (
               services.map((service) => (
-                <div key={service.id} className="service-card">
+                <div 
+                  key={service.id} 
+                  className={`service-card ${isOwner ? 'editable' : ''}`}
+                  onClick={isOwner ? () => handleEditService(service) : undefined}
+                  style={isOwner ? { cursor: 'pointer' } : {}}
+                  title={isOwner ? 'Clique para editar este serviço' : ''}
+                >
                   <div className="service-cover">
                     <CachedImage 
                       src={service.coverImageURL}
@@ -877,7 +883,7 @@ const Profile = () => {
                     <p className="service-category">{service.category}</p>
                   </div>
                   {isOwner && (
-                    <div className="service-actions">
+                    <div className="service-actions" onClick={(e) => e.stopPropagation()}>
                       <button 
                         className="action-btn edit-btn"
                         onClick={() => handleEditService(service)}

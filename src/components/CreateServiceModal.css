@@ -277,14 +277,17 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  font-family: 'Press Start 2P', monospace;
 }
 
 .currency-value.vc {
   color: #00FFCA;
+  font-family: 'Press Start 2P', monospace;
 }
 
 .currency-value.vp {
   color: #8A2BE2;
+  font-family: 'Press Start 2P', monospace;
 }
 
 .currency-icon {
