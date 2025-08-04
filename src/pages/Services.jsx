@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { db } from '../config/firebase';
+import { database } from '../config/firebase';
 import { ref, onValue, off } from 'firebase/database';
 import { Link } from 'react-router-dom';
 import './Services.css';
@@ -37,7 +37,7 @@ const Services = () => {
   ];
 
   useEffect(() => {
-    const servicesRef = ref(db, 'services');
+    const servicesRef = ref(database, 'services');
     
     const unsubscribe = onValue(servicesRef, (snapshot) => {
       const servicesData = [];

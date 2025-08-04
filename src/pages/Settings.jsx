@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { db } from '../config/firebase';
+import { database } from '../config/firebase';
 import { ref, set, get } from 'firebase/database';
 import { updateProfile } from 'firebase/auth';
 import './Settings.css';
@@ -44,7 +44,7 @@ const Settings = () => {
 
   const loadUserSettings = async () => {
     try {
-      const userRef = ref(db, `users/${currentUser.uid}`);
+      const userRef = ref(database, `users/${currentUser.uid}`);
       const snapshot = await get(userRef);
       
       if (snapshot.exists()) {
@@ -98,7 +98,7 @@ const Settings = () => {
 
     setLoading(true);
     try {
-      const userRef = ref(db, `users/${currentUser.uid}`);
+      const userRef = ref(database, `users/${currentUser.uid}`);
       
       // Update Firebase Auth profile
       if (userSettings.displayName !== currentUser.displayName) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { db } from '../config/firebase';
+import { database } from '../config/firebase';
 import { ref, onValue, push, off, query, orderByChild } from 'firebase/database';
 import { Link } from 'react-router-dom';
 import './Vixink.css';
@@ -29,15 +29,15 @@ const Vixink = () => {
     loadUsers();
 
     return () => {
-      const postsRef = ref(db, 'vixink_posts');
-      const usersRef = ref(db, 'users');
+      const postsRef = ref(database, 'vixink_posts');
+      const usersRef = ref(database, 'users');
       off(postsRef);
       off(usersRef);
     };
   }, []);
 
   const loadPosts = () => {
-    const postsRef = ref(db, 'vixink_posts');
+    const postsRef = ref(database, 'vixink_posts');
     const postsQuery = query(postsRef, orderByChild('timestamp'));
 
     const unsubscribe = onValue(postsQuery, (snapshot) => {
@@ -60,7 +60,7 @@ const Vixink = () => {
   };
 
   const loadUsers = () => {
-    const usersRef = ref(db, 'users');
+    const usersRef = ref(database, 'users');
     const unsubscribe = onValue(usersRef, (snapshot) => {
       const usersData = {};
       snapshot.forEach((childSnapshot) => {
@@ -89,7 +89,7 @@ const Vixink = () => {
         likedBy: []
       };
 
-      const postsRef = ref(db, 'vixink_posts');
+      const postsRef = ref(database, 'vixink_posts');
       await push(postsRef, postData);
 
       setNewPost('');
@@ -111,7 +111,7 @@ const Vixink = () => {
       
       const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
 
-      const postRef = ref(db, `vixink_posts/${postId}`);
+      const postRef = ref(database, `vixink_posts/${postId}`);
       await set(postRef, {
         ...posts.find(p => p.id === postId),
         likes: newLikes,
