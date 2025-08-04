@@ -730,10 +730,16 @@
   gap: 6px;
   font-size: 0.9rem;
   transition: color 0.2s ease;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(0, 255, 202, 0.1);
+  border: 1px solid rgba(0, 255, 202, 0.2);
 }
 
 .action-btn:hover {
   color: #ffffff;
+  background: rgba(0, 255, 202, 0.2);
+  border-color: rgba(0, 255, 202, 0.3);
 }
 
 .selected-images-preview {
