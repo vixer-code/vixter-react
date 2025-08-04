@@ -360,13 +360,27 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   };
 
   const removeShowcasePhoto = (index) => {
+    // Remove from preview arrays (for new uploads)
     setShowcasePhotoFiles(prev => prev.filter((_, i) => i !== index));
     setShowcasePhotoPreviews(prev => prev.filter((_, i) => i !== index));
+    
+    // Also remove from formData.showcasePhotos (for existing images)
+    setFormData(prev => ({
+      ...prev,
+      showcasePhotos: prev.showcasePhotos.filter((_, i) => i !== index)
+    }));
   };
 
   const removeShowcaseVideo = (index) => {
+    // Remove from preview arrays (for new uploads)
     setShowcaseVideoFiles(prev => prev.filter((_, i) => i !== index));
     setShowcaseVideoPreviews(prev => prev.filter((_, i) => i !== index));
+    
+    // Also remove from formData.showcaseVideos (for existing videos)
+    setFormData(prev => ({
+      ...prev,
+      showcaseVideos: prev.showcaseVideos.filter((_, i) => i !== index)
+    }));
   };
 
   const uploadFileToStorage = async (file, path) => {
