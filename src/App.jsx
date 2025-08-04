@@ -13,17 +13,6 @@ import Feed from './pages/Feed';
 import Profile from './pages/Profile';
 import Wallet from './pages/Wallet';
 import VerifyEmail from './pages/VerifyEmail';
-import Messages from './pages/Messages';
-import Services from './pages/Services';
-import Settings from './pages/Settings';
-import Vixies from './pages/Vixies';
-import Vixink from './pages/Vixink';
-import EditProfile from './pages/EditProfile';
-import ServiceDetails from './pages/ServiceDetails';
-import Rewards from './pages/Rewards';
-import Success from './pages/Success';
-import Verify from './pages/Verify';
-
 import NotFound from './pages/NotFound';
 import { preloadCommonImages } from './utils/imagePreloader';
 
@@ -54,16 +43,12 @@ function App() {
                 <Route path="/profile/:userId" element={<Profile />} />
                 <Route path="/wallet" element={<Wallet />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
-                <Route path="/messages" element={<Messages />} />
-                <Route path="/services" element={<Services />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/vixies" element={<Vixies />} />
-                <Route path="/vixink" element={<Vixink />} />
-                <Route path="/edit-profile" element={<EditProfile />} />
-                <Route path="/service/:serviceId" element={<ServiceDetails />} />
-                <Route path="/rewards" element={<Rewards />} />
-                <Route path="/success" element={<Success />} />
-                <Route path="/verify" element={<Verify />} />
+                {/* Placeholder routes for other pages */}
+                <Route path="/vixies" element={<div>Vixies Page - Coming Soon</div>} />
+                <Route path="/vixink" element={<div>Vixink Page - Coming Soon</div>} />
+                <Route path="/settings" element={<div>Settings Page - Coming Soon</div>} />
+                <Route path="/my-services" element={<div>My Services Page - Coming Soon</div>} />
+                <Route path="/services" element={<div>Services Page - Coming Soon</div>} />
                 
                 {/* Catch-all route - must be last */}
                 <Route path="*" element={<NotFound />} />
