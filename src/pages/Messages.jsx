@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { db } from '../config/firebase';
+import { database } from '../config/firebase';
 import { ref, onValue, push, set, off, query, orderByChild, equalTo } from 'firebase/database';
 import './Messages.css';
 
@@ -29,7 +29,7 @@ const Messages = () => {
     if (!currentUser) return;
 
     // Load conversations
-    const conversationsRef = ref(db, 'conversations');
+    const conversationsRef = ref(database, 'conversations');
     const userConversationsQuery = query(
       conversationsRef,
       orderByChild('participants'),
@@ -50,7 +50,7 @@ const Messages = () => {
     });
 
     // Load users data
-    const usersRef = ref(db, 'users');
+    const usersRef = ref(database, 'users');
     const unsubscribeUsers = onValue(usersRef, (snapshot) => {
       const usersData = {};
       snapshot.forEach((childSnapshot) => {
@@ -69,7 +69,7 @@ const Messages = () => {
     if (!selectedConversation) return;
 
     // Load messages for selected conversation
-    const messagesRef = ref(db, `messages/${selectedConversation.id}`);
+    const messagesRef = ref(database, `messages/${selectedConversation.id}`);
     const messagesQuery = query(messagesRef, orderByChild('timestamp'));
 
     const unsubscribeMessages = onValue(messagesQuery, (snapshot) => {
@@ -99,11 +99,11 @@ const Messages = () => {
         read: false
       };
 
-      const messagesRef = ref(db, `messages/${selectedConversation.id}`);
+      const messagesRef = ref(database, `messages/${selectedConversation.id}`);
       await push(messagesRef, messageData);
 
       // Update conversation last message
-      const conversationRef = ref(db, `conversations/${selectedConversation.id}`);
+      const conversationRef = ref(database, `conversations/${selectedConversation.id}`);
       await set(conversationRef, {
         ...selectedConversation,
         lastMessage: messageData.text,

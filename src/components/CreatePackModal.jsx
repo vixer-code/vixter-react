@@ -402,6 +402,23 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     }
   };
 
+  // Currency conversion functions
+  const convertVPtoVC = (vpAmount) => {
+    return vpAmount / 1.5;
+  };
+
+  const formatCurrency = (amount, decimals = 2) => {
+    return parseFloat(amount || 0).toFixed(decimals).replace('.', ',');
+  };
+
+  const formatVC = (amount) => {
+    return `${formatCurrency(amount)} VC`;
+  };
+
+  const formatVP = (amount) => {
+    return `${formatCurrency(amount)} VP`;
+  };
+
   const handleSubmit = async () => {
     if (!currentUser || isSubmitting) return;
 
@@ -708,6 +725,28 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                     placeholder="5.00"
                   />
                   <small>Preço mínimo de VP 5,00</small>
+                  
+                  {formData.price && parseFloat(formData.price) >= 5 && (
+                    <div className="currency-display">
+                      <div className="currency-row">
+                        <span className="currency-label">Cliente paga:</span>
+                        <span className="currency-value vp">
+                          <div className="currency-icon vp-icon">VP</div>
+                          {formatVP(formData.price)}
+                        </span>
+                      </div>
+                      <div className="currency-row">
+                        <span className="currency-label">Você recebe:</span>
+                        <span className="currency-value vc">
+                          <div className="currency-icon vc-icon">VC</div>
+                          {formatVC(convertVPtoVC(formData.price))}
+                        </span>
+                      </div>
+                      <div className="conversion-note">
+                        Taxa de conversão: 1 VP = 0,67 VC
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="form-group">
