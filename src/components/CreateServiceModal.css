@@ -965,6 +965,16 @@
   flex-shrink: 0;
 }
 
+.modal-actions-left {
+  display: flex;
+  align-items: center;
+}
+
+.modal-actions-right {
+  display: flex;
+  align-items: center;
+}
+
 .btn {
   padding: 12px 24px;
   border-radius: 8px;
@@ -1139,7 +1149,6 @@
   
   .modal-header,
   .modal-progress,
-  .modal-content,
   .modal-actions {
     padding-left: 20px;
     padding-right: 20px;
@@ -1194,7 +1203,6 @@
   
   .modal-header,
   .modal-progress,
-  .modal-content,
   .modal-actions {
     padding-left: 15px;
     padding-right: 15px;
@@ -1377,6 +1385,11 @@
     align-items: stretch;
   }
   
+  .modal-actions-left,
+  .modal-actions-right {
+    width: 100%;
+  }
+  
   .btn {
     width: 100%;
     justify-content: center;
@@ -1406,7 +1419,6 @@
   
   .modal-header,
   .modal-progress,
-  .modal-content,
   .modal-actions {
     padding-left: 12px;
     padding-right: 12px;

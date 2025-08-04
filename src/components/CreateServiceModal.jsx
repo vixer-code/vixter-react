@@ -1185,31 +1185,35 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
         </div>
 
         <div className="modal-actions">
-          {currentStep > 0 && (
-            <button type="button" onClick={prevStep} className="btn secondary">
-              Voltar
-            </button>
-          )}
+          <div className="modal-actions-left">
+            {currentStep > 0 && (
+              <button type="button" onClick={prevStep} className="btn secondary">
+                Voltar
+              </button>
+            )}
+          </div>
           
-          {currentStep < steps.length - 1 ? (
-            <button 
-              type="button" 
-              onClick={nextStep} 
-              className="btn primary"
-              disabled={!validateCurrentStep()}
-            >
-              Continuar
-            </button>
-          ) : (
-            <button 
-              type="button" 
-              onClick={handleSubmit} 
-              className="btn primary"
-              disabled={isSubmitting || uploadingFiles}
-            >
-              {isSubmitting ? (editingService ? 'Atualizando...' : 'Criando...') : uploadingFiles ? 'Fazendo upload...' : (editingService ? 'Atualizar Serviço' : 'Criar Serviço')}
-            </button>
-          )}
+          <div className="modal-actions-right">
+            {currentStep < steps.length - 1 ? (
+              <button 
+                type="button" 
+                onClick={nextStep} 
+                className="btn primary"
+                disabled={!validateCurrentStep()}
+              >
+                Continuar
+              </button>
+            ) : (
+              <button 
+                type="button" 
+                onClick={handleSubmit} 
+                className="btn primary"
+                disabled={isSubmitting || uploadingFiles}
+              >
+                {isSubmitting ? (editingService ? 'Atualizando...' : 'Criando...') : uploadingFiles ? 'Fazendo upload...' : (editingService ? 'Atualizar Serviço' : 'Criar Serviço')}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
