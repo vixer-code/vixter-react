@@ -160,7 +160,7 @@
 /* Modal Content - Fixed alignment and responsiveness */
 .create-service-modal .modal-content {
   flex: 1;
-  padding: 30px;
+  padding: 25px;
   width: 100%;
   box-sizing: border-box;
   display: flex;
@@ -187,14 +187,14 @@
 .form-step h3 {
   color: #ffffff;
   font-size: 1.3rem;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
   font-weight: 600;
   flex-shrink: 0;
 }
 
 /* Enhanced Form Groups */
 .form-group {
-  margin-bottom: 25px;
+  margin-bottom: 20px;
   position: relative;
   width: 100%;
   flex-shrink: 0;
@@ -788,7 +788,7 @@
 .preview-options,
 .preview-media-section,
 .preview-tags {
-  margin-bottom: 25px;
+  margin-bottom: 20px;
   width: 100%;
 }
 
@@ -1169,7 +1169,7 @@
   }
   
   .create-service-modal .modal-content {
-    padding: 20px;
+    padding: 15px;
     overflow-y: auto;
   }
   
@@ -1229,11 +1229,11 @@
   
   .form-step h3 {
     font-size: 1.2rem;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
   }
   
   .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
   }
   
   .form-group input,
@@ -1430,5 +1430,10 @@
   
   .form-step h3 {
     font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+  
+  .form-group {
+    margin-bottom: 12px;
   }
 } 
