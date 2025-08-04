@@ -797,11 +797,9 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                           onClick={() => handlePriceSuggestion(suggestion)}
                         >
                           <div className="suggestion-price">
-                            <div className="currency-icon vc-icon"></div>
                             {formatVC(suggestion.vc)}
                           </div>
                           <div className="suggestion-vp">
-                            <div className="currency-icon vp-icon"></div>
                             {formatVP(convertVCtoVP(suggestion.vc))}
                           </div>
                           <div className="suggestion-desc">{suggestion.description}</div>
@@ -825,14 +823,12 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                     <div className="currency-row">
                       <span>Você recebe:</span>
                       <span className="currency-value vc">
-                        <div className="currency-icon vc-icon"></div>
                         {formatVC(formData.price)}
                       </span>
                     </div>
                     <div className="currency-row">
                       <span>Cliente paga:</span>
                       <span className="currency-value vp">
-                        <div className="currency-icon vp-icon"></div>
                         {formatVP(convertVCtoVP(formData.price))}
                       </span>
                     </div>
