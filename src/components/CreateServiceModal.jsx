@@ -851,7 +851,7 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                         <h4>Opção Complementar</h4>
                         <button 
                           type="button" 
-                          className="remove-option"
+                          className="close-btn"
                           onClick={() => removeComplementaryOption(index)}
                         >
                           ×
