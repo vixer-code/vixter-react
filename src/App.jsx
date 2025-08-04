@@ -18,6 +18,11 @@ import Services from './pages/Services';
 import Settings from './pages/Settings';
 import Vixies from './pages/Vixies';
 import Vixink from './pages/Vixink';
+import EditProfile from './pages/EditProfile';
+import ServiceDetails from './pages/ServiceDetails';
+import Rewards from './pages/Rewards';
+import Success from './pages/Success';
+import Verify from './pages/Verify';
 
 import NotFound from './pages/NotFound';
 import { preloadCommonImages } from './utils/imagePreloader';
@@ -54,7 +59,11 @@ function App() {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/vixies" element={<Vixies />} />
                 <Route path="/vixink" element={<Vixink />} />
-        
+                <Route path="/edit-profile" element={<EditProfile />} />
+                <Route path="/service/:serviceId" element={<ServiceDetails />} />
+                <Route path="/rewards" element={<Rewards />} />
+                <Route path="/success" element={<Success />} />
+                <Route path="/verify" element={<Verify />} />
                 
                 {/* Catch-all route - must be last */}
                 <Route path="*" element={<NotFound />} />

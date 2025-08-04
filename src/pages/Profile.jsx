@@ -10,6 +10,7 @@ import { useServices } from '../hooks/useServices';
 import StatusIndicator from '../components/StatusIndicator';
 import CreateServiceModal from '../components/CreateServiceModal';
 import CreatePackModal from '../components/CreatePackModal';
+import EditProfileModal from '../components/EditProfileModal';
 import CachedImage from '../components/CachedImage';
 import './Profile.css';
 
@@ -19,8 +20,8 @@ const Profile = () => {
   const { isVerified, isChecking } = useEmailVerification();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [activeTab, setActiveTab] = useState('perfil');
   const [followers, setFollowers] = useState([]);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -49,17 +50,7 @@ const Profile = () => {
     updateServiceStatus 
   } = useServices();
 
-  // Form state for editing
-  const [formData, setFormData] = useState({
-    displayName: '',
-    username: '',
-    bio: '',
-    location: '',
-    website: '',
-    twitter: '',
-    instagram: '',
-    youtube: ''
-  });
+
 
   useEffect(() => {
     loadProfile();
@@ -108,16 +99,6 @@ const Profile = () => {
 
       const userData = snapshot.val();
       setProfile(userData);
-      setFormData({
-        displayName: userData.displayName || '',
-        username: userData.username || '',
-        bio: userData.bio || '',
-        location: userData.location || '',
-        website: userData.website || '',
-        twitter: userData.twitter || '',
-        instagram: userData.instagram || '',
-        youtube: userData.youtube || ''
-      });
 
       // Load additional data
       await Promise.all([
@@ -351,30 +332,8 @@ const Profile = () => {
     }
   };
 
-  const handleSave = async () => {
-    if (!currentUser) return;
-
-    try {
-      await update(ref(database, `users/${currentUser.uid}`), formData);
-      await loadProfile();
-      setEditing(false);
-    } catch (error) {
-      console.error('Error updating profile:', error);
-    }
-  };
-
-  const handleCancel = () => {
-    setFormData({
-      displayName: profile?.displayName || '',
-      username: profile?.username || '',
-      bio: profile?.bio || '',
-      location: profile?.location || '',
-      website: profile?.website || '',
-      twitter: profile?.twitter || '',
-      instagram: profile?.instagram || '',
-      youtube: profile?.youtube || ''
-    });
-    setEditing(false);
+  const handleProfileUpdated = () => {
+    loadProfile();
   };
 
   const handleCreatePost = async () => {
@@ -539,57 +498,19 @@ const Profile = () => {
           <div className="profile-info">
             {renderAccountBadges()}
             <h1 className="profile-name">
-              {editing ? (
-                <input
-                  type="text"
-                  value={formData.displayName}
-                  onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                  className="edit-input"
-                />
-              ) : (
-                profile.displayName || 'Nome do Usuário'
-              )}
+              {profile.displayName || 'Nome do Usuário'}
             </h1>
             <p className="profile-username">
-              {editing ? (
-                <input
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="edit-input"
-                  placeholder="@username"
-                />
-              ) : (
-                `@${profile.username || 'username'}`
-              )}
+              {`@${profile.username || 'username'}`}
             </p>
             <p className="profile-status">
-              {editing ? (
-                <textarea
-                  value={formData.bio}
-                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                  className="edit-textarea"
-                  placeholder="Mensagem de status aqui"
-                />
-              ) : (
-                profile.bio || 'Mensagem de status aqui'
-              )}
+              {profile.bio || 'Mensagem de status aqui'}
             </p>
             
             <div className="profile-meta">
               <span className="profile-location">
                 <i className="fa-solid fa-location-dot"></i>
-                {editing ? (
-                  <input
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="edit-input"
-                    placeholder="Nenhuma localização especificada"
-                  />
-                ) : (
-                  profile.location || 'Nenhuma localização especificada'
-                )}
+                {profile.location || 'Nenhuma localização especificada'}
               </span>
               <span className="profile-joined">
                 <i className="fa-solid fa-calendar"></i>
@@ -606,20 +527,9 @@ const Profile = () => {
           
           <div className="profile-actions">
             {isOwner ? (
-              editing ? (
-                <>
-                  <button className="save-profile-btn" onClick={handleSave}>
-                    <i className="fa-solid fa-check"></i> Salvar
-                  </button>
-                  <button className="cancel-profile-btn" onClick={handleCancel}>
-                    <i className="fa-solid fa-times"></i> Cancelar
-                  </button>
-                </>
-              ) : (
-                <button className="edit-profile-btn" onClick={() => setEditing(true)}>
-                  <i className="fa-solid fa-pen"></i> Editar Perfil
-                </button>
-              )
+              <button className="edit-profile-btn" onClick={() => setShowEditProfileModal(true)}>
+                <i className="fa-solid fa-pen"></i> Editar Perfil
+              </button>
             ) : (
               currentUser && (
                 <div className="visitor-actions">
@@ -1161,6 +1071,14 @@ const Profile = () => {
         }}
         onPackCreated={handlePackCreated}
         editingPack={editingPack}
+      />
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={showEditProfileModal}
+        onClose={() => setShowEditProfileModal(false)}
+        profile={profile}
+        onProfileUpdated={handleProfileUpdated}
       />
     </div>
   );

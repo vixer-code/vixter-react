@@ -1,0 +1,416 @@
+/* Success Page Styles */
+.success-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.success-container {
+  position: relative;
+  z-index: 10;
+  max-width: 500px;
+  width: 100%;
+}
+
+.success-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 3rem 2rem 2rem;
+  text-align: center;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.success-animation {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.checkmark-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00ffca 0%, #8a2be2 100%);
+  position: relative;
+  animation: scaleIn 0.5s ease-out 0.3s both;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.checkmark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+}
+
+.checkmark-stem {
+  position: absolute;
+  width: 3px;
+  height: 20px;
+  background: #ffffff;
+  left: 50%;
+  top: 30%;
+  transform: translateX(-50%) rotate(45deg);
+  transform-origin: bottom;
+  animation: drawStem 0.3s ease-out 0.8s both;
+}
+
+.checkmark-kick {
+  position: absolute;
+  width: 3px;
+  height: 12px;
+  background: #ffffff;
+  left: 35%;
+  top: 55%;
+  transform: rotate(-45deg);
+  transform-origin: bottom;
+  animation: drawKick 0.3s ease-out 1s both;
+}
+
+@keyframes drawStem {
+  from {
+    height: 0;
+  }
+  to {
+    height: 20px;
+  }
+}
+
+@keyframes drawKick {
+  from {
+    height: 0;
+  }
+  to {
+    height: 12px;
+  }
+}
+
+.success-content {
+  margin-bottom: 2.5rem;
+}
+
+.success-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #00ffca 0%, #8a2be2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1rem;
+  animation: fadeInUp 0.6s ease-out 0.6s both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.success-description {
+  color: #a8a8b3;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  animation: fadeInUp 0.6s ease-out 0.8s both;
+}
+
+.payment-details {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  animation: fadeInUp 0.6s ease-out 1s both;
+}
+
+.amount-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.amount-label {
+  color: #a8a8b3;
+  font-size: 1rem;
+}
+
+.amount-value {
+  color: #00ffca;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'Press Start 2P', monospace;
+}
+
+.transaction-id {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  animation: fadeInUp 0.6s ease-out 1.2s both;
+}
+
+.transaction-label {
+  display: block;
+  color: #a8a8b3;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.transaction-value {
+  color: #ffffff;
+  font-family: monospace;
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+
+.success-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  animation: fadeInUp 0.6s ease-out 1.4s both;
+}
+
+.btn {
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00ffca 0%, #8a2be2 100%);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0, 255, 202, 0.3);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.auto-redirect {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1.5rem;
+  animation: fadeInUp 0.6s ease-out 1.6s both;
+}
+
+.auto-redirect p {
+  color: #a8a8b3;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.countdown {
+  color: #00ffca;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #00ffca 0%, #8a2be2 100%);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Background Decoration */
+.background-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.floating-shape {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0, 255, 202, 0.1) 0%, rgba(138, 43, 226, 0.1) 100%);
+  animation: float 6s ease-in-out infinite;
+}
+
+.shape-1 {
+  width: 100px;
+  height: 100px;
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.shape-2 {
+  width: 60px;
+  height: 60px;
+  top: 60%;
+  right: 15%;
+  animation-delay: 1.5s;
+}
+
+.shape-3 {
+  width: 80px;
+  height: 80px;
+  bottom: 20%;
+  left: 20%;
+  animation-delay: 3s;
+}
+
+.shape-4 {
+  width: 120px;
+  height: 120px;
+  top: 10%;
+  right: 10%;
+  animation-delay: 4.5s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .success-card {
+    padding: 2rem 1.5rem 1.5rem;
+    margin: 1rem;
+  }
+
+  .success-title {
+    font-size: 2rem;
+  }
+
+  .success-description {
+    font-size: 1rem;
+  }
+
+  .checkmark-circle {
+    width: 80px;
+    height: 80px;
+  }
+
+  .checkmark {
+    width: 32px;
+    height: 32px;
+  }
+
+  .checkmark-stem {
+    height: 16px;
+  }
+
+  .checkmark-kick {
+    height: 10px;
+  }
+
+  .success-actions {
+    gap: 0.75rem;
+  }
+
+  .btn {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .success-title {
+    font-size: 1.75rem;
+  }
+
+  .amount-value {
+    font-size: 1.25rem;
+  }
+
+  .floating-shape {
+    display: none;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .success-card,
+  .checkmark-circle,
+  .checkmark-stem,
+  .checkmark-kick,
+  .success-title,
+  .success-description,
+  .payment-details,
+  .transaction-id,
+  .success-actions,
+  .auto-redirect {
+    animation: none;
+  }
+
+  .floating-shape {
+    animation: none;
+  }
+
+  .btn:hover {
+    transform: none;
+  }
+}
