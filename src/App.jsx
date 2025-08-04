@@ -18,7 +18,7 @@ import Services from './pages/Services';
 import Settings from './pages/Settings';
 import Vixies from './pages/Vixies';
 import Vixink from './pages/Vixink';
-import MyServices from './pages/MyServices';
+
 import NotFound from './pages/NotFound';
 import { preloadCommonImages } from './utils/imagePreloader';
 
@@ -54,7 +54,7 @@ function App() {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/vixies" element={<Vixies />} />
                 <Route path="/vixink" element={<Vixink />} />
-                <Route path="/my-services" element={<MyServices />} />
+        
                 
                 {/* Catch-all route - must be last */}
                 <Route path="*" element={<NotFound />} />

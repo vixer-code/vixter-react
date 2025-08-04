@@ -968,4 +968,50 @@
   .empty-state p {
     font-size: 0.8rem;
   }
-} 
+}
+
+/* Disabled State Styles for Future Features */
+.earning-card[style*="opacity: 0.6"] {
+  pointer-events: none;
+  position: relative;
+}
+
+.earning-card[style*="opacity: 0.6"]:hover {
+  transform: none;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.earning-card[style*="opacity: 0.6"] .earning-icon {
+  opacity: 0.6;
+}
+
+.earning-card[style*="opacity: 0.6"] .earning-info h3 {
+  opacity: 0.8;
+}
+
+.earning-card[style*="opacity: 0.6"] .earning-info p {
+  opacity: 0.7;
+}
+
+.earning-card[style*="opacity: 0.6"] .earning-amount {
+  opacity: 0.7;
+}
+
+.earning-card[style*="opacity: 0.6"] .currency-tag {
+  opacity: 0.7;
+}
+
+.btn-action:disabled {
+  background: #666 !important;
+  color: #999 !important;
+  border-color: #666 !important;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.btn-action:disabled:hover {
+  background: #666 !important;
+  color: #999 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}

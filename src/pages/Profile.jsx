@@ -9,6 +9,7 @@ import { useEmailVerification } from '../hooks/useEmailVerification';
 import { useServices } from '../hooks/useServices';
 import StatusIndicator from '../components/StatusIndicator';
 import CreateServiceModal from '../components/CreateServiceModal';
+import CreatePackModal from '../components/CreatePackModal';
 import CachedImage from '../components/CachedImage';
 import './Profile.css';
 
@@ -34,6 +35,8 @@ const Profile = () => {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [showCreateServiceModal, setShowCreateServiceModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
+  const [showCreatePackModal, setShowCreatePackModal] = useState(false);
+  const [editingPack, setEditingPack] = useState(null);
 
   // Services hook
   const { 
@@ -223,6 +226,28 @@ const Profile = () => {
     } catch (error) {
       console.error('Error updating service status:', error);
       alert('Erro ao atualizar status do serviço. Tente novamente.');
+    }
+  };
+
+  const handlePackCreated = (newPack) => {
+    // The packs will be automatically updated through the loadPacks function
+    console.log('Pack created:', newPack);
+  };
+
+  const handleEditPack = (pack) => {
+    setEditingPack(pack);
+    setShowCreatePackModal(true);
+  };
+
+  const handleDeletePack = async (packId) => {
+    if (window.confirm('Tem certeza que deseja excluir este pack?')) {
+      try {
+        const packRef = ref(database, `packs/${currentUser.uid}/${packId}`);
+        await remove(packRef);
+      } catch (error) {
+        console.error('Error deleting pack:', error);
+        alert('Erro ao excluir pack. Tente novamente.');
+      }
     }
   };
 
@@ -928,7 +953,13 @@ const Profile = () => {
           <div className="packs-header">
             <h3>Packs</h3>
             {isOwner && (
-              <button className="btn primary">
+              <button 
+                className="btn primary"
+                onClick={() => {
+                  setEditingPack(null);
+                  setShowCreatePackModal(true);
+                }}
+              >
                 <i className="fa-solid fa-plus"></i> Criar Novo Pack
               </button>
             )}
@@ -941,17 +972,53 @@ const Profile = () => {
           <div className="packs-grid">
             {packs.length > 0 ? (
               packs.map((pack) => (
-                <div key={pack.id} className="pack-card">
+                <div 
+                  key={pack.id} 
+                  className={`pack-card ${isOwner ? 'clickable' : ''}`}
+                  onClick={isOwner ? () => handleEditPack(pack) : undefined}
+                >
                   <div className="pack-cover">
-                    <img src={pack.coverImage || '/images/default-pack.jpg'} alt={pack.title} />
+                    <CachedImage 
+                      src={pack.coverImage}
+                      fallbackSrc="/images/default-pack.jpg"
+                      alt={pack.title}
+                      className="pack-cover-img"
+                      showLoading={false}
+                    />
+                    {pack.status && pack.status !== 'active' && (
+                      <div className={`pack-status-badge ${pack.status}`}>
+                        {pack.status}
+                      </div>
+                    )}
                   </div>
                   <div className="pack-info">
                     <h3 className="pack-title">{pack.title}</h3>
                     <p className="pack-price">
-                      R$ {pack.price?.toFixed(2)}
+                      VP {pack.price?.toFixed(2)}
                       {pack.discount && <span className="pack-discount">(-{pack.discount}%)</span>}
                     </p>
+                    <div className="pack-category-container">
+                      <span className="pack-category">{pack.category}</span>
+                    </div>
                   </div>
+                  {isOwner && (
+                    <div className="pack-actions" onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        className="action-btn edit-btn"
+                        onClick={() => handleEditPack(pack)}
+                        title="Editar"
+                      >
+                        <i className="fa-solid fa-edit"></i>
+                      </button>
+                      <button 
+                        className="action-btn delete-btn"
+                        onClick={() => handleDeletePack(pack.id)}
+                        title="Excluir"
+                      >
+                        <i className="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))
             ) : (
@@ -1083,6 +1150,17 @@ const Profile = () => {
         }}
         onServiceCreated={handleServiceCreated}
         editingService={editingService}
+      />
+
+      {/* Create Pack Modal */}
+      <CreatePackModal
+        isOpen={showCreatePackModal}
+        onClose={() => {
+          setShowCreatePackModal(false);
+          setEditingPack(null);
+        }}
+        onPackCreated={handlePackCreated}
+        editingPack={editingPack}
       />
     </div>
   );

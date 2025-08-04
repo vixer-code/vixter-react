@@ -422,6 +422,27 @@ const Wallet = () => {
 
   const totalPages = Math.ceil(filteredTransactions.length / TRANSACTIONS_PER_PAGE);
 
+  // Add disabled state styling for future features
+  const disabledCardStyle = {
+    opacity: 0.6,
+    cursor: 'not-allowed',
+    position: 'relative'
+  };
+
+  const comingSoonOverlay = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    background: 'rgba(0, 0, 0, 0.8)',
+    color: 'white',
+    padding: '8px 16px',
+    borderRadius: '20px',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    zIndex: 10
+  };
+
   if (loading) {
     return (
       <div className="wallet-container">
@@ -796,7 +817,8 @@ const Wallet = () => {
               </div>
             </div>
 
-            <div className="earning-card vbp-earning">
+            <div className="earning-card vbp-earning" style={disabledCardStyle}>
+              <div style={comingSoonOverlay}>Em Breve</div>
               <div className="earning-icon vbp-icon-style">
                 <i className="fas fa-users"></i>
               </div>
@@ -805,11 +827,12 @@ const Wallet = () => {
                 <p>Convide amigos para a plataforma e ganhe VBP quando eles se registrarem e fizerem sua primeira compra.</p>
                 <div className="earning-amount">+200 VBP por referência</div>
                 <div className="currency-tag">VBP</div>
-                <button className="btn-action">Convidar Amigos</button>
+                <button className="btn-action" disabled style={{opacity: 0.5, cursor: 'not-allowed'}}>Convidar Amigos</button>
               </div>
             </div>
 
-            <div className="earning-card vbp-earning">
+            <div className="earning-card vbp-earning" style={disabledCardStyle}>
+              <div style={comingSoonOverlay}>Em Breve</div>
               <div className="earning-icon vbp-icon-style">
                 <i className="fas fa-trophy"></i>
               </div>
@@ -818,11 +841,12 @@ const Wallet = () => {
                 <p>Complete desafios criativos semanais para ganhar VBP e aumentar sua visibilidade.</p>
                 <div className="earning-amount">+100-500 VBP</div>
                 <div className="currency-tag">VBP</div>
-                <button className="btn-action">Ver Desafios</button>
+                <button className="btn-action" disabled style={{opacity: 0.5, cursor: 'not-allowed'}}>Ver Desafios</button>
               </div>
             </div>
 
-            <div className="earning-card vbp-earning">
+            <div className="earning-card vbp-earning" style={disabledCardStyle}>
+              <div style={comingSoonOverlay}>Em Breve</div>
               <div className="earning-icon vbp-icon-style">
                 <i className="fas fa-heart"></i>
               </div>
@@ -831,7 +855,7 @@ const Wallet = () => {
                 <p>Ganhe VBP quando suas criações receberem curtidas e comentários da comunidade.</p>
                 <div className="earning-amount">+100 VBP a cada 50 curtidas</div>
                 <div className="currency-tag">VBP</div>
-                <button className="btn-action">Explorar Comunidade</button>
+                <button className="btn-action" disabled style={{opacity: 0.5, cursor: 'not-allowed'}}>Explorar Comunidade</button>
               </div>
             </div>
           </div>
