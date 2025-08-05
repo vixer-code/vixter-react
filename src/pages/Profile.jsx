@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { ref, get, update, set, remove, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../config/firebase';
@@ -14,6 +14,7 @@ import './Profile.css';
 
 const Profile = () => {
   const { userId } = useParams();
+  const location = useLocation();
   const { currentUser } = useAuth();
   const { isVerified, isChecking } = useEmailVerification();
   const [profile, setProfile] = useState(null);
@@ -78,23 +79,16 @@ const Profile = () => {
 
   // Handle URL hash navigation
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (hash === 'services') {
-        setActiveTab('services');
-      }
-    };
-
-    // Check hash on mount
-    handleHashChange();
-
-    // Listen for hash changes
-    window.addEventListener('hashchange', handleHashChange);
+    const hash = location.hash.replace('#', '');
+    const validTabs = ['perfil', 'about', 'services', 'packs', 'subscriptions', 'reviews'];
     
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, []);
+    if (hash && validTabs.includes(hash)) {
+      setActiveTab(hash);
+    } else if (hash === '' && location.pathname.includes('/profile')) {
+      // Reset to default tab when no hash is present
+      setActiveTab('perfil');
+    }
+  }, [location.hash, location.pathname]);
 
   const loadProfile = async () => {
     try {
