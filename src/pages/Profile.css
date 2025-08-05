@@ -1884,13 +1884,4 @@
   transform: translate(60%, -40%);
   /* Optional: add a subtle drop shadow for visibility */
   box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-} 
-
-.status-indicator-floating.status-indicator-left {
-  position: absolute;
-  left: -38px;
-  top: 50%;
-  transform: translateY(-60%);
-  z-index: 30;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-} 
+}

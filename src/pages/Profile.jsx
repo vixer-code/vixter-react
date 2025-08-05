@@ -487,9 +487,6 @@ const Profile = () => {
         </div>
         
         <div className="profile-header">
-          <div className="status-indicator-floating status-indicator-left">
-            {renderStatusIndicator()}
-          </div>
           <div className="profile-avatar">
             <label className="avatar-upload-btn">
               <input

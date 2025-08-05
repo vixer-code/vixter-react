@@ -628,6 +628,17 @@ header .vp-balance .vp-icon svg,
   width: 24px;
 }
 
+.mobile-notification-section {
+  display: flex;
+  justify-content: center;
+  padding: 15px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-notification-section .notification-icon-container {
+  margin-right: 0;
+}
+
 .mobile-profile-section {
   display: flex;
   align-items: center;

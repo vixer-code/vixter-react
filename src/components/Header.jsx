@@ -4,6 +4,7 @@ import { ref, get, onValue, off } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getDefaultImage } from '../utils/defaultImages';
+import NotificationIcon from './NotificationIcon';
 import './Header.css';
 
 const Header = () => {
@@ -209,6 +210,11 @@ const Header = () => {
                   </div>
                 </li>
                 
+                {/* Notification Icon */}
+                <li className="auth-hide logged-in">
+                  <NotificationIcon />
+                </li>
+                
                 {/* Profile Dropdown Menu */}
                 <li className="profile-dropdown auth-hide logged-in">
                   <a href="#" className="profile-trigger">
@@ -346,6 +352,10 @@ const Header = () => {
                       fontWeight="bold">VP</text>
               </svg>
               <span>{vpBalance.toLocaleString()}</span>
+            </div>
+            
+            <div className="mobile-notification-section">
+              <NotificationIcon />
             </div>
             
             <div className="mobile-profile-section">
