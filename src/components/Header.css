@@ -86,9 +86,8 @@ nav {
 /* Mobile menu button */
 .mobile-menu-btn {
   display: none;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #FCFCFC;
+  background: rgba(255, 255, 255, 0);
+  color: #00FFCA;
   font-size: 1.5rem;
   cursor: pointer;
   padding: 8px 12px;
@@ -98,11 +97,6 @@ nav {
   min-height: 44px;
   align-items: center;
   justify-content: center;
-}
-
-.mobile-menu-btn:hover {
-  color: #00FFCA;
-  background-color: rgba(0, 255, 202, 0.08);
 }
 
 /* Auth visibility classes */

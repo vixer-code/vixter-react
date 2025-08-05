@@ -259,7 +259,6 @@ const Header = () => {
           {/* Mobile Menu Button */}
           <button className="mobile-menu-btn" onClick={toggleMobileMenu}>
             <i className={`fas ${mobileMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
-            <span style={{fontSize: '10px', marginLeft: '5px'}}>{mobileMenuOpen ? 'Close' : 'Menu'}</span>
           </button>
         </nav>
       </header>
