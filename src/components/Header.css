@@ -94,25 +94,29 @@ nav {
   padding: 8px;
   border-radius: 4px;
   transition: all 0.2s ease;
+  position: relative;
+  z-index: 150;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Mobile menu button states */
 .mobile-menu-btn:hover {
-  color: #FF2E63;
-  background: rgba(255, 46, 99, 0.1);
+  color: #B14AFF;
+  background: rgba(177, 74, 255, 0.1);
 }
 
 .mobile-menu-btn:active {
-  color: #FF6B9D;
-  background: rgba(255, 46, 99, 0.2);
+  color: #C974FF;
+  background: rgba(177, 74, 255, 0.2);
   transform: scale(0.95);
 }
 
 .mobile-menu-btn:focus {
   outline: none;
-  color: #FF2E63;
-  background: rgba(255, 46, 99, 0.1);
-  box-shadow: 0 0 0 2px rgba(255, 46, 99, 0.3);
+  color: #B14AFF;
+  background: rgba(177, 74, 255, 0.1);
+  box-shadow: 0 0 0 2px rgba(177, 74, 255, 0.3);
 }
 
 /* Auth visibility classes */
@@ -535,25 +539,27 @@ header .vp-balance .vp-icon svg,
   padding: 8px;
   border-radius: 4px;
   transition: all 0.2s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Mobile nav close button states */
 .mobile-nav-close:hover {
-  color: #FF2E63;
-  background: rgba(255, 46, 99, 0.1);
+  color: #B14AFF;
+  background: rgba(177, 74, 255, 0.1);
 }
 
 .mobile-nav-close:active {
-  color: #FF6B9D;
-  background: rgba(255, 46, 99, 0.2);
+  color: #C974FF;
+  background: rgba(177, 74, 255, 0.2);
   transform: scale(0.95);
 }
 
 .mobile-nav-close:focus {
   outline: none;
-  color: #FF2E63;
-  background: rgba(255, 46, 99, 0.1);
-  box-shadow: 0 0 0 2px rgba(255, 46, 99, 0.3);
+  color: #B14AFF;
+  background: rgba(177, 74, 255, 0.1);
+  box-shadow: 0 0 0 2px rgba(177, 74, 255, 0.3);
 }
 
 .mobile-nav-links {

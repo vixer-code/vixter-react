@@ -77,12 +77,18 @@ const Header = () => {
     }
   };
 
-  const toggleMobileMenu = () => {
+  const toggleMobileMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     console.log('Toggle mobile menu clicked, current state:', mobileMenuOpen);
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const closeMobileMenu = () => {
+  const closeMobileMenu = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setMobileMenuOpen(false);
   };
 
@@ -258,14 +264,22 @@ const Header = () => {
 
           {/* Mobile Menu Button */}
           <button className="mobile-menu-btn" onClick={toggleMobileMenu}>
-            <i className={`fas ${mobileMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
+            <i className="fas fa-bars"></i>
           </button>
         </nav>
       </header>
 
       {/* Mobile Navigation Overlay */}
-      <div className={`mobile-nav ${mobileMenuOpen ? 'active' : ''}`}>
-        <div className="mobile-nav-header">
+      <div 
+        className={`mobile-nav ${mobileMenuOpen ? 'active' : ''}`}
+        onClick={(e) => {
+          // Close menu if clicking on the backdrop (not the content)
+          if (e.target === e.currentTarget) {
+            closeMobileMenu(e);
+          }
+        }}
+      >
+        <div className="mobile-nav-header" onClick={(e) => e.stopPropagation()}>
           <Link to="/" className="logo" onClick={closeMobileMenu}>
             <img src="/images/Flor-Colorida.png" alt="Vixter logo" className="logo-icon" />
             <span>Vixter</span>
@@ -275,7 +289,7 @@ const Header = () => {
           </button>
         </div>
 
-        <ul className="mobile-nav-links">
+        <ul className="mobile-nav-links" onClick={(e) => e.stopPropagation()}>
           <li><Link to="/vixies" className={isActive('/vixies') ? 'active' : ''} onClick={closeMobileMenu}>
             <i className="fas fa-users"></i>Vixies
           </Link></li>
@@ -323,8 +337,8 @@ const Header = () => {
         </ul>
 
         {currentUser && (
-          <div className="mobile-nav-footer">
-            <div className="mobile-vp-balance" onClick={handleVpBalanceClick}>
+          <div className="mobile-nav-footer" onClick={(e) => e.stopPropagation()}>
+            <div className="mobile-vp-balance" onClick={() => { handleVpBalanceClick(); closeMobileMenu(); }}>
               <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
                 {/* Simplified VP icon for mobile */}
                 <defs>
