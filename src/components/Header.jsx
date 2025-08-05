@@ -289,7 +289,7 @@ const Header = () => {
         }}
       >
         <div className="mobile-nav-header">
-          <Link to="/" className="logo" onClick={closeMobileMenu}>
+          <Link to="/" className="logo" onClick={() => setTimeout(closeMobileMenu, 100)}>
             <img src="/images/Flor-Colorida.png" alt="Vixter logo" className="logo-icon" />
             <span>Vixter</span>
           </Link>
@@ -299,41 +299,41 @@ const Header = () => {
         </div>
 
         <ul className="mobile-nav-links">
-          <li><Link to="/vixies" className={isActive('/vixies') ? 'active' : ''} onClick={closeMobileMenu}>
+          <li><Link to="/vixies" className={isActive('/vixies') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
             <i className="fas fa-users"></i>Vixies
           </Link></li>
-          <li><Link to="/vixink" className={isActive('/vixink') ? 'active' : ''} onClick={closeMobileMenu}>
+          <li><Link to="/vixink" className={isActive('/vixink') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
             <i className="fas fa-link"></i>Vixink
           </Link></li>
-          <li><Link to="/feed" className={isActive('/feed') ? 'active' : ''} onClick={closeMobileMenu}>
+          <li><Link to="/feed" className={isActive('/feed') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
             <i className="fas fa-comments"></i>Comunidade
           </Link></li>
           
           {!currentUser ? (
             <>
               <li className="auth-hide logged-out">
-                <Link to="/login" onClick={closeMobileMenu}>
+                <Link to="/login" onClick={() => setTimeout(closeMobileMenu, 100)}>
                   <i className="fas fa-sign-in-alt"></i>Entrar
                 </Link>
               </li>
               <li className="auth-hide logged-out">
-                <Link to="/register" onClick={closeMobileMenu}>
+                <Link to="/register" onClick={() => setTimeout(closeMobileMenu, 100)}>
                   <i className="fas fa-user-plus"></i>Registrar
                 </Link>
               </li>
             </>
           ) : (
             <>
-              <li><Link to="/profile" onClick={closeMobileMenu}>
+              <li><Link to="/profile" onClick={() => setTimeout(closeMobileMenu, 100)}>
                 <i className="fas fa-user"></i>Minha conta
               </Link></li>
-              <li><Link to="/my-services" onClick={closeMobileMenu}>
+              <li><Link to="/my-services" onClick={() => setTimeout(closeMobileMenu, 100)}>
                 <i className="fas fa-briefcase"></i>Meus Serviços
               </Link></li>
-              <li><Link to="/wallet" onClick={closeMobileMenu}>
+              <li><Link to="/wallet" onClick={() => setTimeout(closeMobileMenu, 100)}>
                 <i className="fas fa-wallet"></i>Carteira
               </Link></li>
-              <li><Link to="/settings" onClick={closeMobileMenu}>
+              <li><Link to="/settings" onClick={() => setTimeout(closeMobileMenu, 100)}>
                 <i className="fas fa-cog"></i>Configurações
               </Link></li>
               <li>

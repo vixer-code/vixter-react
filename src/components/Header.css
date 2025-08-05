@@ -511,11 +511,13 @@ header .vp-balance .vp-icon svg,
   opacity: 0;
   overflow-y: auto;
   height: 100vh;
+  touch-action: manipulation;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Ensure mobile nav is always visible when active */
 .mobile-nav.active {
-  display: block !important;
+  display: flex !important;
   visibility: visible !important;
   opacity: 1 !important;
   transform: translateX(0) !important;
@@ -570,10 +572,14 @@ header .vp-balance .vp-icon svg,
   gap: 0;
   margin: 0;
   flex: 1;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-nav-links li {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  min-height: 44px; /* Minimum touch target size for mobile */
 }
 
 .mobile-nav-links li:last-child {
@@ -589,12 +595,31 @@ header .vp-balance .vp-icon svg,
   font-size: 1.1rem;
   text-decoration: none;
   transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
-.mobile-nav-links a:hover {
-  color: #00FFCA;
-  background-color: rgba(0, 255, 202, 0.05);
-  padding-left: 10px;
+/* Only apply hover on non-touch devices to prevent mobile issues */
+@media (hover: hover) and (pointer: fine) {
+  .mobile-nav-links a:hover {
+    color: #00FFCA;
+    background-color: rgba(0, 255, 202, 0.05);
+    padding-left: 10px;
+  }
+}
+
+/* Touch feedback for mobile devices */
+@media (hover: none) and (pointer: coarse) {
+  .mobile-nav-links a:active {
+    color: #00FFCA;
+    background-color: rgba(0, 255, 202, 0.08);
+    transform: scale(0.98);
+  }
 }
 
 .mobile-nav-links a.active {
@@ -608,20 +633,6 @@ header .vp-balance .vp-icon svg,
   width: 20px;
   text-align: center;
   color: #00FFCA;
-}
-
-/* Ensure mobile nav links are properly styled */
-.mobile-nav-links a {
-  display: flex;
-  align-items: center;
-  padding: 20px 0;
-  color: #FCFCFC;
-  font-weight: 500;
-  font-size: 1.1rem;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .mobile-nav-footer {
