@@ -68,6 +68,20 @@ body {
   font-size: var(--font-size-base);
   line-height: 1.6;
   overflow-x: hidden; /* Prevent horizontal scroll on mobile */
+  padding-top: 80px; /* Account for fixed header */
+}
+
+/* Responsive padding for fixed header */
+@media (max-width: 768px) {
+  body {
+    padding-top: 60px; /* Smaller header on mobile */
+  }
+}
+
+@media (max-width: 576px) {
+  body {
+    padding-top: 50px; /* Even smaller header on small mobile */
+  }
 }
 
 #root {
