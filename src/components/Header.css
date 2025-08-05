@@ -493,12 +493,6 @@ header .vp-balance .vp-icon svg,
   height: 100vh;
 }
 
-.mobile-nav.active {
-  transform: translateX(0);
-  visibility: visible;
-  opacity: 1;
-}
-
 /* Ensure mobile nav is always visible when active */
 .mobile-nav.active {
   display: block !important;
