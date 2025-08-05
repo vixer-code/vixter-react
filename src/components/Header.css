@@ -86,7 +86,6 @@ nav {
 /* Mobile menu button */
 .mobile-menu-btn {
   display: none;
-  background: rgba(255, 255, 255, 0);
   color: #00FFCA;
   font-size: 1.5rem;
   cursor: pointer;
