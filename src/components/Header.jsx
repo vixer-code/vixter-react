@@ -80,6 +80,12 @@ const Header = () => {
   const toggleMobileMenu = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Remove focus from the button to prevent stuck hover/active states
+    if (e.target) {
+      e.target.blur();
+    }
+    
     console.log('Toggle mobile menu clicked, current state:', mobileMenuOpen);
     setMobileMenuOpen(!mobileMenuOpen);
   };
@@ -263,7 +269,10 @@ const Header = () => {
           </ul>
 
           {/* Mobile Menu Button */}
-          <button className="mobile-menu-btn" onClick={toggleMobileMenu}>
+          <button 
+            className={`mobile-menu-btn ${mobileMenuOpen ? 'menu-open' : ''}`} 
+            onClick={toggleMobileMenu}
+          >
             <i className="fas fa-bars"></i>
           </button>
         </nav>
@@ -279,7 +288,7 @@ const Header = () => {
           }
         }}
       >
-        <div className="mobile-nav-header" onClick={(e) => e.stopPropagation()}>
+        <div className="mobile-nav-header">
           <Link to="/" className="logo" onClick={closeMobileMenu}>
             <img src="/images/Flor-Colorida.png" alt="Vixter logo" className="logo-icon" />
             <span>Vixter</span>
@@ -289,7 +298,7 @@ const Header = () => {
           </button>
         </div>
 
-        <ul className="mobile-nav-links" onClick={(e) => e.stopPropagation()}>
+        <ul className="mobile-nav-links">
           <li><Link to="/vixies" className={isActive('/vixies') ? 'active' : ''} onClick={closeMobileMenu}>
             <i className="fas fa-users"></i>Vixies
           </Link></li>
@@ -337,7 +346,7 @@ const Header = () => {
         </ul>
 
         {currentUser && (
-          <div className="mobile-nav-footer" onClick={(e) => e.stopPropagation()}>
+          <div className="mobile-nav-footer">
             <div className="mobile-vp-balance" onClick={() => { handleVpBalanceClick(); closeMobileMenu(); }}>
               <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
                 {/* Simplified VP icon for mobile */}
