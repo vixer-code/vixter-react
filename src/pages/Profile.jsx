@@ -76,6 +76,26 @@ const Profile = () => {
     }
   }, [userId, currentUser, setupServicesListener]);
 
+  // Handle URL hash navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash === 'services') {
+        setActiveTab('services');
+      }
+    };
+
+    // Check hash on mount
+    handleHashChange();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
+
   const loadProfile = async () => {
     try {
       setLoading(true);
