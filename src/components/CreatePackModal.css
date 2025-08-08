@@ -1,0 +1,62 @@
+/* Reuse identical visual layout and components from CreateServiceModal */
+@import './CreateServiceModal.css';
+
+/* Minimal additions for license pill styles and pack file rows */
+.license-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.license-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #B8B8B8;
+}
+
+.preview-licenses {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 20px;
+}
+
+.license-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.license-tag {
+  background: linear-gradient(135deg, #00FFCA, #00D4AA);
+  color: #0F0F1A;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.pack-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.pack-file-row {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 12px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pack-file-row .file-name {
+  color: #B8B8B8;
+  font-size: 0.9rem;
+  word-break: break-word;
+}

@@ -914,7 +914,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                             <div className="currency-row">
                               <span>Você recebe:</span>
                               <span className="currency-value vc">
-                                <div className="currency-icon vc-icon"></div>
                                 {formatVC(option.price)}
                               </span>
                             </div>

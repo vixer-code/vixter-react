@@ -9,6 +9,7 @@ import { useEmailVerification } from '../hooks/useEmailVerification';
 import { useServices } from '../hooks/useServices';
 import StatusIndicator from '../components/StatusIndicator';
 import CreateServiceModal from '../components/CreateServiceModal';
+import CreatePackModal from '../components/CreatePackModal';
 import CachedImage from '../components/CachedImage';
 import './Profile.css';
 
@@ -30,11 +31,14 @@ const Profile = () => {
   const [selectedImages, setSelectedImages] = useState([]);
   const [userStatus, setUserStatus] = useState('offline');
   const [packs, setPacks] = useState([]);
+  const [packsLoading, setPacksLoading] = useState(false);
   const [subscriptions, setSubscriptions] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [showCreateServiceModal, setShowCreateServiceModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
+  const [showCreatePackModal, setShowCreatePackModal] = useState(false);
+  const [editingPack, setEditingPack] = useState(null);
 
   // Services hook
   const { 
@@ -76,6 +80,25 @@ const Profile = () => {
       return cleanup;
     }
   }, [userId, currentUser, setupServicesListener]);
+
+  // Set up real-time packs listener
+  useEffect(() => {
+    const targetUserId = userId || currentUser?.uid;
+    if (!targetUserId) return;
+    const packsRef = ref(database, `packs/${targetUserId}`);
+    setPacksLoading(true);
+    onValue(packsRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        setPacks([]);
+      } else {
+        const packsData = snapshot.val();
+        const packsArray = Object.entries(packsData).map(([id, pack]) => ({ id, ...pack }));
+        setPacks(packsArray);
+      }
+      setPacksLoading(false);
+    });
+    return () => off(packsRef);
+  }, [userId, currentUser]);
 
   // Handle URL hash navigation
   useEffect(() => {
@@ -213,6 +236,12 @@ const Profile = () => {
   const handleServiceCreated = (newService) => {
     // The services hook will automatically update the services list
     console.log('Service created:', newService);
+  };
+
+  const handlePackCreated = (newPack) => {
+    // Real-time listener will update the packs list
+    console.log('Pack created:', newPack);
+    setActiveTab('packs');
   };
 
   const handleEditService = (service) => {
@@ -939,7 +968,13 @@ const Profile = () => {
           <div className="packs-header">
             <h3>Packs</h3>
             {isOwner && (
-              <button className="btn primary">
+              <button 
+                className="btn primary"
+                onClick={() => {
+                  setEditingPack(null);
+                  setShowCreatePackModal(true);
+                }}
+              >
                 <i className="fa-solid fa-plus"></i> Criar Novo Pack
               </button>
             )}
@@ -950,7 +985,12 @@ const Profile = () => {
           </div>
           
           <div className="packs-grid">
-            {packs.length > 0 ? (
+            {packsLoading ? (
+              <div className="loading-state">
+                <i className="fa-solid fa-spinner fa-spin"></i>
+                <p>Carregando packs...</p>
+              </div>
+            ) : packs.length > 0 ? (
               packs.map((pack) => (
                 <div key={pack.id} className="pack-card">
                   <div className="pack-cover">
@@ -1094,6 +1134,17 @@ const Profile = () => {
         }}
         onServiceCreated={handleServiceCreated}
         editingService={editingService}
+      />
+
+      {/* Create Pack Modal */}
+      <CreatePackModal
+        isOpen={showCreatePackModal}
+        onClose={() => {
+          setShowCreatePackModal(false);
+          setEditingPack(null);
+        }}
+        onPackCreated={handlePackCreated}
+        editingPack={editingPack}
       />
     </div>
   );
