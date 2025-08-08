@@ -1447,6 +1447,23 @@
   color: #0F0F1A;
 }
 
+/* Blocked/Disabled button variant for coming soon */
+.btn.blocked,
+.btn:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: #B8B8B8;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn.blocked:hover,
+.btn:disabled:hover {
+  box-shadow: none;
+  transform: none;
+}
+
 /* Enhanced Responsive Design */
 @media (max-width: 900px) {
   .perfil-tab-content {

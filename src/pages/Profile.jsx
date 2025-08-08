@@ -1090,7 +1090,7 @@ const Profile = () => {
           <div className="subscriptions-header">
             <h3>Assinaturas</h3>
             {isOwner && (
-              <button className="btn primary">
+              <button className="btn blocked" disabled title="Em breve">
                 <i className="fa-solid fa-plus"></i> Criar Nova Assinatura
               </button>
             )}

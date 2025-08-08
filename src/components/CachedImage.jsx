@@ -27,9 +27,9 @@ const CachedImage = ({
   style = {},
   onLoad,
   onError,
-  enableCache = true,
+  enableCache = false,
   defaultType = 'PROFILE_1',
-  showLoading = true,
+  showLoading = false,
   loadingComponent,
   errorComponent,
   ...props
@@ -78,8 +78,8 @@ const CachedImage = ({
           }
         }
 
+        // Set the image source but keep loading true until the <img> fires onLoad
         setImageSrc(imageUrl);
-        setLoading(false);
       } catch (err) {
         setImageSrc(finalFallbackSrc);
         setError(err);
@@ -91,37 +91,24 @@ const CachedImage = ({
   }, [src, finalFallbackSrc]);
 
   const handleLoad = (e) => {
+    setLoading(false);
     if (onLoad) onLoad(e);
   };
 
   const handleError = (e) => {
+    setError(e);
+    setImageSrc(finalFallbackSrc);
+    setLoading(false);
     if (onError) onError(e);
   };
 
   // Show loading state
-  if (loading && showLoading) {
+  if (loading) {
     if (loadingComponent) {
       return loadingComponent;
     }
-    
-    return (
-      <div 
-        className={`cached-image-loading ${className}`}
-        style={{ 
-          backgroundColor: '#f0f0f0', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          minHeight: '100px',
-          ...style 
-        }}
-        {...props}
-      >
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-        </div>
-      </div>
-    );
+    // Render an empty container to preserve layout until the image loads
+    return <div className={className} style={style} {...props} />;
   }
 
   // Show error state
