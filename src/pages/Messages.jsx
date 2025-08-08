@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { FixedSizeList as List, VariableSizeList } from 'react-window';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { database } from '../config/firebase';
@@ -140,11 +141,14 @@ const Messages = () => {
     }
   };
 
-  const filteredConversations = conversations.filter(conversation => {
-    const otherUser = getOtherParticipant(conversation);
-    return otherUser.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           otherUser.username?.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  const filteredConversations = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return conversations.filter(conversation => {
+      const otherUser = getOtherParticipant(conversation);
+      return otherUser.displayName?.toLowerCase().includes(term) ||
+             otherUser.username?.toLowerCase().includes(term);
+    });
+  }, [conversations, searchTerm]);
 
   if (loading) {
     return (
@@ -176,42 +180,50 @@ const Messages = () => {
               <p>Nenhuma conversa encontrada</p>
             </div>
           ) : (
-            filteredConversations.map((conversation) => {
-              const otherUser = getOtherParticipant(conversation);
-              const isSelected = selectedConversation?.id === conversation.id;
-              
-              return (
-                <div
-                  key={conversation.id}
-                  className={`conversation-item ${isSelected ? 'selected' : ''}`}
-                  onClick={() => setSelectedConversation(conversation)}
-                >
-                  <div className="conversation-avatar">
-                    <img
-                      src={otherUser.photoURL || '/images/defpfp1.png'}
-                      alt={otherUser.displayName || 'User'}
-                      onError={(e) => {
-                        e.target.src = '/images/defpfp1.png';
-                      }}
-                    />
-                    <div className={`status-indicator ${otherUser.status || 'offline'}`}></div>
+            <List
+              height={500}
+              width={'100%'}
+              itemCount={filteredConversations.length}
+              itemSize={72}
+              itemKey={(index) => filteredConversations[index].id}
+            >
+              {({ index, style }) => {
+                const conversation = filteredConversations[index];
+                const otherUser = getOtherParticipant(conversation);
+                const isSelected = selectedConversation?.id === conversation.id;
+                return (
+                  <div
+                    style={style}
+                    className={`conversation-item ${isSelected ? 'selected' : ''}`}
+                    onClick={() => setSelectedConversation(conversation)}
+                  >
+                    <div className="conversation-avatar">
+                      <img
+                        src={otherUser.photoURL || '/images/defpfp1.png'}
+                        alt={otherUser.displayName || 'User'}
+                        onError={(e) => {
+                          e.target.src = '/images/defpfp1.png';
+                        }}
+                      />
+                      <div className={`status-indicator ${otherUser.status || 'offline'}`}></div>
+                    </div>
+                    <div className="conversation-info">
+                      <div className="conversation-name">
+                        {otherUser.displayName || otherUser.username || 'Usuário'}
+                      </div>
+                      <div className="conversation-preview">
+                        {conversation.lastMessage || 'Nenhuma mensagem ainda'}
+                      </div>
+                    </div>
+                    {conversation.lastMessageTime && (
+                      <div className="conversation-time">
+                        {formatTime(conversation.lastMessageTime)}
+                      </div>
+                    )}
                   </div>
-                  <div className="conversation-info">
-                    <div className="conversation-name">
-                      {otherUser.displayName || otherUser.username || 'Usuário'}
-                    </div>
-                    <div className="conversation-preview">
-                      {conversation.lastMessage || 'Nenhuma mensagem ainda'}
-                    </div>
-                  </div>
-                  {conversation.lastMessageTime && (
-                    <div className="conversation-time">
-                      {formatTime(conversation.lastMessageTime)}
-                    </div>
-                  )}
-                </div>
-              );
-            })
+                );
+              }}
+            </List>
           )}
         </div>
       </div>
@@ -243,34 +255,43 @@ const Messages = () => {
                   <p>Nenhuma mensagem ainda. Inicie uma conversa!</p>
                 </div>
               ) : (
-                messages.map((message) => {
-                  const isOwnMessage = message.senderId === currentUser.uid;
-                  const sender = isOwnMessage ? currentUser : users[message.senderId];
-                  
-                  return (
-                    <div
-                      key={message.id}
-                      className={`message ${isOwnMessage ? 'own-message' : 'other-message'}`}
-                    >
-                      {!isOwnMessage && (
-                        <img
-                          src={sender?.photoURL || '/images/defpfp1.png'}
-                          alt={sender?.displayName || 'User'}
-                          className="message-avatar"
-                          onError={(e) => {
-                            e.target.src = '/images/defpfp1.png';
-                          }}
-                        />
-                      )}
-                      <div className="message-content">
-                        <div className="message-text">{message.text}</div>
-                        <div className="message-time">
-                          {formatTime(message.timestamp)}
+                <VariableSizeList
+                  height={520}
+                  width={'100%'}
+                  itemCount={messages.length}
+                  estimatedItemSize={64}
+                  itemSize={(index) => {
+                    const text = messages[index]?.text || '';
+                    const base = 48; // padding + meta
+                    const lines = Math.ceil(text.length / 40);
+                    return Math.min(200, base + lines * 18);
+                  }}
+                  itemKey={(index) => messages[index].id}
+                >
+                  {({ index, style }) => {
+                    const message = messages[index];
+                    const isOwnMessage = message.senderId === currentUser.uid;
+                    const sender = isOwnMessage ? currentUser : users[message.senderId];
+                    return (
+                      <div style={style} className={`message ${isOwnMessage ? 'own-message' : 'other-message'}`}>
+                        {!isOwnMessage && (
+                          <img
+                            src={sender?.photoURL || '/images/defpfp1.png'}
+                            alt={sender?.displayName || 'User'}
+                            className="message-avatar"
+                            onError={(e) => {
+                              e.target.src = '/images/defpfp1.png';
+                            }}
+                          />
+                        )}
+                        <div className="message-content">
+                          <div className="message-text">{message.text}</div>
+                          <div className="message-time">{formatTime(message.timestamp)}</div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
+                    );
+                  }}
+                </VariableSizeList>
               )}
               <div ref={messagesEndRef} />
             </div>

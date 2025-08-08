@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { ref, onValue, set, onDisconnect, serverTimestamp, get } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from './AuthContext';
@@ -132,7 +132,7 @@ export const StatusProvider = ({ children }) => {
     };
   }, [currentUser]);
 
-  const updateUserStatus = async (status) => {
+  const updateUserStatus = useCallback(async (status) => {
     if (!currentUser) return false;
 
     try {
@@ -153,9 +153,9 @@ export const StatusProvider = ({ children }) => {
       console.error('Error updating user status:', error);
       return false;
     }
-  };
+  }, [currentUser]);
 
-  const getUserSelectedStatus = async (uid) => {
+  const getUserSelectedStatus = useCallback(async (uid) => {
     try {
       const snapshot = await get(ref(database, `users/${uid}/selectedStatus`));
       return snapshot.val() || 'online';
@@ -163,9 +163,9 @@ export const StatusProvider = ({ children }) => {
       console.error('Error getting selected status:', error);
       return 'online';
     }
-  };
+  }, []);
 
-  const getCurrentStatus = async (uid) => {
+  const getCurrentStatus = useCallback(async (uid) => {
     try {
       const snapshot = await get(ref(database, `status/${uid}`));
       const data = snapshot.val();
@@ -174,16 +174,16 @@ export const StatusProvider = ({ children }) => {
       console.error('Error getting current status:', error);
       return 'offline';
     }
-  };
+  }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     userStatus,
     selectedStatus,
     isConnected,
     updateUserStatus,
     getUserSelectedStatus,
     getCurrentStatus
-  };
+  }), [userStatus, selectedStatus, isConnected, updateUserStatus, getUserSelectedStatus, getCurrentStatus]);
 
   return (
     <StatusContext.Provider value={value}>

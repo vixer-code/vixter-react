@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ref, get, set, push } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -50,6 +50,7 @@ const Wallet = () => {
 
   useEffect(() => {
     filterTransactions();
+    setCurrentPage(1);
   }, [transactions, filters]);
 
   const loadWallet = async () => {
@@ -414,11 +415,11 @@ const Wallet = () => {
     setSelectedPackage(null);
   };
 
-  const getCurrentPageTransactions = () => {
+  const pagedTransactions = useMemo(() => {
     const startIndex = (currentPage - 1) * TRANSACTIONS_PER_PAGE;
     const endIndex = startIndex + TRANSACTIONS_PER_PAGE;
     return filteredTransactions.slice(startIndex, endIndex);
-  };
+  }, [filteredTransactions, currentPage]);
 
   const totalPages = Math.ceil(filteredTransactions.length / TRANSACTIONS_PER_PAGE);
 
@@ -723,8 +724,8 @@ const Wallet = () => {
           </div>
 
           <div className="transactions-list">
-            {getCurrentPageTransactions().length > 0 ? (
-              getCurrentPageTransactions().map((transaction) => (
+            {pagedTransactions.length > 0 ? (
+              pagedTransactions.map((transaction) => (
                 <div key={transaction.id} className="transaction-item">
                   <div className="transaction-icon">
                     <i 

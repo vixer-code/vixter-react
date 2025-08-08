@@ -135,6 +135,8 @@ const CachedImage = ({
       alt={alt}
       className={className}
       style={style}
+      loading="lazy"
+      decoding="async"
       onLoad={handleLoad}
       onError={handleError}
       {...props}

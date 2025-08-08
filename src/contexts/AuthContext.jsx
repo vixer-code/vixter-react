@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
@@ -27,13 +27,13 @@ export const AuthProvider = ({ children }) => {
   const [usernameCache] = useState(new Map());
 
   // Helper function to check if input is email or username
-  const isEmail = (input) => {
+  const isEmail = useCallback((input) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(input);
-  };
+  }, []);
 
   // Function to find email by username (with robust fallback)
-  const findEmailByUsername = async (username) => {
+  const findEmailByUsername = useCallback(async (username) => {
     try {
       console.log('[findEmailByUsername] Searching for username:', username);
       
@@ -87,10 +87,10 @@ export const AuthProvider = ({ children }) => {
       
       throw error;
     }
-  };
+  }, [usernameCache]);
 
   // Create user profile in database
-  const createUserProfile = async (uid, name, email) => {
+  const createUserProfile = useCallback(async (uid, name, email) => {
     console.log('[createUserProfile] uid:', uid, 'name:', name, 'email:', email);
   
     try {
@@ -109,10 +109,10 @@ export const AuthProvider = ({ children }) => {
       console.error('[createUserProfile] Error creating user profile:', error);
       throw error;
     }
-  };
+  }, []);
 
   // Login function with username/email support
-  const login = async (emailOrUsername, password) => {
+  const login = useCallback(async (emailOrUsername, password) => {
     try {
       let email = emailOrUsername.trim();
       
@@ -176,10 +176,10 @@ export const AuthProvider = ({ children }) => {
           throw error;
       }
     }
-  };
+  }, [findEmailByUsername, isEmail, usernameCache]);
 
   // Register function with profile creation
-  const register = async (name, email, password) => {
+  const register = useCallback(async (name, email, password) => {
     try {
       console.log('[register] Received name:', name, 'email:', email);
       
@@ -206,10 +206,10 @@ export const AuthProvider = ({ children }) => {
       console.error('Registration error:', error);
       throw error;
     }
-  };
+  }, [createUserProfile]);
 
   // Logout function
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await signOut(auth);
       setToken(null);
@@ -220,10 +220,10 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error:', error);
       throw error;
     }
-  };
+  }, [usernameCache]);
 
   // Reset password function with better error handling
-  const resetPassword = async (email) => {
+  const resetPassword = useCallback(async (email) => {
     try {
       console.log('[resetPassword] Sending password reset email to:', email);
       await sendPasswordResetEmail(auth, email);
@@ -244,10 +244,10 @@ export const AuthProvider = ({ children }) => {
           throw error;
       }
     }
-  };
+  }, []);
 
   // Get current user token
-  const getIdToken = async () => {
+  const getIdToken = useCallback(async () => {
     if (currentUser) {
       try {
         const token = await currentUser.getIdToken();
@@ -259,7 +259,7 @@ export const AuthProvider = ({ children }) => {
       }
     }
     return null;
-  };
+  }, [currentUser]);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -284,7 +284,7 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     currentUser,
     token,
     login,
@@ -293,7 +293,7 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     getIdToken,
     loading
-  };
+  }), [currentUser, token, login, register, logout, resetPassword, getIdToken, loading]);
 
   return (
     <AuthContext.Provider value={value}>

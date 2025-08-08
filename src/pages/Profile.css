@@ -529,6 +529,7 @@
   margin-top: 20px;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden; /* contain children spacing without overlapping outside */
 }
 
 .tab-content.active {
@@ -876,6 +877,7 @@
   padding: 25px;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: visible; /* allow hover-lifted cards to remain visible */
 }
 
 .services-header,
@@ -902,6 +904,9 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
+  padding-top: 8px;   /* prevent hover translate from overlapping header */
+  padding-bottom: 8px;/* small breathing room at bottom */
+  align-content: start;
 }
 
 .service-card,
@@ -913,6 +918,7 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
   position: relative;
+  will-change: transform;
 }
 
 .service-card:hover,
@@ -928,6 +934,7 @@
   height: 150px;
   overflow: hidden;
   position: relative;
+  display: block;
 }
 
 .service-cover img,
@@ -936,6 +943,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .service-status-badge {

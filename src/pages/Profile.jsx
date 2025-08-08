@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { ref, get, update, set, remove, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -8,8 +8,8 @@ import { getDefaultImage } from '../utils/defaultImages';
 import { useEmailVerification } from '../hooks/useEmailVerification';
 import { useServices } from '../hooks/useServices';
 import StatusIndicator from '../components/StatusIndicator';
-import CreateServiceModal from '../components/CreateServiceModal';
-import CreatePackModal from '../components/CreatePackModal';
+const CreateServiceModal = lazy(() => import('../components/CreateServiceModal'));
+const CreatePackModal = lazy(() => import('../components/CreatePackModal'));
 import CachedImage from '../components/CachedImage';
 import './Profile.css';
 
@@ -1194,27 +1194,31 @@ const Profile = () => {
         </div>
       )}
 
-      {/* Create Service Modal */}
-      <CreateServiceModal
-        isOpen={showCreateServiceModal}
-        onClose={() => {
-          setShowCreateServiceModal(false);
-          setEditingService(null);
-        }}
-        onServiceCreated={handleServiceCreated}
-        editingService={editingService}
-      />
-
-      {/* Create Pack Modal */}
-      <CreatePackModal
-        isOpen={showCreatePackModal}
-        onClose={() => {
-          setShowCreatePackModal(false);
-          setEditingPack(null);
-        }}
-        onPackCreated={handlePackCreated}
-        editingPack={editingPack}
-      />
+      {/* Lazy modals */}
+      <Suspense fallback={null}>
+        {showCreateServiceModal && (
+          <CreateServiceModal
+            isOpen={showCreateServiceModal}
+            onClose={() => {
+              setShowCreateServiceModal(false);
+              setEditingService(null);
+            }}
+            onServiceCreated={handleServiceCreated}
+            editingService={editingService}
+          />
+        )}
+        {showCreatePackModal && (
+          <CreatePackModal
+            isOpen={showCreatePackModal}
+            onClose={() => {
+              setShowCreatePackModal(false);
+              setEditingPack(null);
+            }}
+            onPackCreated={handlePackCreated}
+            editingPack={editingPack}
+          />
+        )}
+      </Suspense>
     </div>
   );
 };

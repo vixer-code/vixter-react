@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ref, get, query, orderByChild, limitToFirst } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -33,8 +33,20 @@ const Feed = () => {
     initFeed();
   }, []);
 
+  // Debounce search to reduce filter recomputations
+  const [searchInput, setSearchInput] = useState('');
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setFilters(prev => ({ ...prev, search: searchInput }));
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [searchInput]);
+
   useEffect(() => {
     applyFilters();
+    // reset pagination when filters change
+    setServicesPage(1);
+    setProvidersPage(1);
   }, [services, providers, filters]);
 
   const initFeed = async () => {
@@ -99,7 +111,7 @@ const Feed = () => {
     }
   };
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filteredServicesData = [...services];
     let filteredProvidersData = [...providers];
 
@@ -150,9 +162,9 @@ const Feed = () => {
 
     setFilteredServices(filteredServicesData);
     setFilteredProviders(filteredProvidersData);
-  };
+  }, [services, providers, filters]);
 
-  const sortServices = (servicesToSort) => {
+  const sortServices = useCallback((servicesToSort) => {
     const sorted = [...servicesToSort];
     
     switch (filters.sortBy) {
@@ -167,9 +179,9 @@ const Feed = () => {
       default:
         return sorted;
     }
-  };
+  }, [filters.sortBy]);
 
-  const sortProviders = (providersToSort) => {
+  const sortProviders = useCallback((providersToSort) => {
     const sorted = [...providersToSort];
     
     switch (filters.sortBy) {
@@ -180,7 +192,7 @@ const Feed = () => {
       default:
         return sorted;
     }
-  };
+  }, [filters.sortBy]);
 
   const handleSearch = () => {
     // Search is handled by the filters state change
@@ -276,8 +288,8 @@ const Feed = () => {
           <input
             type="text"
             placeholder="Buscar serviços ou profissionais..."
-            value={filters.search}
-            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="search-input"
           />
           <button onClick={handleSearch} className="search-btn">

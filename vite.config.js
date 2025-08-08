@@ -9,9 +9,17 @@ export default defineConfig({
     historyApiFallback: true,
   },
   build: {
+    chunkSizeWarningLimit: 1024,
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react')) return 'react-vendor'
+            if (id.includes('firebase')) return 'firebase-vendor'
+            if (id.includes('lucide-react')) return 'icons-vendor'
+            return 'vendor'
+          }
+        },
       },
     },
   },
