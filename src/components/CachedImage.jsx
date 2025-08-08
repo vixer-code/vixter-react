@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getDefaultImage } from '../utils/defaultImages';
+import { imageCache, preloadImage } from '../utils/imageCache';
 import './CachedImage.css';
 
 /**
@@ -53,14 +54,28 @@ const CachedImage = ({
       setError(null);
 
       try {
-        let imageUrl;
+        let imageUrl = null;
 
-        // If it's already a URL, use it directly
-        if (typeof src === 'string' && src.startsWith('http')) {
-          imageUrl = src;
-        } else {
-          // For any other case, use the fallback
-          imageUrl = finalFallbackSrc;
+        // Try cache first
+        if (enableCache && typeof src === 'string') {
+          const cached = imageCache.getCachedImage(src);
+          if (cached) {
+            imageUrl = cached;
+          }
+        }
+
+        // If not cached, preload and cache it
+        if (!imageUrl) {
+          if (typeof src === 'string' && src.startsWith('http')) {
+            try {
+              const preloaded = enableCache ? await preloadImage(src) : src;
+              imageUrl = preloaded || src;
+            } catch {
+              imageUrl = src;
+            }
+          } else {
+            imageUrl = finalFallbackSrc;
+          }
         }
 
         setImageSrc(imageUrl);

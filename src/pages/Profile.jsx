@@ -933,8 +933,9 @@ const Profile = () => {
                   title={isOwner ? 'Clique para editar este serviço' : ''}
                 >
                   <div className="pack-cover">
-                    <img 
-                      src={service.coverImageURL || '/images/default-service.jpg'}
+                    <CachedImage 
+                      src={service.coverImageURL}
+                      fallbackSrc="/images/default-service.jpg"
                       alt={service.title}
                     />
                     {service.status && service.status !== 'active' && (
@@ -1025,7 +1026,11 @@ const Profile = () => {
                   title={isOwner ? 'Clique para editar este pack' : ''}
                 >
                   <div className="pack-cover">
-                    <img src={pack.coverImage || '/images/default-pack.jpg'} alt={pack.title} />
+                    <CachedImage 
+                      src={pack.coverImage}
+                      fallbackSrc="/images/default-pack.jpg"
+                      alt={pack.title}
+                    />
                     {pack.status && pack.status !== 'active' && (
                       <div className={`service-status-badge ${pack.status}`}>
                         {pack.status}
