@@ -27,7 +27,7 @@ const CachedImage = ({
   style = {},
   onLoad,
   onError,
-  enableCache = false,
+  enableCache = true,
   defaultType = 'PROFILE_1',
   showLoading = false,
   loadingComponent,
