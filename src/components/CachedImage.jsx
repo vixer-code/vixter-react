@@ -102,26 +102,18 @@ const CachedImage = ({
     if (onError) onError(e);
   };
 
-  // Show loading state
-  if (loading) {
-    if (loadingComponent) {
-      return loadingComponent;
-    }
-    // Render an empty container to preserve layout until the image loads
-    return <div className={className} style={style} {...props} />;
-  }
-
-  // Show error state
+  // If a custom error UI is provided, show it
   if (error && errorComponent) {
     return errorComponent;
   }
 
+  // Always mount the <img>; hide it until it finishes loading
   return (
     <img
-      src={imageSrc}
+      src={imageSrc || finalFallbackSrc}
       alt={alt}
       className={className}
-      style={style}
+      style={{ ...style, opacity: loading ? 0 : 1 }}
       loading="lazy"
       decoding="async"
       onLoad={handleLoad}

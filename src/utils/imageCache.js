@@ -9,16 +9,21 @@ class ImageCache {
   // Generate a cache key from the Firebase Storage URL
   generateCacheKey(url) {
     if (!url) return null;
-    
-    // Extract the path from Firebase Storage URL
-    const urlObj = new URL(url);
-    const pathMatch = urlObj.pathname.match(/\/o\/(.+?)\?/);
-    if (pathMatch) {
-      return decodeURIComponent(pathMatch[1]);
+    // If it's a relative URL, just return it directly
+    try {
+      const urlObj = new URL(url, window.location.origin);
+      const isSameOrigin = urlObj.origin === window.location.origin;
+      // Extract Firebase Storage object path when applicable
+      const pathMatch = urlObj.pathname.match(/\/o\/(.+?)\?/);
+      if (pathMatch) {
+        return decodeURIComponent(pathMatch[1]);
+      }
+      // Use full absolute URL for cross-origin, relative for same-origin
+      return isSameOrigin ? urlObj.pathname + urlObj.search : urlObj.href;
+    } catch {
+      // As a last resort, return the raw string
+      return url;
     }
-    
-    // Fallback to using the full URL as key
-    return url;
   }
 
   // Get cached image data
@@ -167,23 +172,33 @@ export const preloadImage = (url) => {
     }
 
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // Determine if cross-origin; only set crossOrigin when needed and allowed
+    let isCrossOrigin = false;
+    try {
+      const parsed = new URL(url, window.location.origin);
+      isCrossOrigin = parsed.origin !== window.location.origin;
+      if (!isCrossOrigin) {
+        img.crossOrigin = 'anonymous';
+      }
+    } catch {}
     
     img.onload = () => {
-      // Convert to base64 for caching
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      
+      // For cross-origin images, avoid canvas conversion to prevent CORS taint
+      if (isCrossOrigin) {
+        imageCache.cacheImage(url, url);
+        resolve(url);
+        return;
+      }
       try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         imageCache.cacheImage(url, dataUrl);
         resolve(dataUrl);
       } catch (error) {
-        // If canvas conversion fails, cache the original URL
         imageCache.cacheImage(url, url);
         resolve(url);
       }
