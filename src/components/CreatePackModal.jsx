@@ -234,8 +234,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     if (!formData.price) return 'Por favor, insira um preço';
     const value = parseFloat(formData.price);
     if (isNaN(value)) return 'Por favor, insira um valor numérico válido';
-    if (value < 5) return 'O preço mínimo é R$ 5,00';
-    if (value > 100000) return 'Preço muito alto';
+    if (value < 5) return 'O preço mínimo é 5,00 VC';
+    if (value > 10000) return 'O preço máximo é 10.000,00 VC';
     return null;
   };
 
@@ -285,10 +285,13 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     }
   };
 
-  const formatBRL = (value) => {
-    const num = parseFloat(value || 0);
-    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  // Currency helpers (same logic as Service: VC -> VP @ 1.5x)
+  const convertVCtoVP = (vcAmount) => vcAmount * 1.5;
+  const formatCurrency = (amount, decimals = 2) => {
+    return parseFloat(amount || 0).toFixed(decimals).replace('.', ',');
   };
+  const formatVC = (amount) => `${formatCurrency(amount)} VC`;
+  const formatVP = (amount) => `${formatCurrency(amount)} VP`;
 
   const effectivePrice = () => {
     const price = parseFloat(formData.price || 0);
@@ -600,7 +603,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
               <h3>Precificação</h3>
 
               <div className="form-group">
-                <label htmlFor="pack-price">Preço Base (BRL) *</label>
+                <label htmlFor="pack-price">Preço Base (VC) *</label>
                 <input
                   id="pack-price"
                   type="number"
@@ -611,7 +614,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                   className={getPriceError() ? 'error' : ''}
                   placeholder="5.00"
                 />
-                <small>Preço mínimo R$ 5,00</small>
+                 <small>Preço mínimo 5,00 VC</small>
                 {getPriceError() && (
                   <div className="validation-error">
                     <i className="fas fa-exclamation-triangle"></i>
@@ -644,13 +647,14 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
               {formData.price && !getPriceError() && (
                 <div className="currency-display">
                   <div className="currency-row">
-                    <span>Preço original:</span>
-                    <span className="currency-value vc">{formatBRL(formData.price)}</span>
+                    <span>Você recebe:</span>
+                    <span className="currency-value vc">{formatVC(formData.price)}</span>
                   </div>
                   <div className="currency-row">
-                    <span>Preço com desconto:</span>
-                    <span className="currency-value vp">{formatBRL(effectivePrice())}</span>
+                    <span>Cliente paga:</span>
+                    <span className="currency-value vp">{formatVP(convertVCtoVP(effectivePrice()))}</span>
                   </div>
+                  <div className="conversion-note">Taxa de conversão: 1 VC = 1,5 VP</div>
                 </div>
               )}
             </div>
@@ -824,15 +828,15 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                     {formData.discount && parseInt(formData.discount, 10) > 0 ? (
                       <>
                         <div className="preview-price-secondary">
-                          {formatBRL(formData.price)}
+                          {formatVC(formData.price)}
                         </div>
                         <div className="preview-price-main">
-                          {formatBRL(effectivePrice())}
+                          {formatVP(convertVCtoVP(effectivePrice()))}
                         </div>
                       </>
                     ) : (
                       <div className="preview-price-main">
-                        {formData.price ? formatBRL(formData.price) : 'R$ 0,00'}
+                        {formData.price ? formatVP(convertVCtoVP(formData.price)) : '0,00 VP'}
                       </div>
                     )}
                   </div>

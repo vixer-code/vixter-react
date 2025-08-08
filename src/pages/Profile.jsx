@@ -999,7 +999,7 @@ const Profile = () => {
                   <div className="pack-info">
                     <h3 className="pack-title">{pack.title}</h3>
                     <p className="pack-price">
-                      R$ {pack.price?.toFixed(2)}
+                      VP {(pack.price != null ? (pack.price * 1.5).toFixed(2) : '0.00')}
                       {pack.discount && <span className="pack-discount">(-{pack.discount}%)</span>}
                     </p>
                   </div>
