@@ -648,7 +648,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                 <div className="currency-display">
                   <div className="currency-row">
                     <span>Você recebe:</span>
-                    <span className="currency-value vc">{formatVC(formData.price)}</span>
+                    <span className="currency-value vc">{formatVC(effectivePrice())}</span>
                   </div>
                   <div className="currency-row">
                     <span>Cliente paga:</span>

@@ -244,6 +244,35 @@ const Profile = () => {
     setActiveTab('packs');
   };
 
+  const handleEditPack = (pack) => {
+    setEditingPack(pack);
+    setShowCreatePackModal(true);
+  };
+
+  const handleDeletePack = async (packId) => {
+    if (!currentUser) return;
+    if (window.confirm('Tem certeza que deseja excluir este pack?')) {
+      try {
+        const packRef = ref(database, `packs/${currentUser.uid}/${packId}`);
+        await remove(packRef);
+      } catch (error) {
+        console.error('Error deleting pack:', error);
+        alert('Erro ao excluir pack. Tente novamente.');
+      }
+    }
+  };
+
+  const handlePackStatusChange = async (packId, newStatus) => {
+    if (!currentUser) return;
+    try {
+      const packRef = ref(database, `packs/${currentUser.uid}/${packId}`);
+      await update(packRef, { status: newStatus, updatedAt: Date.now() });
+    } catch (error) {
+      console.error('Error updating pack status:', error);
+      alert('Erro ao atualizar status do pack. Tente novamente.');
+    }
+  };
+
   const handleEditService = (service) => {
     setEditingService(service);
     setShowCreateServiceModal(true);
@@ -992,9 +1021,20 @@ const Profile = () => {
               </div>
             ) : packs.length > 0 ? (
               packs.map((pack) => (
-                <div key={pack.id} className="pack-card">
+                <div 
+                  key={pack.id} 
+                  className={`pack-card ${isOwner ? 'editable' : ''}`}
+                  onClick={isOwner ? () => handleEditPack(pack) : undefined}
+                  style={isOwner ? { cursor: 'pointer' } : {}}
+                  title={isOwner ? 'Clique para editar este pack' : ''}
+                >
                   <div className="pack-cover">
                     <img src={pack.coverImage || '/images/default-pack.jpg'} alt={pack.title} />
+                    {pack.status && pack.status !== 'active' && (
+                      <div className={`service-status-badge ${pack.status}`}>
+                        {pack.status}
+                      </div>
+                    )}
                   </div>
                   <div className="pack-info">
                     <h3 className="pack-title">{pack.title}</h3>
@@ -1003,6 +1043,34 @@ const Profile = () => {
                       {pack.discount && <span className="pack-discount">(-{pack.discount}%)</span>}
                     </p>
                   </div>
+                  {isOwner && (
+                    <div className="service-actions" onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        className="action-btn edit-btn"
+                        onClick={() => handleEditPack(pack)}
+                        title="Editar"
+                      >
+                        <i className="fa-solid fa-edit"></i>
+                      </button>
+                      <button 
+                        className="action-btn status-btn"
+                        onClick={() => {
+                          const newStatus = pack.status === 'active' ? 'paused' : 'active';
+                          handlePackStatusChange(pack.id, newStatus);
+                        }}
+                        title="Alterar Status"
+                      >
+                        <i className="fa-solid fa-toggle-on"></i>
+                      </button>
+                      <button 
+                        className="action-btn delete-btn"
+                        onClick={() => handleDeletePack(pack.id)}
+                        title="Excluir"
+                      >
+                        <i className="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))
             ) : (
