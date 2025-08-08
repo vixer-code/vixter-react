@@ -173,6 +173,9 @@
   max-width: none;
   border: none;
   backdrop-filter: none;
+  overflow-y: auto; /* Allow scrolling when content grows (attachments) */
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .form-step {
