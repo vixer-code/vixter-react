@@ -76,6 +76,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   const [sampleVideoFiles, setSampleVideoFiles] = useState([]);
   const [sampleVideoPreviews, setSampleVideoPreviews] = useState([]);
   const [packFiles, setPackFiles] = useState([]); // images or videos (final downloadable content)
+  const [packFilePreviews, setPackFilePreviews] = useState([]); // data URLs for previews aligned with packFiles
 
   useEffect(() => {
     if (editingPack) {
@@ -98,6 +99,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
 
       setCoverImageFile(null);
       setPackFiles([]);
+      setPackFilePreviews([]);
       setSampleImageFiles([]);
       setSampleVideoFiles([]);
       setSampleImagePreviews([]);
@@ -135,6 +137,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     setSampleVideoFiles([]);
     setSampleVideoPreviews([]);
     setPackFiles([]);
+    setPackFilePreviews([]);
     if (resetStep) setCurrentStep(0);
   };
 
@@ -224,9 +227,24 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     setPackFiles(prev => [...prev, ...files]);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        setPackFilePreviews(prev => [...prev, { src: ev.target.result, isVideo: file.type.startsWith('video/') }]);
+      };
+      reader.readAsDataURL(file);
+    });
   };
   const removePackFile = (index) => {
     setPackFiles(prev => prev.filter((_, i) => i !== index));
+    setPackFilePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingPackContent = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      packContent: (prev.packContent || []).filter((_, i) => i !== index)
+    }));
   };
 
   // Validation
@@ -756,17 +774,53 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
 
               <div className="form-group">
                 <label>Arquivos do Pack (imagens/vídeos)</label>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*,video/*"
-                  onChange={handlePackFilesChange}
-                />
-                {packFiles.length > 0 && (
-                  <div className="pack-files-list">
-                    {packFiles.map((f, idx) => (
-                      <div key={idx} className="pack-file-row">
-                        <span className="file-name">{f.name}</span>
+                <div className="image-upload-container">
+                  <input
+                    type="file"
+                    id="pack-files-input"
+                    multiple
+                    accept="image/*,video/*"
+                    onChange={handlePackFilesChange}
+                    style={{ display: 'none' }}
+                  />
+                  <label htmlFor="pack-files-input" className="upload-placeholder">
+                    <i className="upload-icon">+</i>
+                    <span>Adicionar Arquivos do Pack</span>
+                  </label>
+                </div>
+
+                {/* Existing pack content (URLs) when editing */}
+                {formData.packContent && formData.packContent.length > 0 && (
+                  <div className="showcase-grid">
+                    {formData.packContent.map((url, idx) => (
+                      <div key={`pc-url-${idx}`} className="showcase-item">
+                        {/\.(mp4|mov|webm|ogg)(\?|$)/i.test(url) ? (
+                          <video controls>
+                            <source src={url} type="video/mp4" />
+                            Seu navegador não suporta vídeo.
+                          </video>
+                        ) : (
+                          <img src={url} alt={`Arquivo ${idx + 1}`} />
+                        )}
+                        <button className="remove-media" onClick={() => removeExistingPackContent(idx)}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Newly selected pack files previews */}
+                {packFilePreviews.length > 0 && (
+                  <div className="showcase-grid">
+                    {packFilePreviews.map((prev, idx) => (
+                      <div key={`pc-prev-${idx}`} className="showcase-item">
+                        {prev.isVideo ? (
+                          <video controls>
+                            <source src={prev.src} type="video/mp4" />
+                            Seu navegador não suporta vídeo.
+                          </video>
+                        ) : (
+                          <img src={prev.src} alt={`Arquivo ${idx + 1}`} />
+                        )}
                         <button className="remove-media" onClick={() => removePackFile(idx)}>×</button>
                       </div>
                     ))}
