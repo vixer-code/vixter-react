@@ -1097,24 +1097,14 @@ const Profile = () => {
           </div>
           
           <div className="subscriptions-grid">
-            {subscriptions.length > 0 ? (
-              subscriptions.map((sub) => (
-                <div key={sub.id} className="subscription-card">
-                  <div className="subscription-cover">
-                    <img src={sub.coverImageUrl || '/images/default-subscription.jpg'} alt={sub.title} />
-                  </div>
-                  <div className="subscription-info">
-                    <h3 className="subscription-title">{sub.title}</h3>
-                    <p className="subscription-price">R$ {sub.mensalPrice?.toFixed(2)} / mês</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="empty-state">
-                <i className="fa-solid fa-newspaper"></i>
-                <p>Nenhuma assinatura cadastrada.</p>
+            <div className="subscriptions-coming-soon">
+              <span className="coming-soon-badge">Em breve</span>
+              <div className="coming-soon-icon">
+                <i className="fa-regular fa-clock"></i>
               </div>
-            )}
+              <div className="coming-soon-title">Assinaturas em desenvolvimento</div>
+              <div className="coming-soon-subtitle">Estamos preparando algo especial para você. Volte em breve.</div>
+            </div>
           </div>
         </div>
       </div>

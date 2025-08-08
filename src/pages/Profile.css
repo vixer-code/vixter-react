@@ -909,6 +909,60 @@
   align-content: start;
 }
 
+/* Subscriptions Coming Soon */
+.subscriptions-coming-soon {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #B8B8B8;
+  text-align: center;
+}
+
+.coming-soon-badge {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #CCCCCC;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.coming-soon-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: #CCCCCC;
+}
+
+.coming-soon-icon i {
+  font-size: 28px;
+}
+
+.coming-soon-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.coming-soon-subtitle {
+  font-size: 0.95rem;
+  color: #B8B8B8;
+}
+
 .service-card,
 .pack-card,
 .subscription-card {
