@@ -40,6 +40,9 @@ const Profile = () => {
   const [showCreatePackModal, setShowCreatePackModal] = useState(false);
   const [editingPack, setEditingPack] = useState(null);
 
+  // Feature switch: use in-app media API instead of Firebase Storage direct upload
+  const useMediaApi = (import.meta?.env?.VITE_USE_MEDIA_API === 'true');
+
   // Read cached profile early to reduce LCP resource delay
   useEffect(() => {
     const targetUserId = userId || currentUser?.uid;
@@ -364,17 +367,33 @@ const Profile = () => {
 
     try {
       setUploading(true);
-      const fileRef = storageRef(storage, type === 'avatar' ? `profilePictures/${currentUser.uid}` : `coverPhotos/${currentUser.uid}`);
-      await uploadBytes(fileRef, file);
-      const downloadURL = await getDownloadURL(fileRef);
+      let finalURL = null;
 
-      // Prefer optimized WebP if the Cloud Function produced it
-      const optimizedURL = downloadURL.replace(/(\.[a-zA-Z0-9]+)(\?.*)?$/, '') + `_optimized_${type === 'avatar' ? 512 : 1440}.webp`;
-      let finalURL = downloadURL;
-      try {
-        const res = await fetch(optimizedURL, { method: 'HEAD' });
-        if (res.ok) finalURL = optimizedURL;
-      } catch {}
+      if (useMediaApi) {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('type', type === 'avatar' ? 'avatar' : 'cover');
+        form.append('userId', currentUser.uid);
+
+        const resp = await fetch('/api/convert', {
+          method: 'POST',
+          body: form
+        });
+        if (!resp.ok) throw new Error('Image convert failed');
+        const data = await resp.json();
+        finalURL = data.url;
+      } else {
+        const fileRef = storageRef(storage, type === 'avatar' ? `profilePictures/${currentUser.uid}` : `coverPhotos/${currentUser.uid}`);
+        await uploadBytes(fileRef, file);
+        const downloadURL = await getDownloadURL(fileRef);
+        // Prefer optimized WebP if the Cloud Function produced it
+        const optimizedURL = downloadURL.replace(/(\.[a-zA-Z0-9]+)(\?.*)?$/, '') + `_optimized_${type === 'avatar' ? 512 : 1440}.webp`;
+        finalURL = downloadURL;
+        try {
+          const res = await fetch(optimizedURL, { method: 'HEAD' });
+          if (res.ok) finalURL = optimizedURL;
+        } catch {}
+      }
 
       const updateData = {};
       updateData[type === 'avatar' ? 'profilePictureURL' : 'coverPhotoURL'] = finalURL;

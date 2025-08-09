@@ -93,3 +93,18 @@ vixter-react/
 - `npm run preview` - Preview production build
 - `npm start` - Start production server
 - `npm run lint` - Run ESLint
+
+## Media optimization
+
+Set an env var to switch the client to the local media API instead of Firebase Storage:
+
+```
+VITE_USE_MEDIA_API=true
+```
+
+Endpoints provided by `server.js`:
+- POST `/api/convert` (images: cover/avatar → WebP)
+- POST `/api/transcode` (videos → MP4 + poster WebP)
+
+Optional S3 config (for uploads to S3):
+- `S3_BUCKET`, `S3_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
