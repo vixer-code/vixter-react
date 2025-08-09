@@ -40,6 +40,23 @@ const Profile = () => {
   const [showCreatePackModal, setShowCreatePackModal] = useState(false);
   const [editingPack, setEditingPack] = useState(null);
 
+  // Read cached profile early to reduce LCP resource delay
+  useEffect(() => {
+    const targetUserId = userId || currentUser?.uid;
+    if (!targetUserId) return;
+    try {
+      const cached = localStorage.getItem(`profile:${targetUserId}`);
+      if (cached) {
+        const cachedProfile = JSON.parse(cached);
+        if (cachedProfile && cachedProfile.coverPhotoURL) {
+          // Paint ASAP with cached data
+          setProfile(prev => prev || cachedProfile);
+          setLoading(false);
+        }
+      }
+    } catch {}
+  }, [userId, currentUser]);
+
   // Services hook
   const { 
     services, 
@@ -140,6 +157,20 @@ const Profile = () => {
 
       const userData = snapshot.val();
       setProfile(userData);
+      // Persist minimal profile to speed up subsequent visits (for LCP)
+      try {
+        localStorage.setItem(`profile:${targetUserId}`, JSON.stringify({
+          displayName: userData.displayName || '',
+          username: userData.username || '',
+          bio: userData.bio || '',
+          location: userData.location || '',
+          profilePictureURL: userData.profilePictureURL || null,
+          coverPhotoURL: userData.coverPhotoURL || null,
+          createdAt: userData.createdAt || null,
+          accountLevel: userData.accountLevel || null,
+          admin: userData.admin || false
+        }));
+      } catch {}
       setFormData({
         displayName: userData.displayName || '',
         username: userData.username || '',
@@ -587,7 +618,7 @@ const Profile = () => {
                 defaultType="PROFILE_1"
                 alt="Avatar de Perfil"
                 className="profile-avatar-img"
-                priority={true}
+                priority={false}
                 sizes={avatarSizes}
                 showLoading={true}
               />

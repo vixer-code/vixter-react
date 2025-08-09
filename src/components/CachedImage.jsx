@@ -46,9 +46,17 @@ const CachedImage = ({
 }) => {
   // Use default image if no fallback is provided
   const finalFallbackSrc = fallbackSrc || getDefaultImage(defaultType);
-  
-  const [imageSrc, setImageSrc] = useState(null);
-  const [loading, setLoading] = useState(true);
+
+  // For priority images, set src immediately on first render to start the request ASAP
+  const shouldBypass = Boolean(priority && typeof src === 'string' && src.startsWith('http'));
+  const [imageSrc, setImageSrc] = useState(() => {
+    if (!src || src === '') return finalFallbackSrc;
+    return shouldBypass ? src : null;
+  });
+  const [loading, setLoading] = useState(() => {
+    if (!src || src === '') return false;
+    return !shouldBypass;
+  });
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -62,7 +70,7 @@ const CachedImage = ({
 
       try {
         // For priority images, bypass ALL caching and async work for immediate display
-        if (priority && typeof src === 'string' && src.startsWith('http')) {
+        if (shouldBypass) {
           setImageSrc(src);
           setLoading(false);
           setError(null);
@@ -105,7 +113,7 @@ const CachedImage = ({
     };
 
     loadImage();
-  }, [src, finalFallbackSrc, priority, enableCache]);
+  }, [src, finalFallbackSrc, priority, enableCache, shouldBypass]);
 
   const handleLoad = (e) => {
     setLoading(false);
@@ -130,11 +138,7 @@ const CachedImage = ({
       src={imageSrc || finalFallbackSrc}
       alt={alt}
       className={className}
-      style={{ 
-        ...style, 
-        opacity: loading ? 0 : 1, 
-        transition: priority ? 'none' : 'opacity 200ms ease' 
-      }}
+      style={priority ? style : { ...style, opacity: loading ? 0 : 1, transition: 'opacity 200ms ease' }}
       loading={loadingAttr || (priority ? 'eager' : 'lazy')}
       fetchpriority={fetchPriorityAttr || (priority ? 'high' : undefined)}
       // Let the browser decide decoding for priority images
