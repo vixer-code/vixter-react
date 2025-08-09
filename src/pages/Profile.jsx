@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useCallback, useMemo } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { ref, get, update, set, remove, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -603,6 +603,18 @@ const Profile = () => {
   const serviceCoverSizes = '(max-width: 768px) 100vw, 280px';
   const packCoverSizes = '(max-width: 768px) 100vw, 280px';
 
+  // Build responsive srcSet for cover if following optimized naming
+  const coverSrcSet = useMemo(() => {
+    const url = profile?.coverPhotoURL || '';
+    if (!url) return undefined;
+    // Expect pattern *_optimized_1440.webp -> derive 720
+    if (/_optimized_1440\.webp(\?.*)?$/.test(url)) {
+      const url720 = url.replace('_optimized_1440.webp', '_optimized_720.webp');
+      return `${url720} 720w, ${url} 1440w`;
+    }
+    return undefined;
+  }, [profile?.coverPhotoURL]);
+
   return (
     <div className="profile-container">
       {/* Email Verification Banner - Only show for unverified emails */}
@@ -632,7 +644,8 @@ const Profile = () => {
               alt="Capa do Perfil"
               className="cover-photo-img"
               priority={true}
-              sizes="100vw"
+              sizes="(max-width: 768px) 100vw, 1440px"
+              srcSet={coverSrcSet}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
