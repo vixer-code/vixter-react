@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { ref, get, update, set, remove, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -29,10 +29,10 @@ const Profile = () => {
   const [posts, setPosts] = useState([]);
   const [newPostContent, setNewPostContent] = useState('');
   const [selectedImages, setSelectedImages] = useState([]);
-  const [userStatus, setUserStatus] = useState('offline');
+  // userStatus state removed; StatusIndicator handles it internally now
   const [packs, setPacks] = useState([]);
   const [packsLoading, setPacksLoading] = useState(false);
-  const [subscriptions, setSubscriptions] = useState([]);
+  // subscriptions not yet rendered; keep local fetch but no state to avoid blocking render
   const [reviews, setReviews] = useState([]);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [showCreateServiceModal, setShowCreateServiceModal] = useState(false);
@@ -44,8 +44,6 @@ const Profile = () => {
   const { 
     services, 
     loading: servicesLoading, 
-    getServicesByProvider, 
-    getServicesByProviderOnce,
     setupServicesListener,
     deleteService, 
     updateServiceStatus 
@@ -161,9 +159,8 @@ const Profile = () => {
         Promise.all([
           loadFollowers(targetUserId),
           loadPosts(targetUserId),
-          loadUserStatus(targetUserId),
-          loadPacks(targetUserId),
-          loadSubscriptions(targetUserId),
+           // Status handled by component; remove extra RT listener
+           loadPacks(targetUserId),
           loadReviews(targetUserId)
         ]).catch(error => {
           console.error('Error loading additional profile data:', error);
@@ -225,18 +222,7 @@ const Profile = () => {
     }
   };
 
-  const loadUserStatus = async (targetUserId) => {
-    try {
-      const statusRef = ref(database, `userStatus/${targetUserId}`);
-      onValue(statusRef, (snapshot) => {
-        if (snapshot.exists()) {
-          setUserStatus(snapshot.val().status || 'offline');
-        }
-      });
-    } catch (error) {
-      console.error('Error loading user status:', error);
-    }
-  };
+  // Removed loadUserStatus: StatusIndicator hook handles presence updates
 
   const handleServiceCreated = (newService) => {
     // The services hook will automatically update the services list
@@ -321,23 +307,7 @@ const Profile = () => {
     }
   };
 
-  const loadSubscriptions = async (targetUserId) => {
-    try {
-      const subsRef = ref(database, `subscriptions/${targetUserId}`);
-      const snapshot = await get(subsRef);
-      
-      if (snapshot.exists()) {
-        const subsData = snapshot.val();
-        const subsArray = Object.entries(subsData).map(([id, sub]) => ({
-          id,
-          ...sub
-        }));
-        setSubscriptions(subsArray);
-      }
-    } catch (error) {
-      console.error('Error loading subscriptions:', error);
-    }
-  };
+  // Removed loadSubscriptions state and fetch for now (feature coming soon)
 
   const loadReviews = async (targetUserId) => {
     try {
@@ -498,34 +468,7 @@ const Profile = () => {
     );
   };
 
-  const renderStatusIndicator = () => {
-    return (
-      <StatusIndicator 
-        userId={userId || currentUser?.uid}
-        isOwner={isOwner}
-        size="large"
-        showText={false}
-      />
-    );
-  };
-
   const isOwner = currentUser?.uid === (userId || currentUser?.uid);
-
-  if (loading) {
-    return (
-      <div className="profile-container">
-        <div className="loading-text">Carregando...</div>
-      </div>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <div className="profile-container">
-        <div className="error-message">Perfil não encontrado</div>
-      </div>
-    );
-  }
 
   // Optimized tab switching to prevent INP issues
   const handleTabClick = useCallback((event) => {
@@ -560,6 +503,22 @@ const Profile = () => {
       };
     }
   }, [profile?.coverPhotoURL]);
+
+  if (loading) {
+    return (
+      <div className="profile-container">
+        <div className="loading-text">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="profile-container">
+        <div className="error-message">Perfil não encontrado</div>
+      </div>
+    );
+  }
 
   // Determine sizes for responsive images
   const avatarSizes = '(max-width: 768px) 100px, 140px';

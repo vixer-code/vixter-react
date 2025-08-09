@@ -74,7 +74,7 @@ class ImageCache {
     // Store in localStorage
     try {
       localStorage.setItem(`img_cache_${cacheKey}`, JSON.stringify(cacheData));
-    } catch (error) {
+     } catch (error) {
       console.warn('Error writing to localStorage cache:', error);
       // If localStorage is full, try to clear some old entries
       this.cleanupLocalStorage();
@@ -112,7 +112,7 @@ class ImageCache {
           if (this.isExpired(data.timestamp)) {
             localStorage.removeItem(key);
           }
-        } catch (error) {
+      } catch (error) {
           // Remove invalid entries
           localStorage.removeItem(key);
         }

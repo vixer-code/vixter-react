@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ref, get, query, orderByChild, limitToFirst } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { getDefaultImage } from '../utils/defaultImages';
 import CachedImage from '../components/CachedImage';
 import './Feed.css';
 

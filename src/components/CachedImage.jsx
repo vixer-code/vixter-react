@@ -29,8 +29,10 @@ const CachedImage = ({
   onError,
   enableCache = true,
   defaultType = 'PROFILE_1',
-  showLoading = false,
-  loadingComponent,
+   showLoading = false,
+   // Remove unused custom loading UI for now to simplify
+   // and avoid delaying image paint
+   // loadingComponent,
   errorComponent,
   // If true, mark as critical for LCP: eager load + high fetch priority and bypass heavy caching work
   priority = false,
@@ -135,7 +137,8 @@ const CachedImage = ({
       }}
       loading={loadingAttr || (priority ? 'eager' : 'lazy')}
       fetchpriority={fetchPriorityAttr || (priority ? 'high' : undefined)}
-      decoding="async"
+      // Let the browser decide decoding for priority images
+      decoding={priority ? undefined : 'async'}
       onLoad={handleLoad}
       onError={handleError}
       sizes={sizes}

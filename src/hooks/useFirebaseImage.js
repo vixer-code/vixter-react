@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getDownloadURL } from 'firebase/storage';
-import { imageCache, preloadImage } from '../utils/imageCache';
+import { preloadImage } from '../utils/imageCache';
 
 /**
  * Custom hook for handling Firebase Storage images with caching

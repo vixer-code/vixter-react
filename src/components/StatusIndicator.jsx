@@ -4,7 +4,7 @@ import { useUserStatus } from '../hooks/useUserStatus';
 import './StatusIndicator.css';
 
 const StatusIndicator = ({ userId, isOwner = false, size = 'medium', showText = false }) => {
-  const { userStatus, selectedStatus, updateUserStatus } = useStatus();
+  const { userStatus, updateUserStatus } = useStatus();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
   
