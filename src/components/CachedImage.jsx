@@ -58,20 +58,20 @@ const CachedImage = ({
         return;
       }
 
-      setLoading(true);
-      setError(null);
-
       try {
+        // For priority images, bypass ALL caching and async work for immediate display
+        if (priority && typeof src === 'string' && src.startsWith('http')) {
+          setImageSrc(src);
+          setLoading(false);
+          setError(null);
+          return;
+        }
+
+        setLoading(true);
+        setError(null);
         let imageUrl = null;
 
-                 // For priority images, avoid expensive preloading/canvas work to minimize main-thread cost
-         if (priority && typeof src === 'string' && src.startsWith('http')) {
-           setImageSrc(src);
-           setLoading(false); // Critical: Don't hide priority images with opacity:0
-           return;
-         }
-
-        // Try cache first
+        // Try cache first for non-priority images
         if (enableCache && typeof src === 'string') {
           const cached = imageCache.getCachedImage(src);
           if (cached) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy, useMemo } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useMemo, useCallback } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { ref, get, update, set, remove, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -532,6 +532,40 @@ const Profile = () => {
   const serviceCoverSizes = '(max-width: 768px) 100vw, 280px';
   const packCoverSizes = '(max-width: 768px) 100vw, 280px';
 
+  // Preload cover image immediately for LCP optimization
+  useEffect(() => {
+    if (profile?.coverPhotoURL) {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = profile.coverPhotoURL;
+      link.fetchpriority = 'high';
+      document.head.appendChild(link);
+      
+      return () => {
+        // Cleanup on unmount
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
+        }
+      };
+    }
+  }, [profile?.coverPhotoURL]);
+
+  // Optimized tab switching to prevent INP issues
+  const handleTabClick = useCallback((event) => {
+    const tabName = event.currentTarget.dataset.tab;
+    if (tabName && tabName !== activeTab) {
+      // Use startTransition for better responsiveness
+      if (React.startTransition) {
+        React.startTransition(() => {
+          setActiveTab(tabName);
+        });
+      } else {
+        setActiveTab(tabName);
+      }
+    }
+  }, [activeTab]);
+
   return (
     <div className="profile-container">
       {/* Email Verification Banner - Only show for unverified emails */}
@@ -710,45 +744,52 @@ const Profile = () => {
         <div className="profile-tabs">
           <button 
             className={`profile-tab ${activeTab === 'perfil' ? 'active' : ''}`}
-            onClick={() => setActiveTab('perfil')}
+            onClick={handleTabClick}
+            data-tab="perfil"
           >
             Perfil
           </button>
           <button 
             className={`profile-tab ${activeTab === 'about' ? 'active' : ''}`}
-            onClick={() => setActiveTab('about')}
+            onClick={handleTabClick}
+            data-tab="about"
           >
             Sobre
           </button>
           <button 
             className={`profile-tab ${activeTab === 'services' ? 'active' : ''}`}
-            onClick={() => setActiveTab('services')}
+            onClick={handleTabClick}
+            data-tab="services"
           >
             Serviços
           </button>
           <button 
             className={`profile-tab ${activeTab === 'packs' ? 'active' : ''}`}
-            onClick={() => setActiveTab('packs')}
+            onClick={handleTabClick}
+            data-tab="packs"
           >
             Packs
           </button>
           <button 
             className={`profile-tab ${activeTab === 'subscriptions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('subscriptions')}
+            onClick={handleTabClick}
+            data-tab="subscriptions"
           >
             Assinaturas
           </button>
           <button 
             className={`profile-tab ${activeTab === 'reviews' ? 'active' : ''}`}
-            onClick={() => setActiveTab('reviews')}
+            onClick={handleTabClick}
+            data-tab="reviews"
           >
             Avaliações
           </button>
         </div>
       </div>
       
-      {/* Perfil Tab */}
-      <div className={`tab-content ${activeTab === 'perfil' ? 'active' : ''}`}>
+      {/* Tab Contents - Only render active tab to improve performance */}
+      {activeTab === 'perfil' && (
+      <div className="tab-content active">
         <div className="perfil-tab-content">
           <div className="profile-sidebar">
             <div className="interests-section">
@@ -912,9 +953,11 @@ const Profile = () => {
           </div>
         </div>
       </div>
+      )}
       
       {/* About Tab */}
-      <div className={`tab-content ${activeTab === 'about' ? 'active' : ''}`}>
+      {activeTab === 'about' && (
+      <div className="tab-content active">
         <div className="about-tab-content">
           <h3>Sobre mim</h3>
           <p className="bio-text">{profile.bio || 'Nenhuma bio disponível.'}</p>
@@ -940,9 +983,11 @@ const Profile = () => {
           </div>
         </div>
       </div>
+      )}
       
       {/* Services Tab */}
-      <div className={`tab-content ${activeTab === 'services' ? 'active' : ''}`}>
+      {activeTab === 'services' && (
+      <div className="tab-content active">
         <div className="services-tab-content">
           <div className="services-header">
             <h3>Serviços</h3>
@@ -1030,9 +1075,11 @@ const Profile = () => {
           </div>
         </div>
       </div>
+      )}
       
       {/* Packs Tab */}
-      <div className={`tab-content ${activeTab === 'packs' ? 'active' : ''}`}>
+      {activeTab === 'packs' && (
+      <div className="tab-content active">
         <div className="packs-tab-content">
           <div className="packs-header">
             <h3>Packs</h3>
@@ -1127,9 +1174,11 @@ const Profile = () => {
           </div>
         </div>
       </div>
+      )}
       
       {/* Subscriptions Tab */}
-      <div className={`tab-content ${activeTab === 'subscriptions' ? 'active' : ''}`}>
+      {activeTab === 'subscriptions' && (
+      <div className="tab-content active">
         <div className="subscriptions-tab-content">
           <div className="subscriptions-header">
             <h3>Assinaturas</h3>
@@ -1152,9 +1201,11 @@ const Profile = () => {
           </div>
         </div>
       </div>
+      )}
       
       {/* Reviews Tab */}
-      <div className={`tab-content ${activeTab === 'reviews' ? 'active' : ''}`}>
+      {activeTab === 'reviews' && (
+      <div className="tab-content active">
         <div className="reviews-tab-content">
           <h3>Avaliações</h3>
           
@@ -1197,6 +1248,7 @@ const Profile = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* Followers Modal */}
       {showFollowersModal && (
