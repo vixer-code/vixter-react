@@ -32,6 +32,14 @@ const CachedImage = ({
   showLoading = false,
   loadingComponent,
   errorComponent,
+  // If true, mark as critical for LCP: eager load + high fetch priority and bypass heavy caching work
+  priority = false,
+  loading: loadingAttr,
+  fetchpriority: fetchPriorityAttr,
+  sizes,
+  srcSet,
+  width,
+  height,
   ...props
 }) => {
   // Use default image if no fallback is provided
@@ -55,6 +63,12 @@ const CachedImage = ({
 
       try {
         let imageUrl = null;
+
+        // For priority images, avoid expensive preloading/canvas work to minimize main-thread cost
+        if (priority && typeof src === 'string' && src.startsWith('http')) {
+          setImageSrc(src);
+          return;
+        }
 
         // Try cache first
         if (enableCache && typeof src === 'string') {
@@ -88,7 +102,7 @@ const CachedImage = ({
     };
 
     loadImage();
-  }, [src, finalFallbackSrc]);
+  }, [src, finalFallbackSrc, priority, enableCache]);
 
   const handleLoad = (e) => {
     setLoading(false);
@@ -113,11 +127,16 @@ const CachedImage = ({
       src={imageSrc || finalFallbackSrc}
       alt={alt}
       className={className}
-      style={{ ...style, opacity: loading ? 0 : 1 }}
-      loading="lazy"
+      style={{ ...style, opacity: loading ? 0 : 1, transition: 'opacity 200ms ease' }}
+      loading={loadingAttr || (priority ? 'eager' : 'lazy')}
+      fetchpriority={fetchPriorityAttr || (priority ? 'high' : undefined)}
       decoding="async"
       onLoad={handleLoad}
       onError={handleError}
+      sizes={sizes}
+      srcSet={srcSet}
+      width={width}
+      height={height}
       {...props}
     />
   );

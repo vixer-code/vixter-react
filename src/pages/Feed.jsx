@@ -213,7 +213,7 @@ const Feed = () => {
     return items.slice(startIndex, startIndex + itemsPerPage);
   };
 
-  const renderServiceCard = (service) => (
+  const renderServiceCard = (service, index) => (
     <div key={service.id} className="service-card">
       <div className="service-image">
         <CachedImage 
@@ -222,6 +222,8 @@ const Feed = () => {
           alt={service.title}
           className="service-image-img"
           showLoading={false}
+          priority={index < 4}
+          sizes="(max-width: 768px) 100vw, 300px"
         />
       </div>
       <div className="service-info">
@@ -358,7 +360,7 @@ const Feed = () => {
       <div className="feed-content">
         {currentTab === 'services' ? (
           <div className="services-grid">
-            {getPaginatedItems(filteredServices, servicesPage).map(renderServiceCard)}
+            {getPaginatedItems(filteredServices, servicesPage).map((s, i) => renderServiceCard(s, i))}
           </div>
         ) : (
           <div className="providers-grid">

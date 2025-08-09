@@ -107,7 +107,7 @@ const Header = () => {
       <header>
         <nav>
           <Link to="/" className="logo">
-            <img src="/images/Flor-Colorida.png" alt="Vixter logo" className="logo-icon" />
+            <img src="/images/Flor-Colorida.png" alt="Vixter logo" className="logo-icon" fetchpriority="high" />
             <span>Vixter</span>
           </Link>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useMemo } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { ref, get, update, set, remove, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -522,6 +522,11 @@ const Profile = () => {
     );
   }
 
+  // Determine sizes for responsive images
+  const avatarSizes = '(max-width: 768px) 100px, 140px';
+  const serviceCoverSizes = '(max-width: 768px) 100vw, 280px';
+  const packCoverSizes = '(max-width: 768px) 100vw, 280px';
+
   return (
     <div className="profile-container">
       {/* Email Verification Banner - Only show for unverified emails */}
@@ -544,7 +549,17 @@ const Profile = () => {
       )}
       
       <div className="profile-card">
-        <div className="cover-photo" style={{ backgroundImage: profile.coverPhotoURL ? `url(${profile.coverPhotoURL})` : 'none' }}>
+        <div className="cover-photo">
+          {profile.coverPhotoURL && (
+            <CachedImage
+              src={profile.coverPhotoURL}
+              alt="Capa do Perfil"
+              className="cover-photo-img"
+              priority={true}
+              sizes="100vw"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          )}
           {isOwner && (
             <label className="cover-upload-btn">
               <input
@@ -572,6 +587,8 @@ const Profile = () => {
                 defaultType="PROFILE_1"
                 alt="Avatar de Perfil"
                 className="profile-avatar-img"
+                priority={true}
+                sizes={avatarSizes}
                 showLoading={true}
               />
               {isOwner && (
@@ -761,11 +778,12 @@ const Profile = () => {
                   {followers.slice(0, 6).map((follower) => (
                     <div key={follower.id} className="friend-item">
                       <div className="friend-avatar">
-                        <CachedImage 
+                      <CachedImage 
                           src={follower.profilePictureURL}
                           defaultType="PROFILE_2"
                           alt={follower.displayName}
                           className="friend-avatar-img"
+                          sizes="60px"
                           showLoading={false}
                         />
                         <StatusIndicator 
@@ -823,12 +841,14 @@ const Profile = () => {
                   {selectedImages.length > 0 && (
                     <div className="selected-images-preview">
                       {selectedImages.map((image, index) => (
-                        <img
-                          key={index}
-                          src={URL.createObjectURL(image)}
-                          alt="Preview"
-                          style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px' }}
-                        />
+                         <img
+                           key={index}
+                           src={URL.createObjectURL(image)}
+                           alt="Preview"
+                           width={64}
+                           height={64}
+                           style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px' }}
+                         />
                       ))}
                     </div>
                   )}
@@ -842,7 +862,13 @@ const Profile = () => {
                   <div key={post.id} className="post-card">
                     <div className="post-header">
                       <div className="post-author-avatar">
-                        <img src={post.authorPhoto || '/images/default-avatar.jpg'} alt={post.authorName} />
+                        <CachedImage
+                          src={post.authorPhoto}
+                          fallbackSrc="/images/default-avatar.jpg"
+                          alt={post.authorName}
+                          sizes="48px"
+                          showLoading={false}
+                        />
                       </div>
                       <div className="post-meta">
                         <div className="post-author-name">{post.authorName}</div>
@@ -853,10 +879,17 @@ const Profile = () => {
                     </div>
                     <div className="post-content">
                       <p>{post.content}</p>
-                      {post.images && post.images.length > 0 && (
+                          {post.images && post.images.length > 0 && (
                         <div className="post-image-container">
                           {post.images.map((image, index) => (
-                            <img key={index} src={image} alt="Post" className="post-image" />
+                            <CachedImage
+                              key={index}
+                              src={image}
+                              alt="Post"
+                              className="post-image"
+                              sizes="(max-width: 768px) 100vw, 400px"
+                              showLoading={false}
+                            />
                           ))}
                         </div>
                       )}
@@ -932,11 +965,12 @@ const Profile = () => {
                   style={isOwner ? { cursor: 'pointer' } : {}}
                   title={isOwner ? 'Clique para editar este serviço' : ''}
                 >
-                  <div className="pack-cover">
+                          <div className="pack-cover">
                     <CachedImage 
                       src={service.coverImageURL}
                       fallbackSrc="/images/default-service.jpg"
                       alt={service.title}
+                      sizes={serviceCoverSizes}
                     />
                     {service.status && service.status !== 'active' && (
                       <div className={`service-status-badge ${service.status}`}>
@@ -1030,6 +1064,7 @@ const Profile = () => {
                       src={pack.coverImage}
                       fallbackSrc="/images/default-pack.jpg"
                       alt={pack.title}
+                      sizes={packCoverSizes}
                     />
                     {pack.status && pack.status !== 'active' && (
                       <div className={`service-status-badge ${pack.status}`}>
