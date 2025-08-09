@@ -64,11 +64,12 @@ const CachedImage = ({
       try {
         let imageUrl = null;
 
-        // For priority images, avoid expensive preloading/canvas work to minimize main-thread cost
-        if (priority && typeof src === 'string' && src.startsWith('http')) {
-          setImageSrc(src);
-          return;
-        }
+                 // For priority images, avoid expensive preloading/canvas work to minimize main-thread cost
+         if (priority && typeof src === 'string' && src.startsWith('http')) {
+           setImageSrc(src);
+           setLoading(false); // Critical: Don't hide priority images with opacity:0
+           return;
+         }
 
         // Try cache first
         if (enableCache && typeof src === 'string') {
@@ -127,7 +128,11 @@ const CachedImage = ({
       src={imageSrc || finalFallbackSrc}
       alt={alt}
       className={className}
-      style={{ ...style, opacity: loading ? 0 : 1, transition: 'opacity 200ms ease' }}
+      style={{ 
+        ...style, 
+        opacity: loading ? 0 : 1, 
+        transition: priority ? 'none' : 'opacity 200ms ease' 
+      }}
       loading={loadingAttr || (priority ? 'eager' : 'lazy')}
       fetchpriority={fetchPriorityAttr || (priority ? 'high' : undefined)}
       decoding="async"

@@ -153,17 +153,22 @@ const Profile = () => {
         youtube: userData.youtube || ''
       });
 
-      // Load additional data
-      await Promise.all([
-        loadFollowers(targetUserId),
-        loadPosts(targetUserId),
-        loadUserStatus(targetUserId),
-        loadPacks(targetUserId),
-        loadSubscriptions(targetUserId),
-        loadReviews(targetUserId)
-      ]);
+      // Load critical data first (for LCP), then load secondary data
+      setLoading(false); // Allow render with profile data first
       
-      setLoading(false);
+      // Load less critical data after initial render
+      setTimeout(() => {
+        Promise.all([
+          loadFollowers(targetUserId),
+          loadPosts(targetUserId),
+          loadUserStatus(targetUserId),
+          loadPacks(targetUserId),
+          loadSubscriptions(targetUserId),
+          loadReviews(targetUserId)
+        ]).catch(error => {
+          console.error('Error loading additional profile data:', error);
+        });
+      }, 0);
     } catch (error) {
       console.error('Error loading profile:', error);
       setLoading(false);
@@ -550,7 +555,7 @@ const Profile = () => {
       
       <div className="profile-card">
         <div className="cover-photo">
-          {profile.coverPhotoURL && (
+          {profile.coverPhotoURL ? (
             <CachedImage
               src={profile.coverPhotoURL}
               alt="Capa do Perfil"
@@ -559,6 +564,8 @@ const Profile = () => {
               sizes="100vw"
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
+          ) : (
+            <div className="cover-photo-placeholder" />
           )}
           {isOwner && (
             <label className="cover-upload-btn">
@@ -774,31 +781,33 @@ const Profile = () => {
                 )}
               </div>
               <div className="section-content">
-                <div className="friends-grid">
-                  {followers.slice(0, 6).map((follower) => (
-                    <div key={follower.id} className="friend-item">
-                      <div className="friend-avatar">
-                      <CachedImage 
-                          src={follower.profilePictureURL}
-                          defaultType="PROFILE_2"
-                          alt={follower.displayName}
-                          className="friend-avatar-img"
-                          sizes="60px"
-                          showLoading={false}
-                        />
-                        <StatusIndicator 
-                          userId={follower.id}
-                          isOwner={false}
-                          size="small"
-                        />
+                {followers.length > 0 ? (
+                  <div className="friends-grid">
+                    {followers.slice(0, 6).map((follower) => (
+                      <div key={follower.id} className="friend-item">
+                        <div className="friend-avatar">
+                        <CachedImage 
+                            src={follower.profilePictureURL}
+                            defaultType="PROFILE_2"
+                            alt={follower.displayName}
+                            className="friend-avatar-img"
+                            sizes="60px"
+                            showLoading={false}
+                            loading="lazy"
+                          />
+                          <StatusIndicator 
+                            userId={follower.id}
+                            isOwner={false}
+                            size="small"
+                          />
+                        </div>
+                        <div className="friend-name">{follower.displayName}</div>
                       </div>
-                      <div className="friend-name">{follower.displayName}</div>
-                    </div>
-                  ))}
-                  {followers.length === 0 && (
-                    <div className="empty-state">Nenhum seguidor ainda.</div>
-                  )}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty-state">Nenhum seguidor ainda.</div>
+                )}
               </div>
             </div>
           </div>
@@ -1219,31 +1228,33 @@ const Profile = () => {
         </div>
       )}
 
-      {/* Lazy modals */}
-      <Suspense fallback={null}>
-        {showCreateServiceModal && (
-          <CreateServiceModal
-            isOpen={showCreateServiceModal}
-            onClose={() => {
-              setShowCreateServiceModal(false);
-              setEditingService(null);
-            }}
-            onServiceCreated={handleServiceCreated}
-            editingService={editingService}
-          />
-        )}
-        {showCreatePackModal && (
-          <CreatePackModal
-            isOpen={showCreatePackModal}
-            onClose={() => {
-              setShowCreatePackModal(false);
-              setEditingPack(null);
-            }}
-            onPackCreated={handlePackCreated}
-            editingPack={editingPack}
-          />
-        )}
-      </Suspense>
+      {/* Lazy modals - only load when actually needed */}
+      {(showCreateServiceModal || showCreatePackModal) && (
+        <Suspense fallback={<div>Loading...</div>}>
+          {showCreateServiceModal && (
+            <CreateServiceModal
+              isOpen={showCreateServiceModal}
+              onClose={() => {
+                setShowCreateServiceModal(false);
+                setEditingService(null);
+              }}
+              onServiceCreated={handleServiceCreated}
+              editingService={editingService}
+            />
+          )}
+          {showCreatePackModal && (
+            <CreatePackModal
+              isOpen={showCreatePackModal}
+              onClose={() => {
+                setShowCreatePackModal(false);
+                setEditingPack(null);
+              }}
+              onPackCreated={handlePackCreated}
+              editingPack={editingPack}
+            />
+          )}
+        </Suspense>
+      )}
     </div>
   );
 };
