@@ -52,32 +52,35 @@ app.post('/api/convert', mediaLimiter, upload.single('file'), async (req, res) =
       return res.status(415).json({ error: 'unsupported_media_type' });
     }
 
-    const targetWidth = type === 'avatar' ? 512 : 1440;
     const quality = 78;
+    const widths = type === 'avatar' ? [512] : [720, 1440];
+    const outputs = {};
 
-    const webpBuffer = await sharp(req.file.buffer)
-      .rotate()
-      .resize({ width: targetWidth, withoutEnlargement: true })
-      .webp({ quality })
-      .toBuffer();
+    for (const w of widths) {
+      const webpBuffer = await sharp(req.file.buffer)
+        .rotate()
+        .resize({ width: w, withoutEnlargement: true })
+        .webp({ quality })
+        .toBuffer();
 
-    const key = `${type === 'avatar' ? 'profilePictures' : 'coverPhotos'}/${userId}_optimized_${targetWidth}.webp`;
+      const key = `${type === 'avatar' ? 'profilePictures' : 'coverPhotos'}/${userId}_optimized_${w}.webp`;
 
-    if (s3Enabled) {
-      await s3.send(new PutObjectCommand({
-        Bucket: process.env.S3_BUCKET,
-        Key: key,
-        Body: webpBuffer,
-        ContentType: 'image/webp',
-        CacheControl: 'public, max-age=31536000, immutable',
-      }));
-      const publicUrl = `https://${process.env.S3_BUCKET}.s3.${process.env.S3_REGION}.amazonaws.com/${key}`;
-      return res.json({ url: publicUrl, key });
+      if (s3Enabled) {
+        await s3.send(new PutObjectCommand({
+          Bucket: process.env.S3_BUCKET,
+          Key: key,
+          Body: webpBuffer,
+          ContentType: 'image/webp',
+          CacheControl: 'public, max-age=31536000, immutable',
+        }));
+        const publicUrl = `https://${process.env.S3_BUCKET}.s3.${process.env.S3_REGION}.amazonaws.com/${key}`;
+        outputs[w] = publicUrl;
+      } else {
+        outputs[w] = `data:image/webp;base64,${webpBuffer.toString('base64')}`;
+      }
     }
 
-    // Fallback: return inline WebP (base64) if no S3 configured
-    const dataUrl = `data:image/webp;base64,${webpBuffer.toString('base64')}`;
-    return res.json({ url: dataUrl });
+    return res.json({ urls: outputs });
   } catch (err) {
     console.error('convert error:', err);
     return res.status(500).json({ error: 'conversion_failed' });

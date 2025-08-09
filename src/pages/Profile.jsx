@@ -400,7 +400,8 @@ const Profile = () => {
         });
         if (!resp.ok) throw new Error('Image convert failed');
         const data = await resp.json();
-        finalURL = data.url;
+        // Prefer 1440 for cover, else 512 for avatar
+        finalURL = (type === 'avatar') ? (data.urls?.[512] || Object.values(data.urls || {})[0]) : (data.urls?.[1440] || data.urls?.[720] || Object.values(data.urls || {})[0]);
       } else {
         // Convert to WebP client-side and upload WebP to Firebase Storage
         const targetWidth = type === 'avatar' ? 512 : 1440;
