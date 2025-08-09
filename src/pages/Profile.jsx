@@ -43,6 +43,25 @@ const Profile = () => {
   // Feature switch: use in-app media API instead of Firebase Storage direct upload
   const useMediaApi = (import.meta?.env?.VITE_USE_MEDIA_API === 'true');
 
+  // Client-side conversion for uploads (not LCP-critical)
+  const convertImageToWebP = async (file, targetWidth) => {
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, targetWidth / bitmap.width);
+      const width = Math.round(bitmap.width * scale);
+      const height = Math.round(bitmap.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0, width, height);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.78));
+      return blob || file;
+    } catch {
+      return file;
+    }
+  };
+
   // Read cached profile early to reduce LCP resource delay
   useEffect(() => {
     const targetUserId = userId || currentUser?.uid;
@@ -383,16 +402,16 @@ const Profile = () => {
         const data = await resp.json();
         finalURL = data.url;
       } else {
-        const fileRef = storageRef(storage, type === 'avatar' ? `profilePictures/${currentUser.uid}` : `coverPhotos/${currentUser.uid}`);
-        await uploadBytes(fileRef, file);
-        const downloadURL = await getDownloadURL(fileRef);
-        // Prefer optimized WebP if the Cloud Function produced it
-        const optimizedURL = downloadURL.replace(/(\.[a-zA-Z0-9]+)(\?.*)?$/, '') + `_optimized_${type === 'avatar' ? 512 : 1440}.webp`;
-        finalURL = downloadURL;
-        try {
-          const res = await fetch(optimizedURL, { method: 'HEAD' });
-          if (res.ok) finalURL = optimizedURL;
-        } catch {}
+        // Convert to WebP client-side and upload WebP to Firebase Storage
+        const targetWidth = type === 'avatar' ? 512 : 1440;
+        const webpBlob = await convertImageToWebP(file, targetWidth);
+        const path = type === 'avatar' ? `profilePictures/${currentUser.uid}.webp` : `coverPhotos/${currentUser.uid}.webp`;
+        const fileRef = storageRef(storage, path);
+        await uploadBytes(fileRef, webpBlob, {
+          contentType: 'image/webp',
+          cacheControl: 'public, max-age=31536000, immutable'
+        });
+        finalURL = await getDownloadURL(fileRef);
       }
 
       const updateData = {};
