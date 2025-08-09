@@ -787,9 +787,8 @@ const Profile = () => {
         </div>
       </div>
       
-      {/* Tab Contents - Only render active tab to improve performance */}
-      {activeTab === 'perfil' && (
-      <div className="tab-content active">
+      {/* Tab Contents */}
+      <div className={`tab-content ${activeTab === 'perfil' ? 'active' : ''}`}>
         <div className="perfil-tab-content">
           <div className="profile-sidebar">
             <div className="interests-section">
@@ -953,11 +952,9 @@ const Profile = () => {
           </div>
         </div>
       </div>
-      )}
       
       {/* About Tab */}
-      {activeTab === 'about' && (
-      <div className="tab-content active">
+      <div className={`tab-content ${activeTab === 'about' ? 'active' : ''}`}>
         <div className="about-tab-content">
           <h3>Sobre mim</h3>
           <p className="bio-text">{profile.bio || 'Nenhuma bio disponível.'}</p>
@@ -983,11 +980,9 @@ const Profile = () => {
           </div>
         </div>
       </div>
-      )}
       
       {/* Services Tab */}
-      {activeTab === 'services' && (
-      <div className="tab-content active">
+      <div className={`tab-content ${activeTab === 'services' ? 'active' : ''}`}>
         <div className="services-tab-content">
           <div className="services-header">
             <h3>Serviços</h3>
@@ -1075,11 +1070,9 @@ const Profile = () => {
           </div>
         </div>
       </div>
-      )}
       
       {/* Packs Tab */}
-      {activeTab === 'packs' && (
-      <div className="tab-content active">
+      <div className={`tab-content ${activeTab === 'packs' ? 'active' : ''}`}>
         <div className="packs-tab-content">
           <div className="packs-header">
             <h3>Packs</h3>
@@ -1174,11 +1167,9 @@ const Profile = () => {
           </div>
         </div>
       </div>
-      )}
       
       {/* Subscriptions Tab */}
-      {activeTab === 'subscriptions' && (
-      <div className="tab-content active">
+      <div className={`tab-content ${activeTab === 'subscriptions' ? 'active' : ''}`}>
         <div className="subscriptions-tab-content">
           <div className="subscriptions-header">
             <h3>Assinaturas</h3>
@@ -1201,11 +1192,9 @@ const Profile = () => {
           </div>
         </div>
       </div>
-      )}
       
       {/* Reviews Tab */}
-      {activeTab === 'reviews' && (
-      <div className="tab-content active">
+      <div className={`tab-content ${activeTab === 'reviews' ? 'active' : ''}`}>
         <div className="reviews-tab-content">
           <h3>Avaliações</h3>
           
@@ -1248,7 +1237,6 @@ const Profile = () => {
           </div>
         </div>
       </div>
-      )}
 
       {/* Followers Modal */}
       {showFollowersModal && (
