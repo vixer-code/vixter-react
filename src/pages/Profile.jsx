@@ -367,10 +367,18 @@ const Profile = () => {
       const fileRef = storageRef(storage, type === 'avatar' ? `profilePictures/${currentUser.uid}` : `coverPhotos/${currentUser.uid}`);
       await uploadBytes(fileRef, file);
       const downloadURL = await getDownloadURL(fileRef);
-      
+
+      // Prefer optimized WebP if the Cloud Function produced it
+      const optimizedURL = downloadURL.replace(/(\.[a-zA-Z0-9]+)(\?.*)?$/, '') + `_optimized_${type === 'avatar' ? 512 : 1440}.webp`;
+      let finalURL = downloadURL;
+      try {
+        const res = await fetch(optimizedURL, { method: 'HEAD' });
+        if (res.ok) finalURL = optimizedURL;
+      } catch {}
+
       const updateData = {};
-      updateData[type === 'avatar' ? 'profilePictureURL' : 'coverPhotoURL'] = downloadURL;
-      
+      updateData[type === 'avatar' ? 'profilePictureURL' : 'coverPhotoURL'] = finalURL;
+
       await update(ref(database, `users/${currentUser.uid}`), updateData);
       await loadProfile(); // Reload profile to show new image
       
