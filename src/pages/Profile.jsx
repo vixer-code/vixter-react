@@ -527,10 +527,20 @@ const Profile = () => {
     );
   }
 
-  // Determine sizes for responsive images
-  const avatarSizes = '(max-width: 768px) 100px, 140px';
-  const serviceCoverSizes = '(max-width: 768px) 100vw, 280px';
-  const packCoverSizes = '(max-width: 768px) 100vw, 280px';
+  // Optimized tab switching to prevent INP issues
+  const handleTabClick = useCallback((event) => {
+    const tabName = event.currentTarget.dataset.tab;
+    if (tabName && tabName !== activeTab) {
+      // Use startTransition for better responsiveness
+      if (React.startTransition) {
+        React.startTransition(() => {
+          setActiveTab(tabName);
+        });
+      } else {
+        setActiveTab(tabName);
+      }
+    }
+  }, [activeTab]);
 
   // Preload cover image immediately for LCP optimization
   useEffect(() => {
@@ -551,20 +561,10 @@ const Profile = () => {
     }
   }, [profile?.coverPhotoURL]);
 
-  // Optimized tab switching to prevent INP issues
-  const handleTabClick = useCallback((event) => {
-    const tabName = event.currentTarget.dataset.tab;
-    if (tabName && tabName !== activeTab) {
-      // Use startTransition for better responsiveness
-      if (React.startTransition) {
-        React.startTransition(() => {
-          setActiveTab(tabName);
-        });
-      } else {
-        setActiveTab(tabName);
-      }
-    }
-  }, [activeTab]);
+  // Determine sizes for responsive images
+  const avatarSizes = '(max-width: 768px) 100px, 140px';
+  const serviceCoverSizes = '(max-width: 768px) 100vw, 280px';
+  const packCoverSizes = '(max-width: 768px) 100vw, 280px';
 
   return (
     <div className="profile-container">
