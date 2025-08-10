@@ -44,12 +44,6 @@ const Profile = () => {
   // Delete confirmation modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
-  
-  // Pack and service deletion modal state
-  const [showPackDeleteModal, setShowPackDeleteModal] = useState(false);
-  const [packToDelete, setPackToDelete] = useState(null);
-  const [showServiceDeleteModal, setShowServiceDeleteModal] = useState(false);
-  const [serviceToDelete, setServiceToDelete] = useState(null);
 
   // Direct Firebase Storage uploads only
 
@@ -288,12 +282,14 @@ const Profile = () => {
 
   const handleDeletePack = async (packId) => {
     if (!currentUser) return;
-    
-    // Find the pack to show its information in the modal
-    const pack = packs.find(p => p.id === packId);
-    if (pack) {
-      setPackToDelete(pack);
-      setShowPackDeleteModal(true);
+    if (window.confirm('Tem certeza que deseja excluir este pack?')) {
+      try {
+        const packRef = ref(database, `packs/${currentUser.uid}/${packId}`);
+        await remove(packRef);
+      } catch (error) {
+        console.error('Error deleting pack:', error);
+        alert('Erro ao excluir pack. Tente novamente.');
+      }
     }
   };
 
@@ -314,11 +310,13 @@ const Profile = () => {
   };
 
   const handleDeleteService = async (serviceId) => {
-    // Find the service to show its information in the modal
-    const service = services.find(s => s.id === serviceId);
-    if (service) {
-      setServiceToDelete(service);
-      setShowServiceDeleteModal(true);
+    if (window.confirm('Tem certeza que deseja excluir este serviço?')) {
+      try {
+        await deleteService(serviceId);
+      } catch (error) {
+        console.error('Error deleting service:', error);
+        alert('Erro ao excluir serviço. Tente novamente.');
+      }
     }
   };
 
@@ -379,18 +377,21 @@ const Profile = () => {
         return;
       }
       
-      // Check if the current user is the author of the post
+      // Verify the current user is the owner of the post
       const postData = postSnapshot.val();
+      
       if (postData.userId !== currentUser.uid) {
-        alert('Erro: Você não tem permissão para excluir esta publicação.');
+        alert('Você não tem permissão para excluir esta publicação.');
         return;
       }
       
-      // Delete the post first
+      // Remove the main post first
       await remove(postRef);
       
-      // Update local state immediately
-      setPosts(posts.filter(p => p.id !== postToDelete.id));
+      // Update local state immediately after successful post deletion
+      setPosts(prevPosts => prevPosts.filter(post => post.id !== postToDelete.id));
+      
+      // Close modal and reset state
       setShowDeleteModal(false);
       setPostToDelete(null);
       
@@ -418,67 +419,20 @@ const Profile = () => {
       
       // Handle specific Firebase error codes
       if (error.code === 'PERMISSION_DENIED') {
-        alert('Erro: Permissão negada. Verifique se você é o autor da publicação.');
+        alert('Permissão negada. Verifique se você está logado e é o proprietário da publicação.');
       } else if (error.code === 'UNAUTHORIZED') {
-        alert('Erro: Usuário não autorizado. Faça login novamente.');
+        alert('Usuário não autorizado. Faça login novamente.');
       } else if (error.code === 'NOT_FOUND') {
-        alert('Erro: Publicação não encontrada.');
+        alert('Publicação não encontrada no banco de dados.');
       } else {
         alert(`Erro ao excluir publicação: ${error.message}`);
       }
     }
   };
 
-  const confirmDeletePack = async () => {
-    if (!packToDelete || !currentUser) return;
-    
-    try {
-      const packRef = ref(database, `packs/${currentUser.uid}/${packToDelete.id}`);
-      await remove(packRef);
-      
-      // Update local state
-      setPacks(packs.filter(p => p.id !== packToDelete.id));
-      setShowPackDeleteModal(false);
-      setPackToDelete(null);
-      
-      alert('Pack excluído com sucesso!');
-    } catch (error) {
-      console.error('Error deleting pack:', error);
-      alert('Erro ao excluir pack. Tente novamente.');
-    }
-  };
-
-  const confirmDeleteService = async () => {
-    if (!serviceToDelete) return;
-    
-    try {
-      await deleteService(serviceToDelete.id);
-      
-      // Update local state
-      setServices(services.filter(s => s.id !== serviceToDelete.id));
-      setShowServiceDeleteModal(false);
-      setServiceToDelete(null);
-      
-      alert('Serviço excluído com sucesso!');
-    } catch (error) {
-      console.error('Error deleting service:', error);
-      alert('Erro ao excluir serviço. Tente novamente.');
-    }
-  };
-
   const cancelDeletePost = () => {
     setShowDeleteModal(false);
     setPostToDelete(null);
-  };
-
-  const cancelDeletePack = () => {
-    setShowPackDeleteModal(false);
-    setPackToDelete(null);
-  };
-
-  const cancelDeleteService = () => {
-    setShowServiceDeleteModal(false);
-    setServiceToDelete(null);
   };
 
   const handleServiceStatusChange = async (serviceId, newStatus) => {
@@ -1515,26 +1469,7 @@ const Profile = () => {
         isOpen={showDeleteModal}
         onClose={cancelDeletePost}
         onConfirm={confirmDeletePost}
-        itemType="post"
-        itemData={postToDelete}
-      />
-
-      {/* Pack Delete Confirmation Modal */}
-      <DeleteConfirmationModal
-        isOpen={showPackDeleteModal}
-        onClose={cancelDeletePack}
-        onConfirm={confirmDeletePack}
-        itemType="pack"
-        itemData={packToDelete}
-      />
-
-      {/* Service Delete Confirmation Modal */}
-      <DeleteConfirmationModal
-        isOpen={showServiceDeleteModal}
-        onClose={cancelDeleteService}
-        onConfirm={confirmDeleteService}
-        itemType="service"
-        itemData={serviceToDelete}
+        postContent={postToDelete?.content}
       />
     </div>
   );
