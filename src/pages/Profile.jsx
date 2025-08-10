@@ -21,7 +21,7 @@ const Profile = () => {
   const { user, updateProfile } = useAuth();
   const { userStatus, updateUserStatus } = useUserStatus();
   const { userServices, userPacks, loading: userservicesLoading } = useServices();
-  const { createOptimizedTabHandler, trackInteraction, optimizeImageLoading } = useProfilePerformance();
+  const { trackInteraction, optimizeTabContentRendering } = useProfilePerformance();
 
   // Add useTransition for better tab switching performance
   const [isPending, startTransition] = useTransition();
@@ -570,6 +570,11 @@ const Profile = () => {
     }
   }, [activeTab, trackInteraction]);
 
+  // Determine sizes for responsive images (defined before usage to avoid TDZ)
+  const avatarSizes = '(max-width: 768px) 100px, 140px';
+  const serviceCoverSizes = '(max-width: 768px) 100vw, 280px';
+  const packCoverSizes = '(max-width: 768px) 100vw, 280px';
+
   // Memoized tab content with lazy loading for better performance
   const tabContent = useMemo(() => {
     switch (activeTab) {
@@ -1078,11 +1083,6 @@ const Profile = () => {
       </div>
     );
   }
-
-  // Determine sizes for responsive images
-  const avatarSizes = '(max-width: 768px) 100px, 140px';
-  const serviceCoverSizes = '(max-width: 768px) 100vw, 280px';
-  const packCoverSizes = '(max-width: 768px) 100vw, 280px';
 
   // Build responsive srcSet for cover if following optimized naming (no hooks to avoid order issues)
   const coverSrcSet = (() => {
