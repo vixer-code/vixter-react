@@ -1069,12 +1069,12 @@ const Profile = () => {
               services.map((service) => (
                 <div 
                   key={service.id} 
-                  className={`pack-card ${isOwner ? 'editable' : ''}`}
+                  className={`service-card ${isOwner ? 'editable' : ''}`}
                   onClick={isOwner ? () => handleEditService(service) : undefined}
                   style={isOwner ? { cursor: 'pointer' } : {}}
                   title={isOwner ? 'Clique para editar este serviço' : ''}
                 >
-                          <div className="pack-cover">
+                  <div className="service-cover">
                     <CachedImage 
                       src={service.coverImageURL}
                       fallbackSrc="/images/default-service.jpg"
@@ -1087,9 +1087,10 @@ const Profile = () => {
                       </div>
                     )}
                   </div>
-                  <div className="pack-info">
-                    <h3 className="pack-title">{service.title}</h3>
-                    <p className="pack-price">VP {(service.price != null ? (service.price * 1.5).toFixed(2) : '0.00')}</p>
+                  <div className="service-info">
+                    <h3 className="service-title">{service.title}</h3>
+                    <p className="service-price">VP {(service.price != null ? (service.price * 1.5).toFixed(2) : '0.00')}</p>
+                    <p className="service-category">{service.category || 'Geral'}</p>
                   </div>
                   {isOwner && (
                     <div className="service-actions" onClick={(e) => e.stopPropagation()}>
