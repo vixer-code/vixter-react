@@ -1,17 +1,24 @@
-// pages/api/convert.js (Next.js API route)
+// pages/api/convert.js
 import formidable from 'formidable';
 import sharp from 'sharp';
 import { fileTypeFromBuffer } from 'file-type';
 import { promises as fs } from 'fs';
-import { storage } from '../../../config/firebase.js';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import admin from 'firebase-admin';
 
 export const config = { api: { bodyParser: false } };
 
+// Initialize Firebase Admin once
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "vixter-451b3.firebasestorage.app"
+  });
+}
+
+const bucket = admin.storage().bucket();
+
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   try {
     const form = formidable({ multiples: false, maxFileSize: 10 * 1024 * 1024 });
@@ -32,10 +39,9 @@ export default async function handler(req, res) {
       return res.status(415).json({ error: 'unsupported_media_type' });
     }
 
-    const sizes =
-      type === 'avatar'
-        ? { small: 128, medium: 256, large: 512 }
-        : { small: 480, medium: 960, large: 1440 };
+    const sizes = type === 'avatar'
+      ? { small: 128, medium: 256, large: 512 }
+      : { small: 480, medium: 960, large: 1440 };
 
     const quality = 80;
     const urls = {};
@@ -48,11 +54,10 @@ export default async function handler(req, res) {
         .toBuffer();
 
       const filename = `${Date.now()}-${label}.webp`;
-      const storagePath = `uploads/${type}/${filename}`;
-      const fileRef = ref(storage, storagePath);
+      const fileRef = bucket.file(`uploads/${type}/${filename}`);
+      await fileRef.save(webpBuffer, { contentType: 'image/webp' });
 
-      await uploadBytes(fileRef, webpBuffer, { contentType: 'image/webp' });
-      urls[label] = await getDownloadURL(fileRef);
+      urls[label] = `https://storage.googleapis.com/${bucket.name}/uploads/${type}/${filename}`;
     }
 
     return res.json({
