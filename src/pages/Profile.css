@@ -7,6 +7,7 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 100%);
   color: #ffffff;
+  overflow-x: hidden; /* prevent accidental horizontal scroll on mobile */
 }
 
 .profile-card {
@@ -1593,15 +1594,18 @@
   
   .profile-tabs {
     padding: 0 15px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
+    overflow-x: visible; /* avoid long horizontal scroll */
+    flex-wrap: wrap;      /* allow wrapping instead of scrolling */
+    justify-content: center;
+    gap: 8px;
   }
   
   .profile-tab {
-    padding: 12px 15px;
-    white-space: nowrap;
+    padding: 10px 12px;
+    white-space: normal; /* let text wrap if needed */
     font-size: 0.9rem;
-    min-width: 100px;
+    min-width: auto;     /* avoid forcing long rows */
+    flex: 1 1 auto;      /* distribute evenly when wrapping */
   }
   
   .tab-content {
@@ -1806,12 +1810,17 @@
   
   .profile-tabs {
     padding: 0 10px;
+    overflow-x: visible;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
   }
   
   .profile-tab {
-    padding: 10px 12px;
+    padding: 8px 10px;
     font-size: 0.85rem;
-    min-width: 80px;
+    min-width: auto;
+    flex: 1 1 auto;
   }
   
   .tab-content {
