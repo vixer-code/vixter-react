@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
+import React, { useState, useEffect, Suspense, useCallback, useTransition } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { ref, get, update, set, remove, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -7,10 +7,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import { useEmailVerification } from '../hooks/useEmailVerification';
 import { useServices } from '../hooks/useServices';
-import { useUserStatus } from '../hooks/useUserStatus'
+import { useStatus } from '../contexts/StatusContext';
 import { useProfilePerformance } from '../hooks/useProfilePerformance';
 import StatusIndicator from '../components/StatusIndicator';
 import CachedImage from '../components/CachedImage';
+import CreateServiceModal from '../components/CreateServiceModal';
+import CreatePackModal from '../components/CreatePackModal';
 import './Profile.css';
 
 const Profile = () => {
@@ -18,9 +20,7 @@ const Profile = () => {
   const location = useLocation();
   const { currentUser } = useAuth();
   const { isVerified, isChecking } = useEmailVerification();
-  const { user, updateProfile } = useAuth();
-  const { userStatus, updateUserStatus } = useUserStatus();
-  const { userServices, userPacks, loading: userservicesLoading } = useServices();
+  const { userStatus, updateUserStatus } = useStatus();
   const { trackInteraction, optimizeTabContentRendering } = useProfilePerformance();
 
   // Add useTransition for better tab switching performance
@@ -515,7 +515,8 @@ const Profile = () => {
     setSelectedImages(prev => [...prev, ...files]);
   };
 
-  const accountBadges = (() => {
+  // Define the renderAccountBadges function that was referenced but not defined
+  const renderAccountBadges = () => {
     if (!profile) return null;
 
     const levelMap = {
@@ -552,7 +553,7 @@ const Profile = () => {
         ))}
       </div>
     );
-  })();
+  };
 
   const isOwner = currentUser?.uid === (userId || currentUser?.uid);
 
