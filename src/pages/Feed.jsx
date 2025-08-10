@@ -327,22 +327,11 @@ const Feed = () => {
       
       console.log('Post exists in database and user is owner, proceeding with deletion');
       
+      // Remove the main post first
       await remove(postRef);
       console.log('Post removed successfully');
       
-      // Remove associated likes
-      console.log('Removing associated likes...');
-      const likesRef = ref(database, `likes/${postToDelete.id}`);
-      await remove(likesRef);
-      console.log('Likes removed successfully');
-      
-      // Remove associated comments
-      console.log('Removing associated comments...');
-      const commentsRef = ref(database, `comments/${postToDelete.id}`);
-      await remove(commentsRef);
-      console.log('Comments removed successfully');
-      
-      // Reload posts to update the list
+      // Reload posts to update the list immediately after successful post deletion
       console.log('Reloading posts...');
       await loadPosts();
       console.log('Posts reloaded successfully');
@@ -351,9 +340,31 @@ const Feed = () => {
       setShowDeleteModal(false);
       setPostToDelete(null);
       
+      // Try to remove associated data (likes and comments) but don't fail if they don't exist
+      try {
+        console.log('Removing associated likes...');
+        const likesRef = ref(database, `likes/${postToDelete.id}`);
+        await remove(likesRef);
+        console.log('Likes removed successfully');
+      } catch (likesError) {
+        console.log('Likes removal failed (this is okay):', likesError.message);
+        // Don't fail the entire operation if likes removal fails
+      }
+      
+      try {
+        console.log('Removing associated comments...');
+        const commentsRef = ref(database, `comments/${postToDelete.id}`);
+        await remove(commentsRef);
+        console.log('Comments removed successfully');
+      } catch (commentsError) {
+        console.log('Comments removal failed (this is okay):', commentsError.message);
+        // Don't fail the entire operation if comments removal fails
+      }
+      
       // Show success message
       alert('Publicação removida com sucesso!');
       console.log('Delete process completed successfully');
+      
     } catch (error) {
       console.error('Error deleting post:', error);
       console.error('Error details:', {
