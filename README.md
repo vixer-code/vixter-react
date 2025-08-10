@@ -39,13 +39,12 @@ The Vite dev server is configured with `historyApiFallback: true` to handle SPA 
 - Uses `vercel.json` configuration
 - Includes caching headers for static assets
 
-#### Express Server
-- Custom `server.js` for traditional hosting
-- Serves static files and handles all routes
+#### Vite Preview
+- Built-in preview server for testing production builds
 
 ```bash
 npm run build
-npm start
+npm run preview
 ```
 
 ### File Structure
@@ -60,7 +59,7 @@ vixter-react/
 ├── public/
 │   └── _redirects                # Netlify redirects
 ├── vercel.json                   # Vercel configuration
-├── server.js                     # Express server for production
+
 └── vite.config.js               # Vite configuration with SPA support
 ```
 
@@ -94,17 +93,6 @@ vixter-react/
 - `npm start` - Start production server
 - `npm run lint` - Run ESLint
 
-## Media optimization
+## Media handling
 
-Set an env var to switch the client to the local media API instead of Firebase Storage:
-
-```
-VITE_USE_MEDIA_API=true
-```
-
-Endpoints provided by `server.js`:
-- POST `/api/convert` (images: cover/avatar → WebP)
-- POST `/api/transcode` (videos → MP4 + poster WebP)
-
-Optional S3 config (for uploads to S3):
-- `S3_BUCKET`, `S3_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
+Direct Firebase Storage uploads for images and videos. No server-side conversion needed.

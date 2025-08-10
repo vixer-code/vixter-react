@@ -40,35 +40,7 @@ const Profile = () => {
   const [showCreatePackModal, setShowCreatePackModal] = useState(false);
   const [editingPack, setEditingPack] = useState(null);
 
-  // Feature switch: use in-app media API instead of Firebase Storage direct upload
-  const useMediaApi = (import.meta?.env?.VITE_USE_MEDIA_API === 'true');
-  // Client-side conversion for uploads (not LCP-critical)
-  const convertImageToWebP = async (file, targetWidth) => {
-    try {
-      console.log('convertImageToWebP called with:', { file, targetWidth });
-      const bitmap = await createImageBitmap(file);
-      console.log('Image bitmap created:', { width: bitmap.width, height: bitmap.height });
-      
-      const scale = Math.min(1, targetWidth / bitmap.width);
-      const width = Math.round(bitmap.width * scale);
-      const height = Math.round(bitmap.height * scale);
-      console.log('Calculated dimensions:', { scale, width, height });
-      
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(bitmap, 0, 0, width, height);
-      
-      console.log('Canvas created and image drawn, converting to WebP...');
-      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.78));
-      console.log('WebP blob created:', blob);
-      return blob || file;
-    } catch (error) {
-      console.error('Error in convertImageToWebP:', error);
-      return file;
-    }
-  };
+  // Direct Firebase Storage uploads only
 
   // Read cached profile early to reduce LCP resource delay
   useEffect(() => {
@@ -397,60 +369,24 @@ const Profile = () => {
     try {
       console.log('Starting image upload:', { type, fileName: file.name, fileSize: file.size });
       setUploading(true);
-      let finalURL = null;
 
-      if (useMediaApi) {
-        console.log('Using media API for upload');
-        const form = new FormData();
-        form.append('file', file);
-        form.append('type', type === 'avatar' ? 'avatar' : 'cover');
-        form.append('userId', currentUser.uid);
-
-        const resp = await fetch('/api/convert', { method: 'POST', body: form });
-        if (!resp.ok) {
-          if (resp.status === 413) throw new Error('O arquivo é muito grande (máx. 30MB)');
-          if (resp.status === 415) throw new Error('Tipo de arquivo não suportado');
-          if (resp.status === 429) throw new Error('Muitas requisições. Tente novamente em instantes.');
-          throw new Error('Falha ao converter imagem');
-        }
-        const data = await resp.json();
-
-        // Support both legacy { urls: {width: url} } and new { sizes: {small,medium,large} }
-        const sizes = data.sizes || data.urls || {};
-
-        // Prefer largest size for main URL
-        finalURL = sizes.large || sizes[1440] || sizes[512] || Object.values(sizes)[0];
-        
-        // Update database with all image sizes for responsive loading
-        const updateData = {};
-        updateData[type === 'avatar' ? 'profilePictureURL' : 'coverPhotoURL'] = sizes;
-        await update(ref(database, `users/${currentUser.uid}`), updateData);
-      } else {
-        console.log('Using Firebase Storage for upload');
-        // Convert to WebP client-side and upload WebP to Firebase Storage
-        const targetWidth = type === 'avatar' ? 512 : 1440;
-        console.log('Converting image to WebP with target width:', targetWidth);
-        const webpBlob = await convertImageToWebP(file, targetWidth);
-        console.log('WebP conversion result:', webpBlob);
-        
-        // Try uploading original file first to test if the issue is with WebP conversion
-        const path = type === 'avatar' ? `profilePictures/${currentUser.uid}` : `coverPhotos/${currentUser.uid}`;
-        console.log('Uploading to Firebase Storage path:', path);
-        
-        const fileRef = storageRef(storage, path);
-        await uploadBytes(fileRef, file, {
-          contentType: file.type,
-          cacheControl: 'public, max-age=31536000, immutable'
-        });
-        console.log('File uploaded successfully, getting download URL');
-        finalURL = await getDownloadURL(fileRef);
-        console.log('Download URL obtained:', finalURL);
-        
-        // Update database with single URL for Firebase Storage fallback
-        const updateData = {};
-        updateData[type === 'avatar' ? 'profilePictureURL' : 'coverPhotoURL'] = finalURL;
-        await update(ref(database, `users/${currentUser.uid}`), updateData);
-      }
+      // Direct upload to Firebase Storage
+      const path = type === 'avatar' ? `profilePictures/${currentUser.uid}` : `coverPhotos/${currentUser.uid}`;
+      console.log('Uploading to Firebase Storage path:', path);
+      
+      const fileRef = storageRef(storage, path);
+      await uploadBytes(fileRef, file, {
+        contentType: file.type,
+        cacheControl: 'public, max-age=31536000, immutable'
+      });
+      console.log('File uploaded successfully, getting download URL');
+      const finalURL = await getDownloadURL(fileRef);
+      console.log('Download URL obtained:', finalURL);
+      
+      // Update database with the URL
+      const updateData = {};
+      updateData[type === 'avatar' ? 'profilePictureURL' : 'coverPhotoURL'] = finalURL;
+      await update(ref(database, `users/${currentUser.uid}`), updateData);
 
       console.log('Profile updated successfully, reloading profile');
       await loadProfile(); // Reload profile to show new image
@@ -460,6 +396,7 @@ const Profile = () => {
     } catch (error) {
       console.error('Error uploading image:', error);
       setUploading(false);
+      alert('Erro ao fazer upload da imagem. Tente novamente.');
     }
   };
 
