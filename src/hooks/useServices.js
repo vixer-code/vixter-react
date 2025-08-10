@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ref, get, set, push, remove, update, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { database, storage } from '../config/firebase';
+import { database, storage } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 
 export const useServices = () => {

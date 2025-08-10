@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { ref, onValue, set, onDisconnect, serverTimestamp, get } from 'firebase/database';
-import { database } from '../config/firebase';
+import { database } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 
 const StatusContext = createContext();

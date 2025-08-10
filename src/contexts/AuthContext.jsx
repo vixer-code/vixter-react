@@ -8,7 +8,7 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { ref, set, get } from 'firebase/database';
-import { auth, database } from '../config/firebase';
+import { auth, database } from '../../config/firebase';
 
 const AuthContext = createContext({});
 

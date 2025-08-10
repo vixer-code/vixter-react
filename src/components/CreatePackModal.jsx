@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ref, push, set, update } from 'firebase/database';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { database } from '../config/firebase';
+import { database } from '../../config/firebase';
 import { useServices } from '../hooks/useServices';
 import './CreatePackModal.css';
 

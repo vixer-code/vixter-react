@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { ref, get, update, set, remove, onValue, off, push, query, orderByChild, equalTo } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { database, storage } from '../config/firebase';
+import { database, storage } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import { useEmailVerification } from '../hooks/useEmailVerification';
@@ -406,14 +406,17 @@ const Profile = () => {
         form.append('type', type === 'avatar' ? 'avatar' : 'cover');
         form.append('userId', currentUser.uid);
 
-        const resp = await fetch('/api/convert', {
-          method: 'POST',
-          body: form
-        });
+        const resp = await fetch('/api/convert', { method: 'POST', body: form });
         if (!resp.ok) throw new Error('Image convert failed');
         const data = await resp.json();
-        // Prefer 1440 for cover, else 512 for avatar
-        finalURL = (type === 'avatar') ? (data.urls?.[512] || Object.values(data.urls || {})[0]) : (data.urls?.[1440] || data.urls?.[720] || Object.values(data.urls || {})[0]);
+
+        // ✅ Store all sizes for responsive image loading
+        finalURL = data.sizes.large;
+        
+        // Update database with all image sizes for responsive loading
+        const updateData = {};
+        updateData[type === 'avatar' ? 'profilePictureURL' : 'coverPhotoURL'] = data.sizes;
+        await update(ref(database, `users/${currentUser.uid}`), updateData);
       } else {
         console.log('Using Firebase Storage for upload');
         // Convert to WebP client-side and upload WebP to Firebase Storage
@@ -434,13 +437,13 @@ const Profile = () => {
         console.log('File uploaded successfully, getting download URL');
         finalURL = await getDownloadURL(fileRef);
         console.log('Download URL obtained:', finalURL);
+        
+        // Update database with single URL for Firebase Storage fallback
+        const updateData = {};
+        updateData[type === 'avatar' ? 'profilePictureURL' : 'coverPhotoURL'] = finalURL;
+        await update(ref(database, `users/${currentUser.uid}`), updateData);
       }
 
-      console.log('Updating user profile with new URL:', finalURL);
-      const updateData = {};
-      updateData[type === 'avatar' ? 'profilePictureURL' : 'coverPhotoURL'] = finalURL;
-
-      await update(ref(database, `users/${currentUser.uid}`), updateData);
       console.log('Profile updated successfully, reloading profile');
       await loadProfile(); // Reload profile to show new image
       

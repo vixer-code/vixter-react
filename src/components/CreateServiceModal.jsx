@@ -3,7 +3,7 @@ import { ref, push } from 'firebase/database';
 import { useAuth } from '../contexts/AuthContext';
 import { useServices } from '../hooks/useServices';
 import { useNotification } from '../contexts/NotificationContext';
-import { database } from '../config/firebase';
+import { database } from '../../config/firebase';
 import './CreateServiceModal.css';
 
 const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService = null }) => {

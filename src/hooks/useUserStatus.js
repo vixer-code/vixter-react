@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ref, onValue, off } from 'firebase/database';
-import { database } from '../config/firebase';
+import { database } from '../../config/firebase';
 
 export const useUserStatus = (userId) => {
   const [status, setStatus] = useState('offline');
