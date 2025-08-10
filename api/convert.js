@@ -4,14 +4,23 @@ import sharp from 'sharp';
 import { fileTypeFromBuffer } from 'file-type';
 import { promises as fs } from 'fs';
 import admin from 'firebase-admin';
+import 'firebase-admin/storage';
 
 export const config = { api: { bodyParser: false } };
 
 // Initialize Firebase Admin once
 if (!admin.apps.length) {
+  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const credential = serviceAccountJson
+    ? admin.credential.cert(JSON.parse(serviceAccountJson))
+    : admin.credential.applicationDefault();
+
+  // Firebase Storage bucket ID must be like "<project-id>.appspot.com"
+  const storageBucket = process.env.FIREBASE_STORAGE_BUCKET || 'vixter-451b3.appspot.com';
+
   admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "vixter-451b3.firebasestorage.app"
+    credential,
+    storageBucket,
   });
 }
 
@@ -21,7 +30,12 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   try {
-    const form = formidable({ multiples: false, maxFileSize: 10 * 1024 * 1024 });
+    const form = formidable({
+      multiples: false,
+      maxFileSize: 10 * 1024 * 1024,
+      uploadDir: '/tmp',
+      keepExtensions: true,
+    });
     const { fields, files } = await new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
         if (err) return reject(err);
