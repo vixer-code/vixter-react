@@ -9,8 +9,10 @@ const Feed = () => {
   const { currentUser } = useAuth();
   const [services, setServices] = useState([]);
   const [providers, setProviders] = useState([]);
+  const [communityPosts, setCommunityPosts] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [filteredProviders, setFilteredProviders] = useState([]);
+  const [sortedPosts, setSortedPosts] = useState([]);
   const [currentTab, setCurrentTab] = useState('services');
   const [loading, setLoading] = useState(true);
   
@@ -55,7 +57,8 @@ const Feed = () => {
       // Load services and providers
       await Promise.all([
         loadServices(),
-        loadProviders()
+        loadProviders(),
+        loadCommunityPosts()
       ]);
       
       setLoading(false);
@@ -107,6 +110,25 @@ const Feed = () => {
       }
     } catch (error) {
       console.error('Error loading providers:', error);
+    }
+  };
+
+  const loadCommunityPosts = async () => {
+    try {
+      const postsRef = ref(database, 'posts');
+      const postsSnap = await get(postsRef);
+      if (postsSnap.exists()) {
+        const list = [];
+        postsSnap.forEach((child) => list.push({ id: child.key, ...child.val() }));
+        list.sort((a, b) => (b.createdAt || b.timestamp || 0) - (a.createdAt || a.timestamp || 0));
+        setCommunityPosts(list);
+        setSortedPosts(list);
+      } else {
+        setCommunityPosts([]);
+        setSortedPosts([]);
+      }
+    } catch (error) {
+      console.error('Error loading community posts:', error);
     }
   };
 
@@ -269,6 +291,43 @@ const Feed = () => {
     </div>
   );
 
+  const renderPostCard = (post) => (
+    <div key={post.id} className="post-card">
+      <div className="post-header">
+        <div className="post-author-avatar">
+          <CachedImage
+            src={post.authorPhoto}
+            defaultType="PROFILE_1"
+            alt={post.authorName || 'Usuário'}
+            sizes="48px"
+            showLoading={false}
+          />
+        </div>
+        <div className="post-meta">
+          <div className="post-author-name">{post.authorName || 'Usuário'}</div>
+          <div className="post-date">{new Date(post.createdAt || post.timestamp).toLocaleString('pt-BR')}</div>
+        </div>
+      </div>
+      <div className="post-content">
+        {post.content && <p>{post.content}</p>}
+        {Array.isArray(post.images) && post.images.length > 0 && (
+          <div className="post-image-container">
+            {post.images.map((img, idx) => (
+              <CachedImage
+                key={idx}
+                src={img}
+                alt="Post"
+                className="post-image"
+                sizes="(max-width: 768px) 100vw, 400px"
+                showLoading={false}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="feed-container">
@@ -354,6 +413,12 @@ const Feed = () => {
         >
           Profissionais ({filteredProviders.length})
         </button>
+        <button
+          className={`tab-btn ${currentTab === 'community' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('community')}
+        >
+          Comunidade ({sortedPosts.length})
+        </button>
       </div>
 
       <div className="feed-content">
@@ -361,9 +426,17 @@ const Feed = () => {
           <div className="services-grid">
             {getPaginatedItems(filteredServices, servicesPage).map((s, i) => renderServiceCard(s, i))}
           </div>
-        ) : (
+        ) : currentTab === 'providers' ? (
           <div className="providers-grid">
             {getPaginatedItems(filteredProviders, providersPage).map(renderProviderCard)}
+          </div>
+        ) : (
+          <div className="posts-container">
+            {sortedPosts.length > 0 ? (
+              sortedPosts.map(renderPostCard)
+            ) : (
+              <div className="no-results"><p>Nenhuma publicação disponível.</p></div>
+            )}
           </div>
         )}
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import { ref, get, update, set, remove, onValue, off } from 'firebase/database';
+import { ref, get, update, set, remove, onValue, off, push, query, orderByChild, equalTo } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -259,16 +259,18 @@ const Profile = () => {
 
   const loadPosts = async (targetUserId) => {
     try {
-      const postsRef = ref(database, `posts/${targetUserId}`);
-      const snapshot = await get(postsRef);
-      
+      const postsRootRef = ref(database, 'posts');
+      const postsByUserQuery = query(postsRootRef, orderByChild('userId'), equalTo(targetUserId));
+      const snapshot = await get(postsByUserQuery);
       if (snapshot.exists()) {
-        const postsData = snapshot.val();
-        const postsArray = Object.entries(postsData).map(([id, post]) => ({
-          id,
-          ...post
-        })).sort((a, b) => b.timestamp - a.timestamp);
-        setPosts(postsArray);
+        const postsList = [];
+        snapshot.forEach(child => {
+          postsList.push({ id: child.key, ...child.val() });
+        });
+        postsList.sort((a, b) => (b.createdAt || b.timestamp || 0) - (a.createdAt || a.timestamp || 0));
+        setPosts(postsList);
+      } else {
+        setPosts([]);
       }
     } catch (error) {
       console.error('Error loading posts:', error);
@@ -478,22 +480,41 @@ const Profile = () => {
   };
 
   const handleCreatePost = async () => {
-    if (!currentUser || !newPostContent.trim()) return;
+    if (!currentUser) return;
+    const text = newPostContent.trim();
+    if (!text && selectedImages.length === 0) return;
 
     try {
-      const postData = {
-        content: newPostContent,
-        timestamp: Date.now(),
-        authorId: currentUser.uid,
-        authorName: profile?.displayName || currentUser.displayName,
-        authorPhoto: profile?.profilePictureURL || currentUser.photoURL,
-        images: selectedImages
+      // Upload selected images to Storage and collect URLs
+      const imageUrls = [];
+      if (selectedImages.length > 0) {
+        const uploads = selectedImages.map(async (file) => {
+          const path = `posts/${currentUser.uid}/${Date.now()}_${file.name}`;
+          const fileRef = storageRef(storage, path);
+          await uploadBytes(fileRef, file);
+          return getDownloadURL(fileRef);
+        });
+        const resolved = await Promise.all(uploads);
+        imageUrls.push(...resolved);
+      }
+
+      // Extract hashtags similar to vanilla feed implementation
+      const hashtags = (text.match(/#(\w+)/g) || []).map(t => t.replace('#', ''));
+
+      const newPost = {
+        userId: currentUser.uid,
+        content: text,
+        images: imageUrls,
+        createdAt: Date.now(),
+        authorName: profile?.displayName || currentUser.displayName || 'Você',
+        authorPhoto: profile?.profilePictureURL || currentUser.photoURL || null,
+        hashtags
       };
 
-      const postsRef = ref(database, `posts/${currentUser.uid}`);
-      const newPostRef = ref(postsRef);
-      await set(newPostRef, postData);
+      const postsRootRef = ref(database, 'posts');
+      await push(postsRootRef, newPost);
 
+      // Reset UI and reload user's posts
       setNewPostContent('');
       setSelectedImages([]);
       await loadPosts(currentUser.uid);
