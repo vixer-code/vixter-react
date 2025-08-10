@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ref, get, onValue, off } from 'firebase/database';
-import { database } from '../config/firebase';
+import { database } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import NotificationIcon from './NotificationIcon';

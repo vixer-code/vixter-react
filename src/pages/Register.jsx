@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User, MapPin, FileText, Globe, Calendar, AtSign } from 'lucide-react';
 import { ref, set, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { database, storage } from '../config/firebase';
+import { database, storage } from '../../config/firebase';
 import './Auth.css';
 
 const Register = () => {

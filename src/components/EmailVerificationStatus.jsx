@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { ref, update } from 'firebase/database';
-import { database } from '../config/firebase';
+import { database } from '../../config/firebase';
 import './EmailVerificationStatus.css';
 
 const EmailVerificationStatus = ({ 

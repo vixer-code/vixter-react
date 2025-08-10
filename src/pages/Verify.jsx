@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { database } from '../config/firebase';
+import { database } from '../../config/firebase';
 import { ref, set } from 'firebase/database';
 import './Verify.css';
 

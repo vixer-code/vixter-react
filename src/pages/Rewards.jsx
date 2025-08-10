@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { database } from '../config/firebase';
+import { database } from '../../config/firebase';
 import { ref, get, set, push, update } from 'firebase/database';
 import Header from '../components/Header';
 import Footer from '../components/Footer';

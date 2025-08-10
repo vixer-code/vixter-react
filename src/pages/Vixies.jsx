@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { database } from '../config/firebase';
+import { database } from '../../config/firebase';
 import { ref, onValue, push, set, off, query, orderByChild } from 'firebase/database';
 import { Link } from 'react-router-dom';
 import './Vixies.css';

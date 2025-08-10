@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { FixedSizeList as List, VariableSizeList } from 'react-window';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { database } from '../config/firebase';
+import { database } from '../../config/firebase';
 import { ref, onValue, push, set, off, query, orderByChild, equalTo } from 'firebase/database';
 import './Messages.css';
 

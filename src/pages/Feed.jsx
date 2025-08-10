@@ -7,7 +7,7 @@ import {
   push
 } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { database, storage } from '../config/firebase';
+import { database, storage } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import CachedImage from '../components/CachedImage';
 import './Feed.css';

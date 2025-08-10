@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, get, set, push } from 'firebase/database';
-import { database } from '../config/firebase';
+import { database } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import './Wallet.css';
