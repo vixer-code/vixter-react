@@ -1,169 +1,174 @@
-.delete-modal-overlay {
+.delete-confirmation-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(5px);
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.3s ease-out;
 }
 
-.delete-modal-content {
-  background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+.delete-confirmation-modal {
+  background: white;
   border-radius: 16px;
   padding: 0;
-  max-width: 450px;
+  max-width: 500px;
   width: 90%;
   max-height: 90vh;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: slideIn 0.3s ease-out;
+  border: 1px solid #e5e7eb;
 }
 
-.delete-modal-header {
-  background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
-  padding: 24px;
-  text-align: center;
-  color: white;
+.modal-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  padding: 24px 24px 16px 24px;
+  border-bottom: 1px solid #f3f4f6;
 }
 
-.delete-modal-header i {
-  font-size: 2rem;
-  color: #fff;
-}
-
-.delete-modal-header h3 {
+.modal-header h3 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 20px;
   font-weight: 600;
+  color: #1f2937;
 }
 
-.delete-modal-body {
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.close-btn:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.modal-body {
   padding: 24px;
-  color: #ffffff;
-}
-
-.delete-modal-body p {
-  margin: 0 0 16px 0;
-  font-size: 1rem;
-  line-height: 1.5;
   text-align: center;
 }
 
-.post-preview {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 16px;
-  margin: 16px 0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.warning-icon {
+  margin-bottom: 16px;
 }
 
-.post-preview-label {
-  font-size: 0.9rem;
-  color: #B8B8B8;
-  margin-bottom: 8px !important;
+.warning-icon i {
+  font-size: 48px;
+  color: #f59e0b;
+}
+
+.confirmation-message {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.item-info {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
   text-align: left;
 }
 
-.post-preview-content {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 6px;
-  padding: 12px;
-  color: #ffffff;
-  font-style: italic;
-  border-left: 3px solid #ff4757;
+.item-name {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
-.warning-text {
+.item-price {
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #ffa502 !important;
-  font-size: 0.9rem;
-  margin-top: 16px !important;
+  flex-wrap: wrap;
 }
 
-.warning-text i {
-  color: #ffa502;
+.price-amount {
+  font-size: 20px;
+  font-weight: 700;
+  color: #059669;
 }
 
-.delete-modal-actions {
-  padding: 0 24px 24px 24px;
+.price-discount {
+  font-size: 14px;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.price-free {
+  font-size: 18px;
+  font-weight: 600;
+  color: #059669;
+}
+
+.item-description {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.modal-actions {
   display: flex;
   gap: 12px;
-  justify-content: center;
+  padding: 16px 24px 24px 24px;
+  border-top: 1px solid #f3f4f6;
 }
 
-.btn-cancel,
-.btn-delete {
+.btn {
+  flex: 1;
   padding: 12px 24px;
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 100px;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-}
-
-.btn-cancel {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
-}
-
-.btn-delete {
-  background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
-  color: #ffffff;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
+.btn-cancel {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.btn-cancel:hover {
+  background-color: #e5e7eb;
+}
+
+.btn-delete {
+  background-color: #dc2626;
+  color: white;
+}
+
 .btn-delete:hover {
-  background: linear-gradient(135deg, #ff3742 0%, #ff2f3a 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
-}
-
-.btn-delete i {
-  font-size: 0.9rem;
-}
-
-/* Remove any unwanted click effects */
-.btn-cancel:active,
-.btn-delete:active {
-  transform: translateY(0);
-}
-
-/* Focus styles */
-.btn-cancel:focus,
-.btn-delete:focus {
-  outline: none;
-}
-
-.btn-cancel:focus-visible,
-.btn-delete:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.5);
-  outline-offset: 2px;
+  background-color: #b91c1c;
 }
 
 /* Animations */
@@ -187,28 +192,24 @@
   }
 }
 
-/* Mobile responsiveness */
-@media (max-width: 480px) {
-  .delete-modal-content {
+/* Responsive design */
+@media (max-width: 640px) {
+  .delete-confirmation-modal {
     width: 95%;
     margin: 20px;
   }
   
-  .delete-modal-header {
+  .modal-header,
+  .modal-body,
+  .modal-actions {
     padding: 20px;
   }
   
-  .delete-modal-body {
-    padding: 20px;
-  }
-  
-  .delete-modal-actions {
-    padding: 0 20px 20px 20px;
+  .modal-actions {
     flex-direction: column;
   }
   
-  .btn-cancel,
-  .btn-delete {
+  .btn {
     width: 100%;
   }
 }

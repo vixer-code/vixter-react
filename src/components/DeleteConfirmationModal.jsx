@@ -1,42 +1,147 @@
 import React from 'react';
 import './DeleteConfirmationModal.css';
 
-const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, postContent }) => {
+const DeleteConfirmationModal = ({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  itemType = 'item', // 'post', 'pack', 'service'
+  itemData = null 
+}) => {
   if (!isOpen) return null;
 
-  return (
-    <div className="delete-modal-overlay" onClick={onClose}>
-      <div className="delete-modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="delete-modal-header">
-          <i className="fa-solid fa-exclamation-triangle"></i>
-          <h3>Confirmar Exclusão</h3>
-        </div>
-        
-        <div className="delete-modal-body">
-          <p>Tem certeza que deseja excluir esta publicação?</p>
-          {postContent && (
-            <div className="post-preview">
-              <p className="post-preview-label">Conteúdo da publicação:</p>
-              <div className="post-preview-content">
-                {postContent.length > 100 
-                  ? `${postContent.substring(0, 100)}...` 
-                  : postContent
-                }
-              </div>
+  const renderItemInfo = () => {
+    if (!itemData) return null;
+
+    switch (itemType) {
+      case 'pack':
+        return (
+          <div className="item-info">
+            <h4 className="item-name">{itemData.title || 'Pack sem título'}</h4>
+            <div className="item-price">
+              {itemData.price ? (
+                <>
+                  <span className="price-amount">
+                    {new Intl.NumberFormat('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL'
+                    }).format(itemData.price)}
+                  </span>
+                  {itemData.discount > 0 && (
+                    <span className="price-discount">
+                      (Desconto: {itemData.discount}%)
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="price-free">Gratuito</span>
+              )}
             </div>
-          )}
-          <p className="warning-text">
-            <i className="fa-solid fa-info-circle"></i>
-            Esta ação não pode ser desfeita.
-          </p>
+            {itemData.description && (
+              <p className="item-description">
+                {itemData.description.length > 100 
+                  ? `${itemData.description.substring(0, 100)}...` 
+                  : itemData.description
+                }
+              </p>
+            )}
+          </div>
+        );
+
+      case 'service':
+        return (
+          <div className="item-info">
+            <h4 className="item-name">{itemData.title || 'Serviço sem título'}</h4>
+            <div className="item-price">
+              {itemData.price ? (
+                <span className="price-amount">
+                  {new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                  }).format(itemData.price)}
+                </span>
+              ) : (
+                <span className="price-free">Gratuito</span>
+              )}
+            </div>
+            {itemData.description && (
+              <p className="item-description">
+                {itemData.description.length > 100 
+                  ? `${itemData.description.substring(0, 100)}...` 
+                  : itemData.description
+                }
+              </p>
+            )}
+          </div>
+        );
+
+      case 'post':
+      default:
+        return (
+          <div className="item-info">
+            <h4 className="item-name">Publicação</h4>
+            {itemData.content && (
+              <p className="item-description">
+                {itemData.content.length > 100 
+                  ? `${itemData.content.substring(0, 100)}...` 
+                  : itemData.content
+                }
+              </p>
+            )}
+          </div>
+        );
+    }
+  };
+
+  const getTitle = () => {
+    switch (itemType) {
+      case 'pack':
+        return 'Excluir Pack';
+      case 'service':
+        return 'Excluir Serviço';
+      case 'post':
+      default:
+        return 'Excluir Publicação';
+    }
+  };
+
+  const getMessage = () => {
+    switch (itemType) {
+      case 'pack':
+        return 'Tem certeza que deseja excluir este pack? Esta ação não pode ser desfeita.';
+      case 'service':
+        return 'Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita.';
+      case 'post':
+      default:
+        return 'Tem certeza que deseja excluir esta publicação? Esta ação não pode ser desfeita.';
+    }
+  };
+
+  return (
+    <div className="delete-confirmation-overlay" onClick={onClose}>
+      <div className="delete-confirmation-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>{getTitle()}</h3>
+          <button className="close-btn" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
-        <div className="delete-modal-actions">
-          <button className="btn-cancel" onClick={onClose}>
+        <div className="modal-body">
+          <div className="warning-icon">
+            <i className="fas fa-exclamation-triangle"></i>
+          </div>
+          
+          <p className="confirmation-message">{getMessage()}</p>
+          
+          {renderItemInfo()}
+        </div>
+        
+        <div className="modal-actions">
+          <button className="btn btn-cancel" onClick={onClose}>
             Cancelar
           </button>
-          <button className="btn-delete" onClick={onConfirm}>
-            <i className="fa-solid fa-trash"></i>
+          <button className="btn btn-delete" onClick={onConfirm}>
             Excluir
           </button>
         </div>

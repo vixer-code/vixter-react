@@ -555,7 +555,8 @@ const Feed = () => {
         isOpen={showDeleteModal}
         onClose={cancelDeletePost}
         onConfirm={confirmDeletePost}
-        postContent={postToDelete?.content}
+        itemType="post"
+        itemData={postToDelete}
       />
     </div>
   );
