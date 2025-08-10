@@ -213,30 +213,47 @@ const Feed = () => {
   }
 
   async function toggleLike(postId, liked) {
-    if (!currentUser) {
-      window.location.href = '/login';
-      return;
-    }
-    const likePath = dbRef(database, `posts/${postId}/likes/${currentUser.uid}`);
+    if (!currentUser) return;
     try {
+      const likeRef = dbRef(database, `likes/${postId}/${currentUser.uid}`);
       if (liked) {
-        await remove(likePath);
+        await remove(likeRef);
       } else {
-        await set(likePath, true);
+        await set(likeRef, true);
       }
-      // Update locally
-      setFilteredPosts(prev =>
-        prev.map(p => {
-          if (p.id !== postId) return p;
-          const likes = { ...(p.likes || {}) };
-          if (liked) delete likes[currentUser.uid];
-          else likes[currentUser.uid] = true;
-          return { ...p, likes };
-        })
-      );
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('Erro ao curtir:', e);
+      // Reload posts to update like counts
+      await loadPosts();
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  }
+
+  async function deletePost(postId) {
+    if (!currentUser) return;
+    
+    if (window.confirm('Tem certeza que deseja excluir esta publicação?')) {
+      try {
+        // Remove post from database
+        const postRef = dbRef(database, `posts/${postId}`);
+        await remove(postRef);
+        
+        // Remove associated likes
+        const likesRef = dbRef(database, `likes/${postId}`);
+        await remove(likesRef);
+        
+        // Remove associated comments
+        const commentsRef = dbRef(database, `comments/${postId}`);
+        await remove(commentsRef);
+        
+        // Reload posts to update the list
+        await loadPosts();
+        
+        // Show success message
+        alert('Publicação removida com sucesso!');
+      } catch (error) {
+        console.error('Error deleting post:', error);
+        alert('Erro ao excluir publicação. Tente novamente.');
+      }
     }
   }
 
@@ -321,20 +338,40 @@ const Feed = () => {
               const ts = post.timestamp || post.createdAt;
               return (
                 <div key={post.id} className="post-card" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 16 }}>
-                  <div className="post-header" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-                    <div className="post-author-avatar" style={{ width: 44, height: 44, borderRadius: '50%', overflow: 'hidden' }}>
-                      <CachedImage src={author.profilePictureURL} defaultType="PROFILE_1" alt={author.displayName || 'Usuário'} showLoading={false} />
-                    </div>
-                    <div className="post-meta" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <div className="post-author-name" style={{ fontWeight: 600 }}>{author.displayName || 'Usuário'}</div>
-                      <div className="post-date" title={new Date(ts).toLocaleString('pt-BR')} style={{ color: '#B8B8B8', fontSize: 12 }}>
-                        {formatTimeAgo(ts)} · {formatExactDateTime(ts)}
+                                      <div className="post-header" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                      <div className="post-author-avatar" style={{ width: 44, height: 44, borderRadius: '50%', overflow: 'hidden' }}>
+                        <CachedImage src={author.profilePictureURL} defaultType="PROFILE_1" alt={author.displayName || 'Usuário'} showLoading={false} />
+                      </div>
+                      <div className="post-meta" style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div className="post-author-name" style={{ fontWeight: 600 }}>{author.displayName || 'Usuário'}</div>
+                        <div className="post-date" title={new Date(ts).toLocaleString('pt-BR')} style={{ color: '#B8B8B8', fontSize: 12 }}>
+                          {formatTimeAgo(ts)} · {formatExactDateTime(ts)}
+                        </div>
+                      </div>
+                      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {currentUser && currentUser.uid === post.userId && (
+                          <button
+                            className="delete-post-btn"
+                            onClick={() => deletePost(post.id)}
+                            title="Excluir publicação"
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#ff4757',
+                              cursor: 'pointer',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              opacity: 0.8
+                            }}
+                          >
+                            <i className="fa-solid fa-trash"></i>
+                          </button>
+                        )}
+                        <div style={{ opacity: 0.7 }}>
+                          <i className="fa-solid fa-ellipsis"></i>
+                        </div>
                       </div>
                     </div>
-                    <div style={{ marginLeft: 'auto', opacity: 0.7 }}>
-                      <i className="fa-solid fa-ellipsis"></i>
-                    </div>
-                  </div>
 
                   <div className="post-content" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {(post.content || '').trim() && <p style={{ whiteSpace: 'pre-wrap', color: '#DDD' }}>{post.content}</p>}

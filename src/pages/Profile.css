@@ -789,7 +789,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
+  position: relative;
 }
 
 .post-author-avatar {
@@ -808,6 +809,7 @@
 
 .post-meta {
   flex: 1;
+  min-width: 0;
 }
 
 .post-author-name {
@@ -817,8 +819,35 @@
 }
 
 .post-date {
-  font-size: 0.8rem;
   color: #B8B8B8;
+  font-size: 12px;
+}
+
+.post-options {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.post-options-btn {
+  background: transparent;
+  border: none;
+  color: #ff4757;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.post-options-btn:hover {
+  background: rgba(255, 71, 87, 0.1);
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.post-options-btn i {
+  font-size: 14px;
 }
 
 .post-content {

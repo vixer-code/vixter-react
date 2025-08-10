@@ -315,6 +315,35 @@ const Profile = () => {
     }
   };
 
+  const handleDeletePost = async (postId) => {
+    if (!currentUser) return;
+    
+    if (window.confirm('Tem certeza que deseja excluir esta publicação?')) {
+      try {
+        // Remove post from database
+        const postRef = ref(database, `posts/${postId}`);
+        await remove(postRef);
+        
+        // Remove associated likes
+        const likesRef = ref(database, `likes/${postId}`);
+        await remove(likesRef);
+        
+        // Remove associated comments
+        const commentsRef = ref(database, `comments/${postId}`);
+        await remove(commentsRef);
+        
+        // Update local state
+        setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+        
+        // Show success message
+        alert('Publicação removida com sucesso!');
+      } catch (error) {
+        console.error('Error deleting post:', error);
+        alert('Erro ao excluir publicação. Tente novamente.');
+      }
+    }
+  };
+
   const handleServiceStatusChange = async (serviceId, newStatus) => {
     try {
       await updateServiceStatus(serviceId, newStatus);
@@ -955,6 +984,17 @@ const Profile = () => {
                             : 'Agora'}
                         </div>
                       </div>
+                      {isOwner && (
+                        <div className="post-options">
+                          <button 
+                            className="post-options-btn" 
+                            onClick={() => handleDeletePost(post.id)}
+                            title="Excluir publicação"
+                          >
+                            <i className="fa-solid fa-trash"></i>
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div className="post-content">
                       <p>{post.content}</p>
