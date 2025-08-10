@@ -980,7 +980,9 @@ const Profile = () => {
                       <div className="post-meta">
                         <div className="post-author-name">{post.authorName}</div>
                         <div className="post-date">
-                          {new Date(post.timestamp).toLocaleDateString('pt-BR')}
+                          {(post.createdAt || post.timestamp)
+                            ? new Date(post.createdAt || post.timestamp).toLocaleDateString('pt-BR')
+                            : 'Agora'}
                         </div>
                       </div>
                     </div>

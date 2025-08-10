@@ -1,337 +1,245 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { ref, get, query, orderByChild, limitToFirst } from 'firebase/database';
-import { database } from '../config/firebase';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  ref as dbRef,
+  get,
+  set,
+  remove,
+  push
+} from 'firebase/database';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { database, storage } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import CachedImage from '../components/CachedImage';
 import './Feed.css';
 
+function extractHashTags(text) {
+  return (text || '').match(/#(\w+)/g)?.map(t => t.replace('#', '')) || [];
+}
+
+function formatTimeAgo(timestamp) {
+  if (!timestamp) return 'Agora';
+  const now = Date.now();
+  const diff = Math.floor((now - timestamp) / 1000);
+  if (diff < 60) return 'Agora mesmo';
+  if (diff < 3600) return `${Math.floor(diff / 60)} min atrás`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h atrás`;
+  const d = new Date(timestamp);
+  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+}
+
 const Feed = () => {
   const { currentUser } = useAuth();
-  const [services, setServices] = useState([]);
-  const [providers, setProviders] = useState([]);
-  const [communityPosts, setCommunityPosts] = useState([]);
-  const [filteredServices, setFilteredServices] = useState([]);
-  const [filteredProviders, setFilteredProviders] = useState([]);
-  const [sortedPosts, setSortedPosts] = useState([]);
-  const [currentTab, setCurrentTab] = useState('services');
+
+  const [currentTab, setCurrentTab] = useState('recent');
+  const [allPosts, setAllPosts] = useState([]);
+  const [filteredPosts, setFilteredPosts] = useState([]);
+  const [users, setUsers] = useState({});
+  const [trending, setTrending] = useState([]);
+  const [stars, setStars] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Pagination state
-  const [servicesPage, setServicesPage] = useState(1);
-  const [providersPage, setProvidersPage] = useState(1);
-  const itemsPerPage = 12;
-  
-  // Filter state
-  const [filters, setFilters] = useState({
-    search: '',
-    category: '',
-    maxPrice: '',
-    minRating: '',
-    sortBy: 'relevance'
-  });
+
+  // Create post modal state
+  const [isCreating, setIsCreating] = useState(false);
+  const [postText, setPostText] = useState('');
+  const [postFile, setPostFile] = useState(null);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
-    initFeed();
+    loadInitial();
+    const interval = setInterval(buildCommunityStars, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Debounce search to reduce filter recomputations
-  const [searchInput, setSearchInput] = useState('');
   useEffect(() => {
-    const handle = setTimeout(() => {
-      setFilters(prev => ({ ...prev, search: searchInput }));
-    }, 250);
-    return () => clearTimeout(handle);
-  }, [searchInput]);
+    // Recompute filters/trending when tab or posts change
+    filterAndDecorate(currentTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTab, allPosts]);
 
-  useEffect(() => {
-    applyFilters();
-    // reset pagination when filters change
-    setServicesPage(1);
-    setProvidersPage(1);
-  }, [services, providers, filters]);
-
-  const initFeed = async () => {
+  async function loadInitial() {
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // Load services and providers
-      await Promise.all([
-        loadServices(),
-        loadProviders(),
-        loadCommunityPosts()
-      ]);
-      
-      setLoading(false);
-    } catch (error) {
-      console.error('Error initializing feed:', error);
+      await Promise.all([loadPosts(), buildCommunityStars()]);
+    } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const loadServices = async () => {
-    try {
-      const servicesRef = ref(database, 'services');
-      const servicesQuery = query(servicesRef, orderByChild('createdAt'), limitToFirst(100));
-      const snapshot = await get(servicesQuery);
-      
-      if (snapshot.exists()) {
-        const servicesData = [];
-        snapshot.forEach((childSnapshot) => {
-          servicesData.push({
-            id: childSnapshot.key,
-            ...childSnapshot.val()
-          });
-        });
-        setServices(servicesData);
-      }
-    } catch (error) {
-      console.error('Error loading services:', error);
+  async function loadPosts() {
+    const snap = await get(dbRef(database, 'posts'));
+    const list = [];
+    if (snap.exists()) {
+      snap.forEach(c => list.push({ id: c.key, ...c.val() }));
     }
-  };
+    list.sort((a, b) => (b.timestamp || b.createdAt || 0) - (a.timestamp || a.createdAt || 0));
+    setAllPosts(list);
+  }
 
-  const loadProviders = async () => {
-    try {
-      const providersRef = ref(database, 'users');
-      const providersQuery = query(providersRef, orderByChild('isProvider'), limitToFirst(100));
-      const snapshot = await get(providersQuery);
-      
-      if (snapshot.exists()) {
-        const providersData = [];
-        snapshot.forEach((childSnapshot) => {
-          const userData = childSnapshot.val();
-          if (userData.isProvider) {
-            providersData.push({
-              id: childSnapshot.key,
-              ...userData
-            });
-          }
-        });
-        setProviders(providersData);
-      }
-    } catch (error) {
-      console.error('Error loading providers:', error);
-    }
-  };
+  async function ensureUsersLoaded(userIds) {
+    const missing = userIds.filter(id => !users[id]);
+    if (missing.length === 0) return;
+    const fetched = {};
+    await Promise.all(
+      missing.map(async id => {
+        const s = await get(dbRef(database, `users/${id}`));
+        fetched[id] = s.exists() ? s.val() : {};
+      })
+    );
+    setUsers(prev => ({ ...prev, ...fetched }));
+  }
 
-  const loadCommunityPosts = async () => {
-    try {
-      const postsRef = ref(database, 'posts');
-      const postsSnap = await get(postsRef);
-      if (postsSnap.exists()) {
-        const list = [];
-        postsSnap.forEach((child) => list.push({ id: child.key, ...child.val() }));
-        list.sort((a, b) => (b.createdAt || b.timestamp || 0) - (a.createdAt || a.timestamp || 0));
-        setCommunityPosts(list);
-        setSortedPosts(list);
+  async function filterAndDecorate(tab) {
+    let posts = [...allPosts];
+    if (tab === 'following') {
+      const uid = currentUser?.uid;
+      if (!uid) {
+        posts = [];
       } else {
-        setCommunityPosts([]);
-        setSortedPosts([]);
+        const followersSnap = await get(dbRef(database, 'followers'));
+        const followingIds = [];
+        if (followersSnap.exists()) {
+          followersSnap.forEach(uSnap => {
+            const map = uSnap.val() || {};
+            if (map[uid]) followingIds.push(uSnap.key);
+          });
+        }
+        posts = posts.filter(p => followingIds.includes(p.userId));
       }
-    } catch (error) {
-      console.error('Error loading community posts:', error);
-    }
-  };
-
-  const applyFilters = useCallback(() => {
-    let filteredServicesData = [...services];
-    let filteredProvidersData = [...providers];
-
-    // Apply search filter
-    if (filters.search) {
-      const searchTerm = filters.search.toLowerCase();
-      filteredServicesData = filteredServicesData.filter(service =>
-        service.title?.toLowerCase().includes(searchTerm) ||
-        service.description?.toLowerCase().includes(searchTerm) ||
-        service.category?.toLowerCase().includes(searchTerm)
-      );
-      
-      filteredProvidersData = filteredProvidersData.filter(provider =>
-        provider.displayName?.toLowerCase().includes(searchTerm) ||
-        provider.username?.toLowerCase().includes(searchTerm) ||
-        provider.bio?.toLowerCase().includes(searchTerm)
-      );
+    } else if (tab === 'official') {
+      const unique = [...new Set(posts.map(p => p.userId).filter(Boolean))];
+      await ensureUsersLoaded(unique);
+      posts = posts.filter(p => {
+        const u = users[p.userId] || {};
+        return u.admin || u.accountType === 'official';
+      });
     }
 
-    // Apply category filter
-    if (filters.category) {
-      filteredServicesData = filteredServicesData.filter(service =>
-        service.category === filters.category
-      );
-    }
+    // Ensure author info is available
+    const ids = [...new Set(posts.map(p => p.userId).filter(Boolean))];
+    await ensureUsersLoaded(ids);
 
-    // Apply price filter
-    if (filters.maxPrice) {
-      filteredServicesData = filteredServicesData.filter(service =>
-        service.price <= parseFloat(filters.maxPrice)
-      );
-    }
-
-    // Apply rating filter
-    if (filters.minRating) {
-      filteredServicesData = filteredServicesData.filter(service =>
-        service.rating >= parseFloat(filters.minRating)
-      );
-      
-      filteredProvidersData = filteredProvidersData.filter(provider =>
-        provider.rating >= parseFloat(filters.minRating)
-      );
-    }
-
-    // Apply sorting
-    filteredServicesData = sortServices(filteredServicesData);
-    filteredProvidersData = sortProviders(filteredProvidersData);
-
-    setFilteredServices(filteredServicesData);
-    setFilteredProviders(filteredProvidersData);
-  }, [services, providers, filters]);
-
-  const sortServices = useCallback((servicesToSort) => {
-    const sorted = [...servicesToSort];
-    
-    switch (filters.sortBy) {
-      case 'price-low':
-        return sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
-      case 'price-high':
-        return sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
-      case 'rating':
-        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-      case 'newest':
-        return sorted.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      default:
-        return sorted;
-    }
-  }, [filters.sortBy]);
-
-  const sortProviders = useCallback((providersToSort) => {
-    const sorted = [...providersToSort];
-    
-    switch (filters.sortBy) {
-      case 'rating':
-        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-      case 'newest':
-        return sorted.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      default:
-        return sorted;
-    }
-  }, [filters.sortBy]);
-
-  const handleSearch = () => {
-    // Search is handled by the filters state change
-  };
-
-  const resetFilters = () => {
-    setFilters({
-      search: '',
-      category: '',
-      maxPrice: '',
-      minRating: '',
-      sortBy: 'relevance'
+    // Build trending
+    const tagCount = {};
+    posts.forEach(p => {
+      const tags = Array.isArray(p.hashtags) && p.hashtags.length > 0 ? p.hashtags : extractHashTags(p.content);
+      tags.forEach(t => {
+        tagCount[t] = (tagCount[t] || 0) + 1;
+      });
     });
-  };
+    const top = Object.entries(tagCount)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 12)
+      .map(([t]) => t);
+    setTrending(top);
 
-  const getPaginatedItems = (items, page) => {
-    const startIndex = (page - 1) * itemsPerPage;
-    return items.slice(startIndex, startIndex + itemsPerPage);
-  };
+    setFilteredPosts(posts);
+  }
 
-  const renderServiceCard = (service, index) => (
-    <div key={service.id} className="service-card">
-      <div className="service-image">
-        <CachedImage 
-          src={service.imageUrl}
-          fallbackSrc="/images/default-service.jpg"
-          alt={service.title}
-          className="service-image-img"
-          showLoading={false}
-          priority={index < 4}
-          sizes="(max-width: 768px) 100vw, 300px"
-        />
-      </div>
-      <div className="service-info">
-        <h3>{service.title}</h3>
-        <p className="service-description">{service.description}</p>
-        <div className="service-meta">
-          <span className="service-category">{service.category}</span>
-          <span className="service-price">R$ {service.price}</span>
-        </div>
-        <div className="service-rating">
-          <span className="stars">
-            {[...Array(5)].map((_, i) => (
-              <i key={i} className={`fas fa-star ${i < (service.rating || 0) ? 'filled' : ''}`}></i>
-            ))}
-          </span>
-          <span className="rating-text">({service.rating || 0})</span>
-        </div>
-      </div>
-    </div>
-  );
+  async function buildCommunityStars() {
+    try {
+      const followersSnap = await get(dbRef(database, 'followers'));
+      const counts = {};
+      if (followersSnap.exists()) {
+        followersSnap.forEach(s => {
+          counts[s.key] = Object.keys(s.val() || {}).length;
+        });
+      }
+      const top = Object.entries(counts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3);
+      const result = [];
+      for (const [uid, total] of top) {
+        const uSnap = await get(dbRef(database, `users/${uid}`));
+        const u = uSnap.exists() ? uSnap.val() : {};
+        result.push({ id: uid, totalFollowers: total, ...u });
+      }
+      setStars(result);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('Erro ao montar Estrelas da Comunidade:', e);
+    }
+  }
 
-  const renderProviderCard = (provider) => (
-    <div key={provider.id} className="provider-card">
-      <div className="provider-avatar">
-        <CachedImage 
-          src={provider.profilePictureURL}
-          defaultType="PROFILE_2"
-          alt={provider.displayName}
-          className="provider-avatar-img"
-          showLoading={false}
-        />
-      </div>
-      <div className="provider-info">
-        <h3>{provider.displayName}</h3>
-        <p className="provider-username">@{provider.username}</p>
-        <p className="provider-bio">{provider.bio}</p>
-        <div className="provider-meta">
-          <span className="provider-rating">
-            <i className="fas fa-star"></i> {provider.rating || 0}
-          </span>
-          <span className="provider-services">{provider.servicesCount || 0} serviços</span>
-        </div>
-      </div>
-    </div>
-  );
+  async function handlePublish() {
+    if (!currentUser) {
+      window.location.href = '/login';
+      return;
+    }
+    const content = postText.trim();
+    if (!content && !postFile) return;
+    setIsPublishing(true);
+    try {
+      const createdAt = Date.now();
+      const hashtags = extractHashTags(content);
+      const images = [];
+      if (postFile) {
+        const path = `posts/${currentUser.uid}/${createdAt}_${postFile.name}`;
+        const sRef = storageRef(storage, path);
+        await uploadBytes(sRef, postFile);
+        images.push(await getDownloadURL(sRef));
+      }
+      const newRef = push(dbRef(database, 'posts'));
+      await set(newRef, {
+        userId: currentUser.uid,
+        content,
+        createdAt,
+        images,
+        hashtags
+      });
+      // Reset and refresh
+      setIsCreating(false);
+      setPostText('');
+      setPostFile(null);
+      await loadPosts();
+      await filterAndDecorate(currentTab);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('Erro ao publicar:', e);
+      alert('Não foi possível publicar. Tente novamente mais tarde.');
+    } finally {
+      setIsPublishing(false);
+    }
+  }
 
-  const renderPostCard = (post) => (
-    <div key={post.id} className="post-card">
-      <div className="post-header">
-        <div className="post-author-avatar">
-          <CachedImage
-            src={post.authorPhoto}
-            defaultType="PROFILE_1"
-            alt={post.authorName || 'Usuário'}
-            sizes="48px"
-            showLoading={false}
-          />
-        </div>
-        <div className="post-meta">
-          <div className="post-author-name">{post.authorName || 'Usuário'}</div>
-          <div className="post-date">{new Date(post.createdAt || post.timestamp).toLocaleString('pt-BR')}</div>
-        </div>
-      </div>
-      <div className="post-content">
-        {post.content && <p>{post.content}</p>}
-        {Array.isArray(post.images) && post.images.length > 0 && (
-          <div className="post-image-container">
-            {post.images.map((img, idx) => (
-              <CachedImage
-                key={idx}
-                src={img}
-                alt="Post"
-                className="post-image"
-                sizes="(max-width: 768px) 100vw, 400px"
-                showLoading={false}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  async function toggleLike(postId, liked) {
+    if (!currentUser) {
+      window.location.href = '/login';
+      return;
+    }
+    const likePath = dbRef(database, `posts/${postId}/likes/${currentUser.uid}`);
+    try {
+      if (liked) {
+        await remove(likePath);
+      } else {
+        await set(likePath, true);
+      }
+      // Update locally
+      setFilteredPosts(prev =>
+        prev.map(p => {
+          if (p.id !== postId) return p;
+          const likes = { ...(p.likes || {}) };
+          if (liked) delete likes[currentUser.uid];
+          else likes[currentUser.uid] = true;
+          return { ...p, likes };
+        })
+      );
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('Erro ao curtir:', e);
+    }
+  }
+
+  const postsWithAuthors = useMemo(() => {
+    return filteredPosts.map(p => ({
+      ...p,
+      author: users[p.userId] || {}
+    }));
+  }, [filteredPosts, users]);
 
   if (loading) {
     return (
       <div className="feed-container">
-        <div className="loading-text">Carregando...</div>
+        <div className="loading-spinner">Carregando…</div>
       </div>
     );
   }
@@ -340,166 +248,169 @@ const Feed = () => {
     <div className="feed-container">
       <div className="feed-header">
         <h1>Comunidade Vixter</h1>
-        <p>Descubra serviços incríveis e conecte-se com profissionais</p>
-      </div>
-
-      <div className="feed-controls">
-        <div className="search-section">
-          <input
-            type="text"
-            placeholder="Buscar serviços ou profissionais..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="search-input"
-          />
-          <button onClick={handleSearch} className="search-btn">
-            <i className="fas fa-search"></i>
-          </button>
-        </div>
-
-        <div className="filters-section">
-          <select
-            value={filters.category}
-            onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-            className="filter-select"
-          >
-            <option value="">Todas as categorias</option>
-            <option value="companhia">Companhia</option>
-            <option value="conselhos">Conselhos</option>
-            <option value="entretenimento">Entretenimento</option>
-            <option value="suporte">Suporte</option>
-          </select>
-
-          <select
-            value={filters.maxPrice}
-            onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-            className="filter-select"
-          >
-            <option value="">Qualquer preço</option>
-            <option value="50">Até R$ 50</option>
-            <option value="100">Até R$ 100</option>
-            <option value="200">Até R$ 200</option>
-            <option value="500">Até R$ 500</option>
-          </select>
-
-          <select
-            value={filters.sortBy}
-            onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
-            className="filter-select"
-          >
-            <option value="relevance">Relevância</option>
-            <option value="price-low">Menor preço</option>
-            <option value="price-high">Maior preço</option>
-            <option value="rating">Melhor avaliação</option>
-            <option value="newest">Mais recentes</option>
-          </select>
-
-          <button onClick={resetFilters} className="reset-btn">
-            Limpar filtros
-          </button>
-        </div>
+        <p>Publicações da comunidade, contas oficiais e pessoas que você segue</p>
       </div>
 
       <div className="feed-tabs">
         <button
-          className={`tab-btn ${currentTab === 'services' ? 'active' : ''}`}
-          onClick={() => setCurrentTab('services')}
+          className={`tab-btn ${currentTab === 'recent' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('recent')}
         >
-          Serviços ({filteredServices.length})
+          Recentes
         </button>
         <button
-          className={`tab-btn ${currentTab === 'providers' ? 'active' : ''}`}
-          onClick={() => setCurrentTab('providers')}
+          className={`tab-btn ${currentTab === 'following' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('following')}
         >
-          Profissionais ({filteredProviders.length})
+          Seguindo
         </button>
         <button
-          className={`tab-btn ${currentTab === 'community' ? 'active' : ''}`}
-          onClick={() => setCurrentTab('community')}
+          className={`tab-btn ${currentTab === 'official' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('official')}
         >
-          Comunidade ({sortedPosts.length})
+          Oficial
         </button>
       </div>
 
-      <div className="feed-content">
-        {currentTab === 'services' ? (
-          <div className="services-grid">
-            {getPaginatedItems(filteredServices, servicesPage).map((s, i) => renderServiceCard(s, i))}
+      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 260px', gap: 20 }}>
+        {/* Left sidebar */}
+        <aside className="left-sidebar" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="sidebar-card all-games" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 16 }}>
+            <button className="search-btn" style={{ width: '100%' }} onClick={() => (currentUser ? setIsCreating(true) : (window.location.href = '/login'))}>
+              Criar Publicação
+            </button>
           </div>
-        ) : currentTab === 'providers' ? (
-          <div className="providers-grid">
-            {getPaginatedItems(filteredProviders, providersPage).map(renderProviderCard)}
+
+          <div className="sidebar-card" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 16 }}>
+            <h2 style={{ fontSize: 18, margin: '0 0 12px' }}>Tópicos em Alta</h2>
+            <div className="trend-topics" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {trending.length === 0 ? (
+                <span className="hashtag">Sem tendências</span>
+              ) : (
+                trending.map(tag => (
+                  <span key={tag} className="hashtag" style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: '4px 10px' }}>#{tag}</span>
+                ))
+              )}
+            </div>
           </div>
-        ) : (
-          <div className="posts-container">
-            {sortedPosts.length > 0 ? (
-              sortedPosts.map(renderPostCard)
-            ) : (
+        </aside>
+
+        {/* Main content */}
+        <main className="main-content">
+          <div className="posts-container" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {postsWithAuthors.length === 0 && (
               <div className="no-results"><p>Nenhuma publicação disponível.</p></div>
             )}
-          </div>
-        )}
 
-        {currentTab === 'services' && filteredServices.length === 0 && (
-          <div className="no-results">
-            <p>Nenhum serviço encontrado com os filtros aplicados.</p>
-          </div>
-        )}
+            {postsWithAuthors.map(post => {
+              const likesObj = post.likes || {};
+              const likeCount = Object.keys(likesObj).length;
+              const liked = currentUser ? !!likesObj[currentUser.uid] : false;
+              const author = post.author || {};
+              return (
+                <div key={post.id} className="post-card" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 16 }}>
+                  <div className="post-header" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                    <div className="post-author-avatar" style={{ width: 44, height: 44, borderRadius: '50%', overflow: 'hidden' }}>
+                      <CachedImage src={author.profilePictureURL} defaultType="PROFILE_1" alt={author.displayName || 'Usuário'} showLoading={false} />
+                    </div>
+                    <div className="post-meta" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div className="post-author-name" style={{ fontWeight: 600 }}>{author.displayName || 'Usuário'}</div>
+                      <div className="post-date" style={{ color: '#B8B8B8', fontSize: 12 }}>{formatTimeAgo(post.timestamp || post.createdAt)}</div>
+                    </div>
+                    <div style={{ marginLeft: 'auto', opacity: 0.7 }}>
+                      <i className="fa-solid fa-ellipsis"></i>
+                    </div>
+                  </div>
 
-        {currentTab === 'providers' && filteredProviders.length === 0 && (
-          <div className="no-results">
-            <p>Nenhum profissional encontrado com os filtros aplicados.</p>
+                  <div className="post-content" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {(post.content || '').trim() && <p style={{ whiteSpace: 'pre-wrap', color: '#DDD' }}>{post.content}</p>}
+                    {Array.isArray(post.images) && post.images.length > 0 && (
+                      <div className="post-image-container" style={{ borderRadius: 12, overflow: 'hidden' }}>
+                        <CachedImage src={post.images[0]} alt="Imagem da publicação" className="post-image" showLoading={false} />
+                      </div>
+                    )}
+                    {Array.isArray(post.hashtags) && post.hashtags.length > 0 && (
+                      <div className="post-hashtags" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {post.hashtags.map(tag => (
+                          <span key={tag} className="hashtag" style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: '4px 10px' }}>#{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="post-actions" style={{ display: 'flex', gap: 16, marginTop: 12, alignItems: 'center' }}>
+                    <button
+                      className="action-button like-button"
+                      onClick={() => toggleLike(post.id, liked)}
+                      style={{ background: 'transparent', border: 'none', color: liked ? '#e83f5b' : '#fff', cursor: 'pointer' }}
+                    >
+                      <i className={`${liked ? 'fas' : 'far'} fa-heart`} /> {likeCount}
+                    </button>
+                    <button className="action-button" style={{ background: 'transparent', border: 'none', color: '#fff', opacity: 0.8 }}>
+                      <i className="far fa-comment" /> {typeof post.comments === 'object' ? Object.keys(post.comments).length : (post.comments || 0)}
+                    </button>
+                    <button className="action-button" style={{ background: 'transparent', border: 'none', color: '#fff', opacity: 0.8 }}>
+                      <i className="far fa-share-square" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+        </main>
+
+        {/* Right sidebar */}
+        <aside className="right-sidebar" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="sidebar-card community-stars" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 16 }}>
+            <h2 style={{ fontSize: 18, margin: '0 0 12px' }}>Estrelas da Comunidade</h2>
+            {stars.map(s => (
+              <div key={s.id} className="star-user" style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="star-user-info" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <img src={s.profilePictureURL || '/api/placeholder/48/48'} alt={s.displayName || 'Usuário'} className="star-user-avatar" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} />
+                  <div className="star-user-details">
+                    <div className="star-user-name" style={{ fontWeight: 600 }}>
+                      {s.displayName || 'Usuário'} <i className="fas fa-star" style={{ color: '#ffc107' }}></i>
+                    </div>
+                    <div className="star-user-followers" style={{ color: '#B8B8B8' }}>Seguidores: {s.totalFollowers}</div>
+                  </div>
+                </div>
+                <div className="game-badges" style={{ display: 'flex', gap: 8 }}>
+                  {s.accountLevel && <span className="game-badge" style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: '3px 8px' }}>{s.accountLevel}</span>}
+                  {s.location && <span className="game-badge" style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: '3px 8px' }}>{s.location}</span>}
+                </div>
+              </div>
+            ))}
+            {stars.length === 0 && <div style={{ color: '#B8B8B8' }}>Sem destaques ainda</div>}
+          </div>
+        </aside>
       </div>
 
-      <div className="pagination">
-        {currentTab === 'services' && (
-          <div className="pagination-controls">
-            <button
-              onClick={() => setServicesPage(Math.max(1, servicesPage - 1))}
-              disabled={servicesPage === 1}
-              className="pagination-btn"
-            >
-              Anterior
-            </button>
-            <span className="page-info">
-              Página {servicesPage} de {Math.ceil(filteredServices.length / itemsPerPage)}
-            </span>
-            <button
-              onClick={() => setServicesPage(servicesPage + 1)}
-              disabled={servicesPage >= Math.ceil(filteredServices.length / itemsPerPage)}
-              className="pagination-btn"
-            >
-              Próxima
-            </button>
+      {/* Create Post Modal */}
+      {isCreating && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="modal" style={{ background: '#fff', color: '#111', borderRadius: 12, padding: 16, width: '92%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <h2 style={{ margin: 0 }}>Criar Publicação</h2>
+            <textarea
+              value={postText}
+              onChange={e => setPostText(e.target.value)}
+              placeholder="O que você está pensando?"
+              maxLength={280}
+              style={{ minHeight: 120, padding: 8, fontSize: 14 }}
+            />
+            <input type="file" accept="image/*" onChange={e => setPostFile(e.target.files?.[0] || null)} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setIsCreating(false)}>Cancelar</button>
+              <button className="search-btn" disabled={isPublishing} onClick={handlePublish}>
+                {isPublishing ? 'Publicando…' : 'Publicar'}
+              </button>
+            </div>
           </div>
-        )}
-
-        {currentTab === 'providers' && (
-          <div className="pagination-controls">
-            <button
-              onClick={() => setProvidersPage(Math.max(1, providersPage - 1))}
-              disabled={providersPage === 1}
-              className="pagination-btn"
-            >
-              Anterior
-            </button>
-            <span className="page-info">
-              Página {providersPage} de {Math.ceil(filteredProviders.length / itemsPerPage)}
-            </span>
-            <button
-              onClick={() => setProvidersPage(providersPage + 1)}
-              disabled={providersPage >= Math.ceil(filteredProviders.length / itemsPerPage)}
-              className="pagination-btn"
-            >
-              Próxima
-            </button>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default Feed; 
+export default Feed;
+
+ 
