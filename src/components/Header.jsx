@@ -37,6 +37,18 @@ const Header = () => {
   // Debug mobile menu state
   useEffect(() => {
     console.log('Mobile menu state changed:', mobileMenuOpen);
+    try {
+      if (mobileMenuOpen) {
+        // Lock body scroll when mobile nav is open
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
+    } catch (e) {
+      // noop
+    }
   }, [mobileMenuOpen]);
 
   const loadUserData = async () => {

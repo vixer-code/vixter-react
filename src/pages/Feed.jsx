@@ -27,6 +27,17 @@ function formatTimeAgo(timestamp) {
   return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
 }
 
+function formatExactDateTime(timestamp) {
+  if (!timestamp) return '';
+  return new Date(timestamp).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 const Feed = () => {
   const { currentUser } = useAuth();
 
@@ -307,6 +318,7 @@ const Feed = () => {
               const likeCount = Object.keys(likesObj).length;
               const liked = currentUser ? !!likesObj[currentUser.uid] : false;
               const author = post.author || {};
+              const ts = post.timestamp || post.createdAt;
               return (
                 <div key={post.id} className="post-card" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 16 }}>
                   <div className="post-header" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
@@ -315,7 +327,9 @@ const Feed = () => {
                     </div>
                     <div className="post-meta" style={{ display: 'flex', flexDirection: 'column' }}>
                       <div className="post-author-name" style={{ fontWeight: 600 }}>{author.displayName || 'Usuário'}</div>
-                      <div className="post-date" style={{ color: '#B8B8B8', fontSize: 12 }}>{formatTimeAgo(post.timestamp || post.createdAt)}</div>
+                      <div className="post-date" title={new Date(ts).toLocaleString('pt-BR')} style={{ color: '#B8B8B8', fontSize: 12 }}>
+                        {formatTimeAgo(ts)} · {formatExactDateTime(ts)}
+                      </div>
                     </div>
                     <div style={{ marginLeft: 'auto', opacity: 0.7 }}>
                       <i className="fa-solid fa-ellipsis"></i>
