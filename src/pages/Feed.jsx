@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ref as dbRef,
+  ref,
   get,
   set,
   remove,
@@ -82,7 +82,7 @@ const Feed = () => {
   }
 
   async function loadPosts() {
-    const snap = await get(dbRef(database, 'posts'));
+    const snap = await get(ref(database, 'posts'));
     const list = [];
     if (snap.exists()) {
       snap.forEach(c => list.push({ id: c.key, ...c.val() }));
@@ -97,7 +97,7 @@ const Feed = () => {
     const fetched = {};
     await Promise.all(
       missing.map(async id => {
-        const s = await get(dbRef(database, `users/${id}`));
+        const s = await get(ref(database, `users/${id}`));
         fetched[id] = s.exists() ? s.val() : {};
       })
     );
@@ -111,7 +111,7 @@ const Feed = () => {
       if (!uid) {
         posts = [];
       } else {
-        const followersSnap = await get(dbRef(database, 'followers'));
+        const followersSnap = await get(ref(database, 'followers'));
         const followingIds = [];
         if (followersSnap.exists()) {
           followersSnap.forEach(uSnap => {
@@ -153,7 +153,7 @@ const Feed = () => {
 
   async function buildCommunityStars() {
     try {
-      const followersSnap = await get(dbRef(database, 'followers'));
+      const followersSnap = await get(ref(database, 'followers'));
       const counts = {};
       if (followersSnap.exists()) {
         followersSnap.forEach(s => {
@@ -165,7 +165,7 @@ const Feed = () => {
         .slice(0, 3);
       const result = [];
       for (const [uid, total] of top) {
-        const uSnap = await get(dbRef(database, `users/${uid}`));
+        const uSnap = await get(ref(database, `users/${uid}`));
         const u = uSnap.exists() ? uSnap.val() : {};
         result.push({ id: uid, totalFollowers: total, ...u });
       }
@@ -194,7 +194,7 @@ const Feed = () => {
         await uploadBytes(sRef, postFile);
         images.push(await getDownloadURL(sRef));
       }
-      const newRef = push(dbRef(database, 'posts'));
+              const newRef = push(ref(database, 'posts'));
       await set(newRef, {
         userId: currentUser.uid,
         content,
@@ -220,7 +220,7 @@ const Feed = () => {
   async function toggleLike(postId, liked) {
     if (!currentUser) return;
     try {
-      const likeRef = dbRef(database, `likes/${postId}/${currentUser.uid}`);
+      const likeRef = ref(database, `likes/${postId}/${currentUser.uid}`);
       if (liked) {
         await remove(likeRef);
       } else {
@@ -234,34 +234,118 @@ const Feed = () => {
   }
 
   async function deletePost(postId) {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.log('No current user found');
+      return;
+    }
+    
+    console.log('Current user:', currentUser.uid);
+    console.log('Attempting to delete post:', postId);
     
     // Find the post to show its content in the modal
     const post = allPosts.find(p => p.id === postId);
     if (post) {
+      console.log('Found post to delete:', post);
+      console.log('Post author ID:', post.userId);
+      console.log('Current user ID:', currentUser.uid);
+      console.log('Can delete?', post.userId === currentUser.uid);
+      
       setPostToDelete({ id: postId, content: post.content });
       setShowDeleteModal(true);
+    } else {
+      console.log('Post not found in local state');
     }
   }
 
   const confirmDeletePost = async () => {
     if (!postToDelete) return;
     
+    console.log('Starting delete process for post:', postToDelete);
+    console.log('Database instance:', database);
+    console.log('Current user:', currentUser);
+    
+    // Check if database is properly initialized
+    if (!database) {
+      console.error('Database not initialized');
+      alert('Erro: Banco de dados não inicializado.');
+      return;
+    }
+    
+    // Check if user is authenticated
+    if (!currentUser || !currentUser.uid) {
+      console.error('User not authenticated');
+      alert('Erro: Usuário não autenticado.');
+      return;
+    }
+    
+    // Validate post ID
+    if (!postToDelete.id || typeof postToDelete.id !== 'string' || postToDelete.id.trim() === '') {
+      console.error('Invalid post ID:', postToDelete.id);
+      alert('Erro: ID da publicação inválido.');
+      return;
+    }
+    
+    // Test database connection
+    try {
+      console.log('Testing database connection...');
+      const testRef = ref(database, '.info/connected');
+      const testSnapshot = await get(testRef);
+      console.log('Database connection test result:', testSnapshot.val());
+    } catch (testError) {
+      console.error('Database connection test failed:', testError);
+    }
+    
     try {
       // Remove post from database
-      const postRef = dbRef(database, `posts/${postToDelete.id}`);
+      console.log('Removing post from database...');
+      const postRef = ref(database, `posts/${postToDelete.id}`);
+      console.log('Post reference:', postRef);
+      console.log('Post path:', `posts/${postToDelete.id}`);
+      
+      // Check if the post exists before trying to delete
+      console.log('Checking if post exists in database...');
+      const postSnapshot = await get(postRef);
+      console.log('Post snapshot:', postSnapshot);
+      
+      if (!postSnapshot.exists()) {
+        console.error('Post does not exist in database');
+        alert('Publicação não encontrada no banco de dados.');
+        return;
+      }
+      
+      // Verify the current user is the owner of the post
+      const postData = postSnapshot.val();
+      console.log('Post data:', postData);
+      console.log('Post author ID:', postData.userId);
+      console.log('Current user ID:', currentUser.uid);
+      
+      if (postData.userId !== currentUser.uid) {
+        console.error('User is not the owner of the post');
+        alert('Você não tem permissão para excluir esta publicação.');
+        return;
+      }
+      
+      console.log('Post exists in database and user is owner, proceeding with deletion');
+      
       await remove(postRef);
+      console.log('Post removed successfully');
       
       // Remove associated likes
-      const likesRef = dbRef(database, `likes/${postToDelete.id}`);
+      console.log('Removing associated likes...');
+      const likesRef = ref(database, `likes/${postToDelete.id}`);
       await remove(likesRef);
+      console.log('Likes removed successfully');
       
       // Remove associated comments
-      const commentsRef = dbRef(database, `comments/${postToDelete.id}`);
+      console.log('Removing associated comments...');
+      const commentsRef = ref(database, `comments/${postToDelete.id}`);
       await remove(commentsRef);
+      console.log('Comments removed successfully');
       
       // Reload posts to update the list
+      console.log('Reloading posts...');
       await loadPosts();
+      console.log('Posts reloaded successfully');
       
       // Close modal and reset state
       setShowDeleteModal(false);
@@ -269,9 +353,25 @@ const Feed = () => {
       
       // Show success message
       alert('Publicação removida com sucesso!');
+      console.log('Delete process completed successfully');
     } catch (error) {
       console.error('Error deleting post:', error);
-      alert('Erro ao excluir publicação. Tente novamente.');
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      
+      // Handle specific Firebase error codes
+      if (error.code === 'PERMISSION_DENIED') {
+        alert('Permissão negada. Verifique se você está logado e é o proprietário da publicação.');
+      } else if (error.code === 'UNAUTHORIZED') {
+        alert('Usuário não autorizado. Faça login novamente.');
+      } else if (error.code === 'NOT_FOUND') {
+        alert('Publicação não encontrada no banco de dados.');
+      } else {
+        alert(`Erro ao excluir publicação: ${error.message}`);
+      }
     }
   };
 
