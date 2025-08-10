@@ -1,20 +1,9 @@
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-const formidable = require('formidable');
-const fs = require('fs/promises');
-const sharp = require('sharp');
-const FileType = require('file-type');
+import formidable from 'formidable';
+import { promises as fs } from 'fs';
+import sharp from 'sharp';
+import { fileTypeFromBuffer } from 'file-type';
 
-// Initialize S3 client if env is present
-const s3Enabled = Boolean(process.env.S3_BUCKET);
-const s3 = s3Enabled ? new S3Client({
-  region: process.env.S3_REGION,
-  credentials: process.env.AWS_ACCESS_KEY_ID ? {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  } : undefined,
-}) : null;
-
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.statusCode = 405;
     res.setHeader('Allow', 'POST');
@@ -39,7 +28,7 @@ module.exports = async (req, res) => {
     }
 
     const input = await fs.readFile(file.filepath);
-    const ft = await FileType.fromBuffer(input);
+    const ft = await fileTypeFromBuffer(input);
     if (!ft || !ft.mime.startsWith('image/')) {
       res.statusCode = 415;
       return res.json({ error: 'unsupported_media_type' });
@@ -56,21 +45,8 @@ module.exports = async (req, res) => {
         .webp({ quality })
         .toBuffer();
 
-      const key = `${type === 'avatar' ? 'profilePictures' : 'coverPhotos'}/${userId}_optimized_${w}.webp`;
-
-      if (s3Enabled) {
-        await s3.send(new PutObjectCommand({
-          Bucket: process.env.S3_BUCKET,
-          Key: key,
-          Body: webpBuffer,
-          ContentType: 'image/webp',
-          CacheControl: 'public, max-age=31536000, immutable',
-        }));
-        const publicUrl = `https://${process.env.S3_BUCKET}.s3.${process.env.S3_REGION}.amazonaws.com/${key}`;
-        outputs[w] = publicUrl;
-      } else {
-        outputs[w] = `data:image/webp;base64,${webpBuffer.toString('base64')}`;
-      }
+      // Return base64 data URL since we're not using S3
+      outputs[w] = `data:image/webp;base64,${webpBuffer.toString('base64')}`;
     }
 
     res.setHeader('Content-Type', 'application/json');
@@ -80,6 +56,6 @@ module.exports = async (req, res) => {
     res.statusCode = 500;
     return res.end(JSON.stringify({ error: 'conversion_failed' }));
   }
-};
+}
 
 

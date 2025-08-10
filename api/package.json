@@ -1,0 +1,10 @@
+{
+  "name": "vixter-react-api",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "formidable": "^3.5.1",
+    "sharp": "^0.33.2",
+    "file-type": "^18.7.0"
+  }
+}

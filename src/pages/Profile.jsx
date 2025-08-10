@@ -42,8 +42,6 @@ const Profile = () => {
 
   // Feature switch: use in-app media API instead of Firebase Storage direct upload
   const useMediaApi = (import.meta?.env?.VITE_USE_MEDIA_API === 'true');
-  console.log('useMediaApi value:', useMediaApi, 'VITE_USE_MEDIA_API:', import.meta?.env?.VITE_USE_MEDIA_API);
-
   // Client-side conversion for uploads (not LCP-critical)
   const convertImageToWebP = async (file, targetWidth) => {
     try {

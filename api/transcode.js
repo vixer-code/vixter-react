@@ -1,11 +1,11 @@
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-const formidable = require('formidable');
-const fs = require('fs/promises');
-const FileType = require('file-type');
-const sharp = require('sharp');
-const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
-const ffmpeg = require('fluent-ffmpeg');
-ffmpeg.setFfmpegPath(ffmpegPath);
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import formidable from 'formidable';
+import { promises as fs } from 'fs';
+import FileType from 'file-type';
+import sharp from 'sharp';
+import ffmpegPath from '@ffmpeg-installer/ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
+ffmpeg.setFfmpegPath(ffmpegPath.path);
 
 const s3Enabled = Boolean(process.env.S3_BUCKET);
 const s3 = s3Enabled ? new S3Client({
@@ -16,7 +16,7 @@ const s3 = s3Enabled ? new S3Client({
   } : undefined,
 }) : null;
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.statusCode = 405;
     res.setHeader('Allow', 'POST');
