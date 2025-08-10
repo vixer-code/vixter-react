@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense, useTransition } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { ref, get, update, set, remove, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -575,6 +575,526 @@ const Profile = () => {
   const serviceCoverSizes = '(max-width: 768px) 100vw, 280px';
   const packCoverSizes = '(max-width: 768px) 100vw, 280px';
 
+  // Memoized tab content with lazy loading for better performance
+  const tabContent = useMemo(() => {
+    switch (activeTab) {
+      case 'perfil':
+        return (
+          <div className="perfil-tab-content" data-tab="perfil">
+            <div className="profile-sidebar">
+              <div className="interests-section">
+                <div className="section-header">
+                  <i className="fa-solid fa-tags"></i> Interesses
+                </div>
+                <div className="section-content">
+                  <div className="interest-tags">
+                    {profile?.interests && profile.interests.length > 0 ? (
+                      profile.interests.map((interest, index) => (
+                        <span key={`interest-${index}`} className="interest-tag">{interest}</span>
+                      ))
+                    ) : (
+                      <span className="no-interests">Nenhum interesse adicionado</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="friends-section">
+                <div className="section-header friends-header">
+                  <div>
+                    <i className="fa-solid fa-users"></i> Seguidores
+                    <div className="friend-count">{followers.length} Seguidores</div>
+                  </div>
+                  {followers.length > 0 && (
+                    <button 
+                      className="view-all-link" 
+                      onClick={() => setShowFollowersModal(true)}
+                      aria-label="Ver todos os seguidores"
+                    >
+                      Todos os seguidores
+                    </button>
+                  )}
+                </div>
+                <div className="section-content">
+                  {followers.length > 0 ? (
+                    <div className="friends-grid">
+                      {followers.slice(0, 6).map((follower) => (
+                        <div key={`follower-${follower.id}`} className="friend-item">
+                          <div className="friend-avatar">
+                          <CachedImage 
+                              src={follower.profilePictureURL}
+                              defaultType="PROFILE_2"
+                              alt={follower.displayName}
+                              className="friend-avatar-img"
+                              sizes="60px"
+                              showLoading={false}
+                              loading="lazy"
+                            />
+                            <StatusIndicator 
+                              userId={follower.id}
+                              isOwner={false}
+                              size="small"
+                            />
+                          </div>
+                          <div className="friend-name">{follower.displayName}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="empty-state">Nenhum seguidor ainda.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="profile-posts">
+              {isOwner && (
+                <div className="create-post-card">
+                  <div className="create-post-avatar">
+                    <CachedImage 
+                      src={profile?.profilePictureURL}
+                      defaultType="PROFILE_3"
+                      alt="Avatar"
+                      className="create-post-avatar-img"
+                      showLoading={false}
+                    />
+                  </div>
+                  <div className="create-post-body">
+                    <textarea
+                      placeholder="O que você está pensando?"
+                      value={newPostContent}
+                      onChange={(e) => setNewPostContent(e.target.value)}
+                      maxLength={500}
+                      aria-label="Criar nova publicação"
+                    />
+                    <div className="create-post-actions">
+                      <button 
+                        className="action-btn" 
+                        onClick={() => document.getElementById('image-upload').click()}
+                        type="button"
+                        aria-label="Adicionar imagem"
+                      >
+                        <i className="fa-solid fa-image"></i> Imagem
+                      </button>
+                      <button 
+                        className="action-btn" 
+                        onClick={() => document.getElementById('video-upload').click()}
+                        type="button"
+                        aria-label="Adicionar vídeo"
+                      >
+                        <i className="fa-solid fa-video"></i> Vídeo
+                      </button>
+                      <button 
+                        className="btn primary" 
+                        onClick={handleCreatePost}
+                        disabled={!newPostContent.trim()}
+                        aria-label="Publicar"
+                      >
+                        Publicar
+                      </button>
+                    </div>
+                    <input
+                      type="file"
+                      id="image-upload"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageSelect}
+                      style={{ display: 'none' }}
+                    />
+                    <input
+                      type="file"
+                      id="video-upload"
+                      accept="video/*"
+                      onChange={handleImageSelect}
+                      style={{ display: 'none' }}
+                    />
+                    {selectedImages.length > 0 && (
+                      <div className="selected-images-preview">
+                        {selectedImages.map((file, index) => (
+                          <img 
+                            key={`preview-${index}`} 
+                            src={URL.createObjectURL(file)} 
+                            alt={`Preview ${index + 1}`}
+                            style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px' }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              <div className="posts-container">
+                {posts.length > 0 ? (
+                  posts.map((post) => (
+                    <div key={`post-${post.id}`} className="post-card">
+                      <div className="post-header">
+                        <div className="post-author-avatar">
+                          <CachedImage 
+                            src={post.authorProfilePictureURL}
+                            defaultType="PROFILE_1"
+                            alt={post.authorName}
+                            className="post-author-avatar-img"
+                            showLoading={false}
+                          />
+                        </div>
+                        <div className="post-meta">
+                          <div className="post-author-name">{post.authorName}</div>
+                          <div className="post-date">{new Date(post.timestamp).toLocaleDateString()}</div>
+                        </div>
+                      </div>
+                      <div className="post-content">
+                        <p>{post.content}</p>
+                        {post.images && post.images.length > 0 && (
+                          <div className="post-image-container">
+                            {post.images.map((image, index) => (
+                              <img 
+                                key={`post-image-${index}`} 
+                                src={image} 
+                                alt={`Post image ${index + 1}`}
+                                className="post-image"
+                                loading="lazy"
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="empty-state">Nenhuma publicação ainda.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      case 'about':
+        return (
+          <div className="about-tab-content">
+            <h3>Sobre mim</h3>
+            <p className="bio-text">{profile.bio || 'Nenhuma bio disponível.'}</p>
+            
+            <div className="profile-details">
+              <div className="detail-group">
+                <h3>Idiomas</h3>
+                <p>{profile.languages || 'Não especificado'}</p>
+              </div>
+              
+              <div className="detail-group">
+                <h3>Habilidades</h3>
+                <div className="skills-container">
+                  {profile.skills && profile.skills.length > 0 ? (
+                    profile.skills.map((skill, index) => (
+                      <span key={index} className="skill-tag">{skill}</span>
+                    ))
+                  ) : (
+                    <span className="empty-state">Nenhuma habilidade adicionada ainda</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'services':
+        return (
+          <div className="services-tab-content">
+            <div className="services-header">
+              <h3>Serviços</h3>
+              {isOwner && (
+                <button 
+                  className="btn primary"
+                  onClick={() => {
+                    setEditingService(null);
+                    setShowCreateServiceModal(true);
+                  }}
+                >
+                  <i className="fa-solid fa-plus"></i> Criar Novo Serviço
+                </button>
+              )}
+            </div>
+            
+            <div className="services-grid">
+              {servicesLoading ? (
+                <div className="loading-state">
+                  <i className="fa-solid fa-spinner fa-spin"></i>
+                  <p>Carregando serviços...</p>
+                </div>
+              ) : services.length > 0 ? (
+                services.map((service) => (
+                  <div 
+                    key={service.id} 
+                    className={`pack-card ${isOwner ? 'editable' : ''}`}
+                    onClick={isOwner ? () => handleEditService(service) : undefined}
+                    style={isOwner ? { cursor: 'pointer' } : {}}
+                    title={isOwner ? 'Clique para editar este serviço' : ''}
+                  >
+                            <div className="pack-cover">
+                      <CachedImage 
+                        src={service.coverImageURL}
+                        fallbackSrc="/images/default-service.jpg"
+                        alt={service.title}
+                        sizes={serviceCoverSizes}
+                      />
+                      {service.status && service.status !== 'active' && (
+                        <div className={`service-status-badge ${service.status}`}>
+                          {service.status}
+                        </div>
+                      )}
+                    </div>
+                    <div className="pack-info">
+                      <h3 className="pack-title">{service.title}</h3>
+                      <p className="pack-price">VP {(service.price != null ? (service.price * 1.5).toFixed(2) : '0.00')}</p>
+                    </div>
+                    {isOwner && (
+                      <div className="service-actions" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          className="action-btn edit-btn"
+                          onClick={() => handleEditService(service)}
+                          title="Editar"
+                        >
+                          <i className="fa-solid fa-edit"></i>
+                        </button>
+                        <button 
+                          className="action-btn status-btn"
+                          onClick={() => {
+                            const newStatus = service.status === 'active' ? 'paused' : 'active';
+                            handleServiceStatusChange(service.id, newStatus);
+                          }}
+                          title="Alterar Status"
+                        >
+                          <i className="fa-solid fa-toggle-on"></i>
+                        </button>
+                        <button 
+                          className="action-btn delete-btn"
+                          onClick={() => handleDeleteService(service.id)}
+                          title="Excluir"
+                        >
+                          <i className="fa-solid fa-trash"></i>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">
+                  <i className="fa-solid fa-briefcase"></i>
+                  <p>Nenhum serviço cadastrado.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      case 'packs':
+        return (
+          <div className="packs-tab-content">
+            <div className="packs-header">
+              <h3>Packs</h3>
+              {isOwner && (
+                <button 
+                  className="btn primary"
+                  onClick={() => {
+                    setEditingPack(null);
+                    setShowCreatePackModal(true);
+                  }}
+                >
+                  <i className="fa-solid fa-plus"></i> Criar Novo Pack
+                </button>
+              )}
+            </div>
+            
+            <div className="packs-description">
+              <p>Packs oferecem descontos especiais.</p>
+            </div>
+            
+            <div className="packs-grid">
+              {packsLoading ? (
+                <div className="loading-state">
+                  <i className="fa-solid fa-spinner fa-spin"></i>
+                  <p>Carregando packs...</p>
+                </div>
+              ) : packs.length > 0 ? (
+                packs.map((pack) => (
+                  <div 
+                    key={pack.id} 
+                    className={`pack-card ${isOwner ? 'editable' : ''}`}
+                    onClick={isOwner ? () => handleEditPack(pack) : undefined}
+                    style={isOwner ? { cursor: 'pointer' } : {}}
+                    title={isOwner ? 'Clique para editar este pack' : ''}
+                  >
+                    <div className="pack-cover">
+                      <CachedImage 
+                        src={pack.coverImage}
+                        fallbackSrc="/images/default-pack.jpg"
+                        alt={pack.title}
+                        sizes={packCoverSizes}
+                      />
+                      {pack.status && pack.status !== 'active' && (
+                        <div className={`service-status-badge ${pack.status}`}>
+                          {pack.status}
+                        </div>
+                      )}
+                    </div>
+                    <div className="pack-info">
+                      <h3 className="pack-title">{pack.title}</h3>
+                      <p className="pack-price">
+                        VP {(pack.price != null ? (pack.price * 1.5).toFixed(2) : '0.00')}
+                        {pack.discount && <span className="pack-discount">(-{pack.discount}%)</span>}
+                      </p>
+                    </div>
+                    {isOwner && (
+                      <div className="service-actions" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          className="action-btn edit-btn"
+                          onClick={() => handleEditPack(pack)}
+                          title="Editar"
+                        >
+                          <i className="fa-solid fa-edit"></i>
+                        </button>
+                        <button 
+                          className="action-btn status-btn"
+                          onClick={() => {
+                            const newStatus = pack.status === 'active' ? 'paused' : 'active';
+                            handlePackStatusChange(pack.id, newStatus);
+                          }}
+                          title="Alterar Status"
+                        >
+                          <i className="fa-solid fa-toggle-on"></i>
+                        </button>
+                        <button 
+                          className="action-btn delete-btn"
+                          onClick={() => handleDeletePack(pack.id)}
+                          title="Excluir"
+                        >
+                          <i className="fa-solid fa-trash"></i>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">
+                  <i className="fa-solid fa-box-open"></i>
+                  <p>Nenhum pack cadastrado.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      case 'subscriptions':
+        return (
+          <div className="subscriptions-tab-content">
+            <div className="subscriptions-header">
+              <h3>Assinaturas</h3>
+              {isOwner && (
+                <button className="btn blocked" disabled title="Em breve">
+                  <i className="fa-solid fa-plus"></i> Criar Nova Assinatura
+                </button>
+              )}
+            </div>
+            
+            <div className="subscriptions-grid">
+              <div className="subscriptions-coming-soon">
+                <span className="coming-soon-badge">Em breve</span>
+                <div className="coming-soon-icon">
+                  <i className="fa-regular fa-clock"></i>
+                </div>
+                <div className="coming-soon-title">Assinaturas em desenvolvimento</div>
+                <div className="coming-soon-subtitle">Estamos preparando algo especial para você. Volte em breve.</div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'reviews':
+        return (
+          <div className="reviews-tab-content">
+            <h3>Avaliações</h3>
+            
+            <div className="reviews-summary">
+              <div className="rating-breakdown">
+                <div className="rating-value-large">{profile.rating || 0.0}</div>
+                <div className="rating-stars-large">
+                  <div className="stars-display-large">★★★★★</div>
+                  <div className="reviews-count">({reviews.length} avaliações)</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="reviews-list">
+              {reviews.length > 0 ? (
+                reviews.map((review) => (
+                  <div key={review.id} className="review-item">
+                    <div className="review-header">
+                      <div className="reviewer-avatar">
+                        <img src={review.reviewerPhoto || getDefaultImage('PROFILE_3')} alt={review.reviewerName} />
+                      </div>
+                      <div className="review-meta">
+                        <div className="reviewer-name">{review.reviewerName}</div>
+                        <div className="review-date">
+                          {new Date(review.timestamp).toLocaleDateString('pt-BR')}
+                        </div>
+                      </div>
+                      <div className="review-rating">
+                        {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                      </div>
+                    </div>
+                    <div className="review-content">
+                      <p>{review.comment}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">Nenhuma avaliação ainda.</div>
+              )}
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  }, [activeTab, profile, followers, posts, services, servicesLoading, packs, packsLoading, reviews, isOwner, newPostContent, selectedImages, serviceCoverSizes, packCoverSizes, handleEditService, handleServiceStatusChange, handleDeleteService, handleEditPack, handlePackStatusChange, handleDeletePack, handleCreatePost, handleImageSelect]);
+
+  // Optimize tab content rendering when activeTab changes
+  useEffect(() => {
+    if (activeTab && tabContent) {
+      // Use the performance hook to optimize tab content rendering
+      const tabContentElement = document.querySelector(`[data-tab="${activeTab}"]`);
+      if (tabContentElement) {
+        // Optimize the newly active tab content
+        optimizeTabContentRendering(tabContentElement);
+      }
+    }
+  }, [activeTab, optimizeTabContentRendering]);
+
+  // Note: Removed manual preloading to avoid "preloaded but not used" warnings
+  // The CachedImage component with priority={true} handles efficient loading
+
+  if (loading) {
+    return (
+      <div className="profile-container">
+        <div className="loading-text">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="profile-container">
+        <div className="error-message">Perfil não encontrado</div>
+      </div>
+    );
+  }
+
+  // Build responsive srcSet for cover if following optimized naming (no hooks to avoid order issues)
+  const coverSrcSet = (() => {
+    const url = profile?.coverPhotoURL || '';
+    if (!url) return undefined;
+    if (/_optimized_1440\.webp(\?.*)?$/.test(url)) {
+      const url720 = url.replace('_optimized_1440.webp', '_optimized_720.webp');
+      return `${url720} 720w, ${url} 1440w`;
+    }
+    return undefined;
+  })();
+
   return (
     <div className="profile-container">
       {/* Email Verification Banner - Only show for unverified emails */}
@@ -604,7 +1124,8 @@ const Profile = () => {
               alt="Capa do Perfil"
               className="cover-photo-img"
               priority={true}
-              sizes="100vw"
+              sizes="(max-width: 768px) 100vw, 1440px"
+              srcSet={coverSrcSet}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
@@ -648,7 +1169,7 @@ const Profile = () => {
           </div>
           
           <div className="profile-info">
-            {renderAccountBadges()}
+            {accountBadges}
             <h1 className="profile-name">
               {editing ? (
                 <input
@@ -751,10 +1272,19 @@ const Profile = () => {
         </div>
         
         <div className="profile-tabs">
+          {/* Loading indicator for tab transitions */}
+          {isPending && (
+            <div className="tab-loading-indicator" aria-hidden="true">
+              <div className="loading-spinner"></div>
+            </div>
+          )}
+          
           <button 
             className={`profile-tab ${activeTab === 'perfil' ? 'active' : ''}`}
             onClick={handleTabClick}
             data-tab="perfil"
+            disabled={isPending}
+            aria-label="Aba Perfil"
           >
             Perfil
           </button>
@@ -762,6 +1292,8 @@ const Profile = () => {
             className={`profile-tab ${activeTab === 'about' ? 'active' : ''}`}
             onClick={handleTabClick}
             data-tab="about"
+            disabled={isPending}
+            aria-label="Aba Sobre"
           >
             Sobre
           </button>
@@ -769,6 +1301,8 @@ const Profile = () => {
             className={`profile-tab ${activeTab === 'services' ? 'active' : ''}`}
             onClick={handleTabClick}
             data-tab="services"
+            disabled={isPending}
+            aria-label="Aba Serviços"
           >
             Serviços
           </button>
@@ -776,6 +1310,8 @@ const Profile = () => {
             className={`profile-tab ${activeTab === 'packs' ? 'active' : ''}`}
             onClick={handleTabClick}
             data-tab="packs"
+            disabled={isPending}
+            aria-label="Aba Packs"
           >
             Packs
           </button>
@@ -783,6 +1319,8 @@ const Profile = () => {
             className={`profile-tab ${activeTab === 'subscriptions' ? 'active' : ''}`}
             onClick={handleTabClick}
             data-tab="subscriptions"
+            disabled={isPending}
+            aria-label="Aba Assinaturas"
           >
             Assinaturas
           </button>
@@ -790,461 +1328,17 @@ const Profile = () => {
             className={`profile-tab ${activeTab === 'reviews' ? 'active' : ''}`}
             onClick={handleTabClick}
             data-tab="reviews"
+            disabled={isPending}
+            aria-label="Aba Avaliações"
           >
             Avaliações
           </button>
         </div>
       </div>
       
-      {/* Tab Contents */}
-      <div className={`tab-content ${activeTab === 'perfil' ? 'active' : ''}`}>
-        <div className="perfil-tab-content">
-          <div className="profile-sidebar">
-            <div className="interests-section">
-              <div className="section-header">
-                <i className="fa-solid fa-tags"></i> Interesses
-              </div>
-              <div className="section-content">
-                <div className="interest-tags">
-                  {profile.interests && profile.interests.length > 0 ? (
-                    profile.interests.map((interest, index) => (
-                      <span key={index} className="interest-tag">{interest}</span>
-                    ))
-                  ) : (
-                    <span className="no-interests">Nenhum interesse adicionado</span>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <div className="friends-section">
-              <div className="section-header friends-header">
-                <div>
-                  <i className="fa-solid fa-users"></i> Seguidores
-                  <div className="friend-count">{followers.length} Seguidores</div>
-                </div>
-                {followers.length > 0 && (
-                  <button className="view-all-link" onClick={() => setShowFollowersModal(true)}>
-                    Todos os seguidores
-                  </button>
-                )}
-              </div>
-              <div className="section-content">
-                {followers.length > 0 ? (
-                  <div className="friends-grid">
-                    {followers.slice(0, 6).map((follower) => (
-                      <div key={follower.id} className="friend-item">
-                        <div className="friend-avatar">
-                        <CachedImage 
-                            src={follower.profilePictureURL}
-                            defaultType="PROFILE_2"
-                            alt={follower.displayName}
-                            className="friend-avatar-img"
-                            sizes="60px"
-                            showLoading={false}
-                            loading="lazy"
-                          />
-                          <StatusIndicator 
-                            userId={follower.id}
-                            isOwner={false}
-                            size="small"
-                          />
-                        </div>
-                        <div className="friend-name">{follower.displayName}</div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="empty-state">Nenhum seguidor ainda.</div>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <div className="profile-posts">
-            {isOwner && (
-              <div className="create-post-card">
-                <div className="create-post-avatar">
-                  <CachedImage 
-                    src={profile.profilePictureURL}
-                    defaultType="PROFILE_3"
-                    alt="Avatar"
-                    className="create-post-avatar-img"
-                    showLoading={false}
-                  />
-                </div>
-                <div className="create-post-body">
-                  <textarea
-                    value={newPostContent}
-                    onChange={(e) => setNewPostContent(e.target.value)}
-                    placeholder="O que você está pensando?"
-                    maxLength={1000}
-                    rows={3}
-                  />
-                  <div className="create-post-actions">
-                    <label className="action-btn">
-                      <i className="fa-solid fa-image"></i> Imagem
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageSelect}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
-                    <button onClick={handleCreatePost} className="btn primary">
-                      Publicar
-                    </button>
-                  </div>
-                  {selectedImages.length > 0 && (
-                    <div className="selected-images-preview">
-                      {selectedImages.map((image, index) => (
-                         <img
-                           key={index}
-                           src={URL.createObjectURL(image)}
-                           alt="Preview"
-                           width={64}
-                           height={64}
-                           style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px' }}
-                         />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            <div className="posts-container">
-              {posts.length > 0 ? (
-                posts.map((post) => (
-                  <div key={post.id} className="post-card">
-                    <div className="post-header">
-                      <div className="post-author-avatar">
-                        <CachedImage
-                          src={post.authorPhoto}
-                          fallbackSrc="/images/default-avatar.jpg"
-                          alt={post.authorName}
-                          sizes="48px"
-                          showLoading={false}
-                        />
-                      </div>
-                      <div className="post-meta">
-                        <div className="post-author-name">{post.authorName}</div>
-                        <div className="post-date">
-                          {new Date(post.timestamp).toLocaleDateString('pt-BR')}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="post-content">
-                      <p>{post.content}</p>
-                          {post.images && post.images.length > 0 && (
-                        <div className="post-image-container">
-                          {post.images.map((image, index) => (
-                            <CachedImage
-                              key={index}
-                              src={image}
-                              alt="Post"
-                              className="post-image"
-                              sizes="(max-width: 768px) 100vw, 400px"
-                              showLoading={false}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="empty-state">Nenhuma publicação ainda.</div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* About Tab */}
-      <div className={`tab-content ${activeTab === 'about' ? 'active' : ''}`}>
-        <div className="about-tab-content">
-          <h3>Sobre mim</h3>
-          <p className="bio-text">{profile.bio || 'Nenhuma bio disponível.'}</p>
-          
-          <div className="profile-details">
-            <div className="detail-group">
-              <h3>Idiomas</h3>
-              <p>{profile.languages || 'Não especificado'}</p>
-            </div>
-            
-            <div className="detail-group">
-              <h3>Habilidades</h3>
-              <div className="skills-container">
-                {profile.skills && profile.skills.length > 0 ? (
-                  profile.skills.map((skill, index) => (
-                    <span key={index} className="skill-tag">{skill}</span>
-                  ))
-                ) : (
-                  <span className="empty-state">Nenhuma habilidade adicionada ainda</span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Services Tab */}
-      <div className={`tab-content ${activeTab === 'services' ? 'active' : ''}`}>
-        <div className="services-tab-content">
-          <div className="services-header">
-            <h3>Serviços</h3>
-            {isOwner && (
-              <button 
-                className="btn primary"
-                onClick={() => {
-                  setEditingService(null);
-                  setShowCreateServiceModal(true);
-                }}
-              >
-                <i className="fa-solid fa-plus"></i> Criar Novo Serviço
-              </button>
-            )}
-          </div>
-          
-          <div className="services-grid">
-            {servicesLoading ? (
-              <div className="loading-state">
-                <i className="fa-solid fa-spinner fa-spin"></i>
-                <p>Carregando serviços...</p>
-              </div>
-            ) : services.length > 0 ? (
-              services.map((service) => (
-                <div 
-                  key={service.id} 
-                  className={`pack-card ${isOwner ? 'editable' : ''}`}
-                  onClick={isOwner ? () => handleEditService(service) : undefined}
-                  style={isOwner ? { cursor: 'pointer' } : {}}
-                  title={isOwner ? 'Clique para editar este serviço' : ''}
-                >
-                          <div className="pack-cover">
-                    <CachedImage 
-                      src={service.coverImageURL}
-                      fallbackSrc="/images/default-service.jpg"
-                      alt={service.title}
-                      sizes={serviceCoverSizes}
-                    />
-                    {service.status && service.status !== 'active' && (
-                      <div className={`service-status-badge ${service.status}`}>
-                        {service.status}
-                      </div>
-                    )}
-                  </div>
-                  <div className="pack-info">
-                    <h3 className="pack-title">{service.title}</h3>
-                    <p className="pack-price">VP {(service.price != null ? (service.price * 1.5).toFixed(2) : '0.00')}</p>
-                  </div>
-                  {isOwner && (
-                    <div className="service-actions" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className="action-btn edit-btn"
-                        onClick={() => handleEditService(service)}
-                        title="Editar"
-                      >
-                        <i className="fa-solid fa-edit"></i>
-                      </button>
-                      <button 
-                        className="action-btn status-btn"
-                        onClick={() => {
-                          const newStatus = service.status === 'active' ? 'paused' : 'active';
-                          handleServiceStatusChange(service.id, newStatus);
-                        }}
-                        title="Alterar Status"
-                      >
-                        <i className="fa-solid fa-toggle-on"></i>
-                      </button>
-                      <button 
-                        className="action-btn delete-btn"
-                        onClick={() => handleDeleteService(service.id)}
-                        title="Excluir"
-                      >
-                        <i className="fa-solid fa-trash"></i>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="empty-state">
-                <i className="fa-solid fa-briefcase"></i>
-                <p>Nenhum serviço cadastrado.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-      
-      {/* Packs Tab */}
-      <div className={`tab-content ${activeTab === 'packs' ? 'active' : ''}`}>
-        <div className="packs-tab-content">
-          <div className="packs-header">
-            <h3>Packs</h3>
-            {isOwner && (
-              <button 
-                className="btn primary"
-                onClick={() => {
-                  setEditingPack(null);
-                  setShowCreatePackModal(true);
-                }}
-              >
-                <i className="fa-solid fa-plus"></i> Criar Novo Pack
-              </button>
-            )}
-          </div>
-          
-          <div className="packs-description">
-            <p>Packs oferecem descontos especiais.</p>
-          </div>
-          
-          <div className="packs-grid">
-            {packsLoading ? (
-              <div className="loading-state">
-                <i className="fa-solid fa-spinner fa-spin"></i>
-                <p>Carregando packs...</p>
-              </div>
-            ) : packs.length > 0 ? (
-              packs.map((pack) => (
-                <div 
-                  key={pack.id} 
-                  className={`pack-card ${isOwner ? 'editable' : ''}`}
-                  onClick={isOwner ? () => handleEditPack(pack) : undefined}
-                  style={isOwner ? { cursor: 'pointer' } : {}}
-                  title={isOwner ? 'Clique para editar este pack' : ''}
-                >
-                  <div className="pack-cover">
-                    <CachedImage 
-                      src={pack.coverImage}
-                      fallbackSrc="/images/default-pack.jpg"
-                      alt={pack.title}
-                      sizes={packCoverSizes}
-                    />
-                    {pack.status && pack.status !== 'active' && (
-                      <div className={`service-status-badge ${pack.status}`}>
-                        {pack.status}
-                      </div>
-                    )}
-                  </div>
-                  <div className="pack-info">
-                    <h3 className="pack-title">{pack.title}</h3>
-                    <p className="pack-price">
-                      VP {(pack.price != null ? (pack.price * 1.5).toFixed(2) : '0.00')}
-                      {pack.discount && <span className="pack-discount">(-{pack.discount}%)</span>}
-                    </p>
-                  </div>
-                  {isOwner && (
-                    <div className="service-actions" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className="action-btn edit-btn"
-                        onClick={() => handleEditPack(pack)}
-                        title="Editar"
-                      >
-                        <i className="fa-solid fa-edit"></i>
-                      </button>
-                      <button 
-                        className="action-btn status-btn"
-                        onClick={() => {
-                          const newStatus = pack.status === 'active' ? 'paused' : 'active';
-                          handlePackStatusChange(pack.id, newStatus);
-                        }}
-                        title="Alterar Status"
-                      >
-                        <i className="fa-solid fa-toggle-on"></i>
-                      </button>
-                      <button 
-                        className="action-btn delete-btn"
-                        onClick={() => handleDeletePack(pack.id)}
-                        title="Excluir"
-                      >
-                        <i className="fa-solid fa-trash"></i>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="empty-state">
-                <i className="fa-solid fa-box-open"></i>
-                <p>Nenhum pack cadastrado.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-      
-      {/* Subscriptions Tab */}
-      <div className={`tab-content ${activeTab === 'subscriptions' ? 'active' : ''}`}>
-        <div className="subscriptions-tab-content">
-          <div className="subscriptions-header">
-            <h3>Assinaturas</h3>
-            {isOwner && (
-              <button className="btn blocked" disabled title="Em breve">
-                <i className="fa-solid fa-plus"></i> Criar Nova Assinatura
-              </button>
-            )}
-          </div>
-          
-          <div className="subscriptions-grid">
-            <div className="subscriptions-coming-soon">
-              <span className="coming-soon-badge">Em breve</span>
-              <div className="coming-soon-icon">
-                <i className="fa-regular fa-clock"></i>
-              </div>
-              <div className="coming-soon-title">Assinaturas em desenvolvimento</div>
-              <div className="coming-soon-subtitle">Estamos preparando algo especial para você. Volte em breve.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Reviews Tab */}
-      <div className={`tab-content ${activeTab === 'reviews' ? 'active' : ''}`}>
-        <div className="reviews-tab-content">
-          <h3>Avaliações</h3>
-          
-          <div className="reviews-summary">
-            <div className="rating-breakdown">
-              <div className="rating-value-large">{profile.rating || 0.0}</div>
-              <div className="rating-stars-large">
-                <div className="stars-display-large">★★★★★</div>
-                <div className="reviews-count">({reviews.length} avaliações)</div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="reviews-list">
-            {reviews.length > 0 ? (
-              reviews.map((review) => (
-                <div key={review.id} className="review-item">
-                  <div className="review-header">
-                    <div className="reviewer-avatar">
-                      <img src={review.reviewerPhoto || getDefaultImage('PROFILE_3')} alt={review.reviewerName} />
-                    </div>
-                    <div className="review-meta">
-                      <div className="reviewer-name">{review.reviewerName}</div>
-                      <div className="review-date">
-                        {new Date(review.timestamp).toLocaleDateString('pt-BR')}
-                      </div>
-                    </div>
-                    <div className="review-rating">
-                      {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
-                    </div>
-                  </div>
-                  <div className="review-content">
-                    <p>{review.comment}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="empty-state">Nenhuma avaliação ainda.</div>
-            )}
-          </div>
-        </div>
+      {/* Tab Contents with transition states */}
+      <div className={`tab-content-wrapper ${isPending ? 'transitioning' : ''}`}>
+        {tabContent}
       </div>
 
       {/* Followers Modal */}
