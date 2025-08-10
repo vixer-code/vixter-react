@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { ref, get, update, set, remove, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -507,7 +507,7 @@ const Profile = () => {
     setSelectedImages(prev => [...prev, ...files]);
   };
 
-  const renderAccountBadges = () => {
+  const accountBadges = (() => {
     if (!profile) return null;
 
     const levelMap = {
@@ -544,7 +544,7 @@ const Profile = () => {
         ))}
       </div>
     );
-  };
+  })();
 
   const isOwner = currentUser?.uid === (userId || currentUser?.uid);
 
@@ -672,7 +672,7 @@ const Profile = () => {
           </div>
           
           <div className="profile-info">
-            {renderAccountBadges()}
+            {accountBadges}
             <h1 className="profile-name">
               {editing ? (
                 <input
