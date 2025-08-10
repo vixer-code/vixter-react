@@ -816,6 +816,9 @@
   border-radius: 4px;
   opacity: 0.8;
   transition: all 0.2s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 .delete-post-btn:hover {
@@ -826,4 +829,14 @@
 
 .delete-post-btn i {
   font-size: 14px;
+}
+
+/* Remove any unwanted click effects */
+.delete-post-btn:focus {
+  outline: none;
+}
+
+.delete-post-btn:focus-visible {
+  outline: 2px solid rgba(255, 71, 87, 0.5);
+  outline-offset: 2px;
 } 

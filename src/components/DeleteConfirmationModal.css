@@ -1,0 +1,214 @@
+.delete-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.delete-modal-content {
+  background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+  border-radius: 16px;
+  padding: 0;
+  max-width: 450px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: slideIn 0.3s ease-out;
+}
+
+.delete-modal-header {
+  background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+  padding: 24px;
+  text-align: center;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.delete-modal-header i {
+  font-size: 2rem;
+  color: #fff;
+}
+
+.delete-modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.delete-modal-body {
+  padding: 24px;
+  color: #ffffff;
+}
+
+.delete-modal-body p {
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.post-preview {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.post-preview-label {
+  font-size: 0.9rem;
+  color: #B8B8B8;
+  margin-bottom: 8px !important;
+  text-align: left;
+}
+
+.post-preview-content {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  padding: 12px;
+  color: #ffffff;
+  font-style: italic;
+  border-left: 3px solid #ff4757;
+}
+
+.warning-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffa502 !important;
+  font-size: 0.9rem;
+  margin-top: 16px !important;
+}
+
+.warning-text i {
+  color: #ffa502;
+}
+
+.delete-modal-actions {
+  padding: 0 24px 24px 24px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-cancel,
+.btn-delete {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 100px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+.btn-cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-delete {
+  background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-delete:hover {
+  background: linear-gradient(135deg, #ff3742 0%, #ff2f3a 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+}
+
+.btn-delete i {
+  font-size: 0.9rem;
+}
+
+/* Remove any unwanted click effects */
+.btn-cancel:active,
+.btn-delete:active {
+  transform: translateY(0);
+}
+
+/* Focus styles */
+.btn-cancel:focus,
+.btn-delete:focus {
+  outline: none;
+}
+
+.btn-cancel:focus-visible,
+.btn-delete:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+  .delete-modal-content {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .delete-modal-header {
+    padding: 20px;
+  }
+  
+  .delete-modal-body {
+    padding: 20px;
+  }
+  
+  .delete-modal-actions {
+    padding: 0 20px 20px 20px;
+    flex-direction: column;
+  }
+  
+  .btn-cancel,
+  .btn-delete {
+    width: 100%;
+  }
+}

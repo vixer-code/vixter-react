@@ -11,6 +11,7 @@ import StatusIndicator from '../components/StatusIndicator';
 const CreateServiceModal = lazy(() => import('../components/CreateServiceModal'));
 const CreatePackModal = lazy(() => import('../components/CreatePackModal'));
 import CachedImage from '../components/CachedImage';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import './Profile.css';
 
 const Profile = () => {
@@ -39,6 +40,10 @@ const Profile = () => {
   const [editingService, setEditingService] = useState(null);
   const [showCreatePackModal, setShowCreatePackModal] = useState(false);
   const [editingPack, setEditingPack] = useState(null);
+  
+  // Delete confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
 
   // Direct Firebase Storage uploads only
 
@@ -318,30 +323,48 @@ const Profile = () => {
   const handleDeletePost = async (postId) => {
     if (!currentUser) return;
     
-    if (window.confirm('Tem certeza que deseja excluir esta publicação?')) {
-      try {
-        // Remove post from database
-        const postRef = ref(database, `posts/${postId}`);
-        await remove(postRef);
-        
-        // Remove associated likes
-        const likesRef = ref(database, `likes/${postId}`);
-        await remove(likesRef);
-        
-        // Remove associated comments
-        const commentsRef = ref(database, `comments/${postId}`);
-        await remove(commentsRef);
-        
-        // Update local state
-        setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
-        
-        // Show success message
-        alert('Publicação removida com sucesso!');
-      } catch (error) {
-        console.error('Error deleting post:', error);
-        alert('Erro ao excluir publicação. Tente novamente.');
-      }
+    // Find the post to show its content in the modal
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+      setPostToDelete({ id: postId, content: post.content });
+      setShowDeleteModal(true);
     }
+  };
+
+  const confirmDeletePost = async () => {
+    if (!postToDelete) return;
+    
+    try {
+      // Remove post from database
+      const postRef = ref(database, `posts/${postToDelete.id}`);
+      await remove(postRef);
+      
+      // Remove associated likes
+      const likesRef = ref(database, `likes/${postToDelete.id}`);
+      await remove(likesRef);
+      
+      // Remove associated comments
+      const commentsRef = ref(database, `comments/${postToDelete.id}`);
+      await remove(commentsRef);
+      
+      // Update local state
+      setPosts(prevPosts => prevPosts.filter(post => post.id !== postToDelete.id));
+      
+      // Close modal and reset state
+      setShowDeleteModal(false);
+      setPostToDelete(null);
+      
+      // Show success message
+      alert('Publicação removida com sucesso!');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Erro ao excluir publicação. Tente novamente.');
+    }
+  };
+
+  const cancelDeletePost = () => {
+    setShowDeleteModal(false);
+    setPostToDelete(null);
   };
 
   const handleServiceStatusChange = async (serviceId, newStatus) => {
@@ -1372,6 +1395,14 @@ const Profile = () => {
           )}
         </Suspense>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={cancelDeletePost}
+        onConfirm={confirmDeletePost}
+        postContent={postToDelete?.content}
+      />
     </div>
   );
 };

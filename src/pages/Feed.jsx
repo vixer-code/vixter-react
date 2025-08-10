@@ -10,6 +10,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import { database, storage } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import CachedImage from '../components/CachedImage';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import './Feed.css';
 
 function extractHashTags(text) {
@@ -54,6 +55,10 @@ const Feed = () => {
   const [postText, setPostText] = useState('');
   const [postFile, setPostFile] = useState(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  
+  // Delete confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
 
   useEffect(() => {
     loadInitial();
@@ -231,31 +236,49 @@ const Feed = () => {
   async function deletePost(postId) {
     if (!currentUser) return;
     
-    if (window.confirm('Tem certeza que deseja excluir esta publicação?')) {
-      try {
-        // Remove post from database
-        const postRef = dbRef(database, `posts/${postId}`);
-        await remove(postRef);
-        
-        // Remove associated likes
-        const likesRef = dbRef(database, `likes/${postId}`);
-        await remove(likesRef);
-        
-        // Remove associated comments
-        const commentsRef = dbRef(database, `comments/${postId}`);
-        await remove(commentsRef);
-        
-        // Reload posts to update the list
-        await loadPosts();
-        
-        // Show success message
-        alert('Publicação removida com sucesso!');
-      } catch (error) {
-        console.error('Error deleting post:', error);
-        alert('Erro ao excluir publicação. Tente novamente.');
-      }
+    // Find the post to show its content in the modal
+    const post = allPosts.find(p => p.id === postId);
+    if (post) {
+      setPostToDelete({ id: postId, content: post.content });
+      setShowDeleteModal(true);
     }
   }
+
+  const confirmDeletePost = async () => {
+    if (!postToDelete) return;
+    
+    try {
+      // Remove post from database
+      const postRef = dbRef(database, `posts/${postToDelete.id}`);
+      await remove(postRef);
+      
+      // Remove associated likes
+      const likesRef = dbRef(database, `likes/${postToDelete.id}`);
+      await remove(likesRef);
+      
+      // Remove associated comments
+      const commentsRef = dbRef(database, `comments/${postToDelete.id}`);
+      await remove(commentsRef);
+      
+      // Reload posts to update the list
+      await loadPosts();
+      
+      // Close modal and reset state
+      setShowDeleteModal(false);
+      setPostToDelete(null);
+      
+      // Show success message
+      alert('Publicação removida com sucesso!');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Erro ao excluir publicação. Tente novamente.');
+    }
+  };
+
+  const cancelDeletePost = () => {
+    setShowDeleteModal(false);
+    setPostToDelete(null);
+  };
 
   const postsWithAuthors = useMemo(() => {
     return filteredPosts.map(p => ({
@@ -458,6 +481,14 @@ const Feed = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={cancelDeletePost}
+        onConfirm={confirmDeletePost}
+        postContent={postToDelete?.content}
+      />
     </div>
   );
 };
