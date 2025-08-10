@@ -19,7 +19,7 @@ const Profile = () => {
   const { isVerified, isChecking } = useEmailVerification();
   const { user, updateProfile } = useAuth();
   const { userStatus, updateUserStatus } = useUserStatus();
-  const { userServices, userPacks, loading: userservicesLoading } = useServices();
+  const { userServices, userPacks, loading: servicesLoading } = useServices();
   const { createOptimizedTabHandler, trackInteraction, optimizeImageLoading } = useProfilePerformance();
 
   // Add useTransition for better tab switching performance
