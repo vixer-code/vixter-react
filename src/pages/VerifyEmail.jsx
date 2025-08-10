@@ -167,7 +167,7 @@ const VerifyEmail = () => {
             <h3>Como verificar seu e-mail:</h3>
             <ol>
               <li>Verifique sua caixa de entrada</li>
-              <li>Procure por um e-mail do Vixter</li>
+              <li>Procure por um e-mail da Vixter</li>
               <li>Clique no link "Verificar E-mail"</li>
               <li>Você será redirecionado automaticamente</li>
             </ol>

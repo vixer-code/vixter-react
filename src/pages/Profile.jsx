@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { ref, get, update, set, remove, onValue, off, push, query, orderByChild, equalTo } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../../config/firebase';
@@ -19,6 +19,7 @@ import './Profile.css';
 const Profile = () => {
   const { userId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { isVerified, isChecking } = useEmailVerification();
   const [profile, setProfile] = useState(null);
@@ -361,6 +362,11 @@ const Profile = () => {
   const cancelDeleteService = () => {
     setShowDeleteServiceModal(false);
     setServiceToDelete(null);
+  };
+
+  const handleFollowerClick = (followerId) => {
+    setShowFollowersModal(false);
+    navigate(`/profile/${followerId}`);
   };
 
   const handleDeletePost = async (postId) => {
@@ -1454,7 +1460,11 @@ const Profile = () => {
             <div className="modal-body">
               <div className="modal-followers-grid">
                 {followers.map((follower) => (
-                  <div key={follower.id} className="modal-follower-item">
+                  <div 
+                    key={follower.id} 
+                    className="modal-follower-item clickable"
+                    onClick={() => handleFollowerClick(follower.id)}
+                  >
                     <div className="modal-follower-avatar">
                       <CachedImage 
                         src={follower.profilePictureURL}
