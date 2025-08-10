@@ -407,15 +407,23 @@ const Profile = () => {
         form.append('userId', currentUser.uid);
 
         const resp = await fetch('/api/convert', { method: 'POST', body: form });
-        if (!resp.ok) throw new Error('Image convert failed');
+        if (!resp.ok) {
+          if (resp.status === 413) throw new Error('O arquivo é muito grande (máx. 30MB)');
+          if (resp.status === 415) throw new Error('Tipo de arquivo não suportado');
+          if (resp.status === 429) throw new Error('Muitas requisições. Tente novamente em instantes.');
+          throw new Error('Falha ao converter imagem');
+        }
         const data = await resp.json();
 
-        // ✅ Store all sizes for responsive image loading
-        finalURL = data.sizes.large;
+        // Support both legacy { urls: {width: url} } and new { sizes: {small,medium,large} }
+        const sizes = data.sizes || data.urls || {};
+
+        // Prefer largest size for main URL
+        finalURL = sizes.large || sizes[1440] || sizes[512] || Object.values(sizes)[0];
         
         // Update database with all image sizes for responsive loading
         const updateData = {};
-        updateData[type === 'avatar' ? 'profilePictureURL' : 'coverPhotoURL'] = data.sizes;
+        updateData[type === 'avatar' ? 'profilePictureURL' : 'coverPhotoURL'] = sizes;
         await update(ref(database, `users/${currentUser.uid}`), updateData);
       } else {
         console.log('Using Firebase Storage for upload');
@@ -1337,7 +1345,13 @@ const Profile = () => {
                 {followers.map((follower) => (
                   <div key={follower.id} className="modal-follower-item">
                     <div className="modal-follower-avatar">
-                      <img src={follower.profilePictureURL || getDefaultImage('PROFILE_1')} alt={follower.displayName} />
+                      <CachedImage 
+                        src={follower.profilePictureURL}
+                        defaultType="PROFILE_1"
+                        alt={follower.displayName}
+                        sizes="40px"
+                        showLoading={false}
+                      />
                       <StatusIndicator 
                         userId={follower.id}
                         isOwner={false}

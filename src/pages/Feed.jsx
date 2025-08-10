@@ -380,7 +380,7 @@ const Feed = () => {
             {stars.map(s => (
               <div key={s.id} className="star-user" style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                 <div className="star-user-info" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <img src={s.profilePictureURL || '/api/placeholder/48/48'} alt={s.displayName || 'Usuário'} className="star-user-avatar" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} />
+                  <CachedImage src={s.profilePictureURL} defaultType="PROFILE_2" alt={s.displayName || 'Usuário'} className="star-user-avatar" showLoading={false} />
                   <div className="star-user-details">
                     <div className="star-user-name" style={{ fontWeight: 600 }}>
                       {s.displayName || 'Usuário'} <i className="fas fa-star" style={{ color: '#ffc107' }}></i>

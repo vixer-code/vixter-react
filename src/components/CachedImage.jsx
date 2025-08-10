@@ -49,9 +49,20 @@ const CachedImage = ({
 
   // For priority images, set src immediately on first render to start the request ASAP
   const shouldBypass = Boolean(priority && typeof src === 'string' && src.startsWith('http'));
+  const resolveSrcToString = (candidate) => {
+    if (!candidate) return '';
+    if (typeof candidate === 'string') return candidate;
+    if (typeof candidate === 'object') {
+      // Support responsive objects saved in DB: { small, medium, large } or width map
+      return candidate.large || candidate.medium || candidate.small || candidate[1440] || candidate[512] || '';
+    }
+    return '';
+  };
+
   const [imageSrc, setImageSrc] = useState(() => {
-    if (!src || src === '') return finalFallbackSrc;
-    return shouldBypass ? src : null;
+    const initial = resolveSrcToString(src);
+    if (!initial) return finalFallbackSrc;
+    return shouldBypass ? initial : null;
   });
   const [loading, setLoading] = useState(() => {
     if (!src || src === '') return false;
@@ -62,7 +73,8 @@ const CachedImage = ({
   useEffect(() => {
     const loadImage = async () => {
       // If no src provided, use fallback immediately
-      if (!src || src === '') {
+      const desired = resolveSrcToString(src);
+      if (!desired) {
         setImageSrc(finalFallbackSrc);
         setLoading(false);
         return;
@@ -71,7 +83,7 @@ const CachedImage = ({
       try {
         // For priority images, bypass ALL caching and async work for immediate display
         if (shouldBypass) {
-          setImageSrc(src);
+          setImageSrc(desired);
           setLoading(false);
           setError(null);
           return;
@@ -82,8 +94,8 @@ const CachedImage = ({
         let imageUrl = null;
 
         // Try cache first for non-priority images
-        if (enableCache && typeof src === 'string') {
-          const cached = imageCache.getCachedImage(src);
+        if (enableCache && typeof desired === 'string') {
+          const cached = imageCache.getCachedImage(desired);
           if (cached) {
             imageUrl = cached;
           }
@@ -91,12 +103,12 @@ const CachedImage = ({
 
         // If not cached, preload and cache it
         if (!imageUrl) {
-          if (typeof src === 'string' && src.startsWith('http')) {
+          if (typeof desired === 'string' && desired.startsWith('http')) {
             try {
-              const preloaded = enableCache ? await preloadImage(src) : src;
-              imageUrl = preloaded || src;
+              const preloaded = enableCache ? await preloadImage(desired) : desired;
+              imageUrl = preloaded || desired;
             } catch {
-              imageUrl = src;
+              imageUrl = desired;
             }
           } else {
             imageUrl = finalFallbackSrc;

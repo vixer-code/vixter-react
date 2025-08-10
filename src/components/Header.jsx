@@ -4,6 +4,7 @@ import { ref, get, onValue, off } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getDefaultImage } from '../utils/defaultImages';
+import CachedImage from './CachedImage';
 import NotificationIcon from './NotificationIcon';
 import './Header.css';
 
@@ -245,9 +246,13 @@ const Header = () => {
                     <div className="profile-picture-container">
                       <div className="profile-picture" id="navbar-profile-pic">
                         {userProfile?.profilePictureURL ? (
-                          <img 
-                            src={userProfile.profilePictureURL || getDefaultImage('PROFILE_1')} 
+                          <CachedImage 
+                            src={userProfile.profilePictureURL}
+                            defaultType="PROFILE_1"
                             alt={userProfile.displayName || 'Profile'} 
+                            className=""
+                            showLoading={false}
+                            sizes="40px"
                           />
                         ) : userProfile?.displayName ? (
                           <span className="profile-initials">
@@ -437,9 +442,13 @@ const Header = () => {
             <div className="mobile-profile-section">
               <div className="mobile-profile-avatar">
                 {userProfile?.profilePictureURL ? (
-                  <img 
-                    src={userProfile.profilePictureURL || getDefaultImage('PROFILE_1')} 
+                  <CachedImage 
+                    src={userProfile.profilePictureURL}
+                    defaultType="PROFILE_1"
                     alt={userProfile.displayName || 'Profile'} 
+                    className=""
+                    showLoading={false}
+                    sizes="36px"
                   />
                 ) : userProfile?.displayName ? (
                   <span className="profile-initials">

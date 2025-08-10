@@ -53,17 +53,20 @@ app.post('/api/convert', mediaLimiter, upload.single('file'), async (req, res) =
     }
 
     const quality = 78;
-    const widths = type === 'avatar' ? [512] : [720, 1440];
-    const outputs = {};
+    // Align widths with serverless API for consistent client handling
+    const sizeMap = type === 'avatar'
+      ? { small: 128, medium: 256, large: 512 }
+      : { small: 480, medium: 960, large: 1440 };
 
-    for (const w of widths) {
+    const outputs = {};
+    for (const [label, width] of Object.entries(sizeMap)) {
       const webpBuffer = await sharp(req.file.buffer)
         .rotate()
-        .resize({ width: w, withoutEnlargement: true })
+        .resize({ width, withoutEnlargement: true })
         .webp({ quality })
         .toBuffer();
 
-      const key = `${type === 'avatar' ? 'profilePictures' : 'coverPhotos'}/${userId}_optimized_${w}.webp`;
+      const key = `${type === 'avatar' ? 'profilePictures' : 'coverPhotos'}/${userId}_${label}_${width}.webp`;
 
       if (s3Enabled) {
         await s3.send(new PutObjectCommand({
@@ -74,13 +77,13 @@ app.post('/api/convert', mediaLimiter, upload.single('file'), async (req, res) =
           CacheControl: 'public, max-age=31536000, immutable',
         }));
         const publicUrl = `https://${process.env.S3_BUCKET}.s3.${process.env.S3_REGION}.amazonaws.com/${key}`;
-        outputs[w] = publicUrl;
+        outputs[label] = publicUrl;
       } else {
-        outputs[w] = `data:image/webp;base64,${webpBuffer.toString('base64')}`;
+        outputs[label] = `data:image/webp;base64,${webpBuffer.toString('base64')}`;
       }
     }
 
-    return res.json({ urls: outputs });
+    return res.json({ type, sizes: outputs, uploadedAt: new Date().toISOString() });
   } catch (err) {
     console.error('convert error:', err);
     return res.status(500).json({ error: 'conversion_failed' });
@@ -172,6 +175,18 @@ app.post('/api/transcode', mediaLimiter, upload.single('file'), async (req, res)
     console.error('transcode error:', err);
     return res.status(500).json({ error: 'transcode_failed' });
   }
+});
+
+// Centralized error handler for upload size and unexpected errors
+app.use((err, req, res, next) => {
+  if (err && err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'file_too_large', limit: '30MB' });
+  }
+  if (err) {
+    console.error('unhandled error:', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+  return next();
 });
 
 // Handle React routing, return all requests to React app
