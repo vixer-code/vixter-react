@@ -597,205 +597,221 @@ const Profile = () => {
         </div>
       )}
       
-      <div className="profile-card">
-        <div className="cover-photo">
-          {profile.coverPhotoURL ? (
-            <CachedImage
-              src={profile.coverPhotoURL}
-              alt="Capa do Perfil"
-              className="cover-photo-img"
-              priority={true}
-              sizes="100vw"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          ) : (
-            <div className="cover-photo-placeholder" />
-          )}
-          {isOwner && (
-            <label className="cover-upload-btn">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleImageUpload(e, 'cover')}
-                style={{ display: 'none' }}
-              />
-              <i className="fas fa-camera"></i>
-            </label>
-          )}
+            {loading ? (
+        <div className="loading-container">
+          <div className="loading-spinner">
+            <i className="fa-solid fa-spinner fa-spin"></i>
+            <p>Carregando perfil...</p>
+          </div>
         </div>
-        
-        <div className="profile-header">
-          <div className="profile-avatar">
-            <label className="avatar-upload-btn">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleImageUpload(e, 'avatar')}
-                style={{ display: 'none' }}
+      ) : profile ? (
+        <div className="profile-card">
+          <div className="cover-photo">
+            {profile.coverPhotoURL ? (
+              <CachedImage
+                src={profile.coverPhotoURL}
+                alt="Capa do Perfil"
+                className="cover-photo-img"
+                priority={true}
+                sizes="100vw"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
-              <CachedImage 
-                src={profile.profilePictureURL}
-                defaultType="PROFILE_1"
-                alt="Avatar de Perfil"
-                className="profile-avatar-img"
-                priority={false}
-                sizes={avatarSizes}
-                showLoading={true}
-              />
-              {isOwner && (
+            ) : (
+              <div className="cover-photo-placeholder" />
+            )}
+            {isOwner && (
+              <label className="cover-upload-btn">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, 'cover')}
+                  style={{ display: 'none' }}
+                />
                 <i className="fas fa-camera"></i>
-              )}
-            </label>
+              </label>
+            )}
           </div>
           
-          <div className="profile-info">
-            {renderAccountBadges()}
-            <h1 className="profile-name">
-              {editing ? (
+          <div className="profile-header">
+            <div className="profile-avatar">
+              <label className="avatar-upload-btn">
                 <input
-                  type="text"
-                  value={formData.displayName}
-                  onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                  className="edit-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, 'avatar')}
+                  style={{ display: 'none' }}
                 />
-              ) : (
-                profile.displayName || 'Nome do Usuário'
-              )}
-            </h1>
-            <p className="profile-username">
-              {editing ? (
-                <input
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="edit-input"
-                  placeholder="@username"
+                <CachedImage 
+                  src={profile.profilePictureURL}
+                  defaultType="PROFILE_1"
+                  alt="Avatar de Perfil"
+                  className="profile-avatar-img"
+                  priority={false}
+                  sizes={avatarSizes}
+                  showLoading={true}
                 />
-              ) : (
-                `@${profile.username || 'username'}`
-              )}
-            </p>
-            <p className="profile-status">
-              {editing ? (
-                <textarea
-                  value={formData.bio}
-                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                  className="edit-textarea"
-                  placeholder="Mensagem de status aqui"
-                />
-              ) : (
-                profile.bio || 'Mensagem de status aqui'
-              )}
-            </p>
+                {isOwner && (
+                  <i className="fas fa-camera"></i>
+                )}
+              </label>
+            </div>
             
-            <div className="profile-meta">
-              <span className="profile-location">
-                <i className="fa-solid fa-location-dot"></i>
+            <div className="profile-info">
+              {renderAccountBadges()}
+              <h1 className="profile-name">
                 {editing ? (
                   <input
                     type="text"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    value={formData.displayName}
+                    onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
                     className="edit-input"
-                    placeholder="Nenhuma localização especificada"
                   />
                 ) : (
-                  profile.location || 'Nenhuma localização especificada'
+                  profile.displayName || 'Nome do Usuário'
                 )}
-              </span>
-              <span className="profile-joined">
-                <i className="fa-solid fa-calendar"></i>
-                Entrou em {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : 'janeiro de 2025'}
-              </span>
+              </h1>
+              <p className="profile-username">
+                {editing ? (
+                  <input
+                    type="text"
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    className="edit-input"
+                    placeholder="@username"
+                  />
+                ) : (
+                  `@${profile.username || 'username'}`
+                )}
+              </p>
+              <p className="profile-status">
+                {editing ? (
+                  <textarea
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    className="edit-textarea"
+                    placeholder="Mensagem de status aqui"
+                  />
+                ) : (
+                  profile.bio || 'Mensagem de status aqui'
+                )}
+              </p>
+              
+              <div className="profile-meta">
+                <span className="profile-location">
+                  <i className="fa-solid fa-location-dot"></i>
+                  {editing ? (
+                    <input
+                      type="text"
+                      value={formData.location}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      className="edit-input"
+                      placeholder="Nenhuma localização especificada"
+                    />
+                  ) : (
+                    profile.location || 'Nenhuma localização especificada'
+                  )}
+                </span>
+                <span className="profile-joined">
+                  <i className="fa-solid fa-calendar"></i>
+                  Entrou em {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : 'janeiro de 2025'}
+                </span>
+              </div>
+              
+              <div className="profile-rating">
+                <div className="profile-stars">★★★★☆</div>
+                <span className="profile-rating-value">{profile.rating || 4.0}</span>
+                <span className="profile-rating-count">({profile.reviewsCount || 0} avaliações)</span>
+              </div>
             </div>
             
-            <div className="profile-rating">
-              <div className="profile-stars">★★★★☆</div>
-              <span className="profile-rating-value">{profile.rating || 4.0}</span>
-              <span className="profile-rating-count">({profile.reviewsCount || 0} avaliações)</span>
+            <div className="profile-actions">
+              {isOwner ? (
+                editing ? (
+                  <>
+                    <button className="save-profile-btn" onClick={handleSave}>
+                      <i className="fa-solid fa-check"></i> Salvar
+                    </button>
+                    <button className="cancel-profile-btn" onClick={handleCancel}>
+                      <i className="fa-solid fa-times"></i> Cancelar
+                    </button>
+                  </>
+                ) : (
+                  <button className="edit-profile-btn" onClick={() => setEditing(true)}>
+                    <i className="fa-solid fa-pen"></i> Editar Perfil
+                  </button>
+                )
+              ) : (
+                currentUser && (
+                  <div className="visitor-actions">
+                    <button 
+                      className={`follow-btn ${isFollowing ? 'following' : ''}`}
+                      onClick={handleFollow}
+                    >
+                      <i className={`fa-solid ${isFollowing ? 'fa-user-check' : 'fa-user-plus'}`}></i>
+                      {isFollowing ? 'Seguindo' : 'Seguir'}
+                    </button>
+                    <button className="message-btn">
+                      <i className="fa-solid fa-envelope"></i> Mensagem
+                    </button>
+                  </div>
+                )
+              )}
             </div>
           </div>
           
-          <div className="profile-actions">
-            {isOwner ? (
-              editing ? (
-                <>
-                  <button className="save-profile-btn" onClick={handleSave}>
-                    <i className="fa-solid fa-check"></i> Salvar
-                  </button>
-                  <button className="cancel-profile-btn" onClick={handleCancel}>
-                    <i className="fa-solid fa-times"></i> Cancelar
-                  </button>
-                </>
-              ) : (
-                <button className="edit-profile-btn" onClick={() => setEditing(true)}>
-                  <i className="fa-solid fa-pen"></i> Editar Perfil
-                </button>
-              )
-            ) : (
-              currentUser && (
-                <div className="visitor-actions">
-                  <button 
-                    className={`follow-btn ${isFollowing ? 'following' : ''}`}
-                    onClick={handleFollow}
-                  >
-                    <i className={`fa-solid ${isFollowing ? 'fa-user-check' : 'fa-user-plus'}`}></i>
-                    {isFollowing ? 'Seguindo' : 'Seguir'}
-                  </button>
-                  <button className="message-btn">
-                    <i className="fa-solid fa-envelope"></i> Mensagem
-                  </button>
-                </div>
-              )
-            )}
+          <div className="profile-tabs">
+            <button 
+              className={`profile-tab ${activeTab === 'perfil' ? 'active' : ''}`}
+              onClick={handleTabClick}
+              data-tab="perfil"
+            >
+              Perfil
+            </button>
+            <button 
+              className={`profile-tab ${activeTab === 'about' ? 'active' : ''}`}
+              onClick={handleTabClick}
+              data-tab="about"
+            >
+              Sobre
+            </button>
+            <button 
+              className={`profile-tab ${activeTab === 'services' ? 'active' : ''}`}
+              onClick={handleTabClick}
+              data-tab="services"
+            >
+              Serviços
+            </button>
+            <button 
+              className={`profile-tab ${activeTab === 'packs' ? 'active' : ''}`}
+              onClick={handleTabClick}
+              data-tab="packs"
+            >
+              Packs
+            </button>
+            <button 
+              className={`profile-tab ${activeTab === 'subscriptions' ? 'active' : ''}`}
+              onClick={handleTabClick}
+              data-tab="subscriptions"
+            >
+              Assinaturas
+            </button>
+            <button 
+              className={`profile-tab ${activeTab === 'reviews' ? 'active' : ''}`}
+              onClick={handleTabClick}
+              data-tab="reviews"
+            >
+              Avaliações
+            </button>
           </div>
         </div>
-        
-        <div className="profile-tabs">
-          <button 
-            className={`profile-tab ${activeTab === 'perfil' ? 'active' : ''}`}
-            onClick={handleTabClick}
-            data-tab="perfil"
-          >
-            Perfil
-          </button>
-          <button 
-            className={`profile-tab ${activeTab === 'about' ? 'active' : ''}`}
-            onClick={handleTabClick}
-            data-tab="about"
-          >
-            Sobre
-          </button>
-          <button 
-            className={`profile-tab ${activeTab === 'services' ? 'active' : ''}`}
-            onClick={handleTabClick}
-            data-tab="services"
-          >
-            Serviços
-          </button>
-          <button 
-            className={`profile-tab ${activeTab === 'packs' ? 'active' : ''}`}
-            onClick={handleTabClick}
-            data-tab="packs"
-          >
-            Packs
-          </button>
-          <button 
-            className={`profile-tab ${activeTab === 'subscriptions' ? 'active' : ''}`}
-            onClick={handleTabClick}
-            data-tab="subscriptions"
-          >
-            Assinaturas
-          </button>
-          <button 
-            className={`profile-tab ${activeTab === 'reviews' ? 'active' : ''}`}
-            onClick={handleTabClick}
-            data-tab="reviews"
-          >
-            Avaliações
-          </button>
+      ) : (
+        <div className="error-container">
+          <div className="error-message">
+            <i className="fa-solid fa-exclamation-triangle"></i>
+            <p>Perfil não encontrado ou erro ao carregar.</p>
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Tab Contents */}
       <div className={`tab-content ${activeTab === 'perfil' ? 'active' : ''}`}>
