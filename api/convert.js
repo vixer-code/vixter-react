@@ -10,9 +10,21 @@ export const config = { api: { bodyParser: false } };
 
 // Initialize Firebase Admin once
 if (!admin.apps.length) {
-  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
-  const credential = serviceAccountJson
-    ? admin.credential.cert(JSON.parse(serviceAccountJson))
+  const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 || '';
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT || '';
+  let creds = null;
+  try {
+    if (b64) {
+      creds = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+    } else if (raw) {
+      creds = JSON.parse(raw);
+    }
+  } catch (e) {
+    // fall back to ADC
+  }
+
+  const credential = creds
+    ? admin.credential.cert(creds)
     : admin.credential.applicationDefault();
 
   // Firebase Storage bucket ID must be like "<project-id>.appspot.com"
@@ -38,7 +50,13 @@ export default async function handler(req, res) {
     });
     const { fields, files } = await new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
-        if (err) return reject(err);
+        if (err) {
+          // Map oversize to 413
+          if (String(err?.message || '').toLowerCase().includes('maxfilesize')) {
+            err.statusCode = 413;
+          }
+          return reject(err);
+        }
         resolve({ fields, files });
       });
     });
@@ -81,6 +99,7 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('api/convert error:', err);
-    return res.status(500).json({ error: 'conversion_failed', details: err.message });
+    const status = err?.statusCode === 413 ? 413 : 500;
+    return res.status(status).json({ error: 'conversion_failed', details: err.message });
   }
 }

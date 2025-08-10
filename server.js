@@ -1,10 +1,10 @@
 const express = require('express');
 const path = require('path');
 const multer = require('multer');
+const admin = require('firebase-admin');
 const sharp = require('sharp');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const rateLimit = require('express-rate-limit');
-const FileType = require('file-type');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -26,12 +26,13 @@ const mediaLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 60 });
 // Serve static files from the React app build directory
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// In-app image conversion endpoint (local or for S3)
+// In-app image conversion endpoint (local or for S3/Firebase)
 // POST /api/convert
 //   form-data: file (image), type=cover|avatar, userId=<id>
-const upload = multer({ limits: { fileSize: 30 * 1024 * 1024 } });
+// Use memory storage so req.file.buffer is populated for sharp/FileType
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
 
-// Basic S3 client (configure with env vars when you switch from Firebase)
+// Basic S3 client (optional)
 const s3Enabled = Boolean(process.env.S3_BUCKET);
 const s3 = s3Enabled ? new S3Client({
   region: process.env.S3_REGION,
@@ -41,14 +42,47 @@ const s3 = s3Enabled ? new S3Client({
   } : undefined,
 }) : null;
 
+// Firebase Admin (optional) for uploading to Firebase Storage
+const firebaseBucketName = process.env.FIREBASE_STORAGE_BUCKET;
+let firebaseBucket = null;
+try {
+  if (firebaseBucketName) {
+    if (!admin.apps.length) {
+      const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 || '';
+      const raw = process.env.FIREBASE_SERVICE_ACCOUNT || '';
+      let creds = null;
+      try {
+        if (b64) {
+          creds = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+        } else if (raw) {
+          creds = JSON.parse(raw);
+        }
+      } catch (_) {
+        // fall back to ADC
+      }
+      const credential = creds
+        ? admin.credential.cert(creds)
+        : admin.credential.applicationDefault();
+      admin.initializeApp({ credential, storageBucket: firebaseBucketName });
+    }
+    firebaseBucket = admin.storage().bucket();
+  }
+} catch (e) {
+  console.error('Firebase Admin initialization failed:', e);
+}
+
 app.post('/api/convert', mediaLimiter, upload.single('file'), async (req, res) => {
   try {
     const { type = 'cover', userId = 'unknown' } = req.body || {};
     if (!req.file) return res.status(400).json({ error: 'file is required' });
 
-    // Validate real content-type
-    const ft = await FileType.fromBuffer(req.file.buffer);
-    if (!ft || !ft.mime.startsWith('image/')) {
+    // Validate real content-type by attempting to read metadata with sharp
+    try {
+      const meta = await sharp(req.file.buffer).metadata();
+      if (!meta || !meta.format) {
+        return res.status(415).json({ error: 'unsupported_media_type' });
+      }
+    } catch (_) {
       return res.status(415).json({ error: 'unsupported_media_type' });
     }
 
@@ -78,7 +112,16 @@ app.post('/api/convert', mediaLimiter, upload.single('file'), async (req, res) =
         }));
         const publicUrl = `https://${process.env.S3_BUCKET}.s3.${process.env.S3_REGION}.amazonaws.com/${key}`;
         outputs[label] = publicUrl;
+      } else if (firebaseBucket) {
+        const fileRef = firebaseBucket.file(key);
+        await fileRef.save(webpBuffer, {
+          contentType: 'image/webp',
+          resumable: false,
+          metadata: { cacheControl: 'public, max-age=31536000, immutable' },
+        });
+        outputs[label] = `https://storage.googleapis.com/${firebaseBucket.name}/${key}`;
       } else {
+        // Fallback for local testing without cloud storage
         outputs[label] = `data:image/webp;base64,${webpBuffer.toString('base64')}`;
       }
     }
@@ -97,8 +140,8 @@ app.post('/api/transcode', mediaLimiter, upload.single('file'), async (req, res)
     const { userId = 'unknown', makePoster = 'true' } = req.body || {};
     if (!req.file) return res.status(400).json({ error: 'file is required' });
 
-    const ft = await FileType.fromBuffer(req.file.buffer);
-    if (!ft || !ft.mime.startsWith('video/')) {
+    const mime = req.file.mimetype || '';
+    if (!mime.startsWith('video/')) {
       return res.status(415).json({ error: 'unsupported_media_type' });
     }
 
