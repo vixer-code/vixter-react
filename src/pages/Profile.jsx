@@ -12,6 +12,8 @@ const CreateServiceModal = lazy(() => import('../components/CreateServiceModal')
 const CreatePackModal = lazy(() => import('../components/CreatePackModal'));
 import CachedImage from '../components/CachedImage';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import DeleteServiceModal from '../components/DeleteServiceModal';
+import DeletePackModal from '../components/DeletePackModal';
 import './Profile.css';
 
 const Profile = () => {
@@ -44,6 +46,10 @@ const Profile = () => {
   // Delete confirmation modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
+  const [showDeleteServiceModal, setShowDeleteServiceModal] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState(null);
+  const [showDeletePackModal, setShowDeletePackModal] = useState(false);
+  const [packToDelete, setPackToDelete] = useState(null);
 
   // Direct Firebase Storage uploads only
 
@@ -282,15 +288,34 @@ const Profile = () => {
 
   const handleDeletePack = async (packId) => {
     if (!currentUser) return;
-    if (window.confirm('Tem certeza que deseja excluir este pack?')) {
-      try {
-        const packRef = ref(database, `packs/${currentUser.uid}/${packId}`);
-        await remove(packRef);
-      } catch (error) {
-        console.error('Error deleting pack:', error);
-        alert('Erro ao excluir pack. Tente novamente.');
-      }
+    
+    // Find the pack to show its title in the modal
+    const pack = packs.find(p => p.id === packId);
+    if (pack) {
+      setPackToDelete({ id: packId, title: pack.title });
+      setShowDeletePackModal(true);
     }
+  };
+
+  const confirmDeletePack = async () => {
+    if (!packToDelete) return;
+    
+    try {
+      const packRef = ref(database, `packs/${currentUser.uid}/${packToDelete.id}`);
+      await remove(packRef);
+      
+      // Close modal and reset state
+      setShowDeletePackModal(false);
+      setPackToDelete(null);
+    } catch (error) {
+      console.error('Error deleting pack:', error);
+      alert('Erro ao excluir pack. Tente novamente.');
+    }
+  };
+
+  const cancelDeletePack = () => {
+    setShowDeletePackModal(false);
+    setPackToDelete(null);
   };
 
   const handlePackStatusChange = async (packId, newStatus) => {
@@ -310,14 +335,32 @@ const Profile = () => {
   };
 
   const handleDeleteService = async (serviceId) => {
-    if (window.confirm('Tem certeza que deseja excluir este serviço?')) {
-      try {
-        await deleteService(serviceId);
-      } catch (error) {
-        console.error('Error deleting service:', error);
-        alert('Erro ao excluir serviço. Tente novamente.');
-      }
+    // Find the service to show its title in the modal
+    const service = services.find(s => s.id === serviceId);
+    if (service) {
+      setServiceToDelete({ id: serviceId, title: service.title });
+      setShowDeleteServiceModal(true);
     }
+  };
+
+  const confirmDeleteService = async () => {
+    if (!serviceToDelete) return;
+    
+    try {
+      await deleteService(serviceToDelete.id);
+      
+      // Close modal and reset state
+      setShowDeleteServiceModal(false);
+      setServiceToDelete(null);
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      alert('Erro ao excluir serviço. Tente novamente.');
+    }
+  };
+
+  const cancelDeleteService = () => {
+    setShowDeleteServiceModal(false);
+    setServiceToDelete(null);
   };
 
   const handleDeletePost = async (postId) => {
@@ -1470,6 +1513,22 @@ const Profile = () => {
         onClose={cancelDeletePost}
         onConfirm={confirmDeletePost}
         postContent={postToDelete?.content}
+      />
+
+      {/* Delete Service Modal */}
+      <DeleteServiceModal
+        isOpen={showDeleteServiceModal}
+        onClose={cancelDeleteService}
+        onConfirm={confirmDeleteService}
+        serviceTitle={serviceToDelete?.title}
+      />
+
+      {/* Delete Pack Modal */}
+      <DeletePackModal
+        isOpen={showDeletePackModal}
+        onClose={cancelDeletePack}
+        onConfirm={confirmDeletePack}
+        packTitle={packToDelete?.title}
       />
     </div>
   );
