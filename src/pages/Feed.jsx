@@ -260,118 +260,75 @@ const Feed = () => {
   const confirmDeletePost = async () => {
     if (!postToDelete) return;
     
-    console.log('Starting delete process for post:', postToDelete);
-    console.log('Database instance:', database);
-    console.log('Current user:', currentUser);
-    
     // Check if database is properly initialized
     if (!database) {
-      console.error('Database not initialized');
       alert('Erro: Banco de dados não inicializado.');
       return;
     }
     
     // Check if user is authenticated
     if (!currentUser || !currentUser.uid) {
-      console.error('User not authenticated');
       alert('Erro: Usuário não autenticado.');
       return;
     }
     
     // Validate post ID
     if (!postToDelete.id || typeof postToDelete.id !== 'string' || postToDelete.id.trim() === '') {
-      console.error('Invalid post ID:', postToDelete.id);
       alert('Erro: ID da publicação inválido.');
       return;
     }
     
-    // Test database connection
-    try {
-      console.log('Testing database connection...');
-      const testRef = ref(database, '.info/connected');
-      const testSnapshot = await get(testRef);
-      console.log('Database connection test result:', testSnapshot.val());
-    } catch (testError) {
-      console.error('Database connection test failed:', testError);
-    }
-    
     try {
       // Remove post from database
-      console.log('Removing post from database...');
       const postRef = ref(database, `posts/${postToDelete.id}`);
-      console.log('Post reference:', postRef);
-      console.log('Post path:', `posts/${postToDelete.id}`);
       
       // Check if the post exists before trying to delete
-      console.log('Checking if post exists in database...');
       const postSnapshot = await get(postRef);
-      console.log('Post snapshot:', postSnapshot);
       
       if (!postSnapshot.exists()) {
-        console.error('Post does not exist in database');
         alert('Publicação não encontrada no banco de dados.');
         return;
       }
       
       // Verify the current user is the owner of the post
       const postData = postSnapshot.val();
-      console.log('Post data:', postData);
-      console.log('Post author ID:', postData.userId);
-      console.log('Current user ID:', currentUser.uid);
       
       if (postData.userId !== currentUser.uid) {
-        console.error('User is not the owner of the post');
         alert('Você não tem permissão para excluir esta publicação.');
         return;
       }
       
-      console.log('Post exists in database and user is owner, proceeding with deletion');
-      
       // Remove the main post first
       await remove(postRef);
-      console.log('Post removed successfully');
       
       // Reload posts to update the list immediately after successful post deletion
-      console.log('Reloading posts...');
       await loadPosts();
-      console.log('Posts reloaded successfully');
       
       // Close modal and reset state
       setShowDeleteModal(false);
       setPostToDelete(null);
       
-      // Try to remove associated data (likes and comments) but don't fail if they don't exist
+      // Try to remove associated likes but don't fail if it doesn't exist
       try {
-        console.log('Removing associated likes...');
         const likesRef = ref(database, `likes/${postToDelete.id}`);
         await remove(likesRef);
-        console.log('Likes removed successfully');
       } catch (likesError) {
-        console.log('Likes removal failed (this is okay):', likesError.message);
         // Don't fail the entire operation if likes removal fails
       }
       
+      // Try to remove associated comments but don't fail if it doesn't exist
       try {
-        console.log('Removing associated comments...');
         const commentsRef = ref(database, `comments/${postToDelete.id}`);
         await remove(commentsRef);
-        console.log('Comments removed successfully');
       } catch (commentsError) {
-        console.log('Comments removal failed (this is okay):', commentsError.message);
         // Don't fail the entire operation if comments removal fails
       }
       
       // Show success message
       alert('Publicação removida com sucesso!');
-      console.log('Delete process completed successfully');
       
     } catch (error) {
       console.error('Error deleting post:', error);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        stack: error.stack
-      });
       
       // Handle specific Firebase error codes
       if (error.code === 'PERMISSION_DENIED') {
