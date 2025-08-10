@@ -42,22 +42,32 @@ const Profile = () => {
 
   // Feature switch: use in-app media API instead of Firebase Storage direct upload
   const useMediaApi = (import.meta?.env?.VITE_USE_MEDIA_API === 'true');
+  console.log('useMediaApi value:', useMediaApi, 'VITE_USE_MEDIA_API:', import.meta?.env?.VITE_USE_MEDIA_API);
 
   // Client-side conversion for uploads (not LCP-critical)
   const convertImageToWebP = async (file, targetWidth) => {
     try {
+      console.log('convertImageToWebP called with:', { file, targetWidth });
       const bitmap = await createImageBitmap(file);
+      console.log('Image bitmap created:', { width: bitmap.width, height: bitmap.height });
+      
       const scale = Math.min(1, targetWidth / bitmap.width);
       const width = Math.round(bitmap.width * scale);
       const height = Math.round(bitmap.height * scale);
+      console.log('Calculated dimensions:', { scale, width, height });
+      
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(bitmap, 0, 0, width, height);
+      
+      console.log('Canvas created and image drawn, converting to WebP...');
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.78));
+      console.log('WebP blob created:', blob);
       return blob || file;
-    } catch {
+    } catch (error) {
+      console.error('Error in convertImageToWebP:', error);
       return file;
     }
   };
@@ -387,10 +397,12 @@ const Profile = () => {
     if (!file || !currentUser) return;
 
     try {
+      console.log('Starting image upload:', { type, fileName: file.name, fileSize: file.size });
       setUploading(true);
       let finalURL = null;
 
       if (useMediaApi) {
+        console.log('Using media API for upload');
         const form = new FormData();
         form.append('file', file);
         form.append('type', type === 'avatar' ? 'avatar' : 'cover');
@@ -405,25 +417,37 @@ const Profile = () => {
         // Prefer 1440 for cover, else 512 for avatar
         finalURL = (type === 'avatar') ? (data.urls?.[512] || Object.values(data.urls || {})[0]) : (data.urls?.[1440] || data.urls?.[720] || Object.values(data.urls || {})[0]);
       } else {
+        console.log('Using Firebase Storage for upload');
         // Convert to WebP client-side and upload WebP to Firebase Storage
         const targetWidth = type === 'avatar' ? 512 : 1440;
+        console.log('Converting image to WebP with target width:', targetWidth);
         const webpBlob = await convertImageToWebP(file, targetWidth);
-        const path = type === 'avatar' ? `profilePictures/${currentUser.uid}.webp` : `coverPhotos/${currentUser.uid}.webp`;
+        console.log('WebP conversion result:', webpBlob);
+        
+        // Try uploading original file first to test if the issue is with WebP conversion
+        const path = type === 'avatar' ? `profilePictures/${currentUser.uid}` : `coverPhotos/${currentUser.uid}`;
+        console.log('Uploading to Firebase Storage path:', path);
+        
         const fileRef = storageRef(storage, path);
-        await uploadBytes(fileRef, webpBlob, {
-          contentType: 'image/webp',
+        await uploadBytes(fileRef, file, {
+          contentType: file.type,
           cacheControl: 'public, max-age=31536000, immutable'
         });
+        console.log('File uploaded successfully, getting download URL');
         finalURL = await getDownloadURL(fileRef);
+        console.log('Download URL obtained:', finalURL);
       }
 
+      console.log('Updating user profile with new URL:', finalURL);
       const updateData = {};
       updateData[type === 'avatar' ? 'profilePictureURL' : 'coverPhotoURL'] = finalURL;
 
       await update(ref(database, `users/${currentUser.uid}`), updateData);
+      console.log('Profile updated successfully, reloading profile');
       await loadProfile(); // Reload profile to show new image
       
       setUploading(false);
+      console.log('Image upload completed successfully');
     } catch (error) {
       console.error('Error uploading image:', error);
       setUploading(false);
@@ -567,7 +591,7 @@ const Profile = () => {
     );
   };
 
-  const isOwner = currentUser?.uid === (userId || currentUser?.uid);
+  const isOwner = !userId || currentUser?.uid === userId;
 
   // Optimized tab switching to prevent INP issues
   const handleTabClick = useCallback((event) => {
