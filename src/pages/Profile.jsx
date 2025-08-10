@@ -7,7 +7,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import { useEmailVerification } from '../hooks/useEmailVerification';
 import { useServices } from '../hooks/useServices';
-import { useUserStatus } from '../hooks/useUserStatus'
 import { useProfilePerformance } from '../hooks/useProfilePerformance';
 import StatusIndicator from '../components/StatusIndicator';
 import CachedImage from '../components/CachedImage';
