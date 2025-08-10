@@ -563,24 +563,8 @@ const Profile = () => {
     }
   }, [activeTab]);
 
-  // Preload cover image immediately for LCP optimization
-  useEffect(() => {
-    if (profile?.coverPhotoURL) {
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'image';
-      link.href = profile.coverPhotoURL;
-      link.fetchpriority = 'high';
-      document.head.appendChild(link);
-      
-      return () => {
-        // Cleanup on unmount
-        if (document.head.contains(link)) {
-          document.head.removeChild(link);
-        }
-      };
-    }
-  }, [profile?.coverPhotoURL]);
+  // Note: Removed manual preloading to avoid "preloaded but not used" warnings
+  // The CachedImage component with priority={true} handles efficient loading
 
   if (loading) {
     return (
@@ -603,17 +587,16 @@ const Profile = () => {
   const serviceCoverSizes = '(max-width: 768px) 100vw, 280px';
   const packCoverSizes = '(max-width: 768px) 100vw, 280px';
 
-  // Build responsive srcSet for cover if following optimized naming
-  const coverSrcSet = useMemo(() => {
+  // Build responsive srcSet for cover if following optimized naming (no hooks to avoid order issues)
+  const coverSrcSet = (() => {
     const url = profile?.coverPhotoURL || '';
     if (!url) return undefined;
-    // Expect pattern *_optimized_1440.webp -> derive 720
     if (/_optimized_1440\.webp(\?.*)?$/.test(url)) {
       const url720 = url.replace('_optimized_1440.webp', '_optimized_720.webp');
       return `${url720} 720w, ${url} 1440w`;
     }
     return undefined;
-  }, [profile?.coverPhotoURL]);
+  })();
 
   return (
     <div className="profile-container">
