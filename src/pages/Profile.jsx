@@ -4,6 +4,7 @@ import { ref, get, update, set, remove, onValue, off, push, query, orderByChild,
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import { useEmailVerification } from '../hooks/useEmailVerification';
 import { useServices } from '../hooks/useServices';
@@ -22,6 +23,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { isVerified, isChecking } = useEmailVerification();
+  const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -331,6 +333,115 @@ const [formData, setFormData] = useState({
   const handleEditService = (service) => {
     setEditingService(service);
     setShowCreateServiceModal(true);
+  };
+
+  // Helpers for VP balance and transactions
+  const getVpBalance = async (uid) => {
+    try {
+      const vpRef = ref(database, `users/${uid}/vpBalance`);
+      const vpSnapshot = await get(vpRef);
+      return vpSnapshot.exists() ? Number(vpSnapshot.val()) : 0;
+    } catch (error) {
+      console.error('Error fetching VP balance:', error);
+      return 0;
+    }
+  };
+
+  const setVpBalance = async (uid, newBalance) => {
+    try {
+      const vpRef = ref(database, `users/${uid}/vpBalance`);
+      await set(vpRef, newBalance);
+    } catch (error) {
+      console.error('Error setting VP balance:', error);
+      throw error;
+    }
+  };
+
+  const addUserTransaction = async (uid, type, description, amount, currency = 'VP') => {
+    try {
+      const transaction = {
+        type,
+        description,
+        amount,
+        currency: String(currency).toUpperCase(),
+        timestamp: Date.now()
+      };
+      await push(ref(database, `users/${uid}/transactions`), transaction);
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+      // Non-fatal for UI flow
+    }
+  };
+
+  // Purchase handlers for visitors
+  const handlePurchaseService = async (service) => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+    if (isOwner) return; // Safety guard
+
+    const basePrice = typeof service.price === 'number' ? service.price : parseFloat(service.price) || 0;
+    const vpPrice = Math.max(0, Math.round(basePrice * 1.5));
+
+    try {
+      const balance = await getVpBalance(currentUser.uid);
+      if (balance < vpPrice) {
+        showWarning('Saldo insuficiente. Vá para a Carteira para recarregar VP.', 'Saldo insuficiente');
+        navigate('/wallet');
+        return;
+      }
+
+      await setVpBalance(currentUser.uid, balance - vpPrice);
+      await addUserTransaction(
+        currentUser.uid,
+        'purchase',
+        `Compra de serviço: ${service.title || 'Serviço'}`,
+        -vpPrice,
+        'VP'
+      );
+
+      showSuccess('Compra realizada com sucesso!', 'Compra concluída');
+    } catch (error) {
+      console.error('Error processing service purchase:', error);
+      showError('Erro ao processar compra. Tente novamente.', 'Erro');
+    }
+  };
+
+  const handlePurchasePack = async (pack) => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+    if (isOwner) return; // Safety guard
+
+    const basePrice = typeof pack.price === 'number' ? pack.price : parseFloat(pack.price) || 0;
+    const discountPercent = typeof pack.discount === 'number' ? pack.discount : parseFloat(pack.discount) || 0;
+    const discounted = basePrice * (1 - (discountPercent > 0 ? discountPercent / 100 : 0));
+    const vpPrice = Math.max(0, Math.round(discounted * 1.5));
+
+    try {
+      const balance = await getVpBalance(currentUser.uid);
+      if (balance < vpPrice) {
+        showWarning('Saldo insuficiente. Vá para a Carteira para recarregar VP.', 'Saldo insuficiente');
+        navigate('/wallet');
+        return;
+      }
+
+      await setVpBalance(currentUser.uid, balance - vpPrice);
+      await addUserTransaction(
+        currentUser.uid,
+        'purchase',
+        `Compra de pack: ${pack.title || 'Pack'}`,
+        -vpPrice,
+        'VP'
+      );
+
+      showSuccess('Compra realizada com sucesso!', 'Compra concluída');
+    } catch (error) {
+      console.error('Error processing pack purchase:', error);
+      showError('Erro ao processar compra. Tente novamente.', 'Erro');
+    }
   };
 
   const handleDeleteService = async (serviceId) => {
@@ -1308,9 +1419,9 @@ const [formData, setFormData] = useState({
                 <div 
                   key={service.id} 
                   className={`service-card ${isOwner ? 'editable' : ''}`}
-                  onClick={isOwner ? () => handleEditService(service) : undefined}
-                  style={isOwner ? { cursor: 'pointer' } : {}}
-                  title={isOwner ? 'Clique para editar este serviço' : ''}
+                  onClick={() => (isOwner ? handleEditService(service) : handlePurchaseService(service))}
+                  style={{ cursor: 'pointer' }}
+                  title={isOwner ? 'Clique para editar este serviço' : 'Clique para comprar este serviço com VP'}
                 >
                   <div className="service-cover">
                     <CachedImage 
@@ -1403,9 +1514,9 @@ const [formData, setFormData] = useState({
                 <div 
                   key={pack.id} 
                   className={`pack-card ${isOwner ? 'editable' : ''}`}
-                  onClick={isOwner ? () => handleEditPack(pack) : undefined}
-                  style={isOwner ? { cursor: 'pointer' } : {}}
-                  title={isOwner ? 'Clique para editar este pack' : ''}
+                  onClick={() => (isOwner ? handleEditPack(pack) : handlePurchasePack(pack))}
+                  style={{ cursor: 'pointer' }}
+                  title={isOwner ? 'Clique para editar este pack' : 'Clique para comprar este pack com VP'}
                 >
                   <div className="pack-cover">
                     <CachedImage 
