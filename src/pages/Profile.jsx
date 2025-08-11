@@ -81,16 +81,15 @@ const Profile = () => {
   } = useServices();
 
   // Form state for editing
-  const [formData, setFormData] = useState({
-    displayName: '',
-    username: '',
-    bio: '',
-    location: '',
-    website: '',
-    twitter: '',
-    instagram: '',
-    youtube: ''
-  });
+const [formData, setFormData] = useState({
+  displayName: '',
+  bio: '',
+  location: '',
+  interests: [],
+  languages: '',
+  hobbies: '',
+  aboutMe: ''
+});
 
   useEffect(() => {
     loadProfile();
@@ -185,16 +184,15 @@ const Profile = () => {
           admin: userData.admin || false
         }));
       } catch {}
-      setFormData({
-        displayName: userData.displayName || '',
-        username: userData.username || '',
-        bio: userData.bio || '',
-        location: userData.location || '',
-        website: userData.website || '',
-        twitter: userData.twitter || '',
-        instagram: userData.instagram || '',
-        youtube: userData.youtube || ''
-      });
+              setFormData({
+          displayName: userData.displayName || '',
+          bio: userData.bio || '',
+          location: userData.location || '',
+          interests: userData.interests || [],
+          languages: userData.languages || '',
+          hobbies: userData.hobbies || '',
+          aboutMe: userData.aboutMe || ''
+        });
 
       // Load critical data first (for LCP), then load secondary data
       setLoading(false); // Allow render with profile data first
@@ -607,13 +605,12 @@ const Profile = () => {
   const handleCancel = () => {
     setFormData({
       displayName: profile?.displayName || '',
-      username: profile?.username || '',
       bio: profile?.bio || '',
       location: profile?.location || '',
-      website: profile?.website || '',
-      twitter: profile?.twitter || '',
-      instagram: profile?.instagram || '',
-      youtube: profile?.youtube || ''
+      interests: profile?.interests || [],
+      languages: profile?.languages || '',
+      hobbies: profile?.hobbies || '',
+      aboutMe: profile?.aboutMe || ''
     });
     setEditing(false);
   };
@@ -665,6 +662,23 @@ const Profile = () => {
   const handleImageSelect = (event) => {
     const files = Array.from(event.target.files);
     setSelectedImages(prev => [...prev, ...files]);
+  };
+
+  const handleInterestChange = (index, value) => {
+    const newInterests = [...formData.interests];
+    newInterests[index] = value;
+    setFormData({ ...formData, interests: newInterests });
+  };
+
+  const addInterest = () => {
+    if (formData.interests.length < 5) {
+      setFormData({ ...formData, interests: [...formData.interests, ''] });
+    }
+  };
+
+  const removeInterest = (index) => {
+    const newInterests = formData.interests.filter((_, i) => i !== index);
+    setFormData({ ...formData, interests: newInterests });
   };
 
   const renderAccountBadges = () => {
@@ -850,17 +864,7 @@ const Profile = () => {
               )}
             </h1>
             <p className="profile-username">
-              {editing ? (
-                <input
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="edit-input"
-                  placeholder="@username"
-                />
-              ) : (
-                `@${profile.username || 'username'}`
-              )}
+              @{profile.username || 'username'}
             </p>
             <p className="profile-status">
               {editing ? (
@@ -1167,26 +1171,110 @@ const Profile = () => {
       <div className={`tab-content ${activeTab === 'about' ? 'active' : ''}`}>
         <div className="about-tab-content">
           <h3>Sobre mim</h3>
-          <p className="bio-text">{profile.bio || 'Nenhuma bio disponível.'}</p>
+          
+          <div className="about-section">
+            <div className="section-header">
+              <h4>Bio</h4>
+            </div>
+            {editing ? (
+              <textarea
+                value={formData.aboutMe}
+                onChange={(e) => setFormData({ ...formData, aboutMe: e.target.value })}
+                className="edit-textarea about-textarea"
+                placeholder="Conte um pouco sobre você..."
+                rows={4}
+              />
+            ) : (
+              <p className="bio-text">{profile.aboutMe || profile.bio || 'Nenhuma bio disponível.'}</p>
+            )}
+          </div>
           
           <div className="profile-details">
             <div className="detail-group">
-              <h3>Idiomas</h3>
-              <p>{profile.languages || 'Não especificado'}</p>
+              <div className="section-header">
+                <h4>Idiomas</h4>
+              </div>
+              {editing ? (
+                <input
+                  type="text"
+                  value={formData.languages}
+                  onChange={(e) => setFormData({ ...formData, languages: e.target.value })}
+                  className="edit-input"
+                  placeholder="Ex: Português, Inglês, Espanhol"
+                />
+              ) : (
+                <p>{profile.languages || 'Não especificado'}</p>
+              )}
             </div>
             
             <div className="detail-group">
-              <h3>Habilidades</h3>
-              <div className="skills-container">
-                {profile.skills && profile.skills.length > 0 ? (
-                  profile.skills.map((skill, index) => (
-                    <span key={index} className="skill-tag">{skill}</span>
-                  ))
-                ) : (
-                  <span className="empty-state">Nenhuma habilidade adicionada ainda</span>
+              <div className="section-header">
+                <h4>Hobbies</h4>
+              </div>
+              {editing ? (
+                <input
+                  type="text"
+                  value={formData.hobbies}
+                  onChange={(e) => setFormData({ ...formData, hobbies: e.target.value })}
+                  className="edit-input"
+                  placeholder="Ex: Música, Esportes, Leitura"
+                />
+              ) : (
+                <p>{profile.hobbies || 'Não especificado'}</p>
+              )}
+            </div>
+
+            <div className="detail-group">
+              <div className="section-header">
+                <h4>Interesses</h4>
+                {editing && (
+                  <button 
+                    className="add-interest-btn" 
+                    onClick={addInterest}
+                    disabled={formData.interests.length >= 5}
+                  >
+                    <i className="fa-solid fa-plus"></i>
+                  </button>
                 )}
               </div>
+              {editing ? (
+                <div className="interests-editor">
+                  {formData.interests.map((interest, index) => (
+                    <div key={index} className="interest-input-group">
+                      <input
+                        type="text"
+                        value={interest}
+                        onChange={(e) => handleInterestChange(index, e.target.value)}
+                        className="edit-input interest-input"
+                        placeholder="Digite um interesse"
+                      />
+                      <button 
+                        className="remove-interest-btn"
+                        onClick={() => removeInterest(index)}
+                        type="button"
+                      >
+                        <i className="fa-solid fa-times"></i>
+                      </button>
+                    </div>
+                  ))}
+                  {formData.interests.length === 0 && (
+                    <p className="empty-state">Nenhum interesse adicionado</p>
+                  )}
+                </div>
+              ) : (
+                <div className="interests-container">
+                  {profile.interests && profile.interests.length > 0 ? (
+                    profile.interests.map((interest, index) => (
+                      <span key={index} className="interest-tag">{interest}</span>
+                    ))
+                  ) : (
+                    <span className="empty-state">Nenhum interesse adicionado</span>
+                  )}
+                </div>
+              )}
             </div>
+
+            
           </div>
         </div>
       </div>

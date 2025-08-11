@@ -895,6 +895,114 @@
   margin-bottom: 20px;
 }
 
+.about-section {
+  margin-bottom: 30px;
+}
+
+.about-section .section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.about-section .section-header h4 {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.add-interest-btn {
+  background: rgba(138, 43, 226, 0.8);
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.add-interest-btn:hover:not(:disabled) {
+  background: rgba(138, 43, 226, 1);
+  transform: scale(1.1);
+}
+
+.add-interest-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.about-textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+}
+
+.interests-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.interest-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.interest-input {
+  flex: 1;
+}
+
+.remove-interest-btn {
+  background: rgba(255, 59, 48, 0.8);
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+}
+
+.remove-interest-btn:hover {
+  background: rgba(255, 59, 48, 1);
+  transform: scale(1.1);
+}
+
+.interests-container {
+  margin-top: 10px;
+}
+
+.interest-tag {
+  display: inline-block;
+  background: rgba(138, 43, 226, 0.2);
+  color: #8A2BE2;
+  padding: 6px 12px;
+  border-radius: 20px;
+  margin: 4px;
+  font-size: 14px;
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  transition: all 0.3s ease;
+}
+
+.interest-tag:hover {
+  background: rgba(138, 43, 226, 0.3);
+  transform: translateY(-2px);
+}
+
+
+
 .bio-text {
   color: #B8B8B8;
   line-height: 1.6;
