@@ -78,6 +78,27 @@ const Profile = () => {
   const [serviceSalesLoading, setServiceSalesLoading] = useState(false);
   const [serviceTotalVCEarned, setServiceTotalVCEarned] = useState(0);
 
+  // Pack sales view (owner)
+  const [showPackSalesModal, setShowPackSalesModal] = useState(false);
+  const [salesPack, setSalesPack] = useState(null);
+  const [packSales, setPackSales] = useState([]);
+  const [packSalesLoading, setPackSalesLoading] = useState(false);
+  const [packTotalVCEarned, setPackTotalVCEarned] = useState(0);
+
+  // Toggle animation state
+  const [switchingServiceId, setSwitchingServiceId] = useState(null);
+  const [switchingPackId, setSwitchingPackId] = useState(null);
+
+  // Sales dashboard states (provider only)
+  const [salesLoading, setSalesLoading] = useState(false);
+  const [salesError, setSalesError] = useState(null);
+  const [totalVCEarned, setTotalVCEarned] = useState(0);
+  const [totalSalesCount, setTotalSalesCount] = useState(0);
+  const [bestSellers, setBestSellers] = useState([]); // {id, title, type, totalVC, count}
+  const [topBuyers, setTopBuyers] = useState([]); // {buyerId, username, count, totalVC}
+  const [recentSales, setRecentSales] = useState([]); // recent combined sales
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+
   // Read cached profile early to reduce LCP resource delay
   useEffect(() => {
     const targetUserId = userId || currentUser?.uid;
@@ -530,6 +551,35 @@ const [formData, setFormData] = useState({
       setServiceTotalVCEarned(0);
     } finally {
       setServiceSalesLoading(false);
+    }
+  };
+
+  // Owner: open pack sales modal and load sales
+  const openPackSales = async (pack) => {
+    if (!currentUser || !isOwner) return;
+    setSalesPack(pack);
+    setPackSalesLoading(true);
+    setShowPackSalesModal(true);
+    try {
+      const salesRef = ref(database, `packSales/${currentUser.uid}/${pack.id}`);
+      const snap = await get(salesRef);
+      if (snap.exists()) {
+        const val = snap.val();
+        const list = Object.entries(val).map(([id, data]) => ({ id, ...data }));
+        list.sort((a, b) => b.timestamp - a.timestamp);
+        setPackSales(list);
+        const total = list.reduce((sum, s) => sum + (Number(s.priceVC) || 0), 0);
+        setPackTotalVCEarned(total);
+      } else {
+        setPackSales([]);
+        setPackTotalVCEarned(0);
+      }
+    } catch (error) {
+      console.error('Error loading pack sales:', error);
+      setPackSales([]);
+      setPackTotalVCEarned(0);
+    } finally {
+      setPackSalesLoading(false);
     }
   };
 
@@ -997,6 +1047,7 @@ const [formData, setFormData] = useState({
   };
 
   const isOwner = !userId || currentUser?.uid === userId;
+  const isProvider = (profile?.accountType || '').toLowerCase() === 'provider';
 
   // Optimized tab switching to prevent INP issues
   const handleTabClick = useCallback((event) => {
@@ -1052,6 +1103,112 @@ const [formData, setFormData] = useState({
   const avatarSizes = '(max-width: 768px) 100px, 140px';
   const serviceCoverSizes = '(max-width: 768px) 100vw, 280px';
   const packCoverSizes = '(max-width: 768px) 100vw, 280px';
+
+  // Load and compute sales dashboard when "sales" tab is active
+  const loadSalesDashboard = useCallback(async () => {
+    if (!currentUser || !isOwner || !isProvider) return;
+    setSalesLoading(true);
+    setSalesError(null);
+    try {
+      const [serviceSalesSnap, packSalesSnap] = await Promise.all([
+        get(ref(database, `serviceSales/${currentUser.uid}`)),
+        get(ref(database, `packSales/${currentUser.uid}`))
+      ]);
+
+      const allSales = [];
+      const perItemMap = new Map();
+      const perBuyerMap = new Map();
+
+      const accumulate = (type, branchSnap) => {
+        if (!branchSnap || !branchSnap.exists()) return;
+        const byItem = branchSnap.val();
+        Object.entries(byItem).forEach(([itemId, sales]) => {
+          Object.entries(sales).forEach(([saleId, sale]) => {
+            const record = {
+              id: saleId,
+              type,
+              itemId,
+              title: sale.serviceTitle || sale.packTitle || '',
+              buyerId: sale.buyerId,
+              buyerUsername: sale.buyerUsername || null,
+              priceVC: Number(sale.priceVC) || 0,
+              timestamp: sale.timestamp || 0
+            };
+            allSales.push(record);
+            const itemKey = `${type}:${itemId}`;
+            const itemAgg = perItemMap.get(itemKey) || { id: itemId, title: record.title, type, totalVC: 0, count: 0 };
+            itemAgg.totalVC += record.priceVC;
+            itemAgg.count += 1;
+            perItemMap.set(itemKey, itemAgg);
+            const buyerKey = record.buyerId;
+            const buyerAgg = perBuyerMap.get(buyerKey) || { buyerId: buyerKey, username: record.buyerUsername, totalVC: 0, count: 0 };
+            buyerAgg.totalVC += record.priceVC;
+            buyerAgg.count += 1;
+            perBuyerMap.set(buyerKey, buyerAgg);
+          });
+        });
+      };
+
+      accumulate('service', serviceSalesSnap);
+      accumulate('pack', packSalesSnap);
+
+      allSales.sort((a, b) => b.timestamp - a.timestamp);
+      const itemsAgg = Array.from(perItemMap.values()).sort((a, b) => b.totalVC - a.totalVC).slice(0, 5);
+      const buyersAgg = Array.from(perBuyerMap.values()).sort((a, b) => (b.count - a.count) || (b.totalVC - a.totalVC)).slice(0, 5);
+      const totalVC = allSales.reduce((sum, s) => sum + s.priceVC, 0);
+
+      setRecentSales(allSales.slice(0, 20));
+      setBestSellers(itemsAgg);
+      setTopBuyers(buyersAgg);
+      setTotalVCEarned(totalVC);
+      setTotalSalesCount(allSales.length);
+    } catch (error) {
+      console.error('Error loading sales dashboard:', error);
+      setSalesError('Erro ao carregar vendas');
+    } finally {
+      setSalesLoading(false);
+    }
+  }, [currentUser, isOwner, isProvider]);
+
+  useEffect(() => {
+    if (activeTab === 'sales') {
+      loadSalesDashboard();
+    }
+  }, [activeTab, loadSalesDashboard]);
+
+  const handleWithdraw = async () => {
+    if (!currentUser) return;
+    const amount = Number(withdrawAmount);
+    if (!amount || amount <= 0) {
+      showWarning('Informe um valor válido', 'Valor inválido');
+      return;
+    }
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch('/api/provider/manual-payout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ amount })
+      }).catch(() => null);
+      if (res && res.ok) {
+        showSuccess('Solicitação de saque enviada!', 'Saque');
+        setWithdrawAmount('');
+        return;
+      }
+    } catch (e) {}
+    try {
+      await push(ref(database, `users/${currentUser.uid}/payoutRequests`), {
+        amount,
+        timestamp: Date.now(),
+        status: 'pending'
+      });
+      showInfo('Pedido de saque registrado. Processaremos em breve.', 'Saque em análise');
+      setWithdrawAmount('');
+    } catch (error) {
+      console.error('Error requesting withdrawal:', error);
+      showError('Erro ao solicitar saque. Tente novamente.', 'Erro');
+    }
+  };
 
   return (
     <div className="profile-container">
@@ -1247,6 +1404,15 @@ const [formData, setFormData] = useState({
           >
             Packs
           </button>
+          {isOwner && isProvider && (
+            <button 
+              className={`profile-tab ${activeTab === 'sales' ? 'active' : ''}`}
+              onClick={handleTabClick}
+              data-tab="sales"
+            >
+              Minhas Vendas
+            </button>
+          )}
           <button 
             className={`profile-tab ${activeTab === 'subscriptions' ? 'active' : ''}`}
             onClick={handleTabClick}
@@ -1608,29 +1774,26 @@ const [formData, setFormData] = useState({
                   </div>
                   {isOwner && (
                     <div className="service-actions" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className="action-btn edit-btn"
-                        onClick={() => handleEditService(service)}
-                        title="Editar"
-                      >
-                        <i className="fa-solid fa-edit"></i>
-                      </button>
+                      {/* Receipt button replaces edit */}
                       <button
-                        className="action-btn status-btn"
+                        className="action-btn view-btn"
                         onClick={() => openServiceSales(service)}
-                        title="Ver Vendas"
+                        title="Recibos de Vendas"
                       >
                         <i className="fa-solid fa-receipt"></i>
                       </button>
+                      {/* Animated status switch */}
                       <button 
-                        className="action-btn status-btn"
-                        onClick={() => {
+                        className={`action-btn status-btn ${switchingServiceId === service.id ? 'switching' : ''}`}
+                        onClick={async () => {
+                          setSwitchingServiceId(service.id);
                           const newStatus = service.status === 'active' ? 'paused' : 'active';
-                          handleServiceStatusChange(service.id, newStatus);
+                          await handleServiceStatusChange(service.id, newStatus);
+                          setTimeout(() => setSwitchingServiceId(null), 400);
                         }}
-                        title="Alterar Status"
+                        title={service.status === 'active' ? 'Pausar' : 'Ativar'}
                       >
-                        <i className="fa-solid fa-toggle-on"></i>
+                        <i className={`fa-solid ${service.status === 'active' ? 'fa-toggle-on' : 'fa-toggle-off'}`}></i>
                       </button>
                       <button 
                         className="action-btn delete-btn"
@@ -1712,22 +1875,26 @@ const [formData, setFormData] = useState({
                   </div>
                   {isOwner && (
                     <div className="service-actions" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className="action-btn edit-btn"
-                        onClick={() => handleEditPack(pack)}
-                        title="Editar"
+                      {/* Receipt button for Pack sales */}
+                      <button
+                        className="action-btn view-btn"
+                        onClick={() => openPackSales(pack)}
+                        title="Recibos de Vendas (Pack)"
                       >
-                        <i className="fa-solid fa-edit"></i>
+                        <i className="fa-solid fa-receipt"></i>
                       </button>
+                      {/* Animated status switch */}
                       <button 
-                        className="action-btn status-btn"
-                        onClick={() => {
+                        className={`action-btn status-btn ${switchingPackId === pack.id ? 'switching' : ''}`}
+                        onClick={async () => {
+                          setSwitchingPackId(pack.id);
                           const newStatus = pack.status === 'active' ? 'paused' : 'active';
-                          handlePackStatusChange(pack.id, newStatus);
+                          await handlePackStatusChange(pack.id, newStatus);
+                          setTimeout(() => setSwitchingPackId(null), 400);
                         }}
-                        title="Alterar Status"
+                        title={pack.status === 'active' ? 'Pausar' : 'Ativar'}
                       >
-                        <i className="fa-solid fa-toggle-on"></i>
+                        <i className={`fa-solid ${pack.status === 'active' ? 'fa-toggle-on' : 'fa-toggle-off'}`}></i>
                       </button>
                       <button 
                         className="action-btn delete-btn"
@@ -1819,6 +1986,93 @@ const [formData, setFormData] = useState({
           </div>
         </div>
       </div>
+
+      {/* Sales Tab (Provider Only) */}
+      {isOwner && isProvider && (
+        <div className={`tab-content ${activeTab === 'sales' ? 'active' : ''}`}>
+          <div className="services-tab-content">
+            <div className="services-header">
+              <h3>Minhas Vendas</h3>
+            </div>
+            {salesLoading ? (
+              <div className="loading-state"><i className="fa-solid fa-spinner fa-spin"></i> Carregando vendas...</div>
+            ) : salesError ? (
+              <div className="empty-state">{salesError}</div>
+            ) : (
+              <>
+                <div className="sales-summary-cards">
+                  <div className="summary-card"><div className="label">Total em VC</div><div className="value">{totalVCEarned.toFixed(2)} VC</div></div>
+                  <div className="summary-card"><div className="label">Vendas</div><div className="value">{totalSalesCount}</div></div>
+                  <div className="summary-card"><div className="label">Saldo Atual</div><div className="value">{(profile?.vcBalance || 0).toFixed(2)} VC</div></div>
+                </div>
+
+                <div className="withdraw-section">
+                  <div className="section-title">Solicitar Saque</div>
+                  <div className="withdraw-form">
+                    <input type="number" min="1" step="0.01" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="Valor em VC" />
+                    <button className="btn primary" onClick={handleWithdraw}><i className="fa-solid fa-arrow-up-right-from-square"></i> Solicitar</button>
+                  </div>
+                  <small>Saques são processados conforme as configurações da sua conta de pagamento.</small>
+                </div>
+
+                <div className="best-sellers">
+                  <div className="section-title">Mais Vendidos</div>
+                  {bestSellers.length === 0 ? (
+                    <div className="empty-state">Sem vendas ainda.</div>
+                  ) : (
+                    <ul className="ranked-list">
+                      {bestSellers.map((item) => (
+                        <li key={`${item.type}:${item.id}`}>
+                          <span className="title">{item.title || (item.type === 'service' ? 'Serviço' : 'Pack')}</span>
+                          <span className="meta">{item.count} vendas · {item.totalVC.toFixed(2)} VC</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="top-buyers">
+                  <div className="section-title">Compradores Frequentes</div>
+                  {topBuyers.length === 0 ? (
+                    <div className="empty-state">Sem compradores recorrentes.</div>
+                  ) : (
+                    <ul className="ranked-list">
+                      {topBuyers.map((b) => (
+                        <li key={b.buyerId}>
+                          <span className="title">@{b.username || b.buyerId}</span>
+                          <span className="meta">{b.count} compras · {b.totalVC.toFixed(2)} VC</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="recent-sales">
+                  <div className="section-title">Vendas Recentes</div>
+                  {recentSales.length === 0 ? (
+                    <div className="empty-state">Nenhuma venda recente.</div>
+                  ) : (
+                    <ul className="sales-list compact">
+                      {recentSales.map((s) => (
+                        <li key={`${s.type}:${s.id}`} className="sale-item">
+                          <div className="sale-left">
+                            <span className="badge">{s.type === 'service' ? 'Serviço' : 'Pack'}</span>
+                            <span className="title">{s.title || (s.type === 'service' ? 'Serviço' : 'Pack')}</span>
+                          </div>
+                          <div className="sale-right">
+                            <span className="amount">{s.priceVC.toFixed(2)} VC</span>
+                            <span className="date">{new Date(s.timestamp).toLocaleString('pt-BR')}</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Followers Modal */}
       {showFollowersModal && (
@@ -2078,6 +2332,44 @@ const [formData, setFormData] = useState({
                   <div className="sales-summary">Total ganho: <strong>{serviceTotalVCEarned.toFixed(2)} VC</strong></div>
                   <ul>
                     {serviceSales.map((sale) => (
+                      <li key={sale.id} className="sale-item">
+                        <div className="sale-buyer">
+                          <span className="label">Comprador:</span> @{sale.buyerUsername || sale.buyerId}
+                        </div>
+                        <div className="sale-amount">
+                          <span className="label">Recebido:</span> {Number(sale.priceVC || 0).toFixed(2)} VC
+                        </div>
+                        <div className="sale-date">
+                          <span className="label">Data:</span> {new Date(sale.timestamp).toLocaleString('pt-BR')}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pack Sales (Owner) */}
+      {showPackSalesModal && salesPack && (
+        <div className="modal-overlay" onClick={() => setShowPackSalesModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Vendas (Pack) - {salesPack.title}</h2>
+              <button className="modal-close" onClick={() => setShowPackSalesModal(false)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              {packSalesLoading ? (
+                <div className="loading-state"><i className="fa-solid fa-spinner fa-spin"></i> Carregando...</div>
+              ) : packSales.length === 0 ? (
+                <div className="empty-state">Nenhuma venda ainda.</div>
+              ) : (
+                <div className="sales-list">
+                  <div className="sales-summary">Total ganho: <strong>{packTotalVCEarned.toFixed(2)} VC</strong></div>
+                  <ul>
+                    {packSales.map((sale) => (
                       <li key={sale.id} className="sale-item">
                         <div className="sale-buyer">
                           <span className="label">Comprador:</span> @{sale.buyerUsername || sale.buyerId}
