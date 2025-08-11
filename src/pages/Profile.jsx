@@ -1130,11 +1130,7 @@ const [formData, setFormData] = useState({
     }
   }, [currentUser, isOwner, isProvider]);
 
-  useEffect(() => {
-    if (activeTab === 'sales') {
-      loadSalesDashboard();
-    }
-  }, [activeTab, loadSalesDashboard]);
+  
 
   // Preload cover image immediately for LCP optimization
   useEffect(() => {
