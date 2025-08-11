@@ -1210,7 +1210,7 @@ const [formData, setFormData] = useState({
                     {isFollowing ? 'Seguindo' : 'Seguir'}
                   </button>
                   <button className="message-btn">
-              ,mk.mk      <i className="fa-solid fa-envelope"></i> Mensagem
+                    <i className="fa-solid fa-envelope"></i> Mensagem
                   </button>
                 </div>
               )
