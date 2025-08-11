@@ -66,6 +66,10 @@ const Profile = () => {
   const [showServiceConfirm, setShowServiceConfirm] = useState(false);
   const [confirmServiceAck, setConfirmServiceAck] = useState(false);
   const [servicePendingPurchase, setServicePendingPurchase] = useState(null);
+  // Pack purchase confirmation (refund policy)
+  const [showPackConfirm, setShowPackConfirm] = useState(false);
+  const [confirmPackAck, setConfirmPackAck] = useState(false);
+  const [packPendingPurchase, setPackPendingPurchase] = useState(null);
 
   // Service sales view (owner)
   const [showServiceSalesModal, setShowServiceSalesModal] = useState(false);
@@ -456,15 +460,19 @@ const [formData, setFormData] = useState({
       // Credit provider VC and record sale for the service
       const providerId = service.providerId || userId;
       if (providerId) {
-        const providerVC = await getVcBalance(providerId);
-        await setVcBalance(providerId, providerVC + basePriceVC);
-        await addUserTransaction(
-          providerId,
-          'earned',
-          `Venda de serviço: ${service.title || 'Serviço'}`,
-          basePriceVC,
-          'VC'
-        );
+        try {
+          const providerVC = await getVcBalance(providerId);
+          await setVcBalance(providerId, providerVC + basePriceVC);
+          await addUserTransaction(
+            providerId,
+            'earned',
+            `Venda de serviço: ${service.title || 'Serviço'}`,
+            basePriceVC,
+            'VC'
+          );
+        } catch (err) {
+          console.error('Error crediting provider VC for service:', err);
+        }
 
         // Persist buyer + sale info under serviceSales/{providerId}/{serviceId}
         try {
@@ -553,6 +561,46 @@ const [formData, setFormData] = useState({
         -vpPrice,
         'VP'
       );
+
+      // Credit provider VC and record pack sale
+      const providerId = pack.providerId || userId;
+      const creditedVC = discounted; // seller receives VC on discounted base
+      if (providerId) {
+        try {
+          const providerVC = await getVcBalance(providerId);
+          await setVcBalance(providerId, providerVC + creditedVC);
+          await addUserTransaction(
+            providerId,
+            'earned',
+            `Venda de pack: ${pack.title || 'Pack'}`,
+            creditedVC,
+            'VC'
+          );
+        } catch (err) {
+          console.error('Error crediting provider VC for pack:', err);
+        }
+
+        try {
+          const buyerSnap = await get(ref(database, `users/${currentUser.uid}`));
+          const buyer = buyerSnap.exists() ? buyerSnap.val() : {};
+          const saleRecord = {
+            buyerId: currentUser.uid,
+            buyerUsername: buyer.username || null,
+            buyerDisplayName: buyer.displayName || null,
+            packId: pack.id,
+            packTitle: pack.title || null,
+            priceVC: creditedVC,
+            priceVP: vpPrice,
+            currency: { buyer: 'VP', seller: 'VC' },
+            refundPolicyAcknowledged: true,
+            timestamp: Date.now(),
+            status: 'completed'
+          };
+          await push(ref(database, `packSales/${providerId}/${pack.id}`), saleRecord);
+        } catch (err) {
+          console.error('Error recording pack sale:', err);
+        }
+      }
 
       showSuccess('Compra realizada com sucesso!', 'Compra concluída');
     } catch (error) {
@@ -1162,7 +1210,7 @@ const [formData, setFormData] = useState({
                     {isFollowing ? 'Seguindo' : 'Seguir'}
                   </button>
                   <button className="message-btn">
-                    <i className="fa-solid fa-envelope"></i> Mensagem
+              ,mk.mk      <i className="fa-solid fa-envelope"></i> Mensagem
                   </button>
                 </div>
               )
@@ -1854,7 +1902,8 @@ const [formData, setFormData] = useState({
                   src={serviceToPreview.coverImageURL}
                   fallbackSrc="/images/default-service.jpg"
                   alt={serviceToPreview.title}
-                  sizes="(max-width: 768px) 100vw, 600px"
+                  sizes="(max-width: 480px) 90vw, (max-width: 768px) 85vw, 720px"
+                  style={{ width: '100%', height: 'auto', maxHeight: '60vh', objectFit: 'cover', borderRadius: '8px' }}
                 />
               </div>
               <div className="preview-info">
@@ -1891,7 +1940,8 @@ const [formData, setFormData] = useState({
                   src={packToPreview.coverImage}
                   fallbackSrc="/images/default-pack.jpg"
                   alt={packToPreview.title}
-                  sizes="(max-width: 768px) 100vw, 600px"
+                  sizes="(max-width: 480px) 90vw, (max-width: 768px) 85vw, 720px"
+                  style={{ width: '100%', height: 'auto', maxHeight: '60vh', objectFit: 'cover', borderRadius: '8px' }}
                 />
               </div>
               <div className="preview-info">
@@ -1918,7 +1968,7 @@ const [formData, setFormData] = useState({
               </div>
             </div>
             <div className="modal-actions">
-              <button className="btn primary" onClick={() => { setShowPackPreview(false); handlePurchasePack(packToPreview); }}>
+              <button className="btn primary" onClick={() => { setShowPackPreview(false); setPackPendingPurchase(packToPreview); setShowPackConfirm(true); }}>
                 <i className="fa-solid fa-shopping-cart"></i> Comprar agora
               </button>
             </div>
@@ -1949,6 +1999,36 @@ const [formData, setFormData] = useState({
         onConfirm={confirmDeletePack}
         packTitle={packToDelete?.title}
       />
+
+      {/* Pack Purchase Confirmation Modal */}
+      {showPackConfirm && packPendingPurchase && (
+        <div className="modal-overlay" onClick={() => { setShowPackConfirm(false); setConfirmPackAck(false); }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Confirmar Compra</h2>
+              <button className="modal-close" onClick={() => { setShowPackConfirm(false); setConfirmPackAck(false); }}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <p>Você está prestes a comprar o pack <strong>{packPendingPurchase.title || 'Pack'}</strong>.</p>
+              <p><strong>Política de Reembolso:</strong> esta compra é <strong>não reembolsável</strong>. Ao continuar, você reconhece e concorda com esta política.</p>
+              <label className="checkbox">
+                <input type="checkbox" checked={confirmPackAck} onChange={(e) => setConfirmPackAck(e.target.checked)} />
+                <span>Eu li e concordo com a política de reembolso (não reembolsável)</span>
+              </label>
+            </div>
+            <div className="modal-actions">
+              <button className="btn secondary" onClick={() => { setShowPackConfirm(false); setConfirmPackAck(false); }}>Cancelar</button>
+              <button className="btn primary" disabled={!confirmPackAck} onClick={async () => {
+                const pk = packPendingPurchase;
+                setShowPackConfirm(false);
+                setConfirmPackAck(false);
+                setPackPendingPurchase(null);
+                await handlePurchasePack(pk);
+              }}>Confirmar Compra</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Service Purchase Confirmation Modal */}
       {showServiceConfirm && servicePendingPurchase && (
