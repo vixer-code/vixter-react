@@ -1130,7 +1130,12 @@ const [formData, setFormData] = useState({
     }
   }, [currentUser, isOwner, isProvider]);
 
-  
+  // Load sales dashboard when sales tab is active
+  useEffect(() => {
+    if (activeTab === 'sales') {
+      loadSalesDashboard();
+    }
+  }, [activeTab, loadSalesDashboard]);
 
   // Preload cover image immediately for LCP optimization
   useEffect(() => {
@@ -1171,78 +1176,6 @@ const [formData, setFormData] = useState({
   const avatarSizes = '(max-width: 768px) 100px, 140px';
   const serviceCoverSizes = '(max-width: 768px) 100vw, 280px';
   const packCoverSizes = '(max-width: 768px) 100vw, 280px';
-
-  // Duplicate definition removed (merge)
-  /* const loadSalesDashboard = useCallback(async () => {
-    if (!currentUser || !isOwner || !isProvider) return;
-    setSalesLoading(true);
-    setSalesError(null);
-    try {
-      const [serviceSalesSnap, packSalesSnap] = await Promise.all([
-        get(ref(database, `serviceSales/${currentUser.uid}`)),
-        get(ref(database, `packSales/${currentUser.uid}`))
-      ]);
-
-      const allSales = [];
-      const perItemMap = new Map();
-      const perBuyerMap = new Map();
-
-      const accumulate = (type, branchSnap) => {
-        if (!branchSnap || !branchSnap.exists()) return;
-        const byItem = branchSnap.val();
-        Object.entries(byItem).forEach(([itemId, sales]) => {
-          Object.entries(sales).forEach(([saleId, sale]) => {
-            const record = {
-              id: saleId,
-              type,
-              itemId,
-              title: sale.serviceTitle || sale.packTitle || '',
-              buyerId: sale.buyerId,
-              buyerUsername: sale.buyerUsername || null,
-              priceVC: Number(sale.priceVC) || 0,
-              timestamp: sale.timestamp || 0
-            };
-            allSales.push(record);
-            const itemKey = `${type}:${itemId}`;
-            const itemAgg = perItemMap.get(itemKey) || { id: itemId, title: record.title, type, totalVC: 0, count: 0 };
-            itemAgg.totalVC += record.priceVC;
-            itemAgg.count += 1;
-            perItemMap.set(itemKey, itemAgg);
-            const buyerKey = record.buyerId;
-            const buyerAgg = perBuyerMap.get(buyerKey) || { buyerId: buyerKey, username: record.buyerUsername, totalVC: 0, count: 0 };
-            buyerAgg.totalVC += record.priceVC;
-            buyerAgg.count += 1;
-            perBuyerMap.set(buyerKey, buyerAgg);
-          });
-        });
-      };
-
-      accumulate('service', serviceSalesSnap);
-      accumulate('pack', packSalesSnap);
-
-      allSales.sort((a, b) => b.timestamp - a.timestamp);
-      const itemsAgg = Array.from(perItemMap.values()).sort((a, b) => b.totalVC - a.totalVC).slice(0, 5);
-      const buyersAgg = Array.from(perBuyerMap.values()).sort((a, b) => (b.count - a.count) || (b.totalVC - a.totalVC)).slice(0, 5);
-      const totalVC = allSales.reduce((sum, s) => sum + s.priceVC, 0);
-
-      setRecentSales(allSales.slice(0, 20));
-      setBestSellers(itemsAgg);
-      setTopBuyers(buyersAgg);
-      setTotalVCEarned(totalVC);
-      setTotalSalesCount(allSales.length);
-    } catch (error) {
-      console.error('Error loading sales dashboard:', error);
-      setSalesError('Erro ao carregar vendas');
-    } finally {
-      setSalesLoading(false);
-    }
-  }, [currentUser, isOwner, isProvider]); */
-
-  useEffect(() => {
-    if (activeTab === 'sales') {
-      loadSalesDashboard();
-    }
-  }, [activeTab, loadSalesDashboard]);
 
   const handleWithdraw = async () => {
     if (!currentUser) return;
