@@ -176,7 +176,7 @@ const [formData, setFormData] = useState({
   // Handle URL hash navigation
   useEffect(() => {
     const hash = location.hash.replace('#', '');
-    const validTabs = ['perfil', 'about', 'services', 'packs', 'subscriptions', 'reviews'];
+    const validTabs = ['perfil', 'about', 'services', 'packs', 'sales', 'subscriptions', 'reviews'];
     
     if (hash && validTabs.includes(hash)) {
       setActiveTab(hash);
