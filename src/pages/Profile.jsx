@@ -56,6 +56,24 @@ const Profile = () => {
 
   // Direct Firebase Storage uploads only
 
+  // Visitor preview modals before buying
+  const [showServicePreview, setShowServicePreview] = useState(false);
+  const [serviceToPreview, setServiceToPreview] = useState(null);
+  const [showPackPreview, setShowPackPreview] = useState(false);
+  const [packToPreview, setPackToPreview] = useState(null);
+
+  // Service purchase confirmation (refund policy)
+  const [showServiceConfirm, setShowServiceConfirm] = useState(false);
+  const [confirmServiceAck, setConfirmServiceAck] = useState(false);
+  const [servicePendingPurchase, setServicePendingPurchase] = useState(null);
+
+  // Service sales view (owner)
+  const [showServiceSalesModal, setShowServiceSalesModal] = useState(false);
+  const [salesService, setSalesService] = useState(null);
+  const [serviceSales, setServiceSales] = useState([]);
+  const [serviceSalesLoading, setServiceSalesLoading] = useState(false);
+  const [serviceTotalVCEarned, setServiceTotalVCEarned] = useState(0);
+
   // Read cached profile early to reduce LCP resource delay
   useEffect(() => {
     const targetUserId = userId || currentUser?.uid;
@@ -282,9 +300,21 @@ const [formData, setFormData] = useState({
     setActiveTab('packs');
   };
 
+  // Open service preview for visitors
+  const handleOpenServicePreview = (service) => {
+    setServiceToPreview(service);
+    setShowServicePreview(true);
+  };
+
   const handleEditPack = (pack) => {
     setEditingPack(pack);
     setShowCreatePackModal(true);
+  };
+
+  // Open pack preview for visitors
+  const handleOpenPackPreview = (pack) => {
+    setPackToPreview(pack);
+    setShowPackPreview(true);
   };
 
   const handleDeletePack = async (packId) => {
@@ -373,6 +403,28 @@ const [formData, setFormData] = useState({
     }
   };
 
+  // Provider VC helpers
+  const getVcBalance = async (uid) => {
+    try {
+      const vcRef = ref(database, `users/${uid}/vcBalance`);
+      const snap = await get(vcRef);
+      return snap.exists() ? Number(snap.val()) : 0;
+    } catch (error) {
+      console.error('Error fetching VC balance:', error);
+      return 0;
+    }
+  };
+
+  const setVcBalance = async (uid, newBalance) => {
+    try {
+      const vcRef = ref(database, `users/${uid}/vcBalance`);
+      await set(vcRef, newBalance);
+    } catch (error) {
+      console.error('Error setting VC balance:', error);
+      throw error;
+    }
+  };
+
   // Purchase handlers for visitors
   const handlePurchaseService = async (service) => {
     if (!currentUser) {
@@ -381,8 +433,8 @@ const [formData, setFormData] = useState({
     }
     if (isOwner) return; // Safety guard
 
-    const basePrice = typeof service.price === 'number' ? service.price : parseFloat(service.price) || 0;
-    const vpPrice = Math.max(0, Math.round(basePrice * 1.5));
+    const basePriceVC = typeof service.price === 'number' ? service.price : parseFloat(service.price) || 0;
+    const vpPrice = Math.max(0, Math.round(basePriceVC * 1.5));
 
     try {
       const balance = await getVpBalance(currentUser.uid);
@@ -401,10 +453,75 @@ const [formData, setFormData] = useState({
         'VP'
       );
 
+      // Credit provider VC and record sale for the service
+      const providerId = service.providerId || userId;
+      if (providerId) {
+        const providerVC = await getVcBalance(providerId);
+        await setVcBalance(providerId, providerVC + basePriceVC);
+        await addUserTransaction(
+          providerId,
+          'earned',
+          `Venda de serviço: ${service.title || 'Serviço'}`,
+          basePriceVC,
+          'VC'
+        );
+
+        // Persist buyer + sale info under serviceSales/{providerId}/{serviceId}
+        try {
+          const buyerSnap = await get(ref(database, `users/${currentUser.uid}`));
+          const buyer = buyerSnap.exists() ? buyerSnap.val() : {};
+          const saleRecord = {
+            buyerId: currentUser.uid,
+            buyerUsername: buyer.username || null,
+            buyerDisplayName: buyer.displayName || null,
+            serviceId: service.id,
+            serviceTitle: service.title || null,
+            priceVC: basePriceVC,
+            priceVP: vpPrice,
+            currency: { buyer: 'VP', seller: 'VC' },
+            refundPolicyAcknowledged: true,
+            timestamp: Date.now(),
+            status: 'completed'
+          };
+          await push(ref(database, `serviceSales/${providerId}/${service.id}`), saleRecord);
+        } catch (err) {
+          console.error('Error recording service sale:', err);
+        }
+      }
+
       showSuccess('Compra realizada com sucesso!', 'Compra concluída');
     } catch (error) {
       console.error('Error processing service purchase:', error);
       showError('Erro ao processar compra. Tente novamente.', 'Erro');
+    }
+  };
+
+  // Owner: open service sales modal and load sales
+  const openServiceSales = async (service) => {
+    if (!currentUser || !isOwner) return;
+    setSalesService(service);
+    setServiceSalesLoading(true);
+    setShowServiceSalesModal(true);
+    try {
+      const salesRef = ref(database, `serviceSales/${currentUser.uid}/${service.id}`);
+      const snap = await get(salesRef);
+      if (snap.exists()) {
+        const val = snap.val();
+        const list = Object.entries(val).map(([id, data]) => ({ id, ...data }));
+        list.sort((a, b) => b.timestamp - a.timestamp);
+        setServiceSales(list);
+        const total = list.reduce((sum, s) => sum + (Number(s.priceVC) || 0), 0);
+        setServiceTotalVCEarned(total);
+      } else {
+        setServiceSales([]);
+        setServiceTotalVCEarned(0);
+      }
+    } catch (error) {
+      console.error('Error loading service sales:', error);
+      setServiceSales([]);
+      setServiceTotalVCEarned(0);
+    } finally {
+      setServiceSalesLoading(false);
     }
   };
 
@@ -1419,9 +1536,9 @@ const [formData, setFormData] = useState({
                 <div 
                   key={service.id} 
                   className={`service-card ${isOwner ? 'editable' : ''}`}
-                  onClick={() => (isOwner ? handleEditService(service) : handlePurchaseService(service))}
+                  onClick={() => (isOwner ? handleEditService(service) : handleOpenServicePreview(service))}
                   style={{ cursor: 'pointer' }}
-                  title={isOwner ? 'Clique para editar este serviço' : 'Clique para comprar este serviço com VP'}
+                  title={isOwner ? 'Clique para editar este serviço' : 'Clique para ver detalhes e comprar com VP'}
                 >
                   <div className="service-cover">
                     <CachedImage 
@@ -1449,6 +1566,13 @@ const [formData, setFormData] = useState({
                         title="Editar"
                       >
                         <i className="fa-solid fa-edit"></i>
+                      </button>
+                      <button
+                        className="action-btn status-btn"
+                        onClick={() => openServiceSales(service)}
+                        title="Ver Vendas"
+                      >
+                        <i className="fa-solid fa-receipt"></i>
                       </button>
                       <button 
                         className="action-btn status-btn"
@@ -1514,9 +1638,9 @@ const [formData, setFormData] = useState({
                 <div 
                   key={pack.id} 
                   className={`pack-card ${isOwner ? 'editable' : ''}`}
-                  onClick={() => (isOwner ? handleEditPack(pack) : handlePurchasePack(pack))}
+                  onClick={() => (isOwner ? handleEditPack(pack) : handleOpenPackPreview(pack))}
                   style={{ cursor: 'pointer' }}
-                  title={isOwner ? 'Clique para editar este pack' : 'Clique para comprar este pack com VP'}
+                  title={isOwner ? 'Clique para editar este pack' : 'Clique para ver detalhes e comprar com VP'}
                 >
                   <div className="pack-cover">
                     <CachedImage 
@@ -1716,6 +1840,92 @@ const [formData, setFormData] = useState({
         </Suspense>
       )}
 
+      {/* Service Preview Modal */}
+      {showServicePreview && serviceToPreview && (
+        <div className="modal-overlay" onClick={() => setShowServicePreview(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{serviceToPreview.title || 'Serviço'}</h2>
+              <button className="modal-close" onClick={() => setShowServicePreview(false)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="preview-cover">
+                <CachedImage
+                  src={serviceToPreview.coverImageURL}
+                  fallbackSrc="/images/default-service.jpg"
+                  alt={serviceToPreview.title}
+                  sizes="(max-width: 768px) 100vw, 600px"
+                />
+              </div>
+              <div className="preview-info">
+                <p className="preview-description">{serviceToPreview.description || 'Sem descrição.'}</p>
+                <div className="preview-meta">
+                  <span className="meta-item"><strong>Categoria:</strong> {serviceToPreview.category || 'Geral'}</span>
+                  {serviceToPreview.duration && (
+                    <span className="meta-item"><strong>Duração:</strong> {serviceToPreview.duration}</span>
+                  )}
+                </div>
+                <div className="preview-price">VP {((typeof serviceToPreview.price === 'number' ? serviceToPreview.price : parseFloat(serviceToPreview.price) || 0) * 1.5).toFixed(2)}</div>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn primary" onClick={() => { setShowServicePreview(false); setServicePendingPurchase(serviceToPreview); setShowServiceConfirm(true); }}>
+                <i className="fa-solid fa-shopping-cart"></i> Comprar agora
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pack Preview Modal */}
+      {showPackPreview && packToPreview && (
+        <div className="modal-overlay" onClick={() => setShowPackPreview(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{packToPreview.title || 'Pack'}</h2>
+              <button className="modal-close" onClick={() => setShowPackPreview(false)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="preview-cover">
+                <CachedImage
+                  src={packToPreview.coverImage}
+                  fallbackSrc="/images/default-pack.jpg"
+                  alt={packToPreview.title}
+                  sizes="(max-width: 768px) 100vw, 600px"
+                />
+              </div>
+              <div className="preview-info">
+                <p className="preview-description">{packToPreview.description || 'Sem descrição.'}</p>
+                <div className="preview-meta">
+                  <span className="meta-item"><strong>Categoria:</strong> {packToPreview.category || 'Geral'}</span>
+                  {packToPreview.packType && (
+                    <span className="meta-item"><strong>Tipo:</strong> {packToPreview.packType}</span>
+                  )}
+                </div>
+                {(() => {
+                  const basePrice = typeof packToPreview.price === 'number' ? packToPreview.price : parseFloat(packToPreview.price) || 0;
+                  const discountPercent = typeof packToPreview.discount === 'number' ? packToPreview.discount : parseFloat(packToPreview.discount) || 0;
+                  const discounted = basePrice * (1 - (discountPercent > 0 ? discountPercent / 100 : 0));
+                  return (
+                    <div className="preview-price">
+                      VP {(discounted * 1.5).toFixed(2)}
+                      {discountPercent > 0 && (
+                        <span className="preview-discount"> (-{discountPercent}%)</span>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn primary" onClick={() => { setShowPackPreview(false); handlePurchasePack(packToPreview); }}>
+                <i className="fa-solid fa-shopping-cart"></i> Comprar agora
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={showDeleteModal}
@@ -1739,6 +1949,74 @@ const [formData, setFormData] = useState({
         onConfirm={confirmDeletePack}
         packTitle={packToDelete?.title}
       />
+
+      {/* Service Purchase Confirmation Modal */}
+      {showServiceConfirm && servicePendingPurchase && (
+        <div className="modal-overlay" onClick={() => { setShowServiceConfirm(false); setConfirmServiceAck(false); }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Confirmar Compra</h2>
+              <button className="modal-close" onClick={() => { setShowServiceConfirm(false); setConfirmServiceAck(false); }}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <p>Você está prestes a comprar o serviço <strong>{servicePendingPurchase.title || 'Serviço'}</strong>.</p>
+              <p><strong>Política de Reembolso:</strong> esta compra é <strong>não reembolsável</strong>. Ao continuar, você reconhece e concorda com esta política.</p>
+              <label className="checkbox">
+                <input type="checkbox" checked={confirmServiceAck} onChange={(e) => setConfirmServiceAck(e.target.checked)} />
+                <span>Eu li e concordo com a política de reembolso (não reembolsável)</span>
+              </label>
+            </div>
+            <div className="modal-actions">
+              <button className="btn secondary" onClick={() => { setShowServiceConfirm(false); setConfirmServiceAck(false); }}>Cancelar</button>
+              <button className="btn primary" disabled={!confirmServiceAck} onClick={async () => {
+                const svc = servicePendingPurchase;
+                setShowServiceConfirm(false);
+                setConfirmServiceAck(false);
+                setServicePendingPurchase(null);
+                await handlePurchaseService(svc);
+              }}>Confirmar Compra</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Service Sales (Owner) */}
+      {showServiceSalesModal && salesService && (
+        <div className="modal-overlay" onClick={() => setShowServiceSalesModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Vendas - {salesService.title}</h2>
+              <button className="modal-close" onClick={() => setShowServiceSalesModal(false)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              {serviceSalesLoading ? (
+                <div className="loading-state"><i className="fa-solid fa-spinner fa-spin"></i> Carregando...</div>
+              ) : serviceSales.length === 0 ? (
+                <div className="empty-state">Nenhuma venda ainda.</div>
+              ) : (
+                <div className="sales-list">
+                  <div className="sales-summary">Total ganho: <strong>{serviceTotalVCEarned.toFixed(2)} VC</strong></div>
+                  <ul>
+                    {serviceSales.map((sale) => (
+                      <li key={sale.id} className="sale-item">
+                        <div className="sale-buyer">
+                          <span className="label">Comprador:</span> @{sale.buyerUsername || sale.buyerId}
+                        </div>
+                        <div className="sale-amount">
+                          <span className="label">Recebido:</span> {Number(sale.priceVC || 0).toFixed(2)} VC
+                        </div>
+                        <div className="sale-date">
+                          <span className="label">Data:</span> {new Date(sale.timestamp).toLocaleString('pt-BR')}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
