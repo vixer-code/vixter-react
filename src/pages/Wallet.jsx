@@ -1,16 +1,26 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ref, get, set, push } from 'firebase/database';
-import { database } from '../../config/firebase';
-import { useAuth } from '../contexts/AuthContext';
+import { useWallet } from '../contexts/WalletContext';
 import { useNotification } from '../contexts/NotificationContext';
 import './Wallet.css';
 
 const Wallet = () => {
-  const { currentUser } = useAuth();
+  const { 
+    wallet, 
+    transactions, 
+    loading, 
+    processingPayment,
+    buyVP, 
+    claimDaily, 
+    canClaimDailyBonus,
+    formatCurrency, 
+    formatDate, 
+    filterTransactions,
+    vpBalance,
+    vcBalance,
+    vbpBalance,
+    vcPendingBalance
+  } = useWallet();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
-  const [wallet, setWallet] = useState(null);
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('transactions');
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -35,162 +45,23 @@ const Wallet = () => {
   });
   const [redeemCode, setRedeemCode] = useState('');
   
-  // Daily bonus state
-  const [dailyBonusClaimed, setDailyBonusClaimed] = useState(false);
-  
   const TRANSACTIONS_PER_PAGE = 10;
 
   useEffect(() => {
-    if (currentUser) {
-      loadWallet();
-      loadTransactions();
-      checkDailyBonus();
-    }
-  }, [currentUser]);
-
-  useEffect(() => {
-    filterTransactions();
+    applyFilters();
     setCurrentPage(1);
   }, [transactions, filters]);
 
-  const loadWallet = async () => {
-    try {
-      // Fetch VP balance from users path (matching vanilla JS implementation)
-      const vpRef = ref(database, `users/${currentUser.uid}/vpBalance`);
-      const vpSnapshot = await get(vpRef);
-      
-      // Fetch VBP balance from users path (matching vanilla JS implementation)
-      const vbpRef = ref(database, `users/${currentUser.uid}/vbpBalance`);
-      const vbpSnapshot = await get(vbpRef);
-      
-      const walletData = {
-        vpBalance: vpSnapshot.exists() ? vpSnapshot.val() : 0,
-        vbpBalance: vbpSnapshot.exists() ? vbpSnapshot.val() : 0,
-        createdAt: Date.now()
-      };
-      
-      setWallet(walletData);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading wallet:', error);
-      setLoading(false);
-    }
-  };
-
-  const loadTransactions = async () => {
-    try {
-      const transactionsRef = ref(database, `users/${currentUser.uid}/transactions`);
-      const snapshot = await get(transactionsRef);
-      
-      if (snapshot.exists()) {
-        const transactionsData = [];
-        snapshot.forEach((childSnapshot) => {
-          transactionsData.push({
-            id: childSnapshot.key,
-            ...childSnapshot.val()
-          });
-        });
-        
-        // Sort by date (newest first)
-        transactionsData.sort((a, b) => b.timestamp - a.timestamp);
-        setTransactions(transactionsData);
-      }
-    } catch (error) {
-      console.error('Error loading transactions:', error);
-    }
-  };
-
-  const checkDailyBonus = async () => {
-    try {
-      const dailyBonusRef = ref(database, `users/${currentUser.uid}/lastDailyBonus`);
-      const snapshot = await get(dailyBonusRef);
-      
-      if (snapshot.exists()) {
-        const lastClaim = snapshot.val();
-        const today = new Date().toDateString();
-        const lastClaimDate = new Date(lastClaim).toDateString();
-        
-        setDailyBonusClaimed(today === lastClaimDate);
-      } else {
-        setDailyBonusClaimed(false);
-      }
-    } catch (error) {
-      console.error('Error checking daily bonus:', error);
-    }
-  };
-
-  const claimDailyBonus = async () => {
-    try {
-      const bonusAmount = Math.floor(Math.random() * 201) + 50; // 50-250 VBP
-      
-      // Update VBP balance
-      await updateBalance('VBP', bonusAmount, true);
-      
-      // Add transaction
-      await addTransaction('earned', 'Bônus Diário', bonusAmount, 'VBP');
-      
-      // Mark as claimed
-      await set(ref(database, `users/${currentUser.uid}/lastDailyBonus`), Date.now());
-      
-      setDailyBonusClaimed(true);
-      showSuccess(`Bônus diário recebido! ${bonusAmount} VBP foram adicionados à sua conta.`, 'Bônus Diário');
-    } catch (error) {
-      console.error('Error claiming daily bonus:', error);
-      showError('Erro ao receber bônus diário. Tente novamente.', 'Erro');
-    }
-  };
-
-  const filterTransactions = () => {
-    let filtered = [...transactions];
-    
-    // Filter by currency
-    if (filters.currency !== 'all') {
-      filtered = filtered.filter(t => 
-        (t.currency || 'VP').toLowerCase() === filters.currency
-      );
-    }
-    
-    // Filter by type
-    if (filters.type !== 'all') {
-      filtered = filtered.filter(t => {
-        let transactionType = '';
-        if (t.amount > 0 && t.type !== 'earned') {
-          transactionType = 'incoming';
-        } else if (t.amount < 0) {
-          transactionType = 'outgoing';
-        } else if (t.type === 'earned') {
-          transactionType = 'earned';
-        } else {
-          transactionType = 'purchase';
-        }
-        return transactionType === filters.type;
-      });
-    }
-    
-    // Filter by period
-    if (filters.period !== 'all') {
-      const now = Date.now();
-      let periodMs = 0;
-      
-      switch (filters.period) {
-        case '7days':
-          periodMs = 7 * 24 * 60 * 60 * 1000;
-          break;
-        case '30days':
-          periodMs = 30 * 24 * 60 * 60 * 1000;
-          break;
-        case '3months':
-          periodMs = 90 * 24 * 60 * 60 * 1000;
-          break;
-      }
-      
-      if (periodMs > 0) {
-        filtered = filtered.filter(t => now - t.timestamp <= periodMs);
-      }
-    }
-    
+  const applyFilters = () => {
+    const filtered = filterTransactions(filters);
     setFilteredTransactions(filtered);
-    setCurrentPage(1);
+  };
+
+  const handleClaimDailyBonus = async () => {
+    const success = await claimDaily();
+    if (success) {
+      // Success message already shown by claimDaily
+    }
   };
 
   const handleSendVP = async () => {
@@ -200,7 +71,7 @@ const Wallet = () => {
     }
 
     const amount = parseInt(sendForm.amount);
-    if (amount <= 0 || amount > (wallet?.vpBalance || 0)) {
+    if (amount <= 0 || amount > vpBalance) {
       showError('Quantidade inválida ou saldo insuficiente.', 'Erro de Validação');
       return;
     }
@@ -248,80 +119,7 @@ const Wallet = () => {
     }
   };
 
-  // Update balance in Firebase (matching vanilla JS implementation)
-  const updateBalance = async (currencyType, amount, isAddition = false) => {
-    if (!currentUser) return;
 
-    try {
-      if (currencyType === 'VP') {
-        // Update VP balance in users path (matching vanilla JS)
-        const vpRef = ref(database, `users/${currentUser.uid}/vpBalance`);
-        const vpSnapshot = await get(vpRef);
-        const currentVpBalance = vpSnapshot.exists() ? vpSnapshot.val() : 0;
-        
-        const newVpBalance = isAddition ? currentVpBalance + amount : amount;
-        
-        await set(vpRef, newVpBalance);
-      } else if (currencyType === 'VBP') {
-        // Update VBP balance in users path (matching vanilla JS)
-        const vbpRef = ref(database, `users/${currentUser.uid}/vbpBalance`);
-        const vbpSnapshot = await get(vbpRef);
-        const currentVbpBalance = vbpSnapshot.exists() ? vbpSnapshot.val() : 0;
-        
-        const newVbpBalance = isAddition ? currentVbpBalance + amount : amount;
-        
-        await set(vbpRef, newVbpBalance);
-      }
-      
-      // Reload wallet data
-      await loadWallet();
-    } catch (error) {
-      console.error(`Error updating ${currencyType} balance:`, error);
-    }
-  };
-
-  // Add transaction to Firebase (matching vanilla JS implementation)
-  const addTransaction = async (type, description, amount, currency) => {
-    if (!currentUser) return;
-
-    try {
-      // Ensure currency is always uppercase (matching vanilla JS)
-      const normalizedCurrency = currency.toUpperCase();
-      
-      const transaction = {
-        type: type,
-        description: description,
-        amount: amount,
-        currency: normalizedCurrency,
-        timestamp: Date.now()
-      };
-
-      await push(ref(database, `users/${currentUser.uid}/transactions`), transaction);
-      
-      // Reload transactions
-      await loadTransactions();
-    } catch (error) {
-      console.error("Error adding transaction:", error);
-    }
-  };
-
-  const formatCurrency = (amount, currency = '') => {
-    if (currency) {
-      return new Intl.NumberFormat('pt-BR').format(amount) + ' ' + currency;
-    }
-    return new Intl.NumberFormat('pt-BR').format(amount);
-  };
-
-  const formatDate = (timestamp) => {
-    return new Date(timestamp).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    }) + ' • ' + new Date(timestamp).toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const getTransactionIcon = (transaction) => {
     // Determine transaction type (matching vanilla JS logic)
@@ -397,7 +195,7 @@ const Wallet = () => {
     setSelectedPaymentMethod(method);
   };
 
-  const handleBuyVP = () => {
+  const handleBuyVP = async () => {
     if (!selectedPackage) {
       showError('Por favor, selecione um pacote de VP.', 'Pacote Não Selecionado');
       return;
@@ -409,10 +207,11 @@ const Wallet = () => {
       return;
     }
 
-    // Simulate payment process (in real implementation, this would redirect to Stripe)
-    showSuccess(`Redirecionando para pagamento: ${selectedPackage.amount} VP por ${selectedPackage.price}`, 'Pagamento');
-    setShowBuyVPModal(false);
-    setSelectedPackage(null);
+    const success = await buyVP(selectedPackage.id);
+    if (success) {
+      setShowBuyVPModal(false);
+      setSelectedPackage(null);
+    }
   };
 
   const pagedTransactions = useMemo(() => {
@@ -538,7 +337,7 @@ const Wallet = () => {
             <h2>Vixter Points</h2>
             <p className="balance-description">Para comprar serviços de criadores</p>
             <div className="balance-amount">
-              <span id="wallet-vp-amount">{formatCurrency(wallet?.vpBalance || 0, '')}</span>
+              <span id="wallet-vp-amount">{formatCurrency(vpBalance, '')}</span>
               <span className="currency">VP</span>
             </div>
             <button 
@@ -632,7 +431,7 @@ const Wallet = () => {
             <h2>Vixter Bonus Points</h2>
             <p className="balance-description">Ganhos através de atividades na plataforma</p>
             <div className="balance-amount">
-              <span id="wallet-vbp-amount">{formatCurrency(wallet?.vbpBalance || 0, '')}</span>
+              <span id="wallet-vbp-amount">{formatCurrency(vbpBalance, '')}</span>
               <span className="currency">VBP</span>
             </div>
             <button 
@@ -642,6 +441,206 @@ const Wallet = () => {
               <i className="fas fa-info-circle"></i> VBP Grátis
             </button>
             <small className="vbp-info">Ganhe VBP através de login diário, referências e desafios!</small>
+          </div>
+        </div>
+
+        {/* VC Balance Card */}
+        <div className="balance-card vc-card">
+          <div className="vc-token">
+            <svg className="vc-token-large" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <filter id="glow-large-vc" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                
+                <linearGradient id="hexGradient-large-vc" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#0A1F0A" />
+                  <stop offset="100%" stopColor="#1A2E1A" />
+                </linearGradient>
+                
+                <radialGradient id="glowGradient-large-vc" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                  <stop offset="0%" stopColor="#00C853" stopOpacity="0.7" />
+                  <stop offset="100%" stopColor="#00C853" stopOpacity="0" />
+                </radialGradient>
+                
+                <linearGradient id="textGradient-large-vc" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#00C853" />
+                  <stop offset="100%" stopColor="#4CAF50" />
+                </linearGradient>
+              </defs>
+              
+              <circle cx="64" cy="64" r="60" fill="url(#glowGradient-large-vc)" />
+              
+              <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
+                    fill="url(#hexGradient-large-vc)" 
+                    stroke="#00C853" 
+                    strokeWidth="2" 
+                    filter="url(#glow-large-vc)" />
+              
+              <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
+                    fill="none" 
+                    stroke="#4CAF50" 
+                    strokeWidth="1.5" 
+                    strokeDasharray="4,4"
+                    opacity="0.8" />
+                    
+              <path d="M64 32 L92 48 L92 80 L64 96 L36 80 L36 48 Z" 
+                    fill="none" 
+                    stroke="#81C784" 
+                    strokeWidth="1.5" 
+                    opacity="0.8" />
+              
+              <g filter="url(#glow-large-vc)">
+                <text x="64" y="72" 
+                      fontFamily="'Press Start 2P', monospace" 
+                      fontSize="22" 
+                      fill="url(#textGradient-large-vc)"
+                      textAnchor="middle"
+                      fontWeight="bold">VC</text>
+              </g>
+              
+              <path d="M40 60 H28 V70 H36" fill="none" stroke="#4CAF50" strokeWidth="1" />
+              <path d="M88 60 H100 V70 H92" fill="none" stroke="#4CAF50" strokeWidth="1" />
+              <path d="M64 32 V24" fill="none" stroke="#4CAF50" strokeWidth="1" />
+              <path d="M64 96 V104" fill="none" stroke="#4CAF50" strokeWidth="1" />
+              
+              <circle cx="28" cy="60" r="2" fill="#4CAF50" />
+              <circle cx="36" cy="70" r="2" fill="#4CAF50" />
+              <circle cx="100" cy="60" r="2" fill="#4CAF50" />
+              <circle cx="92" cy="70" r="2" fill="#4CAF50" />
+              <circle cx="64" cy="24" r="2" fill="#4CAF50" />
+              <circle cx="64" cy="104" r="2" fill="#4CAF50" />
+              
+              <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
+                    fill="none" 
+                    stroke="#A5D6A7" 
+                    strokeWidth="1" 
+                    opacity="0.5">
+                <animate attributeName="opacity" values="0.1;0.5;0.1" dur="3s" repeatCount="indefinite" />
+                <animate attributeName="stroke-width" values="1;3;1" dur="3s" repeatCount="indefinite" />
+              </path>
+            </svg>
+          </div>
+          <div className="balance-info">
+            <h2>Vixter Credits</h2>
+            <p className="balance-description">Recebidos em vendas - pode sacar para real</p>
+            <div className="balance-amount">
+              <span id="wallet-vc-amount">{formatCurrency(vcBalance, '')}</span>
+              <span className="currency">VC</span>
+            </div>
+            <button 
+              className="btn-success small"
+              disabled
+            >
+              <i className="fas fa-money-bill-wave"></i> Sacar VC
+            </button>
+            <small className="vc-info">1 VC = R$ 1,00 | Saque mínimo: 50 VC</small>
+          </div>
+        </div>
+
+        {/* VC Pending Balance Card */}
+        <div className="balance-card vc-pending-card">
+          <div className="vc-pending-token">
+            <svg className="vc-pending-token-large" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <filter id="glow-large-vc-pending" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                
+                <linearGradient id="hexGradient-large-vc-pending" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#1F1A0A" />
+                  <stop offset="100%" stopColor="#2E2A1A" />
+                </linearGradient>
+                
+                <radialGradient id="glowGradient-large-vc-pending" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                  <stop offset="0%" stopColor="#FF9800" stopOpacity="0.7" />
+                  <stop offset="100%" stopColor="#FF9800" stopOpacity="0" />
+                </radialGradient>
+                
+                <linearGradient id="textGradient-large-vc-pending" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#FF9800" />
+                  <stop offset="100%" stopColor="#FF5722" />
+                </linearGradient>
+              </defs>
+              
+              <circle cx="64" cy="64" r="60" fill="url(#glowGradient-large-vc-pending)" />
+              
+              <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
+                    fill="url(#hexGradient-large-vc-pending)" 
+                    stroke="#FF9800" 
+                    strokeWidth="2" 
+                    filter="url(#glow-large-vc-pending)" />
+              
+              <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
+                    fill="none" 
+                    stroke="#FFB74D" 
+                    strokeWidth="1.5" 
+                    strokeDasharray="4,4"
+                    opacity="0.8" />
+                    
+              <path d="M64 32 L92 48 L92 80 L64 96 L36 80 L36 48 Z" 
+                    fill="none" 
+                    stroke="#FFCC02" 
+                    strokeWidth="1.5" 
+                    opacity="0.8" />
+              
+              <g filter="url(#glow-large-vc-pending)">
+                <text x="64" y="68" 
+                      fontFamily="'Press Start 2P', monospace" 
+                      fontSize="16" 
+                      fill="url(#textGradient-large-vc-pending)"
+                      textAnchor="middle"
+                      fontWeight="bold">VC</text>
+                <text x="64" y="84" 
+                      fontFamily="'Press Start 2P', monospace" 
+                      fontSize="10" 
+                      fill="url(#textGradient-large-vc-pending)"
+                      textAnchor="middle"
+                      fontWeight="bold">PEND</text>
+              </g>
+              
+              <path d="M40 60 H28 V70 H36" fill="none" stroke="#FFB74D" strokeWidth="1" />
+              <path d="M88 60 H100 V70 H92" fill="none" stroke="#FFB74D" strokeWidth="1" />
+              <path d="M64 32 V24" fill="none" stroke="#FFB74D" strokeWidth="1" />
+              <path d="M64 96 V104" fill="none" stroke="#FFB74D" strokeWidth="1" />
+              
+              <circle cx="28" cy="60" r="2" fill="#FFB74D" />
+              <circle cx="36" cy="70" r="2" fill="#FFB74D" />
+              <circle cx="100" cy="60" r="2" fill="#FFB74D" />
+              <circle cx="92" cy="70" r="2" fill="#FFB74D" />
+              <circle cx="64" cy="24" r="2" fill="#FFB74D" />
+              <circle cx="64" cy="104" r="2" fill="#FFB74D" />
+              
+              <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
+                    fill="none" 
+                    stroke="#FFC107" 
+                    strokeWidth="1" 
+                    opacity="0.5">
+                <animate attributeName="opacity" values="0.1;0.5;0.1" dur="3s" repeatCount="indefinite" />
+                <animate attributeName="stroke-width" values="1;3;1" dur="3s" repeatCount="indefinite" />
+              </path>
+              
+              {/* Ícone de relógio para indicar pendência */}
+              <circle cx="90" cy="38" r="8" fill="#FF5722" opacity="0.9" />
+              <path d="M90 34 L90 38 L93 41" stroke="white" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+            </svg>
+          </div>
+          <div className="balance-info">
+            <h2>VC Pendente</h2>
+            <p className="balance-description">Aguardando confirmação de serviços</p>
+            <div className="balance-amount">
+              <span id="wallet-vc-pending-amount">{formatCurrency(vcPendingBalance, '')}</span>
+              <span className="currency">VC</span>
+            </div>
+            <button 
+              className="btn-warning small"
+              disabled
+            >
+              <i className="fas fa-clock"></i> Aguardando
+            </button>
+            <small className="vc-pending-info">Liberado após confirmação ou 24h</small>
           </div>
         </div>
       </section>
@@ -691,6 +690,7 @@ const Wallet = () => {
               >
                 <option value="all">Todas</option>
                 <option value="vp">VP</option>
+                <option value="vc">VC</option>
                 <option value="vbp">VBP</option>
               </select>
             </div>
@@ -791,11 +791,11 @@ const Wallet = () => {
                 <div className="earning-amount">+50-250 VBP</div>
                 <div className="currency-tag">VBP</div>
                 <button 
-                  className={`btn-claim ${dailyBonusClaimed ? 'claimed' : ''}`}
-                  onClick={claimDailyBonus}
-                  disabled={dailyBonusClaimed}
+                  className={`btn-claim ${!canClaimDailyBonus() ? 'claimed' : ''}`}
+                  onClick={handleClaimDailyBonus}
+                  disabled={!canClaimDailyBonus()}
                 >
-                  {dailyBonusClaimed ? 'Recebido Hoje' : 'Receber Hoje'}
+                  {!canClaimDailyBonus() ? 'Recebido Hoje' : 'Receber Hoje'}
                 </button>
               </div>
             </div>
@@ -894,9 +894,9 @@ const Wallet = () => {
                   onChange={(e) => setSendForm({...sendForm, amount: e.target.value})}
                   placeholder="0"
                   min="1"
-                  max={wallet?.vpBalance || 0}
+                  max={vpBalance}
                 />
-                <small>Saldo disponível: {formatCurrency(wallet?.vpBalance || 0, 'VP')}</small>
+                <small>Saldo disponível: {formatCurrency(vpBalance, 'VP')}</small>
               </div>
               <div className="input-group">
                 <label>Mensagem (Opcional)</label>

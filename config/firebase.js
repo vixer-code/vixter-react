@@ -3,6 +3,8 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getDatabase, connectDatabaseEmulator } from 'firebase/database';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
 const firebaseConfig = {
   apiKey: "AIzaSyABjJMmPTnCUegUtAFd9P8L-qf2_OY30xs",
@@ -16,7 +18,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase with proper error handling
-let app, auth, database, storage;
+let app, auth, database, storage, firestore, functions;
 
 try {
   console.log("Initializing Firebase...");
@@ -27,11 +29,15 @@ try {
   auth = getAuth(app);
   database = getDatabase(app);
   storage = getStorage(app);
+  firestore = getFirestore(app);
+  functions = getFunctions(app, 'us-east1'); // US East region (cost optimized)
   
   console.log("Firebase services initialized:", {
     auth: !!auth,
     database: !!database,
-    storage: !!storage
+    storage: !!storage,
+    firestore: !!firestore,
+    functions: !!functions
   });
   
 } catch (error) {
@@ -44,7 +50,9 @@ try {
 //   connectAuthEmulator(auth, "http://localhost:9099");
 //   connectDatabaseEmulator(database, "localhost", 9000);
 //   connectStorageEmulator(storage, "localhost", 9199);
+//   connectFirestoreEmulator(firestore, "localhost", 8080);
+//   connectFunctionsEmulator(functions, "localhost", 5001);
 // }
 
-export { auth, database, storage };
+export { auth, database, storage, firestore, functions };
 export default app;

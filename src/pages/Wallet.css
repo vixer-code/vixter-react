@@ -9,11 +9,11 @@
   min-height: 100vh;
 }
 
-/* Wallet Header Section - Updated for dual currency */
+/* Wallet Header Section - Updated for quad currency (VP, VC, VBP, VC Pending) */
 .wallet-header {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
@@ -38,20 +38,28 @@
   border: 1px solid rgba(255, 215, 0, 0.2);
 }
 
+.balance-card.vc-card {
+  border: 1px solid rgba(0, 200, 83, 0.2);
+}
+
+.balance-card.vc-pending-card {
+  border: 1px solid rgba(255, 165, 0, 0.2);
+}
+
 .balance-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
 
-.vp-token, .vbp-token {
+.vp-token, .vbp-token, .vc-token, .vc-pending-token {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.vp-token-large, .vbp-token-large {
-  width: 120px;
-  height: 120px;
+.vp-token-large, .vbp-token-large, .vc-token-large, .vc-pending-token-large {
+  width: 100px;
+  height: 100px;
 }
 
 .balance-info {
@@ -94,6 +102,16 @@
 .vbp-card .currency {
   color: #FFD700;
   text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+.vc-card .currency {
+  color: #00C853;
+  text-shadow: 0 0 5px rgba(0, 200, 83, 0.5);
+}
+
+.vc-pending-card .currency {
+  color: #FF9800;
+  text-shadow: 0 0 5px rgba(255, 152, 0, 0.5);
 }
 
 /* Currency Type Markers */
@@ -207,6 +225,36 @@
   color: #FFD700;
   display: block;
   margin-top: 0.5rem;
+}
+
+.vc-info {
+  font-size: 0.8rem;
+  color: #00C853;
+  display: block;
+  margin-top: 0.5rem;
+}
+
+.btn-success {
+  background: rgba(0, 200, 83, 0.1);
+  color: #00C853;
+  border: 1px solid rgba(0, 200, 83, 0.3);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.vc-pending-info {
+  font-size: 0.8rem;
+  color: #FF9800;
+  display: block;
+  margin-top: 0.5rem;
+}
+
+.btn-warning {
+  background: rgba(255, 152, 0, 0.1);
+  color: #FF9800;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 /* Tabs */
@@ -874,6 +922,13 @@
 }
 
 /* Responsive Design */
+@media (max-width: 1200px) {
+  .wallet-header {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .wallet-header {
     grid-template-columns: 1fr;
@@ -886,9 +941,9 @@
     gap: 1rem;
   }
   
-  .vp-token-large, .vbp-token-large {
-    width: 100px;
-    height: 100px;
+  .vp-token-large, .vbp-token-large, .vc-token-large, .vc-pending-token-large {
+    width: 80px;
+    height: 80px;
   }
   
   .balance-amount {
