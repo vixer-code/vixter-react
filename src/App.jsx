@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { StatusProvider } from './contexts/StatusContext';
+import { WalletProvider } from './contexts/WalletContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import NotificationContainer from './components/NotificationContainer';
@@ -40,7 +41,8 @@ function App() {
     <AuthProvider>
       <StatusProvider>
         <NotificationProvider>
-        <Router>
+          <WalletProvider>
+            <Router>
           <div className="App">
             <Header />
             <main className="main-content">
@@ -69,7 +71,8 @@ function App() {
             <Footer />
             <NotificationContainer />
           </div>
-        </Router>
+            </Router>
+          </WalletProvider>
         </NotificationProvider>
       </StatusProvider>
     </AuthProvider>
