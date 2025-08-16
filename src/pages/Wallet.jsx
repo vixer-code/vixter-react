@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useWallet } from '../contexts/WalletContext';
 import { useNotification } from '../contexts/NotificationContext';
 import './Wallet.css';
 
