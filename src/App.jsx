@@ -40,7 +40,6 @@ function App() {
     <AuthProvider>
       <StatusProvider>
         <NotificationProvider>
-          <WalletProvider>
             <Router>
           <div className="App">
             <Header />
@@ -71,7 +70,6 @@ function App() {
             <NotificationContainer />
           </div>
             </Router>
-          </WalletProvider>
         </NotificationProvider>
       </StatusProvider>
     </AuthProvider>
