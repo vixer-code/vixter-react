@@ -30,7 +30,7 @@ try {
   database = getDatabase(app);
   storage = getStorage(app);
   firestore = getFirestore(app);
-  functions = getFunctions(app, 'southamerica-east1'); // São Paulo region
+  functions = getFunctions(app, 'us-east1'); // Updated to match deployed functions
   
   console.log("Firebase services initialized:", {
     auth: !!auth,
