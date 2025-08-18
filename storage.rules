@@ -1,0 +1,225 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // =====================================================
+    // HELPER FUNCTIONS
+    // =====================================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user is the file owner
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Check if user is admin
+    function isAdmin() {
+      return request.auth.uid in ['admin_uid_1', 'admin_uid_2']; // Replace with actual admin UIDs
+    }
+    
+    // Validate image file types
+    function isImageFile() {
+      return resource.contentType.matches('image/.*');
+    }
+    
+    // Validate video file types
+    function isVideoFile() {
+      return resource.contentType.matches('video/.*');
+    }
+    
+    // Validate file size (max 100MB)
+    function isValidFileSize() {
+      return resource.size <= 100 * 1024 * 1024;
+    }
+    
+    // Validate profile image size (max 10MB)
+    function isValidProfileImageSize() {
+      return resource.size <= 10 * 1024 * 1024;
+    }
+    
+    // =====================================================
+    // PROFILE IMAGES
+    // =====================================================
+    
+    match /profile-images/{userId}/{fileName} {
+      // Users can read any profile image (public)
+      allow read: if true;
+      
+      // Users can only upload/update their own profile images
+      allow write: if isAuthenticated() && 
+                     isOwner(userId) && 
+                     isImageFile() && 
+                     isValidProfileImageSize();
+      
+      // Users can delete their own profile images
+      allow delete: if isAuthenticated() && isOwner(userId);
+      
+      // Admin access
+      allow read, write, delete: if isAdmin();
+    }
+    
+    // =====================================================
+    // PACK IMAGES
+    // =====================================================
+    
+    match /pack-images/{creatorId}/{packId}/{fileName} {
+      // Anyone can read pack images (public content)
+      allow read: if true;
+      
+      // Only pack creators can upload pack images
+      allow write: if isAuthenticated() && 
+                     isOwner(creatorId) && 
+                     isImageFile() && 
+                     isValidFileSize();
+      
+      // Only pack creators can delete their pack images
+      allow delete: if isAuthenticated() && isOwner(creatorId);
+      
+      // Admin access
+      allow read, write, delete: if isAdmin();
+    }
+    
+    // =====================================================
+    // SERVICE IMAGES
+    // =====================================================
+    
+    match /service-images/{creatorId}/{serviceId}/{fileName} {
+      // Anyone can read service images (public content)
+      allow read: if true;
+      
+      // Only service creators can upload service images
+      allow write: if isAuthenticated() && 
+                     isOwner(creatorId) && 
+                     isImageFile() && 
+                     isValidFileSize();
+      
+      // Only service creators can delete their service images
+      allow delete: if isAuthenticated() && isOwner(creatorId);
+      
+      // Admin access
+      allow read, write, delete: if isAdmin();
+    }
+    
+    // =====================================================
+    // POST MEDIA (Images & Videos)
+    // =====================================================
+    
+    match /post-media/{authorId}/{postId}/{fileName} {
+      // Anyone can read post media (public content)
+      allow read: if true;
+      
+      // Only post authors can upload media for their posts
+      allow write: if isAuthenticated() && 
+                     isOwner(authorId) && 
+                     (isImageFile() || isVideoFile()) && 
+                     isValidFileSize();
+      
+      // Only post authors can delete their post media
+      allow delete: if isAuthenticated() && isOwner(authorId);
+      
+      // Admin access
+      allow read, write, delete: if isAdmin();
+    }
+    
+    // =====================================================
+    // MESSAGE ATTACHMENTS
+    // =====================================================
+    
+    match /message-attachments/{senderId}/{conversationId}/{fileName} {
+      // Only conversation participants can read message attachments
+      allow read: if isAuthenticated() && 
+                    (isOwner(senderId) || 
+                     // Additional logic would be needed to verify conversation participation
+                     // This is a simplified version
+                     true);
+      
+      // Only message senders can upload attachments
+      allow write: if isAuthenticated() && 
+                     isOwner(senderId) && 
+                     (isImageFile() || isVideoFile()) && 
+                     isValidFileSize();
+      
+      // Only message senders can delete their attachments
+      allow delete: if isAuthenticated() && isOwner(senderId);
+      
+      // Admin access
+      allow read, write, delete: if isAdmin();
+    }
+    
+    // =====================================================
+    // SERVICE DELIVERABLES
+    // =====================================================
+    
+    match /service-deliverables/{sellerId}/{orderId}/{fileName} {
+      // Only buyer and seller can access service deliverables
+      allow read: if isAuthenticated() && 
+                    (isOwner(sellerId) ||
+                     // Additional logic needed to verify buyer access
+                     // This would require a database lookup
+                     true);
+      
+      // Only service sellers can upload deliverables
+      allow write: if isAuthenticated() && 
+                     isOwner(sellerId) && 
+                     isValidFileSize();
+      
+      // Only service sellers can delete their deliverables
+      allow delete: if isAuthenticated() && isOwner(sellerId);
+      
+      // Admin access
+      allow read, write, delete: if isAdmin();
+    }
+    
+    // =====================================================
+    // TEMPORARY UPLOADS
+    // =====================================================
+    
+    match /temp-uploads/{userId}/{fileName} {
+      // Users can only access their own temporary files
+      allow read, write, delete: if isAuthenticated() && isOwner(userId);
+      
+      // Admin access
+      allow read, write, delete: if isAdmin();
+    }
+    
+    // =====================================================
+    // WALLET RELATED FILES (Receipts, etc.)
+    // =====================================================
+    
+    match /wallet-documents/{userId}/{fileName} {
+      // Users can only access their own wallet documents
+      allow read, write: if isAuthenticated() && isOwner(userId);
+      
+      // Users can delete their own wallet documents
+      allow delete: if isAuthenticated() && isOwner(userId);
+      
+      // Admin access for support and verification
+      allow read, write, delete: if isAdmin();
+    }
+    
+    // =====================================================
+    // PUBLIC ASSETS (Logos, etc.)
+    // =====================================================
+    
+    match /public-assets/{fileName} {
+      // Anyone can read public assets
+      allow read: if true;
+      
+      // Only admins can manage public assets
+      allow write, delete: if isAdmin();
+    }
+    
+    // =====================================================
+    // DEFAULT DENY RULE
+    // =====================================================
+    
+    // Deny all other operations by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

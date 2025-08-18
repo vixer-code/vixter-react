@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNotification } from '../contexts/NotificationContext';
+import { useWallet } from '../contexts/WalletContext';
 import './Wallet.css';
 
 const Wallet = () => {

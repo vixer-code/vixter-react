@@ -30,7 +30,7 @@ try {
   database = getDatabase(app);
   storage = getStorage(app);
   firestore = getFirestore(app);
-  functions = getFunctions(app, 'us-east1'); // US East region (cost optimized)
+  functions = getFunctions(app, 'southamerica-east1'); // São Paulo region
   
   console.log("Firebase services initialized:", {
     auth: !!auth,
@@ -54,5 +54,6 @@ try {
 //   connectFunctionsEmulator(functions, "localhost", 5001);
 // }
 
-export { auth, database, storage, firestore, functions };
+// Export db as alias for firestore to match the context usage
+export { auth, database, storage, firestore, firestore as db, functions };
 export default app;

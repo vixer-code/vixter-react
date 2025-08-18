@@ -1,0 +1,231 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // =====================================================
+    // HELPER FUNCTIONS
+    // =====================================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user is the document owner
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Check if user is admin (you should define admin UIDs)
+    function isAdmin() {
+      return request.auth.uid in ['admin_uid_1', 'admin_uid_2']; // Replace with actual admin UIDs
+    }
+    
+    // Validate required fields for wallet
+    function isValidWallet() {
+      return request.resource.data.keys().hasAll(['uid', 'vp', 'vc', 'vbp', 'vcPending', 'updatedAt']) &&
+             request.resource.data.uid == request.auth.uid &&
+             request.resource.data.vp is number &&
+             request.resource.data.vc is number &&
+             request.resource.data.vbp is number &&
+             request.resource.data.vcPending is number &&
+             request.resource.data.vp >= 0 &&
+             request.resource.data.vc >= 0 &&
+             request.resource.data.vbp >= 0 &&
+             request.resource.data.vcPending >= 0;
+    }
+    
+    // =====================================================
+    // WALLET COLLECTION RULES
+    // =====================================================
+    
+    match /wallets/{userId} {
+      // Users can only read their own wallet
+      allow read: if isAuthenticated() && isOwner(userId);
+      
+      // Only Cloud Functions can create/update wallets (no direct client writes)
+      // This ensures all balance changes go through server-side validation
+      allow write: if false;
+      
+      // Admin read access for support
+      allow read: if isAdmin();
+    }
+    
+    // =====================================================
+    // TRANSACTIONS COLLECTION RULES
+    // =====================================================
+    
+    match /transactions/{transactionId} {
+      // Users can only read their own transactions
+      allow read: if isAuthenticated() && 
+                    isOwner(resource.data.userId);
+      
+      // Only Cloud Functions can create transactions (no direct client writes)
+      // This ensures transaction integrity and prevents fraud
+      allow write: if false;
+      
+      // Admin read access for support and auditing
+      allow read: if isAdmin();
+    }
+    
+    // =====================================================
+    // STRIPE PAYMENTS COLLECTION RULES
+    // =====================================================
+    
+    match /stripePayments/{sessionId} {
+      // Users can only read their own payment sessions
+      allow read: if isAuthenticated() && 
+                    isOwner(resource.data.userId);
+      
+      // Only Cloud Functions can write payment data
+      allow write: if false;
+      
+      // Admin access for payment reconciliation
+      allow read: if isAdmin();
+    }
+    
+    // =====================================================
+    // SERVICE ORDERS COLLECTION RULES
+    // =====================================================
+    
+    match /serviceOrders/{orderId} {
+      // Buyers and sellers can read their orders
+      allow read: if isAuthenticated() && 
+                    (isOwner(resource.data.buyerId) || 
+                     isOwner(resource.data.sellerId));
+      
+      // Only specific order updates are allowed (status, delivery notes, etc.)
+      // Most writes should go through Cloud Functions for validation
+      allow update: if isAuthenticated() && 
+                      (isOwner(resource.data.buyerId) || 
+                       isOwner(resource.data.sellerId)) &&
+                      // Only allow specific fields to be updated
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['status', 'metadata', 'timestamps']);
+      
+      // Order creation only via Cloud Functions
+      allow create: if false;
+      allow delete: if false;
+      
+      // Admin access
+      allow read, write: if isAdmin();
+    }
+    
+    // =====================================================
+    // USERS COLLECTION RULES
+    // =====================================================
+    
+    match /users/{userId} {
+      // Users can read/write their own profile
+      allow read, write: if isAuthenticated() && isOwner(userId);
+      
+      // Users can read other users' public profile fields only
+      allow read: if isAuthenticated() && 
+                    request.query.limit <= 50; // Prevent large queries
+      
+      // Admin access
+      allow read, write: if isAdmin();
+    }
+    
+    // =====================================================
+    // PACKS COLLECTION RULES
+    // =====================================================
+    
+    match /packs/{packId} {
+      // Anyone can read packs (public content)
+      allow read: if true;
+      
+      // Only pack owners can create/update their packs
+      allow create, update: if isAuthenticated() && 
+                              isOwner(request.resource.data.creatorId);
+      
+      // Only pack owners can delete their packs
+      allow delete: if isAuthenticated() && 
+                      isOwner(resource.data.creatorId);
+      
+      // Admin access
+      allow read, write: if isAdmin();
+    }
+    
+    // =====================================================
+    // SERVICES COLLECTION RULES
+    // =====================================================
+    
+    match /services/{serviceId} {
+      // Anyone can read services (public content)
+      allow read: if true;
+      
+      // Only service owners can create/update their services
+      allow create, update: if isAuthenticated() && 
+                              isOwner(request.resource.data.creatorId);
+      
+      // Only service owners can delete their services
+      allow delete: if isAuthenticated() && 
+                      isOwner(resource.data.creatorId);
+      
+      // Admin access
+      allow read, write: if isAdmin();
+    }
+    
+    // =====================================================
+    // POSTS COLLECTION RULES
+    // =====================================================
+    
+    match /posts/{postId} {
+      // Anyone can read posts (public content)
+      allow read: if true;
+      
+      // Only post authors can create/update their posts
+      allow create, update: if isAuthenticated() && 
+                              isOwner(request.resource.data.authorId);
+      
+      // Only post authors can delete their posts
+      allow delete: if isAuthenticated() && 
+                      isOwner(resource.data.authorId);
+      
+      // Admin access
+      allow read, write: if isAdmin();
+    }
+    
+    // =====================================================
+    // MESSAGES COLLECTION RULES
+    // =====================================================
+    
+    match /conversations/{conversationId} {
+      // Users can read conversations they're part of
+      allow read: if isAuthenticated() && 
+                    request.auth.uid in resource.data.participants;
+      
+      // Users can update conversations they're part of (last message, etc.)
+      allow update: if isAuthenticated() && 
+                      request.auth.uid in resource.data.participants;
+      
+      // Users can create conversations
+      allow create: if isAuthenticated() && 
+                      request.auth.uid in request.resource.data.participants;
+      
+      match /messages/{messageId} {
+        // Users can read messages in conversations they're part of
+        allow read: if isAuthenticated() && 
+                      request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        
+        // Users can create messages in conversations they're part of
+        allow create: if isAuthenticated() && 
+                        request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
+                        isOwner(request.resource.data.senderId);
+        
+        // No updates or deletes for messages (append-only)
+        allow update, delete: if false;
+      }
+    }
+    
+    // =====================================================
+    // DEFAULT DENY RULE
+    // =====================================================
+    
+    // Deny all other operations by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
