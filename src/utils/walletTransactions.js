@@ -1,7 +1,8 @@
 // Wallet transaction utilities for pack and service sales
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../config/firebase';
 
-const functions = getFunctions();
+// Using the configured functions instance from firebase.js
 
 /**
  * Process pack sale (immediate VC release)

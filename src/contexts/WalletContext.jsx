@@ -14,8 +14,8 @@ import {
   Timestamp,
   runTransaction
 } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { db } from '../../config/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import { redirectToCheckout, getPaymentStatusFromURL, cleanPaymentURL } from '../utils/stripe';
@@ -40,8 +40,7 @@ export const WalletProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [processingPayment, setProcessingPayment] = useState(false);
 
-  // Firebase Functions
-  const functions = getFunctions();
+  // Firebase Functions (using the configured instance from firebase.js)
   const createStripeSession = httpsCallable(functions, 'createStripeSession');
   const initializeWallet = httpsCallable(functions, 'initializeWallet');
   const claimDailyBonusFunc = httpsCallable(functions, 'claimDailyBonus');
