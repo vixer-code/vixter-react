@@ -15,15 +15,10 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-// Initialize Stripe with environment variables
+// Stripe setup (use secrets correctly and avoid module-level client instantiation)
 import Stripe from "stripe";
-const stripe = new Stripe(defineSecret('STRIPE_SECRET_KEY') ?? "", {
-  apiVersion: '2023-10-16',
-  appInfo: {
-    name: 'Vixter Platform',
-    version: '1.0.0',
-  },
-});
+const STRIPE_SECRET = defineSecret('STRIPE_SECRET_KEY');
+const STRIPE_WEBHOOK_SECRET = defineSecret('STRIPE_WEBHOOK_SECRET');
 
 // Configurações globais
 setGlobalOptions({
@@ -79,6 +74,7 @@ export const initializeWallet = onCall({
 export const createStripeSession = onCall({
   memory: "128MiB",
   timeoutSeconds: 60,
+  secrets: [STRIPE_SECRET],
 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Usuário não autenticado");
@@ -112,6 +108,14 @@ export const createStripeSession = onCall({
   }
 
   try {
+    // Instantiate Stripe client with secret at runtime
+    const stripe = new Stripe(STRIPE_SECRET.value(), {
+      apiVersion: '2023-10-16',
+      appInfo: {
+        name: 'Vixter Platform',
+        version: '1.0.0',
+      },
+    });
     // Criar sessão Stripe
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -175,10 +179,11 @@ export const createStripeSession = onCall({
 export const stripeWebhook = onRequest({
   memory: "512MiB",
   timeoutSeconds: 60,
-  cors: false, // Disable CORS for webhook
+  cors: false, // Disable CORS for webhook (Stripe calls this server-to-server)
+  secrets: [STRIPE_SECRET, STRIPE_WEBHOOK_SECRET],
 }, async (req, res) => {
   const sig = req.headers['stripe-signature'];
-  const endpointSecret = defineSecret('STRIPE_WEBHOOK_SECRET');
+  const endpointSecret = STRIPE_WEBHOOK_SECRET.value();
 
   if (!endpointSecret) {
     logger.error(`💥 STRIPE_WEBHOOK_SECRET not configured`);
@@ -190,6 +195,14 @@ export const stripeWebhook = onRequest({
   try {
     // Get raw body for signature verification
     const body = req.rawBody || req.body;
+    // Instantiate Stripe only for webhook verification and any API operations
+    const stripe = new Stripe(STRIPE_SECRET.value(), {
+      apiVersion: '2023-10-16',
+      appInfo: {
+        name: 'Vixter Platform',
+        version: '1.0.0',
+      },
+    });
     event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
   } catch (err) {
     logger.error(`💥 Webhook signature verification failed:`, err.message);
