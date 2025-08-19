@@ -21,24 +21,24 @@ service firebase.storage {
       return request.auth.uid in ['admin_uid_1', 'admin_uid_2']; // Replace with actual admin UIDs
     }
     
-    // Validate image file types
+    // Validate image file types (use request.resource for writes)
     function isImageFile() {
-      return resource.contentType.matches('image/.*');
+      return request.resource != null && request.resource.contentType.matches('image/.*');
     }
     
-    // Validate video file types
+    // Validate video file types (use request.resource for writes)
     function isVideoFile() {
-      return resource.contentType.matches('video/.*');
+      return request.resource != null && request.resource.contentType.matches('video/.*');
     }
     
-    // Validate file size (max 100MB)
+    // Validate file size (max 100MB) for writes
     function isValidFileSize() {
-      return resource.size <= 100 * 1024 * 1024;
+      return request.resource != null && request.resource.size <= 100 * 1024 * 1024;
     }
     
-    // Validate profile image size (max 10MB)
+    // Validate profile image size (max 10MB) for writes
     function isValidProfileImageSize() {
-      return resource.size <= 10 * 1024 * 1024;
+      return request.resource != null && request.resource.size <= 10 * 1024 * 1024;
     }
     
     // =====================================================
@@ -59,6 +59,21 @@ service firebase.storage {
       allow delete: if isAuthenticated() && isOwner(userId);
       
       // Admin access
+      allow read, write, delete: if isAdmin();
+    }
+
+    // Backward compatibility for current client uploads
+    match /profilePictures/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(userId) && isImageFile() && isValidProfileImageSize();
+      allow delete: if isAuthenticated() && isOwner(userId);
+      allow read, write, delete: if isAdmin();
+    }
+
+    match /coverPhotos/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(userId) && isImageFile() && isValidFileSize();
+      allow delete: if isAuthenticated() && isOwner(userId);
       allow read, write, delete: if isAdmin();
     }
     
@@ -103,6 +118,14 @@ service firebase.storage {
       // Admin access
       allow read, write, delete: if isAdmin();
     }
+
+    // Backward-compatible path used by the UI for services
+    match /servicesMedia/{creatorId}/{serviceId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(creatorId) && (isImageFile() || isVideoFile()) && isValidFileSize();
+      allow delete: if isAuthenticated() && isOwner(creatorId);
+      allow read, write, delete: if isAdmin();
+    }
     
     // =====================================================
     // POST MEDIA (Images & Videos)
@@ -122,6 +145,14 @@ service firebase.storage {
       allow delete: if isAuthenticated() && isOwner(authorId);
       
       // Admin access
+      allow read, write, delete: if isAdmin();
+    }
+
+    // Backward compatibility for current posts upload path
+    match /posts/{authorId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(authorId) && (isImageFile() || isVideoFile()) && isValidFileSize();
+      allow delete: if isAuthenticated() && isOwner(authorId);
       allow read, write, delete: if isAdmin();
     }
     
@@ -147,6 +178,14 @@ service firebase.storage {
       allow delete: if isAuthenticated() && isOwner(senderId);
       
       // Admin access
+      allow read, write, delete: if isAdmin();
+    }
+
+    // Packs (generic path used by CreatePackModal)
+    match /packs/{creatorId}/{packId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(creatorId) && (isImageFile() || isVideoFile()) && isValidFileSize();
+      allow delete: if isAuthenticated() && isOwner(creatorId);
       allow read, write, delete: if isAdmin();
     }
     
