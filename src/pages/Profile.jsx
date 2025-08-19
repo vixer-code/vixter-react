@@ -163,7 +163,7 @@ const [formData, setFormData] = useState({
   languages: '',
   hobbies: '',
   aboutMe: ''
-});f
+});
 
   // Load user services from Firestore
   useEffect(() => {
