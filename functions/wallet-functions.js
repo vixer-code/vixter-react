@@ -1758,9 +1758,9 @@ export const autoReleaseServices = onSchedule({
 
 // Services Internal Functions
 async function createServiceInternal(userId, payload) {
-  const { title, description, price, category, tags, deliveryTime } = payload;
+  const { title, description, price, category, tags, features, complementaryOptions, status, currency } = payload;
 
-  if (!title || !description || !price || price <= 0 || !deliveryTime) {
+  if (!title || !description || !price || price <= 0) {
     throw new HttpsError("invalid-argument", "Dados do serviço são obrigatórios");
   }
 
@@ -1773,14 +1773,17 @@ async function createServiceInternal(userId, payload) {
     price: Math.round(price),
     category: category || 'geral',
     tags: Array.isArray(tags) ? tags : [],
-    deliveryTime: deliveryTime,
+    features: Array.isArray(features) ? features : [],
+    complementaryOptions: Array.isArray(complementaryOptions) ? complementaryOptions : [],
+    status: status || 'active',
+    currency: currency || 'VC',
     isActive: true,
     orderCount: 0,
     rating: 0,
     totalRating: 0,
     ratingCount: 0,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: payload.createdAt ? admin.firestore.Timestamp.fromMillis(payload.createdAt) : admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: payload.updatedAt ? admin.firestore.Timestamp.fromMillis(payload.updatedAt) : admin.firestore.FieldValue.serverTimestamp(),
     searchTerms: [
       title.toLowerCase(),
       description.toLowerCase(),
@@ -1881,7 +1884,7 @@ async function deleteServiceInternal(userId, payload) {
 
 // Packs Internal Functions
 async function createPackInternal(userId, payload) {
-  const { title, description, price, category, tags, mediaUrls } = payload;
+  const { title, description, price, category, tags, features, subcategory, packType, discount } = payload;
 
   if (!title || !description || !price || price <= 0) {
     throw new HttpsError("invalid-argument", "Dados do pack são obrigatórios");
@@ -1895,14 +1898,17 @@ async function createPackInternal(userId, payload) {
     description: description.trim(),
     price: Math.round(price),
     category: category || 'geral',
+    subcategory: subcategory || '',
+    packType: packType || 'download',
+    discount: discount || 0,
     tags: Array.isArray(tags) ? tags : [],
-    mediaUrls: Array.isArray(mediaUrls) ? mediaUrls : [],
-    isActive: true,
+    features: Array.isArray(features) ? features : [],
+    isActive: payload.isActive !== false,
     purchaseCount: 0,
     rating: 0,
     totalRating: 0,
     ratingCount: 0,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: payload.createdAt ? admin.firestore.Timestamp.fromMillis(payload.createdAt) : admin.firestore.FieldValue.serverTimestamp(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     searchTerms: [
       title.toLowerCase(),
@@ -2025,8 +2031,8 @@ async function createPostInternal(userId, payload) {
     comments: 0,
     shares: 0,
     isVisible: true,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: payload.createdAt ? admin.firestore.Timestamp.fromMillis(payload.createdAt) : admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: payload.updatedAt ? admin.firestore.Timestamp.fromMillis(payload.updatedAt) : admin.firestore.FieldValue.serverTimestamp(),
     searchTerms: content.toLowerCase().split(' ').filter(term => term.length > 2)
   };
 
