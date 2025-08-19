@@ -165,15 +165,6 @@ const [formData, setFormData] = useState({
   aboutMe: ''
 });
 
-  useEffect(() => {
-    loadProfile();
-    return () => {
-      // Cleanup listeners
-      const userRef = ref(database, `users/${userId || currentUser?.uid}`);
-      off(userRef);
-    };
-  }, [userId, currentUser]);
-
   // Load user services from Firestore
   useEffect(() => {
     const targetUserId = userId || currentUser?.uid;
