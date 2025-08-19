@@ -15,7 +15,7 @@
     }
   ],
   "firestore": {
-    "rules": "../vixter-code/firestore.rules",
+    "rules": "../vixter-react/firestore.rules",
     "indexes": "firestore.indexes.json"
   },
   "hosting": {
@@ -33,6 +33,6 @@
     ]
   },
   "storage": {
-    "rules": "../vixter-code/storage.rules"
+    "rules": "../vixter-react/storage.rules"
   }
 }

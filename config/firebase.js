@@ -9,7 +9,7 @@ import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 const firebaseConfig = {
   apiKey: "AIzaSyABjJMmPTnCUegUtAFd9P8L-qf2_OY30xs",
   authDomain: "vixter-451b3.firebaseapp.com",
-  databaseURL: "https://vixter-451b3-default-rtdb.firebaseio.com",
+  databaseURL: "https://vixter-451b3.firebaseio.com/",
   projectId: "vixter-451b3",
   storageBucket: "vixter-451b3.firebasestorage.app",
   messagingSenderId: "429636386363",
