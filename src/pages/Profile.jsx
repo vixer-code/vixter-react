@@ -10,7 +10,6 @@ import { useServices } from '../contexts/ServicesContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import { useEmailVerification } from '../hooks/useEmailVerification';
-import StatusIndicator from '../components/StatusIndicator';
 const CreateServiceModal = lazy(() => import('../components/CreateServiceModal'));
 const CreatePackModal = lazy(() => import('../components/CreatePackModal'));
 import CachedImage from '../components/CachedImage';
@@ -40,9 +39,6 @@ const Profile = () => {
   const [posts, setPosts] = useState([]);
   const [newPostContent, setNewPostContent] = useState('');
   const [selectedImages, setSelectedImages] = useState([]);
-  // userStatus state removed; StatusIndicator handles it internally now
-  // Packs now managed by PacksContext - removed local state
-  // subscriptions not yet rendered; keep local fetch but no state to avoid blocking render
   const [reviews, setReviews] = useState([]);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [showCreateServiceModal, setShowCreateServiceModal] = useState(false);
@@ -251,8 +247,6 @@ const [formData, setFormData] = useState({
       console.error('Error loading posts:', error);
     }
   };
-
-  // Removed loadUserStatus: StatusIndicator hook handles presence updates
 
   const handleServiceCreated = (newService) => {
     // The services hook will automatically update the services list
@@ -1148,11 +1142,6 @@ const [formData, setFormData] = useState({
                             showLoading={false}
                             loading="lazy"
                           />
-                          <StatusIndicator 
-                            userId={follower.id}
-                            isOwner={false}
-                            size="small"
-                          />
                         </div>
                         <div className="friend-name">{follower.displayName}</div>
                       </div>
@@ -1767,11 +1756,6 @@ const [formData, setFormData] = useState({
                         alt={follower.displayName}
                         sizes="40px"
                         showLoading={false}
-                      />
-                      <StatusIndicator 
-                        userId={follower.id}
-                        isOwner={false}
-                        size="small"
                       />
                     </div>
                     <div className="modal-follower-name">{follower.displayName}</div>
