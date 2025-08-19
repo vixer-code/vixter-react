@@ -14,8 +14,7 @@ import {
   startAfter,
   Timestamp
 } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
-import { db, functions } from '../../config/firebase';
+import { db } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 
@@ -38,8 +37,7 @@ export const UserProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
-  // Firebase Functions
-  const migrateUserFunc = httpsCallable(functions, 'migrateUserToFirestore');
+  // Migration functions removed from deployment; we create a default doc if missing
 
   // Load user profile from Firestore
   useEffect(() => {
@@ -65,8 +63,17 @@ export const UserProvider = ({ children }) => {
           const userData = doc.data();
           setUserProfile(userData);
         } else {
-          // User doesn't exist in Firestore, trigger migration
-          migrateUserFromRTDB();
+          // User doesn't exist: create minimal profile document
+          setDoc(userRef, {
+            uid: currentUser.uid,
+            email: currentUser.email || '',
+            displayName: currentUser.displayName || '',
+            profilePictureURL: currentUser.photoURL || null,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+            stats: { totalPosts: 0, totalServices: 0, totalPacks: 0, totalSales: 0 },
+            searchTerms: [(currentUser.displayName || '').toLowerCase(), (currentUser.email || '').toLowerCase()].filter(Boolean)
+          });
         }
         setLoading(false);
       }, (error) => {
@@ -83,24 +90,10 @@ export const UserProvider = ({ children }) => {
     }
   }, [currentUser, showError]);
 
-  // Migrate user from RTDB to Firestore
+  // Migration disabled
   const migrateUserFromRTDB = useCallback(async () => {
-    if (!currentUser) return;
-
-    try {
-      showInfo('Migrando dados do usuário...', 'Migração');
-      
-      const result = await migrateUserFunc();
-      
-      if (result.data.success) {
-        setUserProfile(result.data.userData);
-        showSuccess('Dados do usuário migrados com sucesso!', 'Migração Completa');
-      }
-    } catch (error) {
-      console.error('Error migrating user:', error);
-      showError('Erro ao migrar dados do usuário.', 'Erro de Migração');
-    }
-  }, [currentUser, migrateUserFunc, showSuccess, showError, showInfo]);
+    showInfo('Migração desativada.', 'Info');
+  }, [showInfo]);
 
   // Update user profile
   const updateUserProfile = useCallback(async (updates) => {

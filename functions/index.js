@@ -9,14 +9,6 @@ import {
   claimDailyBonus,
   autoReleaseServices,
 
-  // Migrations
-  migrateUserToFirestore,
-  migrateAllUsers,
-  migratePacksFromLegacy,
-  migrateServicesFromLegacy,
-  migrateFollowersFromLegacy,
-  migrateAllLegacyData,
-
   // Packs CRUD
   createPack,
   updatePack,
@@ -44,14 +36,6 @@ export {
   processServicePurchase,
   claimDailyBonus,
   autoReleaseServices,
-
-  // Migrations
-  migrateUserToFirestore,
-  migrateAllUsers,
-  migratePacksFromLegacy,
-  migrateServicesFromLegacy,
-  migrateFollowersFromLegacy,
-  migrateAllLegacyData,
 
   // Packs CRUD
   createPack,
