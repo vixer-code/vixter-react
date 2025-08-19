@@ -82,98 +82,28 @@ const Feed = () => {
   }
 
   async function loadPosts() {
-    const snap = await get(ref(database, 'posts'));
-    const list = [];
-    if (snap.exists()) {
-      snap.forEach(c => list.push({ id: c.key, ...c.val() }));
-    }
-    list.sort((a, b) => (b.timestamp || b.createdAt || 0) - (a.timestamp || a.createdAt || 0));
-    setAllPosts(list);
+    // TODO: Load posts from Firestore instead of RTDB
+    console.log('🚧 Posts will be loaded from Firestore in the next update');
+    setAllPosts([]);
   }
 
   async function ensureUsersLoaded(userIds) {
-    const missing = userIds.filter(id => !users[id]);
-    if (missing.length === 0) return;
-    const fetched = {};
-    await Promise.all(
-      missing.map(async id => {
-        const s = await get(ref(database, `users/${id}`));
-        fetched[id] = s.exists() ? s.val() : {};
-      })
-    );
-    setUsers(prev => ({ ...prev, ...fetched }));
+    // TODO: Load users from Firestore UserContext
+    console.log('🚧 User data will be loaded from UserContext/Firestore');
+    setUsers({});
   }
 
   async function filterAndDecorate(tab) {
-    let posts = [...allPosts];
-    if (tab === 'following') {
-      const uid = currentUser?.uid;
-      if (!uid) {
-        posts = [];
-      } else {
-        const followersSnap = await get(ref(database, 'followers'));
-        const followingIds = [];
-        if (followersSnap.exists()) {
-          followersSnap.forEach(uSnap => {
-            const map = uSnap.val() || {};
-            if (map[uid]) followingIds.push(uSnap.key);
-          });
-        }
-        posts = posts.filter(p => followingIds.includes(p.userId));
-      }
-    } else if (tab === 'official') {
-      const unique = [...new Set(posts.map(p => p.userId).filter(Boolean))];
-      await ensureUsersLoaded(unique);
-      posts = posts.filter(p => {
-        const u = users[p.userId] || {};
-        return u.admin || u.accountType === 'official';
-      });
-    }
-
-    // Ensure author info is available
-    const ids = [...new Set(posts.map(p => p.userId).filter(Boolean))];
-    await ensureUsersLoaded(ids);
-
-    // Build trending
-    const tagCount = {};
-    posts.forEach(p => {
-      const tags = Array.isArray(p.hashtags) && p.hashtags.length > 0 ? p.hashtags : extractHashTags(p.content);
-      tags.forEach(t => {
-        tagCount[t] = (tagCount[t] || 0) + 1;
-      });
-    });
-    const top = Object.entries(tagCount)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 12)
-      .map(([t]) => t);
-    setTrending(top);
-
-    setFilteredPosts(posts);
+    // TODO: Implement filtering with Firestore posts and Firestore followers
+    console.log('🚧 Post filtering will be implemented with Firestore data');
+    setFilteredPosts([]);
+    setTrending([]);
   }
 
   async function buildCommunityStars() {
-    try {
-      const followersSnap = await get(ref(database, 'followers'));
-      const counts = {};
-      if (followersSnap.exists()) {
-        followersSnap.forEach(s => {
-          counts[s.key] = Object.keys(s.val() || {}).length;
-        });
-      }
-      const top = Object.entries(counts)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 3);
-      const result = [];
-      for (const [uid, total] of top) {
-        const uSnap = await get(ref(database, `users/${uid}`));
-        const u = uSnap.exists() ? uSnap.val() : {};
-        result.push({ id: uid, totalFollowers: total, ...u });
-      }
-      setStars(result);
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('Erro ao montar Estrelas da Comunidade:', e);
-    }
+    // TODO: Build community stars from Firestore followers analytics
+    console.log('🚧 Community stars will be built from Firestore analytics');
+    setStars([]);
   }
 
   async function handlePublish() {
@@ -183,54 +113,18 @@ const Feed = () => {
     }
     const content = postText.trim();
     if (!content && !postFile) return;
-    setIsPublishing(true);
-    try {
-      const createdAt = Date.now();
-      const hashtags = extractHashTags(content);
-      const images = [];
-      if (postFile) {
-        const path = `posts/${currentUser.uid}/${createdAt}_${postFile.name}`;
-        const sRef = storageRef(storage, path);
-        await uploadBytes(sRef, postFile);
-        images.push(await getDownloadURL(sRef));
-      }
-              const newRef = push(ref(database, 'posts'));
-      await set(newRef, {
-        userId: currentUser.uid,
-        content,
-        createdAt,
-        images,
-        hashtags
-      });
-      // Reset and refresh
-      setIsCreating(false);
-      setPostText('');
-      setPostFile(null);
-      await loadPosts();
-      await filterAndDecorate(currentTab);
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('Erro ao publicar:', e);
-      alert('Não foi possível publicar. Tente novamente mais tarde.');
-    } finally {
-      setIsPublishing(false);
-    }
+    
+    // TODO: Implement via Cloud Function createPost
+    alert('🚧 Criação de posts será implementada via Cloud Functions em breve!');
+    setIsCreating(false);
+    setPostText('');
+    setPostFile(null);
   }
 
   async function toggleLike(postId, liked) {
     if (!currentUser) return;
-    try {
-      const likeRef = ref(database, `likes/${postId}/${currentUser.uid}`);
-      if (liked) {
-        await remove(likeRef);
-      } else {
-        await set(likeRef, true);
-      }
-      // Reload posts to update like counts
-      await loadPosts();
-    } catch (error) {
-      console.error('Error toggling like:', error);
-    }
+    // TODO: Implement via Cloud Function togglePostLike
+    alert('🚧 Likes serão implementados via Cloud Functions em breve!');
   }
 
   async function deletePost(postId) {
@@ -260,87 +154,10 @@ const Feed = () => {
   const confirmDeletePost = async () => {
     if (!postToDelete) return;
     
-    // Check if database is properly initialized
-    if (!database) {
-      alert('Erro: Banco de dados não inicializado.');
-      return;
-    }
-    
-    // Check if user is authenticated
-    if (!currentUser || !currentUser.uid) {
-      alert('Erro: Usuário não autenticado.');
-      return;
-    }
-    
-    // Validate post ID
-    if (!postToDelete.id || typeof postToDelete.id !== 'string' || postToDelete.id.trim() === '') {
-      alert('Erro: ID da publicação inválido.');
-      return;
-    }
-    
-    try {
-      // Remove post from database
-      const postRef = ref(database, `posts/${postToDelete.id}`);
-      
-      // Check if the post exists before trying to delete
-      const postSnapshot = await get(postRef);
-      
-      if (!postSnapshot.exists()) {
-        alert('Publicação não encontrada no banco de dados.');
-        return;
-      }
-      
-      // Verify the current user is the owner of the post
-      const postData = postSnapshot.val();
-      
-      if (postData.userId !== currentUser.uid) {
-        alert('Você não tem permissão para excluir esta publicação.');
-        return;
-      }
-      
-      // Remove the main post first
-      await remove(postRef);
-      
-      // Reload posts to update the list immediately after successful post deletion
-      await loadPosts();
-      
-      // Close modal and reset state
-      setShowDeleteModal(false);
-      setPostToDelete(null);
-      
-      // Try to remove associated likes but don't fail if it doesn't exist
-      try {
-        const likesRef = ref(database, `likes/${postToDelete.id}`);
-        await remove(likesRef);
-      } catch (likesError) {
-        // Don't fail the entire operation if likes removal fails
-      }
-      
-      // Try to remove associated comments but don't fail if it doesn't exist
-      try {
-        const commentsRef = ref(database, `comments/${postToDelete.id}`);
-        await remove(commentsRef);
-      } catch (commentsError) {
-        // Don't fail the entire operation if comments removal fails
-      }
-      
-      // Show success message
-      alert('Publicação removida com sucesso!');
-      
-    } catch (error) {
-      console.error('Error deleting post:', error);
-      
-      // Handle specific Firebase error codes
-      if (error.code === 'PERMISSION_DENIED') {
-        alert('Permissão negada. Verifique se você está logado e é o proprietário da publicação.');
-      } else if (error.code === 'UNAUTHORIZED') {
-        alert('Usuário não autorizado. Faça login novamente.');
-      } else if (error.code === 'NOT_FOUND') {
-        alert('Publicação não encontrada no banco de dados.');
-      } else {
-        alert(`Erro ao excluir publicação: ${error.message}`);
-      }
-    }
+    // TODO: Implement via Cloud Function deletePost
+    alert('🚧 Exclusão de posts será implementada via Cloud Functions em breve!');
+    setShowDeleteModal(false);
+    setPostToDelete(null);
   };
 
   const cancelDeletePost = () => {

@@ -1,14 +1,15 @@
 import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { ref, get, update, set, remove, onValue, off, push, query, orderByChild, equalTo } from 'firebase/database';
+import { ref, get, set, remove, push, query, orderByChild, equalTo } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
+import { usePacks } from '../contexts/PacksContext';
+import { useServices } from '../contexts/ServicesContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import { useEmailVerification } from '../hooks/useEmailVerification';
-import { useServices } from '../hooks/useServices';
 import StatusIndicator from '../components/StatusIndicator';
 const CreateServiceModal = lazy(() => import('../components/CreateServiceModal'));
 const CreatePackModal = lazy(() => import('../components/CreatePackModal'));
@@ -24,6 +25,8 @@ const Profile = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { userProfile, getUserById, updateUserProfile, formatUserDisplayName, getUserAvatarUrl, loading: userLoading } = useUser();
+  const { packs: firestorePacks, loading: packsLoading, loadUserPacks, createPack, updatePack, deletePack } = usePacks();
+  const { services: firestoreServices, loading: servicesLoading, loadUserServices, updateServiceStatus, deleteService } = useServices();
   const { isVerified, isChecking } = useEmailVerification();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const [profile, setProfile] = useState(null);
@@ -38,8 +41,7 @@ const Profile = () => {
   const [newPostContent, setNewPostContent] = useState('');
   const [selectedImages, setSelectedImages] = useState([]);
   // userStatus state removed; StatusIndicator handles it internally now
-  const [packs, setPacks] = useState([]);
-  const [packsLoading, setPacksLoading] = useState(false);
+  // Packs now managed by PacksContext - removed local state
   // subscriptions not yet rendered; keep local fetch but no state to avoid blocking render
   const [reviews, setReviews] = useState([]);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -150,14 +152,7 @@ const Profile = () => {
     }
   }, [profile]);
 
-  // Services hook
-  const { 
-    services, 
-    loading: servicesLoading, 
-    setupServicesListener,
-    deleteService, 
-    updateServiceStatus 
-  } = useServices();
+  // Services managed by ServicesContext - no need for separate hook
 
   // Form state for editing
 const [formData, setFormData] = useState({
@@ -179,33 +174,21 @@ const [formData, setFormData] = useState({
     };
   }, [userId, currentUser]);
 
-  // Set up real-time services listener
+  // Load user services from Firestore
   useEffect(() => {
     const targetUserId = userId || currentUser?.uid;
     if (targetUserId) {
-      const cleanup = setupServicesListener(targetUserId);
-      return cleanup;
+      loadUserServices(targetUserId);
     }
-  }, [userId, currentUser, setupServicesListener]);
+  }, [userId, currentUser, loadUserServices]);
 
-  // Set up real-time packs listener
+  // Load user packs from Firestore
   useEffect(() => {
     const targetUserId = userId || currentUser?.uid;
-    if (!targetUserId) return;
-    const packsRef = ref(database, `packs/${targetUserId}`);
-    setPacksLoading(true);
-    onValue(packsRef, (snapshot) => {
-      if (!snapshot.exists()) {
-        setPacks([]);
-      } else {
-        const packsData = snapshot.val();
-        const packsArray = Object.entries(packsData).map(([id, pack]) => ({ id, ...pack }));
-        setPacks(packsArray);
-      }
-      setPacksLoading(false);
-    });
-    return () => off(packsRef);
-  }, [userId, currentUser]);
+    if (targetUserId) {
+      loadUserPacks(targetUserId);
+    }
+  }, [userId, currentUser, loadUserPacks]);
 
   // Handle URL hash navigation
   useEffect(() => {
@@ -224,21 +207,20 @@ const [formData, setFormData] = useState({
 
   const loadFollowers = async (targetUserId) => {
     try {
-      const followersRef = ref(database, `followers/${targetUserId}`);
-      const snapshot = await get(followersRef);
+      // Load followers from Firestore subcollection
+      const { collection, getDocs } = await import('firebase/firestore');
+      const { firestore } = await import('../../config/firebase');
       
-      if (snapshot.exists()) {
-        const followersData = snapshot.val();
-        const followerIds = Object.keys(followersData);
+      const followersRef = collection(firestore, 'users', targetUserId, 'followers');
+      const snapshot = await getDocs(followersRef);
+      
+      if (!snapshot.empty) {
+        const followerIds = snapshot.docs.map(doc => doc.id);
         
-        // Fetch follower profiles
+        // Fetch follower profiles using UserContext
         const followerPromises = followerIds.map(async (followerId) => {
-          const userRef = ref(database, `users/${followerId}`);
-          const userSnapshot = await get(userRef);
-          if (userSnapshot.exists()) {
-            return { id: followerId, ...userSnapshot.val() };
-          }
-          return null;
+          const userData = await getUserById(followerId);
+          return userData ? { id: followerId, ...userData } : null;
         });
         
         const followers = (await Promise.all(followerPromises)).filter(f => f !== null);
@@ -248,9 +230,14 @@ const [formData, setFormData] = useState({
         if (currentUser) {
           setIsFollowing(followerIds.includes(currentUser.uid));
         }
+      } else {
+        setFollowers([]);
+        setIsFollowing(false);
       }
     } catch (error) {
       console.error('Error loading followers:', error);
+      setFollowers([]);
+      setIsFollowing(false);
     }
   };
 
@@ -308,7 +295,7 @@ const [formData, setFormData] = useState({
     if (!currentUser) return;
     
     // Find the pack to show its title in the modal
-    const pack = packs.find(p => p.id === packId);
+    const pack = firestorePacks.find(p => p.id === packId);
     if (pack) {
       setPackToDelete({ id: packId, title: pack.title });
       setShowDeletePackModal(true);
@@ -319,8 +306,7 @@ const [formData, setFormData] = useState({
     if (!packToDelete) return;
     
     try {
-      const packRef = ref(database, `packs/${currentUser.uid}/${packToDelete.id}`);
-      await remove(packRef);
+      await deletePack(packToDelete.id);
       
       // Close modal and reset state
       setShowDeletePackModal(false);
@@ -339,8 +325,7 @@ const [formData, setFormData] = useState({
   const handlePackStatusChange = async (packId, newStatus) => {
     if (!currentUser) return;
     try {
-      const packRef = ref(database, `packs/${currentUser.uid}/${packId}`);
-      await update(packRef, { status: newStatus, updatedAt: Date.now() });
+      await updatePack(packId, { status: newStatus, updatedAt: Date.now() });
     } catch (error) {
       console.error('Error updating pack status:', error);
       alert('Erro ao atualizar status do pack. Tente novamente.');
@@ -352,67 +337,10 @@ const [formData, setFormData] = useState({
     setShowCreateServiceModal(true);
   };
 
-  // Helpers for VP balance and transactions
-  const getVpBalance = async (uid) => {
-    try {
-      const vpRef = ref(database, `users/${uid}/vpBalance`);
-      const vpSnapshot = await get(vpRef);
-      return vpSnapshot.exists() ? Number(vpSnapshot.val()) : 0;
-    } catch (error) {
-      console.error('Error fetching VP balance:', error);
-      return 0;
-    }
-  };
+  // Purchase functions will be implemented via Cloud Functions for atomic transactions
+  // All balance mutations are now handled by Cloud Functions to ensure data consistency
 
-  const setVpBalance = async (uid, newBalance) => {
-    try {
-      const vpRef = ref(database, `users/${uid}/vpBalance`);
-      await set(vpRef, newBalance);
-    } catch (error) {
-      console.error('Error setting VP balance:', error);
-      throw error;
-    }
-  };
-
-  const addUserTransaction = async (uid, type, description, amount, currency = 'VP') => {
-    try {
-      const transaction = {
-        type,
-        description,
-        amount,
-        currency: String(currency).toUpperCase(),
-        timestamp: Date.now()
-      };
-      await push(ref(database, `users/${uid}/transactions`), transaction);
-    } catch (error) {
-      console.error('Error adding transaction:', error);
-      // Non-fatal for UI flow
-    }
-  };
-
-  // Provider VC helpers
-  const getVcBalance = async (uid) => {
-    try {
-      const vcRef = ref(database, `users/${uid}/vcBalance`);
-      const snap = await get(vcRef);
-      return snap.exists() ? Number(snap.val()) : 0;
-    } catch (error) {
-      console.error('Error fetching VC balance:', error);
-      return 0;
-    }
-  };
-
-  const setVcBalance = async (uid, newBalance) => {
-    try {
-      const vcRef = ref(database, `users/${uid}/vcBalance`);
-      await set(vcRef, newBalance);
-    } catch (error) {
-      console.error('Error setting VC balance:', error);
-      throw error;
-    }
-  };
-
-  // Purchase handlers for visitors
+  // Purchase handlers for visitors - TODO: Implement via Cloud Functions
   const handlePurchaseService = async (service) => {
     if (!currentUser) {
       navigate('/login');
@@ -420,129 +348,38 @@ const [formData, setFormData] = useState({
     }
     if (isOwner) return; // Safety guard
 
-    const basePriceVC = typeof service.price === 'number' ? service.price : parseFloat(service.price) || 0;
-    const vpPrice = Math.max(0, Math.round(basePriceVC * 1.5));
-
-    try {
-      const balance = await getVpBalance(currentUser.uid);
-      if (balance < vpPrice) {
-        showWarning('Saldo insuficiente. Vá para a Carteira para recarregar VP.', 'Saldo insuficiente');
-        navigate('/wallet');
-        return;
-      }
-
-      await setVpBalance(currentUser.uid, balance - vpPrice);
-      await addUserTransaction(
-        currentUser.uid,
-        'purchase',
-        `Compra de serviço: ${service.title || 'Serviço'}`,
-        -vpPrice,
-        'VP'
-      );
-
-      // Credit provider VC and record sale for the service
-      const providerId = service.providerId || userId;
-      if (providerId) {
-        try {
-          const providerVC = await getVcBalance(providerId);
-          await setVcBalance(providerId, providerVC + basePriceVC);
-          await addUserTransaction(
-            providerId,
-            'earned',
-            `Venda de serviço: ${service.title || 'Serviço'}`,
-            basePriceVC,
-            'VC'
-          );
-        } catch (err) {
-          console.error('Error crediting provider VC for service:', err);
-        }
-
-        // Persist buyer + sale info under serviceSales/{providerId}/{serviceId}
-        try {
-          const buyerSnap = await get(ref(database, `users/${currentUser.uid}`));
-          const buyer = buyerSnap.exists() ? buyerSnap.val() : {};
-          const saleRecord = {
-            buyerId: currentUser.uid,
-            buyerUsername: buyer.username || null,
-            buyerDisplayName: buyer.displayName || null,
-            serviceId: service.id,
-            serviceTitle: service.title || null,
-            priceVC: basePriceVC,
-            priceVP: vpPrice,
-            currency: { buyer: 'VP', seller: 'VC' },
-            refundPolicyAcknowledged: true,
-            timestamp: Date.now(),
-            status: 'completed'
-          };
-          await push(ref(database, `serviceSales/${providerId}/${service.id}`), saleRecord);
-        } catch (err) {
-          console.error('Error recording service sale:', err);
-        }
-      }
-
-      showSuccess('Compra realizada com sucesso!', 'Compra concluída');
-    } catch (error) {
-      console.error('Error processing service purchase:', error);
-      showError('Erro ao processar compra. Tente novamente.', 'Erro');
-    }
+    showWarning('🚧 Compra de serviços será implementada via Cloud Functions em breve!', 'Funcionalidade em Desenvolvimento');
+    
+    // TODO: Call Cloud Function processServicePurchase
+    // const result = await httpsCallable(functions, 'processServicePurchase')({ serviceId: service.id });
   };
 
-  // Owner: open service sales modal and load sales
+  // Owner: open service sales modal - TODO: Load from Firestore
   const openServiceSales = async (service) => {
     if (!currentUser || !isOwner) return;
     setSalesService(service);
     setServiceSalesLoading(true);
     setShowServiceSalesModal(true);
-    try {
-      const salesRef = ref(database, `serviceSales/${currentUser.uid}/${service.id}`);
-      const snap = await get(salesRef);
-      if (snap.exists()) {
-        const val = snap.val();
-        const list = Object.entries(val).map(([id, data]) => ({ id, ...data }));
-        list.sort((a, b) => b.timestamp - a.timestamp);
-        setServiceSales(list);
-        const total = list.reduce((sum, s) => sum + (Number(s.priceVC) || 0), 0);
-        setServiceTotalVCEarned(total);
-      } else {
-        setServiceSales([]);
-        setServiceTotalVCEarned(0);
-      }
-    } catch (error) {
-      console.error('Error loading service sales:', error);
-      setServiceSales([]);
-      setServiceTotalVCEarned(0);
-    } finally {
-      setServiceSalesLoading(false);
-    }
+    
+    // TODO: Load sales data from Firestore serviceOrders collection
+    showInfo('🚧 Recibos de vendas serão carregados do Firestore em breve!', 'Funcionalidade em Desenvolvimento');
+    setServiceSales([]);
+    setServiceTotalVCEarned(0);
+    setServiceSalesLoading(false);
   };
 
-  // Owner: open pack sales modal and load sales
+  // Owner: open pack sales modal - TODO: Load from Firestore
   const openPackSales = async (pack) => {
     if (!currentUser || !isOwner) return;
     setSalesPack(pack);
     setPackSalesLoading(true);
     setShowPackSalesModal(true);
-    try {
-      const salesRef = ref(database, `packSales/${currentUser.uid}/${pack.id}`);
-      const snap = await get(salesRef);
-      if (snap.exists()) {
-        const val = snap.val();
-        const list = Object.entries(val).map(([id, data]) => ({ id, ...data }));
-        list.sort((a, b) => b.timestamp - a.timestamp);
-        setPackSales(list);
-        const total = list.reduce((sum, s) => sum + (Number(s.priceVC) || 0), 0);
-        setPackTotalVCEarned(total);
-      } else {
-        setPackSales([]);
-        setPackTotalVCEarned(0);
-      }
-    } catch (error) {
-      console.error('Error loading pack sales:', error);
-      setPackSales([]);
-      setPackTotalVCEarned(0);
-    } finally {
-      setPackSalesLoading(false);
-    }
+    
+    // TODO: Load sales data from Firestore packOrders collection
+    showInfo('🚧 Recibos de vendas serão carregados do Firestore em breve!', 'Funcionalidade em Desenvolvimento');
+    setPackSales([]);
+    setPackTotalVCEarned(0);
+    setPackSalesLoading(false);
   };
 
   const handlePurchasePack = async (pack) => {
@@ -552,78 +389,15 @@ const [formData, setFormData] = useState({
     }
     if (isOwner) return; // Safety guard
 
-    const basePrice = typeof pack.price === 'number' ? pack.price : parseFloat(pack.price) || 0;
-    const discountPercent = typeof pack.discount === 'number' ? pack.discount : parseFloat(pack.discount) || 0;
-    const discounted = basePrice * (1 - (discountPercent > 0 ? discountPercent / 100 : 0));
-    const vpPrice = Math.max(0, Math.round(discounted * 1.5));
-
-    try {
-      const balance = await getVpBalance(currentUser.uid);
-      if (balance < vpPrice) {
-        showWarning('Saldo insuficiente. Vá para a Carteira para recarregar VP.', 'Saldo insuficiente');
-        navigate('/wallet');
-        return;
-      }
-
-      await setVpBalance(currentUser.uid, balance - vpPrice);
-      await addUserTransaction(
-        currentUser.uid,
-        'purchase',
-        `Compra de pack: ${pack.title || 'Pack'}`,
-        -vpPrice,
-        'VP'
-      );
-
-      // Credit provider VC and record pack sale
-      const providerId = pack.providerId || userId;
-      const creditedVC = discounted; // seller receives VC on discounted base
-      if (providerId) {
-        try {
-          const providerVC = await getVcBalance(providerId);
-          await setVcBalance(providerId, providerVC + creditedVC);
-          await addUserTransaction(
-            providerId,
-            'earned',
-            `Venda de pack: ${pack.title || 'Pack'}`,
-            creditedVC,
-            'VC'
-          );
-        } catch (err) {
-          console.error('Error crediting provider VC for pack:', err);
-        }
-
-        try {
-          const buyerSnap = await get(ref(database, `users/${currentUser.uid}`));
-          const buyer = buyerSnap.exists() ? buyerSnap.val() : {};
-          const saleRecord = {
-            buyerId: currentUser.uid,
-            buyerUsername: buyer.username || null,
-            buyerDisplayName: buyer.displayName || null,
-            packId: pack.id,
-            packTitle: pack.title || null,
-            priceVC: creditedVC,
-            priceVP: vpPrice,
-            currency: { buyer: 'VP', seller: 'VC' },
-            refundPolicyAcknowledged: true,
-            timestamp: Date.now(),
-            status: 'completed'
-          };
-          await push(ref(database, `packSales/${providerId}/${pack.id}`), saleRecord);
-        } catch (err) {
-          console.error('Error recording pack sale:', err);
-        }
-      }
-
-      showSuccess('Compra realizada com sucesso!', 'Compra concluída');
-    } catch (error) {
-      console.error('Error processing pack purchase:', error);
-      showError('Erro ao processar compra. Tente novamente.', 'Erro');
-    }
+    showWarning('🚧 Compra de packs será implementada via Cloud Functions em breve!', 'Funcionalidade em Desenvolvimento');
+    
+    // TODO: Call Cloud Function processPackPurchase
+    // const result = await httpsCallable(functions, 'processPackPurchase')({ packId: pack.id });
   };
 
   const handleDeleteService = async (serviceId) => {
     // Find the service to show its title in the modal
-    const service = services.find(s => s.id === serviceId);
+    const service = firestoreServices.find(s => s.id === serviceId);
     if (service) {
       setServiceToDelete({ id: serviceId, title: service.title });
       setShowDeleteServiceModal(true);
@@ -779,23 +553,7 @@ const [formData, setFormData] = useState({
     }
   };
 
-  const loadPacks = async (targetUserId) => {
-    try {
-      const packsRef = ref(database, `packs/${targetUserId}`);
-      const snapshot = await get(packsRef);
-      
-      if (snapshot.exists()) {
-        const packsData = snapshot.val();
-        const packsArray = Object.entries(packsData).map(([id, pack]) => ({
-          id,
-          ...pack
-        }));
-        setPacks(packsArray);
-      }
-    } catch (error) {
-      console.error('Error loading packs:', error);
-    }
-  };
+  // loadPacks removed - now handled by PacksContext
 
   // Removed loadSubscriptions state and fetch for now (feature coming soon)
 
@@ -860,15 +618,19 @@ const [formData, setFormData] = useState({
     if (!currentUser) return;
 
     try {
+      const { doc, setDoc, deleteDoc } = await import('firebase/firestore');
+      const { firestore } = await import('../../config/firebase');
+      
       const targetUserId = userId || currentUser.uid;
-      const followRef = ref(database, `followers/${targetUserId}/${currentUser.uid}`);
+      const followRef = doc(firestore, 'users', targetUserId, 'followers', currentUser.uid);
       
       if (isFollowing) {
-        await remove(followRef);
+        await deleteDoc(followRef);
         setIsFollowing(false);
       } else {
-        await set(followRef, {
-          followedAt: Date.now()
+        await setDoc(followRef, {
+          followedAt: Date.now(),
+          followerId: currentUser.uid
         });
         setIsFollowing(true);
       }
@@ -1028,70 +790,22 @@ const [formData, setFormData] = useState({
     }
   }, [activeTab]);
 
-  // Load and compute sales dashboard when "sales" tab is active (must be before any early returns)
+  // Load and compute sales dashboard - TODO: Load from Firestore orders
   const loadSalesDashboard = useCallback(async () => {
     if (!currentUser || !isOwner || !isProvider) return;
     setSalesLoading(true);
     setSalesError(null);
-    try {
-      const [serviceSalesSnap, packSalesSnap] = await Promise.all([
-        get(ref(database, `serviceSales/${currentUser.uid}`)),
-        get(ref(database, `packSales/${currentUser.uid}`))
-      ]);
-
-      const allSales = [];
-      const perItemMap = new Map();
-      const perBuyerMap = new Map();
-
-      const accumulate = (type, branchSnap) => {
-        if (!branchSnap || !branchSnap.exists()) return;
-        const byItem = branchSnap.val();
-        Object.entries(byItem).forEach(([itemId, sales]) => {
-          Object.entries(sales).forEach(([saleId, sale]) => {
-            const record = {
-              id: saleId,
-              type,
-              itemId,
-              title: sale.serviceTitle || sale.packTitle || '',
-              buyerId: sale.buyerId,
-              buyerUsername: sale.buyerUsername || null,
-              priceVC: Number(sale.priceVC) || 0,
-              timestamp: sale.timestamp || 0
-            };
-            allSales.push(record);
-            const itemKey = `${type}:${itemId}`;
-            const itemAgg = perItemMap.get(itemKey) || { id: itemId, title: record.title, type, totalVC: 0, count: 0 };
-            itemAgg.totalVC += record.priceVC;
-            itemAgg.count += 1;
-            perItemMap.set(itemKey, itemAgg);
-            const buyerKey = record.buyerId;
-            const buyerAgg = perBuyerMap.get(buyerKey) || { buyerId: buyerKey, username: record.buyerUsername, totalVC: 0, count: 0 };
-            buyerAgg.totalVC += record.priceVC;
-            buyerAgg.count += 1;
-            perBuyerMap.set(buyerKey, buyerAgg);
-          });
-        });
-      };
-
-      accumulate('service', serviceSalesSnap);
-      accumulate('pack', packSalesSnap);
-
-      allSales.sort((a, b) => b.timestamp - a.timestamp);
-      const itemsAgg = Array.from(perItemMap.values()).sort((a, b) => b.totalVC - a.totalVC).slice(0, 5);
-      const buyersAgg = Array.from(perBuyerMap.values()).sort((a, b) => (b.count - a.count) || (b.totalVC - a.totalVC)).slice(0, 5);
-      const totalVC = allSales.reduce((sum, s) => sum + s.priceVC, 0);
-
-      setRecentSales(allSales.slice(0, 20));
-      setBestSellers(itemsAgg);
-      setTopBuyers(buyersAgg);
-      setTotalVCEarned(totalVC);
-      setTotalSalesCount(allSales.length);
-    } catch (error) {
-      console.error('Error loading sales dashboard:', error);
-      setSalesError('Erro ao carregar vendas');
-    } finally {
-      setSalesLoading(false);
-    }
+    
+    // TODO: Load from Firestore serviceOrders and packOrders collections
+    showInfo('🚧 Dashboard de vendas será carregado do Firestore em breve!', 'Funcionalidade em Desenvolvimento');
+    
+    // Mock empty data for now
+    setRecentSales([]);
+    setBestSellers([]);
+    setTopBuyers([]);
+    setTotalVCEarned(0);
+    setTotalSalesCount(0);
+    setSalesLoading(false);
   }, [currentUser, isOwner, isProvider]);
 
   // Load sales dashboard when sales tab is active
@@ -1710,8 +1424,8 @@ const [formData, setFormData] = useState({
                 <i className="fa-solid fa-spinner fa-spin"></i>
                 <p>Carregando serviços...</p>
               </div>
-            ) : services.length > 0 ? (
-              services.map((service) => (
+            ) : firestoreServices.length > 0 ? (
+              firestoreServices.map((service) => (
                 <div 
                   key={service.id} 
                   className={`service-card ${isOwner ? 'editable' : ''}`}
@@ -1809,8 +1523,8 @@ const [formData, setFormData] = useState({
                 <i className="fa-solid fa-spinner fa-spin"></i>
                 <p>Carregando packs...</p>
               </div>
-            ) : packs.length > 0 ? (
-              packs.map((pack) => (
+            ) : firestorePacks.length > 0 ? (
+              firestorePacks.map((pack) => (
                 <div 
                   key={pack.id} 
                   className={`pack-card ${isOwner ? 'editable' : ''}`}

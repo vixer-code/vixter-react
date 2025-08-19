@@ -27,7 +27,9 @@ setGlobalOptions({
 });
 
 const db = admin.firestore();
-const rtdb = admin.database();
+// Use explicit RTDB instances to segregate legacy vs new
+// Legacy RTDB (antigo): default-rtdb
+const rtdbLegacy = admin.app().database('https://vixter-451b3-default-rtdb.firebaseio.com');
 
  
 
@@ -1044,7 +1046,8 @@ export const migrateUserToFirestore = onCall({
 
   try {
     // Buscar dados do usuário no RTDB
-    const userSnapshot = await rtdb.ref(`users/${userId}`).once('value');
+    // Read from legacy RTDB during migration
+    const userSnapshot = await rtdbLegacy.ref(`users/${userId}`).once('value');
     
     if (!userSnapshot.exists()) {
       throw new Error("Usuário não encontrado no RTDB");
@@ -1141,7 +1144,8 @@ export const migrateAllUsers = onCall({
 
   try {
     // Buscar todos os usuários do RTDB
-    const usersSnapshot = await rtdb.ref('users').once('value');
+    // Read all users from legacy RTDB during migration
+    const usersSnapshot = await rtdbLegacy.ref('users').once('value');
     
     if (!usersSnapshot.exists()) {
       return { success: true, message: 'Nenhum usuário encontrado para migrar', count: 0 };
@@ -1217,6 +1221,196 @@ export const migrateAllUsers = onCall({
   } catch (error) {
     logger.error(`💥 Erro na migração em massa:`, error);
     throw new HttpsError("internal", `Erro na migração: ${error.message}`);
+  }
+});
+
+/**
+ * Migra packs do RTDB legado -> Firestore (packs collection)
+ */
+export const migratePacksFromLegacy = onCall({
+  memory: "512MiB",
+  timeoutSeconds: 540,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  try {
+    const packsSnap = await rtdbLegacy.ref('packs').once('value');
+    if (!packsSnap.exists()) {
+      return { success: true, migrated: 0 };
+    }
+
+    let migrated = 0;
+    const packsByUser = packsSnap.val();
+    for (const authorId of Object.keys(packsByUser)) {
+      const userPacks = packsByUser[authorId] || {};
+      for (const packId of Object.keys(userPacks)) {
+        const p = userPacks[packId] || {};
+        // Basic mapping with safe defaults
+        const packRef = db.collection('packs').doc();
+        await packRef.set({
+          id: packRef.id,
+          authorId,
+          title: (p.title || `Pack ${packId}`).toString().slice(0, 120),
+          description: (p.description || '').toString().slice(0, 2000),
+          price: Math.max(0, Number(p.price || 0)),
+          category: (p.category || 'geral').toString(),
+          tags: Array.isArray(p.tags) ? p.tags : [],
+          mediaUrls: Array.isArray(p.mediaUrls) ? p.mediaUrls : [],
+          isActive: p.isActive !== false,
+          purchaseCount: Number(p.purchaseCount || 0),
+          rating: Number(p.rating || 0),
+          totalRating: Number(p.totalRating || 0),
+          ratingCount: Number(p.ratingCount || 0),
+          searchTerms: [
+            String(p.title || '').toLowerCase(),
+            String(p.description || '').toLowerCase(),
+            String(p.category || 'geral').toLowerCase(),
+          ].filter(Boolean),
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+        migrated++;
+      }
+    }
+
+    logger.info(`✅ Packs migrados: ${migrated}`);
+    return { success: true, migrated };
+  } catch (error) {
+    logger.error('💥 Erro ao migrar packs:', error);
+    throw new HttpsError('internal', 'Erro ao migrar packs');
+  }
+});
+
+/**
+ * Migra services do RTDB legado -> Firestore (services collection)
+ */
+export const migrateServicesFromLegacy = onCall({
+  memory: "512MiB",
+  timeoutSeconds: 540,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  try {
+    const servicesSnap = await rtdbLegacy.ref('services').once('value');
+    if (!servicesSnap.exists()) {
+      return { success: true, migrated: 0 };
+    }
+
+    let migrated = 0;
+    const servicesByUser = servicesSnap.val();
+    for (const providerId of Object.keys(servicesByUser)) {
+      const userServices = servicesByUser[providerId] || {};
+      for (const serviceId of Object.keys(userServices)) {
+        const s = userServices[serviceId] || {};
+        const serviceRef = db.collection('services').doc();
+        await serviceRef.set({
+          id: serviceRef.id,
+          providerId,
+          title: (s.title || `Serviço ${serviceId}`).toString().slice(0, 120),
+          description: (s.description || '').toString().slice(0, 2000),
+          price: Math.max(0, Number(s.price || 0)),
+          category: (s.category || 'geral').toString(),
+          tags: Array.isArray(s.tags) ? s.tags : [],
+          deliveryTime: (s.deliveryTime || 'negociavel').toString(),
+          isActive: s.isActive !== false,
+          orderCount: Number(s.orderCount || 0),
+          rating: Number(s.rating || 0),
+          totalRating: Number(s.totalRating || 0),
+          ratingCount: Number(s.ratingCount || 0),
+          searchTerms: [
+            String(s.title || '').toLowerCase(),
+            String(s.description || '').toLowerCase(),
+            String(s.category || 'geral').toLowerCase(),
+          ].filter(Boolean),
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+        migrated++;
+      }
+    }
+
+    logger.info(`✅ Serviços migrados: ${migrated}`);
+    return { success: true, migrated };
+  } catch (error) {
+    logger.error('💥 Erro ao migrar serviços:', error);
+    throw new HttpsError('internal', 'Erro ao migrar serviços');
+  }
+});
+
+/**
+ * Migra followers do RTDB legado -> Firestore (subcoleções users/{uid}/followers)
+ */
+export const migrateFollowersFromLegacy = onCall({
+  memory: "512MiB",
+  timeoutSeconds: 540,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  try {
+    const followersSnap = await rtdbLegacy.ref('followers').once('value');
+    if (!followersSnap.exists()) {
+      return { success: true, migrated: 0 };
+    }
+
+    let migrated = 0;
+    const batch = db.batch();
+    const all = followersSnap.val();
+    for (const targetUserId of Object.keys(all)) {
+      const followers = all[targetUserId] || {};
+      for (const followerId of Object.keys(followers)) {
+        const followerRef = db.collection('users').doc(targetUserId)
+          .collection('followers').doc(followerId);
+        batch.set(followerRef, {
+          userId: targetUserId,
+          followerId,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+        migrated++;
+      }
+    }
+
+    if (migrated > 0) await batch.commit();
+    logger.info(`✅ Followers migrados: ${migrated}`);
+    return { success: true, migrated };
+  } catch (error) {
+    logger.error('💥 Erro ao migrar followers:', error);
+    throw new HttpsError('internal', 'Erro ao migrar followers');
+  }
+});
+
+/**
+ * Migra packs, services e followers numa chamada só (users já possui função própria)
+ */
+export const migrateAllLegacyData = onCall({
+  memory: "512MiB",
+  timeoutSeconds: 540,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  try {
+    const [packs, services, followers] = await Promise.all([
+      migratePacksFromLegacy.run?.() || migratePacksFromLegacy({ auth: request.auth, data: {} }),
+      migrateServicesFromLegacy.run?.() || migrateServicesFromLegacy({ auth: request.auth, data: {} }),
+      migrateFollowersFromLegacy.run?.() || migrateFollowersFromLegacy({ auth: request.auth, data: {} })
+    ]);
+
+    return {
+      success: true,
+      packs: packs?.data || packs,
+      services: services?.data || services,
+      followers: followers?.data || followers,
+    };
+  } catch (error) {
+    logger.error('💥 Erro ao migrar dados legados:', error);
+    throw new HttpsError('internal', 'Erro ao migrar dados legados');
   }
 });
 
