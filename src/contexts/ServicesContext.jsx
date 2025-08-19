@@ -37,10 +37,8 @@ export const ServicesProvider = ({ children }) => {
   const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);
 
-  // Firebase Functions
-  const createServiceFunc = httpsCallable(functions, 'createService');
-  const updateServiceFunc = httpsCallable(functions, 'updateService');
-  const deleteServiceFunc = httpsCallable(functions, 'deleteService');
+  // Firebase Functions - API unificada
+  const apiFunc = httpsCallable(functions, 'api');
 
   // Categories for filtering
   const SERVICE_CATEGORIES = [
@@ -217,7 +215,11 @@ export const ServicesProvider = ({ children }) => {
     try {
       setCreating(true);
       
-      const result = await createServiceFunc(serviceData);
+      const result = await apiFunc({
+        resource: 'service',
+        action: 'create',
+        payload: serviceData
+      });
       
       if (result.data.success) {
         showSuccess('Serviço criado com sucesso!', 'Serviço Criado');
@@ -236,7 +238,7 @@ export const ServicesProvider = ({ children }) => {
     } finally {
       setCreating(false);
     }
-  }, [currentUser, createServiceFunc, showSuccess, showError, loadUserServices]);
+  }, [currentUser, apiFunc, showSuccess, showError, loadUserServices]);
 
   // Update service
   const updateService = useCallback(async (serviceId, updates) => {
@@ -248,7 +250,11 @@ export const ServicesProvider = ({ children }) => {
     try {
       setUpdating(true);
       
-      const result = await updateServiceFunc({ serviceId, updates });
+      const result = await apiFunc({
+        resource: 'service',
+        action: 'update',
+        payload: { serviceId, updates }
+      });
       
       if (result.data.success) {
         showSuccess('Serviço atualizado com sucesso!', 'Serviço Atualizado');
@@ -267,7 +273,7 @@ export const ServicesProvider = ({ children }) => {
     } finally {
       setUpdating(false);
     }
-  }, [currentUser, updateServiceFunc, showSuccess, showError, loadUserServices]);
+  }, [currentUser, apiFunc, showSuccess, showError, loadUserServices]);
 
   // Delete service
   const deleteService = useCallback(async (serviceId) => {
@@ -277,7 +283,11 @@ export const ServicesProvider = ({ children }) => {
     }
 
     try {
-      const result = await deleteServiceFunc({ serviceId });
+      const result = await apiFunc({
+        resource: 'service',
+        action: 'delete',
+        payload: { serviceId }
+      });
       
       if (result.data.success) {
         showSuccess('Serviço deletado com sucesso!', 'Serviço Deletado');
@@ -294,7 +304,7 @@ export const ServicesProvider = ({ children }) => {
       showError('Erro ao deletar serviço. Tente novamente.', 'Erro');
       return false;
     }
-  }, [currentUser, deleteServiceFunc, showSuccess, showError, loadUserServices]);
+  }, [currentUser, apiFunc, showSuccess, showError, loadUserServices]);
 
   // Load current user's services on mount
   useEffect(() => {

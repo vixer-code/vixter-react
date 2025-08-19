@@ -9,20 +9,10 @@ import {
   claimDailyBonus,
   autoReleaseServices,
 
-  // Packs CRUD
-  createPack,
-  updatePack,
-  deletePack,
+  // Unified API for CRUD operations
+  api,
 
-  // Services CRUD
-  createService,
-  updateService,
-  deleteService,
-
-  // Posts CRUD & interactions
-  createPost,
-  updatePost,
-  deletePost,
+  // Post interactions (mantidos separados)
   togglePostLike,
   addComment,
 } from './wallet-functions.js';
@@ -37,20 +27,10 @@ export {
   claimDailyBonus,
   autoReleaseServices,
 
-  // Packs CRUD
-  createPack,
-  updatePack,
-  deletePack,
+  // Unified API (substitui createPack, updatePack, deletePack, createService, updateService, deleteService, createPost, updatePost, deletePost)
+  api,
 
-  // Services CRUD
-  createService,
-  updateService,
-  deleteService,
-
-  // Posts CRUD & interactions
-  createPost,
-  updatePost,
-  deletePost,
+  // Post interactions (mantidos separados pois não são CRUD básico)
   togglePostLike,
   addComment,
 };

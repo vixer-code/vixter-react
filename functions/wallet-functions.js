@@ -23,7 +23,10 @@ const STRIPE_WEBHOOK_SECRET = defineSecret('STRIPE_WEBHOOK_SECRET');
 // Configurações globais
 setGlobalOptions({
   region: "us-east1",
-  maxInstances: 2,
+  // Keep overall CPU usage low per region. When using <1 vCPU, concurrency must be 1.
+  cpu: 0.5,           // 0.5 vCPU per instance (Cloud Functions v2 on Cloud Run)
+  maxInstances: 2,    // Cap instances per function to avoid quota overuse
+  concurrency: 1,     // Required when cpu < 1 vCPU
 });
 
 const db = admin.firestore();
@@ -1415,531 +1418,90 @@ export const migrateAllLegacyData = onCall({
 });
 
 /**
+ * API unificada para operações CRUD de Services, Packs e Posts
+ */
+export const api = onCall({
+  memory: "256MiB",
+  timeoutSeconds: 90,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { resource, action, payload } = request.data;
+  const userId = request.auth.uid;
+
+  // Validação dos parâmetros
+  if (!resource || !action || !payload) {
+    throw new HttpsError("invalid-argument", "resource, action e payload são obrigatórios");
+  }
+
+  const validResources = ['service', 'pack', 'post'];
+  const validActions = ['create', 'update', 'delete'];
+
+  if (!validResources.includes(resource)) {
+    throw new HttpsError("invalid-argument", `resource deve ser: ${validResources.join(', ')}`);
+  }
+
+  if (!validActions.includes(action)) {
+    throw new HttpsError("invalid-argument", `action deve ser: ${validActions.join(', ')}`);
+  }
+
+  try {
+    // Roteamento interno baseado no resource e action
+    switch (`${resource}-${action}`) {
+      // === SERVICES ===
+      case 'service-create':
+        return await createServiceInternal(userId, payload);
+      case 'service-update':
+        return await updateServiceInternal(userId, payload);
+      case 'service-delete':
+        return await deleteServiceInternal(userId, payload);
+
+      // === PACKS ===
+      case 'pack-create':
+        return await createPackInternal(userId, payload);
+      case 'pack-update':
+        return await updatePackInternal(userId, payload);
+      case 'pack-delete':
+        return await deletePackInternal(userId, payload);
+
+      // === POSTS ===
+      case 'post-create':
+        return await createPostInternal(userId, payload);
+      case 'post-update':
+        return await updatePostInternal(userId, payload);
+      case 'post-delete':
+        return await deletePostInternal(userId, payload);
+
+      default:
+        throw new HttpsError("invalid-argument", `Operação não suportada: ${resource}-${action}`);
+    }
+  } catch (error) {
+    logger.error(`💥 Erro na API ${resource}-${action}:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+/**
  * CRUD operations for Packs
  */
 
-// Create a new pack
-export const createPack = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
+// REMOVIDO: createPack - agora usa a API unificada
 
-  const { title, description, price, category, tags, mediaUrls } = request.data;
-  const userId = request.auth.uid;
+// REMOVIDO: updatePack - agora usa a API unificada
 
-  // Validation
-  if (!title || !description || !price || price <= 0) {
-    throw new HttpsError("invalid-argument", "Dados do pack são obrigatórios");
-  }
-
-  try {
-    const packRef = db.collection('packs').doc();
-    const packData = {
-      id: packRef.id,
-      authorId: userId,
-      title: title.trim(),
-      description: description.trim(),
-      price: Math.round(price), // VP amount
-      category: category || 'geral',
-      tags: Array.isArray(tags) ? tags : [],
-      mediaUrls: Array.isArray(mediaUrls) ? mediaUrls : [],
-      isActive: true,
-      purchaseCount: 0,
-      rating: 0,
-      totalRating: 0,
-      ratingCount: 0,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      // Search optimization
-      searchTerms: [
-        title.toLowerCase(),
-        description.toLowerCase(),
-        category.toLowerCase(),
-        ...tags.map(tag => tag.toLowerCase())
-      ].filter(term => term.length > 0)
-    };
-
-    await packRef.set(packData);
-
-    // Update user stats
-    const userRef = db.collection('users').doc(userId);
-    await userRef.update({
-      'stats.totalPacks': admin.firestore.FieldValue.increment(1),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    logger.info(`✅ Pack criado: ${packRef.id} por ${userId}`);
-    return { success: true, packId: packRef.id, pack: packData };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao criar pack:`, error);
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-// Update an existing pack
-export const updatePack = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { packId, updates } = request.data;
-  const userId = request.auth.uid;
-
-  if (!packId || !updates) {
-    throw new HttpsError("invalid-argument", "ID do pack e atualizações são obrigatórios");
-  }
-
-  try {
-    const packRef = db.collection('packs').doc(packId);
-    const packDoc = await packRef.get();
-
-    if (!packDoc.exists) {
-      throw new HttpsError("not-found", "Pack não encontrado");
-    }
-
-    const packData = packDoc.data();
-    if (packData.authorId !== userId) {
-      throw new HttpsError("permission-denied", "Você não tem permissão para editar este pack");
-    }
-
-    // Prepare update data
-    const updateData = {
-      ...updates,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    };
-
-    // Update search terms if title, description, category, or tags changed
-    if (updates.title || updates.description || updates.category || updates.tags) {
-      const newTitle = updates.title || packData.title;
-      const newDescription = updates.description || packData.description;
-      const newCategory = updates.category || packData.category;
-      const newTags = updates.tags || packData.tags;
-
-      updateData.searchTerms = [
-        newTitle.toLowerCase(),
-        newDescription.toLowerCase(),
-        newCategory.toLowerCase(),
-        ...newTags.map(tag => tag.toLowerCase())
-      ].filter(term => term.length > 0);
-    }
-
-    await packRef.update(updateData);
-
-    logger.info(`✅ Pack atualizado: ${packId}`);
-    return { success: true, packId };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao atualizar pack:`, error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-// Delete a pack
-export const deletePack = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { packId } = request.data;
-  const userId = request.auth.uid;
-
-  if (!packId) {
-    throw new HttpsError("invalid-argument", "ID do pack é obrigatório");
-  }
-
-  try {
-    const packRef = db.collection('packs').doc(packId);
-    const packDoc = await packRef.get();
-
-    if (!packDoc.exists) {
-      throw new HttpsError("not-found", "Pack não encontrado");
-    }
-
-    const packData = packDoc.data();
-    if (packData.authorId !== userId) {
-      throw new HttpsError("permission-denied", "Você não tem permissão para deletar este pack");
-    }
-
-    // Soft delete by setting isActive to false
-    await packRef.update({
-      isActive: false,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Update user stats
-    const userRef = db.collection('users').doc(userId);
-    await userRef.update({
-      'stats.totalPacks': admin.firestore.FieldValue.increment(-1),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    logger.info(`✅ Pack deletado: ${packId}`);
-    return { success: true, packId };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao deletar pack:`, error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
+// REMOVIDO: deletePack - agora usa a API unificada
 
 /**
- * CRUD operations for Services
+ * CRUD operations for Services (LEGADO - mantido para compatibilidade)
  */
 
-// Create a new service
-export const createService = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
+// REMOVIDO: Todas as funções CRUD individuais - agora usa a API unificada
+// createService, updateService, deleteService, createPost, updatePost, deletePost removidas
 
-  const { title, description, price, category, tags, deliveryTime } = request.data;
-  const userId = request.auth.uid;
-
-  // Validation
-  if (!title || !description || !price || price <= 0 || !deliveryTime) {
-    throw new HttpsError("invalid-argument", "Dados do serviço são obrigatórios");
-  }
-
-  try {
-    const serviceRef = db.collection('services').doc();
-    const serviceData = {
-      id: serviceRef.id,
-      providerId: userId,
-      title: title.trim(),
-      description: description.trim(),
-      price: Math.round(price), // VP amount
-      category: category || 'geral',
-      tags: Array.isArray(tags) ? tags : [],
-      deliveryTime: deliveryTime,
-      isActive: true,
-      orderCount: 0,
-      rating: 0,
-      totalRating: 0,
-      ratingCount: 0,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      // Search optimization
-      searchTerms: [
-        title.toLowerCase(),
-        description.toLowerCase(),
-        category.toLowerCase(),
-        ...tags.map(tag => tag.toLowerCase())
-      ].filter(term => term.length > 0)
-    };
-
-    await serviceRef.set(serviceData);
-
-    // Update user stats
-    const userRef = db.collection('users').doc(userId);
-    await userRef.update({
-      'stats.totalServices': admin.firestore.FieldValue.increment(1),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    logger.info(`✅ Serviço criado: ${serviceRef.id} por ${userId}`);
-    return { success: true, serviceId: serviceRef.id, service: serviceData };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao criar serviço:`, error);
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-// Update an existing service
-export const updateService = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { serviceId, updates } = request.data;
-  const userId = request.auth.uid;
-
-  if (!serviceId || !updates) {
-    throw new HttpsError("invalid-argument", "ID do serviço e atualizações são obrigatórios");
-  }
-
-  try {
-    const serviceRef = db.collection('services').doc(serviceId);
-    const serviceDoc = await serviceRef.get();
-
-    if (!serviceDoc.exists) {
-      throw new HttpsError("not-found", "Serviço não encontrado");
-    }
-
-    const serviceData = serviceDoc.data();
-    if (serviceData.providerId !== userId) {
-      throw new HttpsError("permission-denied", "Você não tem permissão para editar este serviço");
-    }
-
-    // Prepare update data
-    const updateData = {
-      ...updates,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    };
-
-    // Update search terms if title, description, category, or tags changed
-    if (updates.title || updates.description || updates.category || updates.tags) {
-      const newTitle = updates.title || serviceData.title;
-      const newDescription = updates.description || serviceData.description;
-      const newCategory = updates.category || serviceData.category;
-      const newTags = updates.tags || serviceData.tags;
-
-      updateData.searchTerms = [
-        newTitle.toLowerCase(),
-        newDescription.toLowerCase(),
-        newCategory.toLowerCase(),
-        ...newTags.map(tag => tag.toLowerCase())
-      ].filter(term => term.length > 0);
-    }
-
-    await serviceRef.update(updateData);
-
-    logger.info(`✅ Serviço atualizado: ${serviceId}`);
-    return { success: true, serviceId };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao atualizar serviço:`, error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-// Delete a service
-export const deleteService = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { serviceId } = request.data;
-  const userId = request.auth.uid;
-
-  if (!serviceId) {
-    throw new HttpsError("invalid-argument", "ID do serviço é obrigatório");
-  }
-
-  try {
-    const serviceRef = db.collection('services').doc(serviceId);
-    const serviceDoc = await serviceRef.get();
-
-    if (!serviceDoc.exists) {
-      throw new HttpsError("not-found", "Serviço não encontrado");
-    }
-
-    const serviceData = serviceDoc.data();
-    if (serviceData.providerId !== userId) {
-      throw new HttpsError("permission-denied", "Você não tem permissão para deletar este serviço");
-    }
-
-    // Soft delete by setting isActive to false
-    await serviceRef.update({
-      isActive: false,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Update user stats
-    const userRef = db.collection('users').doc(userId);
-    await userRef.update({
-      'stats.totalServices': admin.firestore.FieldValue.increment(-1),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    logger.info(`✅ Serviço deletado: ${serviceId}`);
-    return { success: true, serviceId };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao deletar serviço:`, error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-/**
- * CRUD operations for Posts
- */
-
-// Create a new post
-export const createPost = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { content, mediaUrls, visibility } = request.data;
-  const userId = request.auth.uid;
-
-  // Validation
-  if (!content || content.trim().length === 0) {
-    throw new HttpsError("invalid-argument", "Conteúdo do post é obrigatório");
-  }
-
-  if (content.length > 2000) {
-    throw new HttpsError("invalid-argument", "Conteúdo do post muito longo (máximo 2000 caracteres)");
-  }
-
-  try {
-    const postRef = db.collection('posts').doc();
-    const postData = {
-      id: postRef.id,
-      authorId: userId,
-      content: content.trim(),
-      mediaUrls: Array.isArray(mediaUrls) ? mediaUrls : [],
-      visibility: visibility || 'public', // public, followers, private
-      likes: 0,
-      comments: 0,
-      shares: 0,
-      isVisible: true,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      // Search optimization
-      searchTerms: content.toLowerCase().split(' ').filter(term => term.length > 2)
-    };
-
-    await postRef.set(postData);
-
-    // Update user stats
-    const userRef = db.collection('users').doc(userId);
-    await userRef.update({
-      'stats.totalPosts': admin.firestore.FieldValue.increment(1),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    logger.info(`✅ Post criado: ${postRef.id} por ${userId}`);
-    return { success: true, postId: postRef.id, post: postData };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao criar post:`, error);
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-// Update an existing post
-export const updatePost = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { postId, updates } = request.data;
-  const userId = request.auth.uid;
-
-  if (!postId || !updates) {
-    throw new HttpsError("invalid-argument", "ID do post e atualizações são obrigatórios");
-  }
-
-  try {
-    const postRef = db.collection('posts').doc(postId);
-    const postDoc = await postRef.get();
-
-    if (!postDoc.exists) {
-      throw new HttpsError("not-found", "Post não encontrado");
-    }
-
-    const postData = postDoc.data();
-    if (postData.authorId !== userId) {
-      throw new HttpsError("permission-denied", "Você não tem permissão para editar este post");
-    }
-
-    // Prepare update data
-    const updateData = {
-      ...updates,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    };
-
-    // Update search terms if content changed
-    if (updates.content) {
-      updateData.searchTerms = updates.content.toLowerCase().split(' ').filter(term => term.length > 2);
-    }
-
-    await postRef.update(updateData);
-
-    logger.info(`✅ Post atualizado: ${postId}`);
-    return { success: true, postId };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao atualizar post:`, error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-// Delete a post
-export const deletePost = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { postId } = request.data;
-  const userId = request.auth.uid;
-
-  if (!postId) {
-    throw new HttpsError("invalid-argument", "ID do post é obrigatório");
-  }
-
-  try {
-    const postRef = db.collection('posts').doc(postId);
-    const postDoc = await postRef.get();
-
-    if (!postDoc.exists) {
-      throw new HttpsError("not-found", "Post não encontrado");
-    }
-
-    const postData = postDoc.data();
-    if (postData.authorId !== userId) {
-      throw new HttpsError("permission-denied", "Você não tem permissão para deletar este post");
-    }
-
-    // Soft delete by setting isVisible to false
-    await postRef.update({
-      isVisible: false,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Update user stats
-    const userRef = db.collection('users').doc(userId);
-    await userRef.update({
-      'stats.totalPosts': admin.firestore.FieldValue.increment(-1),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    logger.info(`✅ Post deletado: ${postId}`);
-    return { success: true, postId };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao deletar post:`, error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-// Like/Unlike a post
+// Mantidas apenas as funções que não são CRUD básico
 export const togglePostLike = onCall({
   memory: "128MiB",
   timeoutSeconds: 60,
@@ -2191,3 +1753,359 @@ export const autoReleaseServices = onSchedule({
     throw error;
   }
 });
+
+// === INTERNAL FUNCTIONS FOR API ===
+
+// Services Internal Functions
+async function createServiceInternal(userId, payload) {
+  const { title, description, price, category, tags, deliveryTime } = payload;
+
+  if (!title || !description || !price || price <= 0 || !deliveryTime) {
+    throw new HttpsError("invalid-argument", "Dados do serviço são obrigatórios");
+  }
+
+  const serviceRef = db.collection('services').doc();
+  const serviceData = {
+    id: serviceRef.id,
+    providerId: userId,
+    title: title.trim(),
+    description: description.trim(),
+    price: Math.round(price),
+    category: category || 'geral',
+    tags: Array.isArray(tags) ? tags : [],
+    deliveryTime: deliveryTime,
+    isActive: true,
+    orderCount: 0,
+    rating: 0,
+    totalRating: 0,
+    ratingCount: 0,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    searchTerms: [
+      title.toLowerCase(),
+      description.toLowerCase(),
+      category.toLowerCase(),
+      ...tags.map(tag => tag.toLowerCase())
+    ].filter(term => term.length > 0)
+  };
+
+  await serviceRef.set(serviceData);
+
+  const userRef = db.collection('users').doc(userId);
+  await userRef.update({
+    'stats.totalServices': admin.firestore.FieldValue.increment(1),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  logger.info(`✅ Serviço criado: ${serviceRef.id} por ${userId}`);
+  return { success: true, serviceId: serviceRef.id, service: serviceData };
+}
+
+async function updateServiceInternal(userId, payload) {
+  const { serviceId, updates } = payload;
+
+  if (!serviceId || !updates) {
+    throw new HttpsError("invalid-argument", "ID do serviço e atualizações são obrigatórios");
+  }
+
+  const serviceRef = db.collection('services').doc(serviceId);
+  const serviceDoc = await serviceRef.get();
+
+  if (!serviceDoc.exists) {
+    throw new HttpsError("not-found", "Serviço não encontrado");
+  }
+
+  const serviceData = serviceDoc.data();
+  if (serviceData.providerId !== userId) {
+    throw new HttpsError("permission-denied", "Você não tem permissão para editar este serviço");
+  }
+
+  const updateData = {
+    ...updates,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  };
+
+  if (updates.title || updates.description || updates.category || updates.tags) {
+    const newTitle = updates.title || serviceData.title;
+    const newDescription = updates.description || serviceData.description;
+    const newCategory = updates.category || serviceData.category;
+    const newTags = updates.tags || serviceData.tags;
+
+    updateData.searchTerms = [
+      newTitle.toLowerCase(),
+      newDescription.toLowerCase(),
+      newCategory.toLowerCase(),
+      ...newTags.map(tag => tag.toLowerCase())
+    ].filter(term => term.length > 0);
+  }
+
+  await serviceRef.update(updateData);
+
+  logger.info(`✅ Serviço atualizado: ${serviceId}`);
+  return { success: true, serviceId };
+}
+
+async function deleteServiceInternal(userId, payload) {
+  const { serviceId } = payload;
+
+  if (!serviceId) {
+    throw new HttpsError("invalid-argument", "ID do serviço é obrigatório");
+  }
+
+  const serviceRef = db.collection('services').doc(serviceId);
+  const serviceDoc = await serviceRef.get();
+
+  if (!serviceDoc.exists) {
+    throw new HttpsError("not-found", "Serviço não encontrado");
+  }
+
+  const serviceData = serviceDoc.data();
+  if (serviceData.providerId !== userId) {
+    throw new HttpsError("permission-denied", "Você não tem permissão para deletar este serviço");
+  }
+
+  await serviceRef.update({
+    isActive: false,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  const userRef = db.collection('users').doc(userId);
+  await userRef.update({
+    'stats.totalServices': admin.firestore.FieldValue.increment(-1),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  logger.info(`✅ Serviço deletado: ${serviceId}`);
+  return { success: true, serviceId };
+}
+
+// Packs Internal Functions
+async function createPackInternal(userId, payload) {
+  const { title, description, price, category, tags, mediaUrls } = payload;
+
+  if (!title || !description || !price || price <= 0) {
+    throw new HttpsError("invalid-argument", "Dados do pack são obrigatórios");
+  }
+
+  const packRef = db.collection('packs').doc();
+  const packData = {
+    id: packRef.id,
+    authorId: userId,
+    title: title.trim(),
+    description: description.trim(),
+    price: Math.round(price),
+    category: category || 'geral',
+    tags: Array.isArray(tags) ? tags : [],
+    mediaUrls: Array.isArray(mediaUrls) ? mediaUrls : [],
+    isActive: true,
+    purchaseCount: 0,
+    rating: 0,
+    totalRating: 0,
+    ratingCount: 0,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    searchTerms: [
+      title.toLowerCase(),
+      description.toLowerCase(),
+      category.toLowerCase(),
+      ...tags.map(tag => tag.toLowerCase())
+    ].filter(term => term.length > 0)
+  };
+
+  await packRef.set(packData);
+
+  const userRef = db.collection('users').doc(userId);
+  await userRef.update({
+    'stats.totalPacks': admin.firestore.FieldValue.increment(1),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  logger.info(`✅ Pack criado: ${packRef.id} por ${userId}`);
+  return { success: true, packId: packRef.id, pack: packData };
+}
+
+async function updatePackInternal(userId, payload) {
+  const { packId, updates } = payload;
+
+  if (!packId || !updates) {
+    throw new HttpsError("invalid-argument", "ID do pack e atualizações são obrigatórios");
+  }
+
+  const packRef = db.collection('packs').doc(packId);
+  const packDoc = await packRef.get();
+
+  if (!packDoc.exists) {
+    throw new HttpsError("not-found", "Pack não encontrado");
+  }
+
+  const packData = packDoc.data();
+  if (packData.authorId !== userId) {
+    throw new HttpsError("permission-denied", "Você não tem permissão para editar este pack");
+  }
+
+  const updateData = {
+    ...updates,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  };
+
+  if (updates.title || updates.description || updates.category || updates.tags) {
+    const newTitle = updates.title || packData.title;
+    const newDescription = updates.description || packData.description;
+    const newCategory = updates.category || packData.category;
+    const newTags = updates.tags || packData.tags;
+
+    updateData.searchTerms = [
+      newTitle.toLowerCase(),
+      newDescription.toLowerCase(),
+      newCategory.toLowerCase(),
+      ...newTags.map(tag => tag.toLowerCase())
+    ].filter(term => term.length > 0);
+  }
+
+  await packRef.update(updateData);
+
+  logger.info(`✅ Pack atualizado: ${packId}`);
+  return { success: true, packId };
+}
+
+async function deletePackInternal(userId, payload) {
+  const { packId } = payload;
+
+  if (!packId) {
+    throw new HttpsError("invalid-argument", "ID do pack é obrigatório");
+  }
+
+  const packRef = db.collection('packs').doc(packId);
+  const packDoc = await packRef.get();
+
+  if (!packDoc.exists) {
+    throw new HttpsError("not-found", "Pack não encontrado");
+  }
+
+  const packData = packDoc.data();
+  if (packData.authorId !== userId) {
+    throw new HttpsError("permission-denied", "Você não tem permissão para deletar este pack");
+  }
+
+  await packRef.update({
+    isActive: false,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  const userRef = db.collection('users').doc(userId);
+  await userRef.update({
+    'stats.totalPacks': admin.firestore.FieldValue.increment(-1),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  logger.info(`✅ Pack deletado: ${packId}`);
+  return { success: true, packId };
+}
+
+// Posts Internal Functions
+async function createPostInternal(userId, payload) {
+  const { content, mediaUrls, visibility } = payload;
+
+  if (!content || content.trim().length === 0) {
+    throw new HttpsError("invalid-argument", "Conteúdo do post é obrigatório");
+  }
+
+  if (content.length > 2000) {
+    throw new HttpsError("invalid-argument", "Conteúdo do post muito longo (máximo 2000 caracteres)");
+  }
+
+  const postRef = db.collection('posts').doc();
+  const postData = {
+    id: postRef.id,
+    authorId: userId,
+    content: content.trim(),
+    mediaUrls: Array.isArray(mediaUrls) ? mediaUrls : [],
+    visibility: visibility || 'public',
+    likes: 0,
+    comments: 0,
+    shares: 0,
+    isVisible: true,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    searchTerms: content.toLowerCase().split(' ').filter(term => term.length > 2)
+  };
+
+  await postRef.set(postData);
+
+  const userRef = db.collection('users').doc(userId);
+  await userRef.update({
+    'stats.totalPosts': admin.firestore.FieldValue.increment(1),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  logger.info(`✅ Post criado: ${postRef.id} por ${userId}`);
+  return { success: true, postId: postRef.id, post: postData };
+}
+
+async function updatePostInternal(userId, payload) {
+  const { postId, updates } = payload;
+
+  if (!postId || !updates) {
+    throw new HttpsError("invalid-argument", "ID do post e atualizações são obrigatórios");
+  }
+
+  const postRef = db.collection('posts').doc(postId);
+  const postDoc = await postRef.get();
+
+  if (!postDoc.exists) {
+    throw new HttpsError("not-found", "Post não encontrado");
+  }
+
+  const postData = postDoc.data();
+  if (postData.authorId !== userId) {
+    throw new HttpsError("permission-denied", "Você não tem permissão para editar este post");
+  }
+
+  const updateData = {
+    ...updates,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  };
+
+  if (updates.content) {
+    updateData.searchTerms = updates.content.toLowerCase().split(' ').filter(term => term.length > 2);
+  }
+
+  await postRef.update(updateData);
+
+  logger.info(`✅ Post atualizado: ${postId}`);
+  return { success: true, postId };
+}
+
+async function deletePostInternal(userId, payload) {
+  const { postId } = payload;
+
+  if (!postId) {
+    throw new HttpsError("invalid-argument", "ID do post é obrigatório");
+  }
+
+  const postRef = db.collection('posts').doc(postId);
+  const postDoc = await postRef.get();
+
+  if (!postDoc.exists) {
+    throw new HttpsError("not-found", "Post não encontrado");
+  }
+
+  const postData = postDoc.data();
+  if (postData.authorId !== userId) {
+    throw new HttpsError("permission-denied", "Você não tem permissão para deletar este post");
+  }
+
+  await postRef.update({
+    isVisible: false,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  const userRef = db.collection('users').doc(userId);
+  await userRef.update({
+    'stats.totalPosts': admin.firestore.FieldValue.increment(-1),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  logger.info(`✅ Post deletado: ${postId}`);
+  return { success: true, postId };
+}

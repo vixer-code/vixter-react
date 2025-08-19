@@ -37,10 +37,8 @@ export const PacksProvider = ({ children }) => {
   const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);
 
-  // Firebase Functions
-  const createPackFunc = httpsCallable(functions, 'createPack');
-  const updatePackFunc = httpsCallable(functions, 'updatePack');
-  const deletePackFunc = httpsCallable(functions, 'deletePack');
+  // Firebase Functions - API unificada
+  const apiFunc = httpsCallable(functions, 'api');
 
   // Categories for filtering
   const PACK_CATEGORIES = [
@@ -200,7 +198,11 @@ export const PacksProvider = ({ children }) => {
     try {
       setCreating(true);
       
-      const result = await createPackFunc(packData);
+      const result = await apiFunc({
+        resource: 'pack',
+        action: 'create',
+        payload: packData
+      });
       
       if (result.data.success) {
         showSuccess('Pack criado com sucesso!', 'Pack Criado');
@@ -219,7 +221,7 @@ export const PacksProvider = ({ children }) => {
     } finally {
       setCreating(false);
     }
-  }, [currentUser, createPackFunc, showSuccess, showError, loadUserPacks]);
+  }, [currentUser, apiFunc, showSuccess, showError, loadUserPacks]);
 
   // Update pack
   const updatePack = useCallback(async (packId, updates) => {
@@ -231,7 +233,11 @@ export const PacksProvider = ({ children }) => {
     try {
       setUpdating(true);
       
-      const result = await updatePackFunc({ packId, updates });
+      const result = await apiFunc({
+        resource: 'pack',
+        action: 'update',
+        payload: { packId, updates }
+      });
       
       if (result.data.success) {
         showSuccess('Pack atualizado com sucesso!', 'Pack Atualizado');
@@ -250,7 +256,7 @@ export const PacksProvider = ({ children }) => {
     } finally {
       setUpdating(false);
     }
-  }, [currentUser, updatePackFunc, showSuccess, showError, loadUserPacks]);
+  }, [currentUser, apiFunc, showSuccess, showError, loadUserPacks]);
 
   // Delete pack
   const deletePack = useCallback(async (packId) => {
@@ -260,7 +266,11 @@ export const PacksProvider = ({ children }) => {
     }
 
     try {
-      const result = await deletePackFunc({ packId });
+      const result = await apiFunc({
+        resource: 'pack',
+        action: 'delete',
+        payload: { packId }
+      });
       
       if (result.data.success) {
         showSuccess('Pack deletado com sucesso!', 'Pack Deletado');
@@ -277,7 +287,7 @@ export const PacksProvider = ({ children }) => {
       showError('Erro ao deletar pack. Tente novamente.', 'Erro');
       return false;
     }
-  }, [currentUser, deletePackFunc, showSuccess, showError, loadUserPacks]);
+  }, [currentUser, apiFunc, showSuccess, showError, loadUserPacks]);
 
   // Load current user's packs on mount
   useEffect(() => {
