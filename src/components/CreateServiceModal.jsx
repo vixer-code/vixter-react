@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ref, push } from 'firebase/database';
 import { useAuth } from '../contexts/AuthContext';
-import { useServices } from '../hooks/useServices';
+import { useServices } from '../contexts/ServicesContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { database } from '../../config/firebase';
+import { storage } from '../../config/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import './CreateServiceModal.css';
 
 const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService = null }) => {
   const { currentUser } = useAuth();
-  const { createService, uploadFile, createServiceWithId, updateService } = useServices();
+  const { createService, updateService } = useServices();
   const { showSuccess, showError } = useNotification();
   
   // Debug notification context
@@ -385,12 +385,11 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
 
   const uploadFileToStorage = async (file, path) => {
     try {
-      console.log(`📤 Uploading file: ${file.name} to path: ${path}`);
-      const url = await uploadFile(file, path);
-      console.log(`✅ File uploaded successfully: ${url}`);
-      return url;
+      const fileRef = storageRef(storage, path);
+      const snap = await uploadBytes(fileRef, file);
+      return await getDownloadURL(snap.ref);
     } catch (error) {
-      console.error(`❌ Error uploading file ${file.name}:`, error);
+      console.error('Error uploading file:', error);
       throw error;
     }
   };
@@ -461,7 +460,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   const handleSubmit = async () => {
     console.log('🚀 Starting service creation/update...');
     console.log('Current user:', currentUser);
-    console.log('Database instance:', database);
     console.log('Editing service:', editingService);
     
     if (!currentUser || isSubmitting) return;
@@ -514,8 +512,8 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     setUploadingFiles(true);
 
     try {
-      // Prepare base service data
-      const serviceData = {
+      // Prepare base service data (without media URLs yet)
+      const baseServiceData = {
         title: formData.title,
         category: formData.category,
         description: formData.description,
@@ -529,38 +527,29 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
         currency: 'VC' // Indicates prices are in VC
       };
 
-      // If creating a new service, add creation timestamp
-      if (!editingService) {
-        serviceData.createdAt = Date.now();
-      }
-
-      // Generate a unique service ID for file uploads (only for new services)
+      // Create or update service via Cloud Functions (Firestore)
       let serviceId = editingService?.id;
-      if (!serviceId) {
-        if (!database) {
-          throw new Error('Firebase database not initialized');
+      if (editingService) {
+        // Update basic fields first
+        await updateService(serviceId, baseServiceData);
+      } else {
+        const result = await createService({ ...baseServiceData, createdAt: Date.now() });
+        if (!result || !result.success || !result.serviceId) {
+          throw new Error('Falha ao criar serviço');
         }
-        
-        const tempRef = ref(database, 'services');
-        const newServiceRef = push(tempRef);
-        serviceId = newServiceRef.key;
-
-        if (!serviceId) {
-          throw new Error('Failed to generate service ID');
-        }
+        serviceId = result.serviceId;
       }
-
-      console.log(`🔑 Using ServiceID: ${serviceId}`);
+      console.log(`🔑 ServiceID: ${serviceId}`);
 
       // Upload cover image
       if (coverImageFile) {
         const coverImagePath = `servicesMedia/${currentUser.uid}/${serviceId}/cover-${Date.now()}-${coverImageFile.name}`;
         console.log('📷 Uploading cover image...');
-        serviceData.coverImageURL = await uploadFileToStorage(coverImageFile, coverImagePath);
-        console.log('✅ Cover image uploaded:', serviceData.coverImageURL);
+        baseServiceData.coverImageURL = await uploadFileToStorage(coverImageFile, coverImagePath);
+        console.log('✅ Cover image uploaded:', baseServiceData.coverImageURL);
       } else if (formData.coverImage) {
-        serviceData.coverImageURL = formData.coverImage;
-        console.log('📷 Reusing existing cover image:', serviceData.coverImageURL);
+        baseServiceData.coverImageURL = formData.coverImage;
+        console.log('📷 Reusing existing cover image:', baseServiceData.coverImageURL);
       }
 
       // Upload showcase photos
@@ -572,7 +561,7 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
         photoUrls.push(photoUrl);
         console.log(`✅ Showcase photo ${i + 1} uploaded:`, photoUrl);
       }
-      serviceData.showcasePhotosURLs = photoUrls;
+      baseServiceData.showcasePhotosURLs = photoUrls;
 
       // Upload showcase videos
       const videoUrls = [...formData.showcaseVideos];
@@ -583,28 +572,20 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
         videoUrls.push(videoUrl);
         console.log(`✅ Showcase video ${i + 1} uploaded:`, videoUrl);
       }
-      serviceData.showcaseVideosURLs = videoUrls;
+      baseServiceData.showcaseVideosURLs = videoUrls;
 
-      let resultService;
-      
-      if (editingService) {
-        // Update existing service
-        console.log('📝 Updating existing service...');
-        resultService = await updateService(serviceId, serviceData);
-        console.log('✅ Service updated successfully:', resultService);
-        showSuccess('Serviço atualizado com sucesso!');
-      } else {
-        // Create new service
-        console.log('📝 Creating new service...');
-        resultService = await createServiceWithId(currentUser.uid, serviceId, serviceData);
-        console.log('✅ Service created successfully:', resultService);
-        showSuccess('Serviço criado com sucesso!');
-      }
+      // Persist media URLs
+      await updateService(serviceId, {
+        coverImageURL: baseServiceData.coverImageURL || null,
+        showcasePhotosURLs: baseServiceData.showcasePhotosURLs || [],
+        showcaseVideosURLs: baseServiceData.showcaseVideosURLs || []
+      });
+      showSuccess(editingService ? 'Serviço atualizado com sucesso!' : 'Serviço criado com sucesso!');
 
       // Clear draft after successful creation/update
       localStorage.removeItem(`service-draft-${currentUser.uid}`);
 
-      onServiceCreated(resultService);
+      onServiceCreated && onServiceCreated({ id: serviceId, ...baseServiceData });
       onClose();
     } catch (error) {
       console.error('❌ Error creating/updating service:', error);
