@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ref, push, set, update } from 'firebase/database';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { database } from '../../config/firebase';
-import { useServices } from '../hooks/useServices';
+import { usePacks } from '../contexts/PacksContext';
+import { storage } from '../../config/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import './CreatePackModal.css';
 
 const subcategoriesMap = {
@@ -33,7 +33,7 @@ const packTypeOptions = [
 
 const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null }) => {
   const { currentUser } = useAuth();
-  const { uploadFile } = useServices();
+  const { createPack, updatePack } = usePacks();
   const { showSuccess, showError } = useNotification();
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -296,7 +296,9 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
 
   const uploadFileToStorage = async (file, path) => {
     try {
-      return await uploadFile(file, path);
+      const fileRef = storageRef(storage, path);
+      const snap = await uploadBytes(fileRef, file);
+      return await getDownloadURL(snap.ref);
     } catch (err) {
       console.error('Upload error:', err);
       throw err;
@@ -342,13 +344,26 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     setUploadingFiles(true);
 
     try {
-      // Generate packId (like create-pack.js: push under user scope)
+      // Create or update pack via Cloud Functions (Firestore)
       let packId = editingPack?.id;
-      if (!packId) {
-        const packsRef = ref(database, `packs/${currentUser.uid}`);
-        const newPackRef = push(packsRef);
-        packId = newPackRef.key;
-        if (!packId) throw new Error('Falha ao gerar ID do pack');
+      if (editingPack) {
+        await updatePack(packId, {}); // ensure pack exists; fields will be updated below
+      } else {
+        const result = await createPack({
+          title: formData.title.trim(),
+          description: formData.description.trim(),
+          category: formData.category,
+          subcategory: formData.subcategory || '',
+          packType: formData.packType,
+          price: parseFloat(formData.price),
+          discount: parseInt(formData.discount || 0, 10) || 0,
+          features: formData.features,
+          tags: formData.tags,
+          createdAt: Date.now(),
+          isActive: true
+        });
+        if (!result || !result.success || !result.packId) throw new Error('Falha ao criar pack');
+        packId = result.packId;
       }
 
       // Upload cover
@@ -411,14 +426,9 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         status: 'active'
       };
 
-      const packRef = ref(database, `packs/${currentUser.uid}/${packId}`);
-      if (editingPack) {
-        await update(packRef, packData);
-        showSuccess('Pack atualizado com sucesso!');
-      } else {
-        await set(packRef, packData);
-        showSuccess('Pack criado com sucesso!');
-      }
+      // Persist fields via Cloud Function update
+      await updatePack(packId, packData);
+      showSuccess(editingPack ? 'Pack atualizado com sucesso!' : 'Pack criado com sucesso!');
 
       onPackCreated && onPackCreated(packData);
       clearForm();
