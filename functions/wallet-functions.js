@@ -27,6 +27,9 @@ setGlobalOptions({
 });
 
 const db = admin.firestore();
+const rtdb = admin.database();
+
+ 
 
 /**
  * Inicializa carteira do usuário
@@ -57,6 +60,7 @@ export const initializeWallet = onCall({
       };
 
       await walletRef.set(newWallet);
+      
       logger.info(`✅ Carteira criada para usuário ${userId}`);
       return { success: true, wallet: newWallet };
     }
@@ -670,7 +674,7 @@ export const processServicePurchase = onCall({
  * Concede bônus diário VBP
  */
 export const claimDailyBonus = onCall({
-  memory: "128MiB",
+  memory: "256MiB",
   timeoutSeconds: 60,
 }, async (request) => {
   if (!request.auth) {
@@ -682,11 +686,11 @@ export const claimDailyBonus = onCall({
   try {
     const result = await db.runTransaction(async (transaction) => {
       // Verificar último bônus
-      const userRef = db.collection('users').doc(userId);
-      const userDoc = await transaction.get(userRef);
+      const userBonusRef = db.collection('users').doc(userId);
+      const userBonusDoc = await transaction.get(userBonusRef);
 
-      if (userDoc.exists) {
-        const userData = userDoc.data();
+      if (userBonusDoc.exists) {
+        const userData = userBonusDoc.data();
         const lastBonus = userData.lastDailyBonus;
         
         if (lastBonus) {
@@ -718,10 +722,16 @@ export const claimDailyBonus = onCall({
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      // Marcar bônus como coletado
-      transaction.update(userRef, {
-        lastDailyBonus: admin.firestore.FieldValue.serverTimestamp()
-      });
+      // Marcar bônus como coletado no Firestore
+      const userDocRef = db.collection('users').doc(userId);
+      const userDocSnap = await transaction.get(userDocRef);
+      
+      if (userDocSnap.exists) {
+        transaction.update(userDocRef, {
+          lastDailyBonus: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
 
       // Criar transação
       const transactionRef = db.collection('transactions').doc();
@@ -1015,6 +1025,864 @@ export const rejectServiceOrder = onCall({
       throw new HttpsError("failed-precondition", "Este pedido não pode mais ser rejeitado");
     }
     
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+/**
+ * Migra dados de usuário do RTDB para Firestore
+ */
+export const migrateUserToFirestore = onCall({
+  memory: "256MiB",
+  timeoutSeconds: 300,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const userId = request.auth.uid;
+
+  try {
+    // Buscar dados do usuário no RTDB
+    const userSnapshot = await rtdb.ref(`users/${userId}`).once('value');
+    
+    if (!userSnapshot.exists()) {
+      throw new Error("Usuário não encontrado no RTDB");
+    }
+
+    const rtdbUserData = userSnapshot.val();
+
+    // Estrutura otimizada para Firestore
+    const firestoreUserData = {
+      // Dados básicos do perfil
+      uid: userId,
+      email: rtdbUserData.email || '',
+      displayName: rtdbUserData.displayName || '',
+      username: rtdbUserData.username || '',
+      name: rtdbUserData.name || '',
+      
+      // Perfil detalhado
+      bio: rtdbUserData.bio || '',
+      aboutMe: rtdbUserData.aboutMe || '',
+      location: rtdbUserData.location || '',
+      languages: rtdbUserData.languages || '',
+      hobbies: rtdbUserData.hobbies || '',
+      interests: rtdbUserData.interests || '',
+      
+      // URLs de mídia
+      profilePictureURL: rtdbUserData.profilePictureURL || null,
+      coverPhotoURL: rtdbUserData.coverPhotoURL || null,
+      
+      // Configurações da conta
+      accountType: rtdbUserData.accountType || 'both',
+      profileComplete: rtdbUserData.profileComplete || false,
+      specialAssistance: rtdbUserData.specialAssistance || false,
+      selectedStatus: rtdbUserData.selectedStatus || 'online',
+      
+      // Preferências de comunicação
+      communicationPreferences: rtdbUserData.communicationPreferences || {},
+      
+      // Timestamps
+      createdAt: rtdbUserData.createdAt ? admin.firestore.Timestamp.fromMillis(rtdbUserData.createdAt) : admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      
+      // Dados do último bônus (se existir)
+      lastDailyBonus: rtdbUserData.lastDailyBonus ? admin.firestore.Timestamp.fromMillis(rtdbUserData.lastDailyBonus) : null,
+      
+      // Índices para queries (denormalizados para performance)
+      searchTerms: [
+        (rtdbUserData.displayName || '').toLowerCase(),
+        (rtdbUserData.username || '').toLowerCase(),
+        (rtdbUserData.location || '').toLowerCase()
+      ].filter(term => term.length > 0),
+      
+      // Contadores para performance
+      stats: {
+        totalPosts: 0,
+        totalServices: 0,
+        totalPacks: 0,
+        totalSales: 0
+      }
+    };
+
+    // Salvar no Firestore
+    const userRef = db.collection('users').doc(userId);
+    await userRef.set(firestoreUserData);
+
+    logger.info(`✅ Usuário ${userId} migrado para Firestore`);
+    return { 
+      success: true, 
+      message: 'Usuário migrado com sucesso',
+      userData: firestoreUserData 
+    };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao migrar usuário ${userId}:`, error);
+    throw new HttpsError("internal", `Erro na migração: ${error.message}`);
+  }
+});
+
+/**
+ * Migra todos os usuários do RTDB para Firestore (admin only)
+ */
+export const migrateAllUsers = onCall({
+  memory: "512MiB",
+  timeoutSeconds: 540,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  // TODO: Adicionar verificação de admin
+  // const isAdmin = await checkAdminStatus(request.auth.uid);
+  // if (!isAdmin) {
+  //   throw new HttpsError("permission-denied", "Apenas administradores podem executar migração em massa");
+  // }
+
+  try {
+    // Buscar todos os usuários do RTDB
+    const usersSnapshot = await rtdb.ref('users').once('value');
+    
+    if (!usersSnapshot.exists()) {
+      return { success: true, message: 'Nenhum usuário encontrado para migrar', count: 0 };
+    }
+
+    const users = usersSnapshot.val();
+    const userIds = Object.keys(users);
+    const batch = db.batch();
+    let migratedCount = 0;
+
+    for (const userId of userIds) {
+      const rtdbUserData = users[userId];
+      
+      // Estrutura otimizada para Firestore (mesmo código acima)
+      const firestoreUserData = {
+        uid: userId,
+        email: rtdbUserData.email || '',
+        displayName: rtdbUserData.displayName || '',
+        username: rtdbUserData.username || '',
+        name: rtdbUserData.name || '',
+        bio: rtdbUserData.bio || '',
+        aboutMe: rtdbUserData.aboutMe || '',
+        location: rtdbUserData.location || '',
+        languages: rtdbUserData.languages || '',
+        hobbies: rtdbUserData.hobbies || '',
+        interests: rtdbUserData.interests || '',
+        profilePictureURL: rtdbUserData.profilePictureURL || null,
+        coverPhotoURL: rtdbUserData.coverPhotoURL || null,
+        accountType: rtdbUserData.accountType || 'both',
+        profileComplete: rtdbUserData.profileComplete || false,
+        specialAssistance: rtdbUserData.specialAssistance || false,
+        selectedStatus: rtdbUserData.selectedStatus || 'online',
+        communicationPreferences: rtdbUserData.communicationPreferences || {},
+        createdAt: rtdbUserData.createdAt ? admin.firestore.Timestamp.fromMillis(rtdbUserData.createdAt) : admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastDailyBonus: rtdbUserData.lastDailyBonus ? admin.firestore.Timestamp.fromMillis(rtdbUserData.lastDailyBonus) : null,
+        searchTerms: [
+          (rtdbUserData.displayName || '').toLowerCase(),
+          (rtdbUserData.username || '').toLowerCase(),
+          (rtdbUserData.location || '').toLowerCase()
+        ].filter(term => term.length > 0),
+        stats: {
+          totalPosts: 0,
+          totalServices: 0,
+          totalPacks: 0,
+          totalSales: 0
+        }
+      };
+
+      const userRef = db.collection('users').doc(userId);
+      batch.set(userRef, firestoreUserData);
+      migratedCount++;
+
+      // Commit em lotes de 500 (limite do Firestore)
+      if (migratedCount % 500 === 0) {
+        await batch.commit();
+        logger.info(`📦 Batch de ${migratedCount} usuários migrados`);
+      }
+    }
+
+    // Commit final
+    if (migratedCount % 500 !== 0) {
+      await batch.commit();
+    }
+
+    logger.info(`✅ Migração completa: ${migratedCount} usuários migrados para Firestore`);
+    return { 
+      success: true, 
+      message: `${migratedCount} usuários migrados com sucesso`,
+      count: migratedCount 
+    };
+
+  } catch (error) {
+    logger.error(`💥 Erro na migração em massa:`, error);
+    throw new HttpsError("internal", `Erro na migração: ${error.message}`);
+  }
+});
+
+/**
+ * CRUD operations for Packs
+ */
+
+// Create a new pack
+export const createPack = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { title, description, price, category, tags, mediaUrls } = request.data;
+  const userId = request.auth.uid;
+
+  // Validation
+  if (!title || !description || !price || price <= 0) {
+    throw new HttpsError("invalid-argument", "Dados do pack são obrigatórios");
+  }
+
+  try {
+    const packRef = db.collection('packs').doc();
+    const packData = {
+      id: packRef.id,
+      authorId: userId,
+      title: title.trim(),
+      description: description.trim(),
+      price: Math.round(price), // VP amount
+      category: category || 'geral',
+      tags: Array.isArray(tags) ? tags : [],
+      mediaUrls: Array.isArray(mediaUrls) ? mediaUrls : [],
+      isActive: true,
+      purchaseCount: 0,
+      rating: 0,
+      totalRating: 0,
+      ratingCount: 0,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      // Search optimization
+      searchTerms: [
+        title.toLowerCase(),
+        description.toLowerCase(),
+        category.toLowerCase(),
+        ...tags.map(tag => tag.toLowerCase())
+      ].filter(term => term.length > 0)
+    };
+
+    await packRef.set(packData);
+
+    // Update user stats
+    const userRef = db.collection('users').doc(userId);
+    await userRef.update({
+      'stats.totalPacks': admin.firestore.FieldValue.increment(1),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    logger.info(`✅ Pack criado: ${packRef.id} por ${userId}`);
+    return { success: true, packId: packRef.id, pack: packData };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao criar pack:`, error);
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+// Update an existing pack
+export const updatePack = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { packId, updates } = request.data;
+  const userId = request.auth.uid;
+
+  if (!packId || !updates) {
+    throw new HttpsError("invalid-argument", "ID do pack e atualizações são obrigatórios");
+  }
+
+  try {
+    const packRef = db.collection('packs').doc(packId);
+    const packDoc = await packRef.get();
+
+    if (!packDoc.exists) {
+      throw new HttpsError("not-found", "Pack não encontrado");
+    }
+
+    const packData = packDoc.data();
+    if (packData.authorId !== userId) {
+      throw new HttpsError("permission-denied", "Você não tem permissão para editar este pack");
+    }
+
+    // Prepare update data
+    const updateData = {
+      ...updates,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    // Update search terms if title, description, category, or tags changed
+    if (updates.title || updates.description || updates.category || updates.tags) {
+      const newTitle = updates.title || packData.title;
+      const newDescription = updates.description || packData.description;
+      const newCategory = updates.category || packData.category;
+      const newTags = updates.tags || packData.tags;
+
+      updateData.searchTerms = [
+        newTitle.toLowerCase(),
+        newDescription.toLowerCase(),
+        newCategory.toLowerCase(),
+        ...newTags.map(tag => tag.toLowerCase())
+      ].filter(term => term.length > 0);
+    }
+
+    await packRef.update(updateData);
+
+    logger.info(`✅ Pack atualizado: ${packId}`);
+    return { success: true, packId };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao atualizar pack:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+// Delete a pack
+export const deletePack = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { packId } = request.data;
+  const userId = request.auth.uid;
+
+  if (!packId) {
+    throw new HttpsError("invalid-argument", "ID do pack é obrigatório");
+  }
+
+  try {
+    const packRef = db.collection('packs').doc(packId);
+    const packDoc = await packRef.get();
+
+    if (!packDoc.exists) {
+      throw new HttpsError("not-found", "Pack não encontrado");
+    }
+
+    const packData = packDoc.data();
+    if (packData.authorId !== userId) {
+      throw new HttpsError("permission-denied", "Você não tem permissão para deletar este pack");
+    }
+
+    // Soft delete by setting isActive to false
+    await packRef.update({
+      isActive: false,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Update user stats
+    const userRef = db.collection('users').doc(userId);
+    await userRef.update({
+      'stats.totalPacks': admin.firestore.FieldValue.increment(-1),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    logger.info(`✅ Pack deletado: ${packId}`);
+    return { success: true, packId };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao deletar pack:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+/**
+ * CRUD operations for Services
+ */
+
+// Create a new service
+export const createService = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { title, description, price, category, tags, deliveryTime } = request.data;
+  const userId = request.auth.uid;
+
+  // Validation
+  if (!title || !description || !price || price <= 0 || !deliveryTime) {
+    throw new HttpsError("invalid-argument", "Dados do serviço são obrigatórios");
+  }
+
+  try {
+    const serviceRef = db.collection('services').doc();
+    const serviceData = {
+      id: serviceRef.id,
+      providerId: userId,
+      title: title.trim(),
+      description: description.trim(),
+      price: Math.round(price), // VP amount
+      category: category || 'geral',
+      tags: Array.isArray(tags) ? tags : [],
+      deliveryTime: deliveryTime,
+      isActive: true,
+      orderCount: 0,
+      rating: 0,
+      totalRating: 0,
+      ratingCount: 0,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      // Search optimization
+      searchTerms: [
+        title.toLowerCase(),
+        description.toLowerCase(),
+        category.toLowerCase(),
+        ...tags.map(tag => tag.toLowerCase())
+      ].filter(term => term.length > 0)
+    };
+
+    await serviceRef.set(serviceData);
+
+    // Update user stats
+    const userRef = db.collection('users').doc(userId);
+    await userRef.update({
+      'stats.totalServices': admin.firestore.FieldValue.increment(1),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    logger.info(`✅ Serviço criado: ${serviceRef.id} por ${userId}`);
+    return { success: true, serviceId: serviceRef.id, service: serviceData };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao criar serviço:`, error);
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+// Update an existing service
+export const updateService = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { serviceId, updates } = request.data;
+  const userId = request.auth.uid;
+
+  if (!serviceId || !updates) {
+    throw new HttpsError("invalid-argument", "ID do serviço e atualizações são obrigatórios");
+  }
+
+  try {
+    const serviceRef = db.collection('services').doc(serviceId);
+    const serviceDoc = await serviceRef.get();
+
+    if (!serviceDoc.exists) {
+      throw new HttpsError("not-found", "Serviço não encontrado");
+    }
+
+    const serviceData = serviceDoc.data();
+    if (serviceData.providerId !== userId) {
+      throw new HttpsError("permission-denied", "Você não tem permissão para editar este serviço");
+    }
+
+    // Prepare update data
+    const updateData = {
+      ...updates,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    // Update search terms if title, description, category, or tags changed
+    if (updates.title || updates.description || updates.category || updates.tags) {
+      const newTitle = updates.title || serviceData.title;
+      const newDescription = updates.description || serviceData.description;
+      const newCategory = updates.category || serviceData.category;
+      const newTags = updates.tags || serviceData.tags;
+
+      updateData.searchTerms = [
+        newTitle.toLowerCase(),
+        newDescription.toLowerCase(),
+        newCategory.toLowerCase(),
+        ...newTags.map(tag => tag.toLowerCase())
+      ].filter(term => term.length > 0);
+    }
+
+    await serviceRef.update(updateData);
+
+    logger.info(`✅ Serviço atualizado: ${serviceId}`);
+    return { success: true, serviceId };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao atualizar serviço:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+// Delete a service
+export const deleteService = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { serviceId } = request.data;
+  const userId = request.auth.uid;
+
+  if (!serviceId) {
+    throw new HttpsError("invalid-argument", "ID do serviço é obrigatório");
+  }
+
+  try {
+    const serviceRef = db.collection('services').doc(serviceId);
+    const serviceDoc = await serviceRef.get();
+
+    if (!serviceDoc.exists) {
+      throw new HttpsError("not-found", "Serviço não encontrado");
+    }
+
+    const serviceData = serviceDoc.data();
+    if (serviceData.providerId !== userId) {
+      throw new HttpsError("permission-denied", "Você não tem permissão para deletar este serviço");
+    }
+
+    // Soft delete by setting isActive to false
+    await serviceRef.update({
+      isActive: false,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Update user stats
+    const userRef = db.collection('users').doc(userId);
+    await userRef.update({
+      'stats.totalServices': admin.firestore.FieldValue.increment(-1),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    logger.info(`✅ Serviço deletado: ${serviceId}`);
+    return { success: true, serviceId };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao deletar serviço:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+/**
+ * CRUD operations for Posts
+ */
+
+// Create a new post
+export const createPost = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { content, mediaUrls, visibility } = request.data;
+  const userId = request.auth.uid;
+
+  // Validation
+  if (!content || content.trim().length === 0) {
+    throw new HttpsError("invalid-argument", "Conteúdo do post é obrigatório");
+  }
+
+  if (content.length > 2000) {
+    throw new HttpsError("invalid-argument", "Conteúdo do post muito longo (máximo 2000 caracteres)");
+  }
+
+  try {
+    const postRef = db.collection('posts').doc();
+    const postData = {
+      id: postRef.id,
+      authorId: userId,
+      content: content.trim(),
+      mediaUrls: Array.isArray(mediaUrls) ? mediaUrls : [],
+      visibility: visibility || 'public', // public, followers, private
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      isVisible: true,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      // Search optimization
+      searchTerms: content.toLowerCase().split(' ').filter(term => term.length > 2)
+    };
+
+    await postRef.set(postData);
+
+    // Update user stats
+    const userRef = db.collection('users').doc(userId);
+    await userRef.update({
+      'stats.totalPosts': admin.firestore.FieldValue.increment(1),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    logger.info(`✅ Post criado: ${postRef.id} por ${userId}`);
+    return { success: true, postId: postRef.id, post: postData };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao criar post:`, error);
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+// Update an existing post
+export const updatePost = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { postId, updates } = request.data;
+  const userId = request.auth.uid;
+
+  if (!postId || !updates) {
+    throw new HttpsError("invalid-argument", "ID do post e atualizações são obrigatórios");
+  }
+
+  try {
+    const postRef = db.collection('posts').doc(postId);
+    const postDoc = await postRef.get();
+
+    if (!postDoc.exists) {
+      throw new HttpsError("not-found", "Post não encontrado");
+    }
+
+    const postData = postDoc.data();
+    if (postData.authorId !== userId) {
+      throw new HttpsError("permission-denied", "Você não tem permissão para editar este post");
+    }
+
+    // Prepare update data
+    const updateData = {
+      ...updates,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    // Update search terms if content changed
+    if (updates.content) {
+      updateData.searchTerms = updates.content.toLowerCase().split(' ').filter(term => term.length > 2);
+    }
+
+    await postRef.update(updateData);
+
+    logger.info(`✅ Post atualizado: ${postId}`);
+    return { success: true, postId };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao atualizar post:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+// Delete a post
+export const deletePost = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { postId } = request.data;
+  const userId = request.auth.uid;
+
+  if (!postId) {
+    throw new HttpsError("invalid-argument", "ID do post é obrigatório");
+  }
+
+  try {
+    const postRef = db.collection('posts').doc(postId);
+    const postDoc = await postRef.get();
+
+    if (!postDoc.exists) {
+      throw new HttpsError("not-found", "Post não encontrado");
+    }
+
+    const postData = postDoc.data();
+    if (postData.authorId !== userId) {
+      throw new HttpsError("permission-denied", "Você não tem permissão para deletar este post");
+    }
+
+    // Soft delete by setting isVisible to false
+    await postRef.update({
+      isVisible: false,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Update user stats
+    const userRef = db.collection('users').doc(userId);
+    await userRef.update({
+      'stats.totalPosts': admin.firestore.FieldValue.increment(-1),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    logger.info(`✅ Post deletado: ${postId}`);
+    return { success: true, postId };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao deletar post:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+// Like/Unlike a post
+export const togglePostLike = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { postId } = request.data;
+  const userId = request.auth.uid;
+
+  if (!postId) {
+    throw new HttpsError("invalid-argument", "ID do post é obrigatório");
+  }
+
+  try {
+    const result = await db.runTransaction(async (transaction) => {
+      // Check if post exists
+      const postRef = db.collection('posts').doc(postId);
+      const postDoc = await transaction.get(postRef);
+
+      if (!postDoc.exists) {
+        throw new Error("Post não encontrado");
+      }
+
+      // Check if user already liked this post
+      const likeRef = db.collection('posts').doc(postId).collection('likes').doc(userId);
+      const likeDoc = await transaction.get(likeRef);
+
+      const postData = postDoc.data();
+      let isLiked = false;
+      let newLikeCount = postData.likes || 0;
+
+      if (likeDoc.exists) {
+        // Unlike the post
+        transaction.delete(likeRef);
+        newLikeCount = Math.max(0, newLikeCount - 1);
+        isLiked = false;
+      } else {
+        // Like the post
+        transaction.set(likeRef, {
+          userId,
+          likedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        newLikeCount += 1;
+        isLiked = true;
+      }
+
+      // Update post like count
+      transaction.update(postRef, {
+        likes: newLikeCount,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      return { isLiked, newLikeCount };
+    });
+
+    logger.info(`✅ Post ${result.isLiked ? 'curtido' : 'descurtido'}: ${postId} por ${userId}`);
+    return { success: true, isLiked: result.isLiked, likes: result.newLikeCount };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao curtir/descurtir post:`, error);
+    if (error.message === "Post não encontrado") {
+      throw new HttpsError("not-found", "Post não encontrado");
+    }
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+// Add comment to a post
+export const addComment = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { postId, content } = request.data;
+  const userId = request.auth.uid;
+
+  if (!postId || !content || content.trim().length === 0) {
+    throw new HttpsError("invalid-argument", "ID do post e conteúdo do comentário são obrigatórios");
+  }
+
+  if (content.length > 500) {
+    throw new HttpsError("invalid-argument", "Comentário muito longo (máximo 500 caracteres)");
+  }
+
+  try {
+    const result = await db.runTransaction(async (transaction) => {
+      // Check if post exists
+      const postRef = db.collection('posts').doc(postId);
+      const postDoc = await transaction.get(postRef);
+
+      if (!postDoc.exists) {
+        throw new Error("Post não encontrado");
+      }
+
+      // Create comment
+      const commentRef = db.collection('posts').doc(postId).collection('comments').doc();
+      const commentData = {
+        id: commentRef.id,
+        authorId: userId,
+        content: content.trim(),
+        likes: 0,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      transaction.set(commentRef, commentData);
+
+      // Update post comment count
+      const postData = postDoc.data();
+      const newCommentCount = (postData.comments || 0) + 1;
+
+      transaction.update(postRef, {
+        comments: newCommentCount,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      return { commentData, newCommentCount };
+    });
+
+    logger.info(`✅ Comentário adicionado ao post ${postId} por ${userId}`);
+    return { 
+      success: true, 
+      commentId: result.commentData.id, 
+      comment: result.commentData,
+      comments: result.newCommentCount 
+    };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao adicionar comentário:`, error);
+    if (error.message === "Post não encontrado") {
+      throw new HttpsError("not-found", "Post não encontrado");
+    }
     throw new HttpsError("internal", "Erro interno do servidor");
   }
 });

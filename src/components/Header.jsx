@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ref, get, onValue, off } from 'firebase/database';
-import { database } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useWallet } from '../contexts/WalletContext';
+import { useUser } from '../contexts/UserContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import CachedImage from './CachedImage';
 import NotificationIcon from './NotificationIcon';
@@ -10,25 +10,18 @@ import './Header.css';
 
 const Header = () => {
   const { currentUser, logout } = useAuth();
+  const { vpBalance, formatCurrency } = useWallet();
+  const { userProfile, formatUserDisplayName, getUserAvatarUrl } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
-  const [vpBalance, setVpBalance] = useState(0);
-  const [userProfile, setUserProfile] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    if (currentUser) {
-      loadUserData();
-    }
-
-    // Cleanup function to remove listeners when component unmounts
-    return () => {
-      if (currentUser) {
-        const vpRef = ref(database, `users/${currentUser.uid}/vpBalance`);
-        off(vpRef);
-      }
-    };
-  }, [currentUser]);
+  // No need for loadUserData anymore, UserContext handles it
+  // useEffect(() => {
+  //   if (currentUser) {
+  //     loadUserData();
+  //   }
+  // }, [currentUser]);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -52,28 +45,7 @@ const Header = () => {
     }
   }, [mobileMenuOpen]);
 
-  const loadUserData = async () => {
-    try {
-      // Set up real-time listener for VP balance (matching vanilla JS implementation)
-      const vpRef = ref(database, `users/${currentUser.uid}/vpBalance`);
-      onValue(vpRef, (snapshot) => {
-        if (snapshot.exists()) {
-          setVpBalance(snapshot.val() || 0);
-        } else {
-          setVpBalance(0);
-        }
-      });
-
-      // Load user profile (one-time fetch)
-      const userRef = ref(database, `users/${currentUser.uid}`);
-      const userSnapshot = await get(userRef);
-      if (userSnapshot.exists()) {
-        setUserProfile(userSnapshot.val());
-      }
-    } catch (error) {
-      console.error('Error loading user data:', error);
-    }
-  };
+  // loadUserData removed - handled by UserContext
 
   const handleLogout = async () => {
     try {
@@ -231,7 +203,7 @@ const Header = () => {
                          <animate attributeName="stroke-width" values="0.8;2;0.8" dur="3s" repeatCount="indefinite" />
                        </path>
                      </svg>
-                    <span id="vp-amount">{vpBalance.toLocaleString()}</span>
+                    <span id="vp-amount">{formatCurrency(vpBalance || 0)}</span>
                   </div>
                 </li>
                 
@@ -245,18 +217,18 @@ const Header = () => {
                   <a href="#" className="profile-trigger">
                     <div className="profile-picture-container">
                       <div className="profile-picture" id="navbar-profile-pic">
-                        {userProfile?.profilePictureURL ? (
+                        {getUserAvatarUrl(userProfile) ? (
                           <CachedImage 
-                            src={userProfile.profilePictureURL}
+                            src={getUserAvatarUrl(userProfile)}
                             defaultType="PROFILE_1"
-                            alt={userProfile.displayName || 'Profile'} 
+                            alt={formatUserDisplayName(userProfile)} 
                             className=""
                             showLoading={false}
                             sizes="40px"
                           />
-                        ) : userProfile?.displayName ? (
+                        ) : formatUserDisplayName(userProfile) !== 'Usuário' ? (
                           <span className="profile-initials">
-                            {userProfile.displayName
+                            {formatUserDisplayName(userProfile)
                               .split(' ')
                               .map(name => name[0])
                               .join('')
@@ -432,7 +404,7 @@ const Header = () => {
                       textAnchor="middle"
                       fontWeight="bold">VP</text>
               </svg>
-              <span>{vpBalance.toLocaleString()}</span>
+              <span>{formatCurrency(vpBalance || 0)}</span>
             </div>
             
             <div className="mobile-notification-section">
@@ -441,18 +413,18 @@ const Header = () => {
             
             <div className="mobile-profile-section">
               <div className="mobile-profile-avatar">
-                {userProfile?.profilePictureURL ? (
+                {getUserAvatarUrl(userProfile) ? (
                   <CachedImage 
-                    src={userProfile.profilePictureURL}
+                    src={getUserAvatarUrl(userProfile)}
                     defaultType="PROFILE_1"
-                    alt={userProfile.displayName || 'Profile'} 
+                    alt={formatUserDisplayName(userProfile)} 
                     className=""
                     showLoading={false}
                     sizes="36px"
                   />
-                ) : userProfile?.displayName ? (
+                ) : formatUserDisplayName(userProfile) !== 'Usuário' ? (
                   <span className="profile-initials">
-                    {userProfile.displayName
+                    {formatUserDisplayName(userProfile)
                       .split(' ')
                       .map(name => name[0])
                       .join('')
@@ -465,7 +437,7 @@ const Header = () => {
               </div>
               <div className="mobile-profile-info">
                 <div className="mobile-profile-name">
-                  {userProfile?.displayName || 'Usuário'}
+                  {formatUserDisplayName(userProfile)}
                 </div>
                 <div className="mobile-profile-username">
                   @{userProfile?.username || 'user'}

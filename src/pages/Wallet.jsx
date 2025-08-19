@@ -77,15 +77,10 @@ const Wallet = () => {
     }
 
     try {
-      // Update VP balance
-      await updateBalance('VP', -amount, true);
-      
-      // Add transaction
-      await addTransaction('outgoing', `Enviado para @${sendForm.username}`, -amount, 'VP');
-      
+      // TODO: Implementar transferência de VP entre usuários
+      showWarning('🚧 Transferência de VP entre usuários será implementada em breve!', 'Funcionalidade em Desenvolvimento');
       setSendForm({ username: '', amount: '', message: '' });
       setShowSendModal(false);
-      showSuccess(`Transferência realizada com sucesso! ${amount.toLocaleString()} VP foram enviados para @${sendForm.username}.`, 'Transferência Realizada');
     } catch (error) {
       console.error('Error sending VP:', error);
       showError('Erro ao enviar VP. Tente novamente.', 'Erro');
@@ -99,37 +94,46 @@ const Wallet = () => {
     }
 
     try {
-      // Simulate redemption (in real implementation, this would validate with backend)
-      const isVPCode = Math.random() > 0.3; // 70% chance VP, 30% VBP
-      const currencyType = isVPCode ? 'VP' : 'VBP';
-      const redeemAmount = isVPCode ? Math.floor(Math.random() * 1000) + 500 : Math.floor(Math.random() * 500) + 100;
-      
-      // Update balance
-      await updateBalance(currencyType, redeemAmount, true);
-      
-      // Add transaction
-      await addTransaction('earned', `Código Resgatado: ${redeemCode}`, redeemAmount, currencyType);
-      
+      // TODO: Implementar validação e resgate de códigos
+      showWarning('🚧 Sistema de códigos de resgate será implementado em breve!', 'Funcionalidade em Desenvolvimento');
       setRedeemCode('');
       setShowRedeemModal(false);
-      showSuccess(`Código resgatado com sucesso! ${redeemAmount.toLocaleString()} ${currencyType} foram adicionados à sua conta.`, 'Código Resgatado');
     } catch (error) {
       console.error('Error redeeming code:', error);
       showError('Erro ao resgatar código. Tente novamente.', 'Erro');
     }
   };
 
-
+  const getTransactionAmountDisplay = (transaction) => {
+    if (!transaction.amounts) return { amount: 0, currency: 'VP' };
+    
+    // Get the first currency and amount from transaction.amounts
+    const entries = Object.entries(transaction.amounts);
+    if (entries.length === 0) return { amount: 0, currency: 'VP' };
+    
+    const [currency, amount] = entries[0];
+    return { 
+      amount: Math.abs(amount), 
+      currency: currency.toUpperCase(),
+      isPositive: amount >= 0
+    };
+  };
 
   const getTransactionIcon = (transaction) => {
-    // Determine transaction type (matching vanilla JS logic)
+    // Determine transaction type (matching new transaction structure)
     let typeClass = '';
-    if (transaction.amount > 0 && transaction.type !== 'earned') {
+    
+    // Get the primary amount from transaction.amounts
+    const amount = transaction.amounts ? Object.values(transaction.amounts)[0] : 0;
+    
+    if (amount > 0 && !['BONUS', 'BUY_VP'].includes(transaction.type)) {
       typeClass = 'incoming';
-    } else if (transaction.amount < 0) {
+    } else if (amount < 0) {
       typeClass = 'outgoing';
-    } else if (transaction.type === 'earned') {
+    } else if (transaction.type === 'BONUS') {
       typeClass = 'earned';
+    } else if (transaction.type === 'BUY_VP') {
+      typeClass = 'purchase';
     } else {
       typeClass = 'purchase';
     }
@@ -149,20 +153,22 @@ const Wallet = () => {
   };
 
   const getTransactionColor = (transaction) => {
-    // Determine transaction type (matching vanilla JS logic)
+    // Get transaction amount and currency
+    const { amount, currency, isPositive } = getTransactionAmountDisplay(transaction);
+    
+    // Determine transaction type
     let typeClass = '';
-    if (transaction.amount > 0 && transaction.type !== 'earned') {
+    if (isPositive && !['BONUS', 'BUY_VP'].includes(transaction.type)) {
       typeClass = 'incoming';
-    } else if (transaction.amount < 0) {
+    } else if (!isPositive) {
       typeClass = 'outgoing';
-    } else if (transaction.type === 'earned') {
+    } else if (transaction.type === 'BONUS') {
       typeClass = 'earned';
+    } else if (transaction.type === 'BUY_VP') {
+      typeClass = 'purchase';
     } else {
       typeClass = 'purchase';
     }
-    
-    // Ensure currency is properly handled
-    const currency = (transaction.currency || 'VP').toUpperCase();
     
     // Set transaction colors based on currency (matching vanilla JS logic)
     if (currency === 'VBP') {
@@ -734,15 +740,20 @@ const Wallet = () => {
                     ></i>
                   </div>
                   <div className="transaction-details">
-                    <div className="transaction-description">{transaction.description}</div>
+                    <div className="transaction-description">
+                      {transaction.metadata?.description || 'Transação'}
+                    </div>
                     <div className="transaction-date">{formatDate(transaction.timestamp)}</div>
                   </div>
                   <div className="transaction-amount">
-                    <span 
+                                        <span
                       className="amount-value"
                       style={{ color: getTransactionColor(transaction) }}
                     >
-                      {transaction.amount > 0 ? '+' : ''}{formatCurrency(transaction.amount, transaction.currency)}
+                      {(() => {
+                        const { amount, currency, isPositive } = getTransactionAmountDisplay(transaction);
+                        return `${isPositive ? '+' : '-'}${formatCurrency(amount)} ${currency}`;
+                      })()}
                     </span>
                   </div>
                 </div>

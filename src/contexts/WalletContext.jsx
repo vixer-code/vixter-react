@@ -219,7 +219,7 @@ export const WalletProvider = ({ children }) => {
       handleWalletError(error, 'claimDaily');
       return false;
     }
-  }, [currentUser, claimDailyBonusFunc, showSuccess, showWarning, showError]);
+  }, [currentUser, claimDailyBonusFunc, showSuccess, showError]);
 
   // Check if can claim daily bonus
   const canClaimDailyBonus = useCallback(() => {

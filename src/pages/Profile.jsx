@@ -4,6 +4,7 @@ import { ref, get, update, set, remove, onValue, off, push, query, orderByChild,
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import { useEmailVerification } from '../hooks/useEmailVerification';
@@ -22,6 +23,7 @@ const Profile = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const { userProfile, getUserById, updateUserProfile, formatUserDisplayName, getUserAvatarUrl, loading: userLoading } = useUser();
   const { isVerified, isChecking } = useEmailVerification();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const [profile, setProfile] = useState(null);
@@ -99,22 +101,54 @@ const Profile = () => {
   const [recentSales, setRecentSales] = useState([]); // recent combined sales
   const [withdrawAmount, setWithdrawAmount] = useState('');
 
-  // Read cached profile early to reduce LCP resource delay
+  // Load profile from UserContext or Firestore
   useEffect(() => {
     const targetUserId = userId || currentUser?.uid;
     if (!targetUserId) return;
-    try {
-      const cached = localStorage.getItem(`profile:${targetUserId}`);
-      if (cached) {
-        const cachedProfile = JSON.parse(cached);
-        if (cachedProfile && cachedProfile.coverPhotoURL) {
-          // Paint ASAP with cached data
-          setProfile(prev => prev || cachedProfile);
-          setLoading(false);
+
+    const loadProfileData = async () => {
+      setLoading(true);
+      
+      if (!userId && userProfile) {
+        // Current user profile from UserContext
+        setProfile(userProfile);
+        setLoading(false);
+      } else if (userId) {
+        // Other user profile from Firestore
+        try {
+          const userData = await getUserById(userId);
+          if (userData) {
+            setProfile(userData);
+          } else {
+            showError('Usuário não encontrado.', 'Erro');
+            navigate('/');
+            return;
+          }
+        } catch (error) {
+          console.error('Error loading user profile:', error);
+          showError('Erro ao carregar perfil.', 'Erro');
         }
+        setLoading(false);
       }
-    } catch {}
-  }, [userId, currentUser]);
+    };
+
+    loadProfileData();
+  }, [userId, currentUser, userProfile, getUserById, showError, navigate]);
+
+  // Initialize form data when profile changes
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        displayName: profile.displayName || '',
+        bio: profile.bio || '',
+        location: profile.location || '',
+        interests: profile.interests || [],
+        languages: profile.languages || '',
+        hobbies: profile.hobbies || '',
+        aboutMe: profile.aboutMe || ''
+      });
+    }
+  }, [profile]);
 
   // Services hook
   const { 
@@ -186,79 +220,7 @@ const [formData, setFormData] = useState({
     }
   }, [location.hash, location.pathname]);
 
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      const targetUserId = userId || currentUser?.uid;
-      
-      if (!targetUserId) {
-        setLoading(false);
-        return;
-      }
-
-      // Check if current user is blocked
-      if (currentUser && currentUser.uid !== targetUserId) {
-        const blockedSnap = await get(ref(database, `blocked/${targetUserId}/${currentUser.uid}`));
-        if (blockedSnap.exists()) {
-          setLoading(false);
-          return;
-        }
-      }
-
-      const userRef = ref(database, `users/${targetUserId}`);
-      const snapshot = await get(userRef);
-      
-      if (!snapshot.exists()) {
-        setLoading(false);
-        return;
-      }
-
-      const userData = snapshot.val();
-      setProfile(userData);
-      // Persist minimal profile to speed up subsequent visits (for LCP)
-      try {
-        localStorage.setItem(`profile:${targetUserId}`, JSON.stringify({
-          displayName: userData.displayName || '',
-          username: userData.username || '',
-          bio: userData.bio || '',
-          location: userData.location || '',
-          profilePictureURL: userData.profilePictureURL || null,
-          coverPhotoURL: userData.coverPhotoURL || null,
-          createdAt: userData.createdAt || null,
-          accountLevel: userData.accountLevel || null,
-          admin: userData.admin || false
-        }));
-      } catch {}
-              setFormData({
-          displayName: userData.displayName || '',
-          bio: userData.bio || '',
-          location: userData.location || '',
-          interests: userData.interests || [],
-          languages: userData.languages || '',
-          hobbies: userData.hobbies || '',
-          aboutMe: userData.aboutMe || ''
-        });
-
-      // Load critical data first (for LCP), then load secondary data
-      setLoading(false); // Allow render with profile data first
-      
-      // Load less critical data after initial render
-      setTimeout(() => {
-        Promise.all([
-          loadFollowers(targetUserId),
-          loadPosts(targetUserId),
-           // Status handled by component; remove extra RT listener
-           loadPacks(targetUserId),
-          loadReviews(targetUserId)
-        ]).catch(error => {
-          console.error('Error loading additional profile data:', error);
-        });
-      }, 0);
-    } catch (error) {
-      console.error('Error loading profile:', error);
-      setLoading(false);
-    }
-  };
+  // loadProfile removed - handled by UserContext
 
   const loadFollowers = async (targetUserId) => {
     try {
@@ -876,13 +838,14 @@ const [formData, setFormData] = useState({
       const finalURL = await getDownloadURL(fileRef);
       console.log('Download URL obtained:', finalURL);
       
-      // Update database with the URL
+      // Update database with the URL using UserContext
       const updateData = {};
       updateData[type === 'avatar' ? 'profilePictureURL' : 'coverPhotoURL'] = finalURL;
-      await update(ref(database, `users/${currentUser.uid}`), updateData);
-
-      console.log('Profile updated successfully, reloading profile');
-      await loadProfile(); // Reload profile to show new image
+      
+      const success = await updateUserProfile(updateData);
+      if (success) {
+        console.log('Profile updated successfully');
+      }
       
       setUploading(false);
       console.log('Image upload completed successfully');
@@ -920,9 +883,10 @@ const [formData, setFormData] = useState({
     if (!currentUser) return;
 
     try {
-      await update(ref(database, `users/${currentUser.uid}`), formData);
-      await loadProfile();
-      setEditing(false);
+      const success = await updateUserProfile(formData);
+      if (success) {
+        setEditing(false);
+      }
     } catch (error) {
       console.error('Error updating profile:', error);
     }
