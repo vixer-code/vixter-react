@@ -67,7 +67,7 @@ export const ServicesProvider = ({ children }) => {
   // Load user's services
   const loadUserServices = useCallback(async (userId = null) => {
     const targetUserId = userId || currentUser?.uid;
-    if (!targetUserId) return;
+    if (!targetUserId) return [];
 
     try {
       setLoading(true);
@@ -90,11 +90,15 @@ export const ServicesProvider = ({ children }) => {
         });
       });
 
-      if (userId) {
-        return servicesData; // Return for other users
-      } else {
-        setUserServices(servicesData); // Set for current user
+      // Sempre popula a lista geral utilizada na UI
+      setServices(servicesData);
+
+      // Se for o usuário atual (ou não foi passado userId explicitamente), atualiza também userServices
+      if (!userId || (currentUser && targetUserId === currentUser.uid)) {
+        setUserServices(servicesData);
       }
+
+      return servicesData;
       
     } catch (error) {
       console.error('Error loading user services:', error);
@@ -104,6 +108,27 @@ export const ServicesProvider = ({ children }) => {
       setLoading(false);
     }
   }, [currentUser, showError]);
+
+  // Update only status convenience
+  const updateServiceStatus = useCallback(async (serviceId, status) => {
+    try {
+      const result = await apiFunc({
+        resource: 'service',
+        action: 'update',
+        payload: { serviceId, updates: { status } }
+      });
+      if (result?.data?.success) {
+        // Reload current view
+        const targetUserId = currentUser?.uid;
+        await loadUserServices(targetUserId);
+      }
+      return !!result?.data?.success;
+    } catch (error) {
+      console.error('Error updating service status:', error);
+      showError('Erro ao atualizar status do serviço.', 'Erro');
+      return false;
+    }
+  }, [apiFunc, currentUser, loadUserServices, showError]);
 
   // Search services
   const searchServices = useCallback(async (filters = {}) => {
