@@ -390,8 +390,9 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
         contentType: file.type || undefined,
         customMetadata: metadata
       };
-      const snap = await uploadBytes(fileRef, file, uploadMetadata);
-      return await getDownloadURL(snap.ref);
+      await uploadBytes(fileRef, file, uploadMetadata);
+      // Não retorna URL do original (bloqueado pelas regras). Backend atualizará o Firestore com URL wm_.
+      return null;
     } catch (error) {
       console.error('Error uploading file:', error);
       throw error;
@@ -549,14 +550,14 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       if (coverImageFile) {
         const coverImagePath = `servicesMedia/${currentUser.uid}/${serviceId}/cover-${Date.now()}-${coverImageFile.name}`;
         console.log('📷 Uploading cover image...');
-        const coverUrl = await uploadFileToStorage(coverImageFile, coverImagePath, {
+        await uploadFileToStorage(coverImageFile, coverImagePath, {
           resource: 'service',
           resourceId: serviceId,
           role: 'cover',
           ownerId: currentUser.uid
         });
-        baseServiceData.coverImageURL = coverUrl; // Temporary original URL
-        console.log('✅ Cover image uploaded:', coverUrl);
+        // Não definimos coverImageURL aqui; será preenchido pelo backend quando wm_ estiver pronto
+        console.log('✅ Cover image uploaded');
       } else if (formData.coverImage) {
         baseServiceData.coverImageURL = formData.coverImage;
         console.log('📷 Reusing existing cover image:', baseServiceData.coverImageURL);
@@ -567,15 +568,15 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       for (let i = 0; i < showcasePhotoFiles.length; i++) {
         const photoPath = `servicesMedia/${currentUser.uid}/${serviceId}/photo-${Date.now()}-${i}-${showcasePhotoFiles[i].name}`;
         console.log(`📸 Uploading showcase photo ${i + 1}...`);
-        const photoUrl = await uploadFileToStorage(showcasePhotoFiles[i], photoPath, {
+        await uploadFileToStorage(showcasePhotoFiles[i], photoPath, {
           resource: 'service',
           resourceId: serviceId,
           role: 'photo',
           index: photoUrls.length,
           ownerId: currentUser.uid
         });
-        photoUrls.push(photoUrl); // Temporary original URL
-        console.log(`✅ Showcase photo ${i + 1} uploaded:`, photoUrl);
+        // Não adicionamos URL temporário; backend preencherá a posição no Firestore
+        console.log(`✅ Showcase photo ${i + 1} uploaded`);
       }
       baseServiceData.showcasePhotosURLs = photoUrls;
 
@@ -584,15 +585,15 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       for (let i = 0; i < showcaseVideoFiles.length; i++) {
         const videoPath = `servicesMedia/${currentUser.uid}/${serviceId}/video-${Date.now()}-${i}-${showcaseVideoFiles[i].name}`;
         console.log(`🎥 Uploading showcase video ${i + 1}...`);
-        const videoUrl = await uploadFileToStorage(showcaseVideoFiles[i], videoPath, {
+        await uploadFileToStorage(showcaseVideoFiles[i], videoPath, {
           resource: 'service',
           resourceId: serviceId,
           role: 'video',
           index: videoUrls.length,
           ownerId: currentUser.uid
         });
-        videoUrls.push(videoUrl); // Temporary original URL
-        console.log(`✅ Showcase video ${i + 1} uploaded:`, videoUrl);
+        // Não adicionamos URL temporário; backend preencherá a posição no Firestore
+        console.log(`✅ Showcase video ${i + 1} uploaded`);
       }
       baseServiceData.showcaseVideosURLs = videoUrls;
 

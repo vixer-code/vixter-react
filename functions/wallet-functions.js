@@ -1980,30 +1980,47 @@ async function updateFirestoreWithWatermarkedURL(objectName, watermarkedURL, met
   try {
     const collection = resource === 'service' ? 'services' : 'packs';
     const docRef = db.collection(collection).doc(resourceId);
-    
-    let updateData = {};
-    
-    if (role === 'cover') {
-      updateData.coverImageURL = watermarkedURL;
-    } else if (role === 'photo') {
-      updateData[`showcasePhotosURLs.${index}`] = watermarkedURL;
-    } else if (role === 'video') {
-      updateData[`showcaseVideosURLs.${index}`] = watermarkedURL;
-    } else if (role === 'sampleImage') {
-      updateData[`sampleImages.${index}`] = watermarkedURL;
-    } else if (role === 'sampleVideo') {
-      updateData[`sampleVideos.${index}`] = watermarkedURL;
-    } else if (role === 'packContent') {
-      updateData[`packContent.${index}`] = watermarkedURL;
+    const snap = await docRef.get();
+    const data = snap.exists ? snap.data() : {};
+
+    const ensureAtIndex = (arr, idx, value) => {
+      const clone = Array.isArray(arr) ? [...arr] : [];
+      const i = Number.isFinite(Number(idx)) ? Number(idx) : clone.length;
+      clone[i] = value;
+      return clone;
+    };
+
+    const updateData = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      'mediaProcessing.status': 'completed',
+      'mediaProcessing.lastUpdate': admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    switch (role) {
+      case 'cover':
+        updateData.coverImageURL = watermarkedURL;
+        break;
+      case 'photo':
+        updateData.showcasePhotosURLs = ensureAtIndex(data.showcasePhotosURLs, index, watermarkedURL);
+        break;
+      case 'video':
+        updateData.showcaseVideosURLs = ensureAtIndex(data.showcaseVideosURLs, index, watermarkedURL);
+        break;
+      case 'sampleImage':
+        updateData.sampleImages = ensureAtIndex(data.sampleImages, index, watermarkedURL);
+        break;
+      case 'sampleVideo':
+        updateData.sampleVideos = ensureAtIndex(data.sampleVideos, index, watermarkedURL);
+        break;
+      case 'packContent':
+        updateData.packContent = ensureAtIndex(data.packContent, index, watermarkedURL);
+        break;
+      default:
+        break;
     }
 
-    // Add processing status update
-    updateData['mediaProcessing.status'] = 'completed';
-    updateData['mediaProcessing.lastUpdate'] = admin.firestore.FieldValue.serverTimestamp();
-    updateData.updatedAt = admin.firestore.FieldValue.serverTimestamp();
-
-    await docRef.update(updateData);
-    logger.info(`✅ Firestore updated for ${collection}/${resourceId}:`, updateData);
+    await docRef.set(updateData, { merge: true });
+    logger.info(`✅ Firestore updated for ${collection}/${resourceId} role=${role}`);
   } catch (error) {
     logger.error('💥 Error updating Firestore:', error);
   }

@@ -301,8 +301,9 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         contentType: file.type || undefined,
         customMetadata: metadata
       };
-      const snap = await uploadBytes(fileRef, file, uploadMetadata);
-      return await getDownloadURL(snap.ref);
+      await uploadBytes(fileRef, file, uploadMetadata);
+      // Não retorna URL do original; backend atualizará os campos com wm_ quando pronto
+      return null;
     } catch (err) {
       console.error('Upload error:', err);
       throw err;
@@ -375,7 +376,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       let coverImageURL = formData.coverImage || '';
       if (coverImageFile) {
         const namePart = coverImageFile.name?.split('.').pop() || 'jpg';
-        coverImageURL = await uploadFileToStorage(
+        await uploadFileToStorage(
           coverImageFile,
           `${packBasePath}/cover-${Date.now()}.${namePart}`,
           {
@@ -385,6 +386,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
             ownerId: currentUser.uid
           }
         );
+        // Backend preencherá coverImage com wm_ no Firestore
       }
 
       // Upload samples
@@ -392,28 +394,28 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       for (let i = 0; i < sampleImageFiles.length; i++) {
         const f = sampleImageFiles[i];
         const ext = f.name?.split('.').pop() || 'jpg';
-        const url = await uploadFileToStorage(f, `${packBasePath}/samples/image_${i}.${ext}`, {
+        await uploadFileToStorage(f, `${packBasePath}/samples/image_${i}.${ext}`, {
           resource: 'pack',
           resourceId: packId,
           role: 'sampleImage',
           index: sampleImages.length,
           ownerId: currentUser.uid
         });
-        sampleImages.push(url);
+        // Backend preencherá sampleImages[i] com wm_
       }
 
       const sampleVideos = [...formData.sampleVideos];
       for (let i = 0; i < sampleVideoFiles.length; i++) {
         const f = sampleVideoFiles[i];
         const ext = f.name?.split('.').pop() || 'mp4';
-        const url = await uploadFileToStorage(f, `${packBasePath}/samples/video_${i}.${ext}`, {
+        await uploadFileToStorage(f, `${packBasePath}/samples/video_${i}.${ext}`, {
           resource: 'pack',
           resourceId: packId,
           role: 'sampleVideo',
           index: sampleVideos.length,
           ownerId: currentUser.uid
         });
-        sampleVideos.push(url);
+        // Backend preencherá sampleVideos[i] com wm_
       }
 
       // Upload pack files (downloadable content)
@@ -421,14 +423,14 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       for (let i = 0; i < packFiles.length; i++) {
         const f = packFiles[i];
         const ext = f.name?.split('.').pop() || 'bin';
-        const url = await uploadFileToStorage(f, `${packBasePath}/${packId}_${i}.${ext}`, {
+        await uploadFileToStorage(f, `${packBasePath}/${packId}_${i}.${ext}`, {
           resource: 'pack',
           resourceId: packId,
           role: 'packContent',
           index: packContentURLs.length,
           ownerId: currentUser.uid
         });
-        packContentURLs.push(url);
+        // Backend preencherá packContent[i] com wm_
       }
 
       // Prepare data to save (mirror create-pack.js fields)
