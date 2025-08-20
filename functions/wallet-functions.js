@@ -16,6 +16,7 @@ import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
 import ffprobeStatic from 'ffprobe-static';
 import { Buffer } from 'node:buffer';
+import { randomUUID } from 'node:crypto';
 
 import { defineSecret } from 'firebase-functions/params';
 
@@ -1941,19 +1942,18 @@ export const watermarkOnUpload = onObjectFinalized({
     }
 
     const destPath = deriveWatermarkedName(objectName);
+    const downloadToken = randomUUID();
     await bucket.upload(tmpOut, {
       destination: destPath,
       metadata: {
         contentType,
-        metadata: { watermarked: 'true', originPath: objectName }
+        metadata: { watermarked: 'true', originPath: objectName, firebaseStorageDownloadTokens: downloadToken }
       }
     });
 
-    // Get watermarked URL
-    const watermarkedURL = await bucket.file(destPath).getSignedUrl({
-      action: 'read',
-      expires: Date.now() + 365 * 24 * 60 * 60 * 1000 // 1 year
-    }).then(urls => urls[0]);
+    // Build Firebase download URL using token (avoids signBlob permission)
+    const encoded = encodeURIComponent(destPath);
+    const watermarkedURL = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encoded}?alt=media&token=${downloadToken}`;
 
     // Update Firestore document with watermarked URL
     await updateFirestoreWithWatermarkedURL(objectName, watermarkedURL, metadata);
@@ -2080,15 +2080,17 @@ export const generateBuyerWatermarkedCopy = onCall({
       throw new HttpsError('failed-precondition', 'Tipo de arquivo não suportado');
     }
     const destPath = deriveWatermarkedName(sourcePath, buyerId);
+    const downloadToken = randomUUID();
     await bucket.upload(tmpOut, {
       destination: destPath,
       metadata: {
         contentType,
-        metadata: { watermarked: 'true', buyerId, originPath: sourcePath }
+        metadata: { watermarked: 'true', buyerId, originPath: sourcePath, firebaseStorageDownloadTokens: downloadToken }
       }
     });
-    const publicUrl = await bucket.file(destPath).getSignedUrl({ action: 'read', expires: Date.now() + 7*24*60*60*1000 });
-    return { success: true, path: destPath, url: publicUrl?.[0] };
+    const encoded = encodeURIComponent(destPath);
+    const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encoded}?alt=media&token=${downloadToken}`;
+    return { success: true, path: destPath, url: publicUrl };
   } catch (error) {
     logger.error('💥 Error generating buyer watermark:', error);
     if (error instanceof HttpsError) throw error;

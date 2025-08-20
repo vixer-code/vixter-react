@@ -15,7 +15,7 @@
     "react-error-overlay": "6.0.9"
   },
   "engines": {
-    "node": "22"
+    "node": "20"
   },
   "main": "index.js",
   "dependencies": {
