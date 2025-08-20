@@ -294,10 +294,14 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     if (currentStep > 0) setCurrentStep(s => s - 1);
   };
 
-  const uploadFileToStorage = async (file, path) => {
+  const uploadFileToStorage = async (file, path, metadata = {}) => {
     try {
       const fileRef = storageRef(storage, path);
-      const snap = await uploadBytes(fileRef, file);
+      const uploadMetadata = {
+        contentType: file.type || undefined,
+        customMetadata: metadata
+      };
+      const snap = await uploadBytes(fileRef, file, uploadMetadata);
       return await getDownloadURL(snap.ref);
     } catch (err) {
       console.error('Upload error:', err);
@@ -373,7 +377,13 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         const namePart = coverImageFile.name?.split('.').pop() || 'jpg';
         coverImageURL = await uploadFileToStorage(
           coverImageFile,
-          `${packBasePath}/cover-${Date.now()}.${namePart}`
+          `${packBasePath}/cover-${Date.now()}.${namePart}`,
+          {
+            resource: 'pack',
+            resourceId: packId,
+            role: 'cover',
+            ownerId: currentUser.uid
+          }
         );
       }
 
@@ -382,7 +392,13 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       for (let i = 0; i < sampleImageFiles.length; i++) {
         const f = sampleImageFiles[i];
         const ext = f.name?.split('.').pop() || 'jpg';
-        const url = await uploadFileToStorage(f, `${packBasePath}/samples/image_${i}.${ext}`);
+        const url = await uploadFileToStorage(f, `${packBasePath}/samples/image_${i}.${ext}`, {
+          resource: 'pack',
+          resourceId: packId,
+          role: 'sampleImage',
+          index: sampleImages.length,
+          ownerId: currentUser.uid
+        });
         sampleImages.push(url);
       }
 
@@ -390,7 +406,13 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       for (let i = 0; i < sampleVideoFiles.length; i++) {
         const f = sampleVideoFiles[i];
         const ext = f.name?.split('.').pop() || 'mp4';
-        const url = await uploadFileToStorage(f, `${packBasePath}/samples/video_${i}.${ext}`);
+        const url = await uploadFileToStorage(f, `${packBasePath}/samples/video_${i}.${ext}`, {
+          resource: 'pack',
+          resourceId: packId,
+          role: 'sampleVideo',
+          index: sampleVideos.length,
+          ownerId: currentUser.uid
+        });
         sampleVideos.push(url);
       }
 
@@ -399,7 +421,13 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       for (let i = 0; i < packFiles.length; i++) {
         const f = packFiles[i];
         const ext = f.name?.split('.').pop() || 'bin';
-        const url = await uploadFileToStorage(f, `${packBasePath}/${packId}_${i}.${ext}`);
+        const url = await uploadFileToStorage(f, `${packBasePath}/${packId}_${i}.${ext}`, {
+          resource: 'pack',
+          resourceId: packId,
+          role: 'packContent',
+          index: packContentURLs.length,
+          ownerId: currentUser.uid
+        });
         packContentURLs.push(url);
       }
 
@@ -426,9 +454,15 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         status: 'active'
       };
 
+      // Add processing status
+      packData.mediaProcessing = {
+        status: 'processing',
+        lastUpdate: Date.now()
+      };
+
       // Persist fields via Cloud Function update
       await updatePack(packId, packData);
-      showSuccess(editingPack ? 'Pack atualizado com sucesso!' : 'Pack criado com sucesso!');
+      showSuccess(editingPack ? 'Pack atualizado com sucesso! As mídias estão sendo processadas em segundo plano.' : 'Pack criado com sucesso! As mídias estão sendo processadas em segundo plano.');
 
       onPackCreated && onPackCreated(packData);
       clearForm();

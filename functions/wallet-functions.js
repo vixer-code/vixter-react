@@ -6,6 +6,16 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { setGlobalOptions } from "firebase-functions/v2";
 import admin from "firebase-admin";
 import { logger } from "firebase-functions";
+import { onObjectFinalized } from "firebase-functions/v2/storage";
+import path from 'node:path';
+import os from 'node:os';
+import fsp from 'node:fs/promises';
+import sharp from 'sharp';
+import QRCode from 'qrcode';
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegStatic from 'ffmpeg-static';
+import ffprobeStatic from 'ffprobe-static';
+import { Buffer } from 'node:buffer';
 
 import { defineSecret } from 'firebase-functions/params';
 
@@ -1751,6 +1761,324 @@ export const autoReleaseServices = onSchedule({
   } catch (error) {
     logger.error("💥 Erro na liberação automática:", error);
     throw error;
+  }
+});
+
+// ====================== WATERMARKING ======================
+
+ffmpeg.setFfmpegPath(ffmpegStatic);
+ffmpeg.setFfprobePath(ffprobeStatic.path);
+
+function shouldProcessPath(objectName) {
+  // Only process services and packs media; skip already watermarked outputs
+  if (!objectName) return false;
+  if (objectName.startsWith('servicesMedia/') || objectName.startsWith('packs/')) {
+    const base = path.basename(objectName);
+    if (base.startsWith('wm_') || base.startsWith('buyerwm_')) return false;
+    // Skip thumbnails or temporary
+    if (objectName.includes('/tmp/') || objectName.includes('/thumbnails/')) return false;
+    return true;
+  }
+  return false;
+}
+
+function deriveWatermarkedName(objectName, buyerId = null) {
+  const dirname = path.posix.dirname(objectName);
+  const filename = path.posix.basename(objectName);
+  const prefix = buyerId ? 'buyerwm_' : 'wm_';
+  return `${dirname}/${prefix}${filename}`;
+}
+
+async function renderTextOverlaySvg(width, height, textLines) {
+  const fontSize = Math.max(18, Math.round(Math.min(width, height) * 0.035));
+  const lineHeight = Math.round(fontSize * 1.4);
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+  <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+    <rect width="100%" height="100%" fill="transparent"/>
+    <g opacity="0.25">
+      <rect x="0" y="${Math.round(height/2 - (textLines.length*lineHeight)/2) - 20}" width="100%" height="${textLines.length*lineHeight + 40}" fill="black"/>
+    </g>
+    <g font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" fill="white" text-anchor="middle">
+      ${textLines.map((t, idx) => `<text x="50%" y="${Math.round(height/2 + (idx - (textLines.length-1)/2)*lineHeight)}">${t}</text>`).join('\n')}
+    </g>
+  </svg>`;
+  return Buffer.from(svg);
+}
+
+async function generateQrTile(text, size = 256) {
+  const dataUrl = await QRCode.toDataURL(text, { width: size, margin: 1, color: { dark: '#000000', light: '#ffffffff' } });
+  const b64 = dataUrl.split(',')[1];
+  return Buffer.from(b64, 'base64');
+}
+
+async function compositeQrGrid(baseBuffer, gridOpacity = 0.18) {
+  const image = sharp(baseBuffer);
+  const meta = await image.metadata();
+  const width = meta.width || 1024;
+  const height = meta.height || 1024;
+
+  // Create a QR tile with encoded notice
+  const qrText = 'Vixter - Conteúdo protegido contra vazamentos';
+  const tile = await generateQrTile(qrText, 180);
+  const tileImg = sharp(tile).png();
+  const tileMeta = await tileImg.metadata();
+  const tileW = tileMeta.width || 180;
+  const tileH = tileMeta.height || 180;
+
+  const cols = Math.ceil(width / (tileW * 1.5));
+  const rows = Math.ceil(height / (tileH * 1.5));
+  const composites = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = Math.round(c * tileW * 1.5);
+      const y = Math.round(r * tileH * 1.5);
+      composites.push({ input: await tileImg.toBuffer(), top: y, left: x, blend: 'over', opacity: gridOpacity });
+    }
+  }
+  return await image.composite(composites).toBuffer();
+}
+
+async function watermarkImage(inputPath, outputPath, ownerId, buyerId = null, addQr = false) {
+  const base = sharp(inputPath);
+  const meta = await base.metadata();
+  const width = meta.width || 1024;
+  const height = meta.height || 1024;
+  const lines = [
+    `Vixter • Proprietário: ${ownerId}`,
+    buyerId ? `Comprador: ${buyerId}` : 'Não autorizado a redistribuir'
+  ];
+  const overlay = await renderTextOverlaySvg(width, height, lines);
+  let composed = await base.composite([{ input: overlay, top: 0, left: 0 }]).toBuffer();
+  if (addQr) {
+    composed = await compositeQrGrid(composed, 0.14);
+  }
+  await sharp(composed).toFile(outputPath);
+}
+
+async function watermarkVideo(inputPath, outputPath, ownerId, buyerId = null) {
+  // Build a semi-transparent PNG overlay using sharp (text centered)
+  const overlayWidth = 1280;
+  const overlayHeight = 720;
+  const lines = [
+    `Vixter • Proprietário: ${ownerId}`,
+    buyerId ? `Comprador: ${buyerId}` : 'Não autorizado a redistribuir'
+  ];
+  const overlayPngPath = path.join(os.tmpdir(), `overlay_${Date.now()}.png`);
+  const overlaySvg = await renderTextOverlaySvg(overlayWidth, overlayHeight, lines);
+  await sharp(overlaySvg).png().toFile(overlayPngPath);
+
+  await new Promise((resolve, reject) => {
+    ffmpeg()
+      .input(inputPath)
+      .input(overlayPngPath)
+      .complexFilter([
+        {
+          filter: 'scale',
+          options: 'trunc(iw/2)*2:trunc(ih/2)*2',
+          inputs: '[0:v]',
+          outputs: 'v0'
+        },
+        {
+          filter: 'scale',
+          options: 'trunc(iw/2)*2:trunc(ih/2)*2',
+          inputs: '[1:v]',
+          outputs: 'ovr'
+        },
+        {
+          filter: 'overlay',
+          options: '(main_w-overlay_w)/2:(main_h-overlay_h)/2:format=auto',
+          inputs: ['v0', 'ovr'],
+          outputs: 'vout'
+        }
+      ])
+      .outputOptions([
+        '-map', '[vout]',
+        '-map', '0:a?',
+        '-c:v', 'libx264',
+        '-preset', 'veryfast',
+        '-crf', '23',
+        '-c:a', 'copy'
+      ])
+      .on('end', resolve)
+      .on('error', reject)
+      .save(outputPath);
+  });
+  try { await fsp.unlink(overlayPngPath); } catch (e) { logger.debug('Cleanup error:', e); }
+}
+
+async function getOwnerIdFromPath(objectName) {
+  // servicesMedia/{ownerId}/{serviceId}/... or packs/{ownerId}/{packId}/...
+  const parts = objectName.split('/');
+  if (parts.length >= 2) return parts[1];
+  return 'unknown';
+}
+
+export const watermarkOnUpload = onObjectFinalized({
+  memory: '1GiB',
+  timeoutSeconds: 540,
+  concurrency: 1,
+  cpu: 1,
+}, async (event) => {
+  const { name: objectName, contentType, metadata = {}, bucket: bucketName } = event.data;
+  if (!shouldProcessPath(objectName)) return;
+  if (metadata.watermarked === 'true') return;
+
+  const bucket = admin.storage().bucket(bucketName);
+  const tmpIn = path.join(os.tmpdir(), path.basename(objectName));
+  const tmpOut = path.join(os.tmpdir(), `wm_${Date.now()}_${path.basename(objectName)}`);
+
+  try {
+    await bucket.file(objectName).download({ destination: tmpIn });
+    const ownerId = await getOwnerIdFromPath(objectName);
+
+    if ((contentType || '').startsWith('image/')) {
+      await watermarkImage(tmpIn, tmpOut, ownerId, null, true);
+    } else if ((contentType || '').startsWith('video/')) {
+      await watermarkVideo(tmpIn, tmpOut, ownerId, null);
+    } else {
+      // Unsupported type
+      return;
+    }
+
+    const destPath = deriveWatermarkedName(objectName);
+    await bucket.upload(tmpOut, {
+      destination: destPath,
+      metadata: {
+        contentType,
+        metadata: { watermarked: 'true', originPath: objectName }
+      }
+    });
+
+    // Get watermarked URL
+    const watermarkedURL = await bucket.file(destPath).getSignedUrl({
+      action: 'read',
+      expires: Date.now() + 365 * 24 * 60 * 60 * 1000 // 1 year
+    }).then(urls => urls[0]);
+
+    // Update Firestore document with watermarked URL
+    await updateFirestoreWithWatermarkedURL(objectName, watermarkedURL, metadata);
+
+    logger.info(`✅ Watermarked file created and Firestore updated: ${destPath}`);
+  } catch (err) {
+    logger.error('💥 Error watermarking upload:', objectName, err);
+    // Mark as failed in Firestore
+    await updateFirestoreWithWatermarkError(objectName, err.message, metadata);
+  } finally {
+    try { await fsp.unlink(tmpIn); } catch (e) { logger.debug('Cleanup error:', e); }
+    try { await fsp.unlink(tmpOut); } catch (e) { logger.debug('Cleanup error:', e); }
+  }
+});
+
+async function updateFirestoreWithWatermarkedURL(objectName, watermarkedURL, metadata) {
+  const { resource, resourceId, role, index } = metadata;
+  
+  if (!resource || !resourceId || !role) {
+    logger.warn('Missing metadata for Firestore update:', { objectName, metadata });
+    return;
+  }
+
+  try {
+    const collection = resource === 'service' ? 'services' : 'packs';
+    const docRef = db.collection(collection).doc(resourceId);
+    
+    let updateData = {};
+    
+    if (role === 'cover') {
+      updateData.coverImageURL = watermarkedURL;
+    } else if (role === 'photo') {
+      updateData[`showcasePhotosURLs.${index}`] = watermarkedURL;
+    } else if (role === 'video') {
+      updateData[`showcaseVideosURLs.${index}`] = watermarkedURL;
+    } else if (role === 'sampleImage') {
+      updateData[`sampleImages.${index}`] = watermarkedURL;
+    } else if (role === 'sampleVideo') {
+      updateData[`sampleVideos.${index}`] = watermarkedURL;
+    } else if (role === 'packContent') {
+      updateData[`packContent.${index}`] = watermarkedURL;
+    }
+
+    // Add processing status update
+    updateData['mediaProcessing.status'] = 'completed';
+    updateData['mediaProcessing.lastUpdate'] = admin.firestore.FieldValue.serverTimestamp();
+    updateData.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+
+    await docRef.update(updateData);
+    logger.info(`✅ Firestore updated for ${collection}/${resourceId}:`, updateData);
+  } catch (error) {
+    logger.error('💥 Error updating Firestore:', error);
+  }
+}
+
+async function updateFirestoreWithWatermarkError(objectName, errorMessage, metadata) {
+  const { resource, resourceId } = metadata;
+  
+  if (!resource || !resourceId) return;
+
+  try {
+    const collection = resource === 'service' ? 'services' : 'packs';
+    const docRef = db.collection(collection).doc(resourceId);
+    
+    await docRef.update({
+      'mediaProcessing.status': 'error',
+      'mediaProcessing.error': errorMessage,
+      'mediaProcessing.lastUpdate': admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (error) {
+    logger.error('💥 Error updating Firestore with error:', error);
+  }
+}
+
+export const generateBuyerWatermarkedCopy = onCall({
+  memory: '1GiB',
+  timeoutSeconds: 540,
+  concurrency: 1,
+  cpu: 1,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Usuário não autenticado');
+  }
+  const { sourcePath, buyerId } = request.data || {};
+  if (!sourcePath || !buyerId) {
+    throw new HttpsError('invalid-argument', 'sourcePath e buyerId são obrigatórios');
+  }
+  if (!sourcePath.startsWith('servicesMedia/') && !sourcePath.startsWith('packs/')) {
+    throw new HttpsError('permission-denied', 'Caminho inválido');
+  }
+  const bucket = admin.storage().bucket();
+  const [file] = await bucket.file(sourcePath).get();
+  const [metadata] = await file.getMetadata();
+  const contentType = metadata.contentType || '';
+  const tmpIn = path.join(os.tmpdir(), path.basename(sourcePath));
+  const tmpOut = path.join(os.tmpdir(), `buyerwm_${Date.now()}_${path.basename(sourcePath)}`);
+  const ownerId = await getOwnerIdFromPath(sourcePath);
+  await bucket.file(sourcePath).download({ destination: tmpIn });
+
+  try {
+    if (contentType.startsWith('image/')) {
+      await watermarkImage(tmpIn, tmpOut, ownerId, buyerId, true);
+    } else if (contentType.startsWith('video/')) {
+      await watermarkVideo(tmpIn, tmpOut, ownerId, buyerId);
+    } else {
+      throw new HttpsError('failed-precondition', 'Tipo de arquivo não suportado');
+    }
+    const destPath = deriveWatermarkedName(sourcePath, buyerId);
+    await bucket.upload(tmpOut, {
+      destination: destPath,
+      metadata: {
+        contentType,
+        metadata: { watermarked: 'true', buyerId, originPath: sourcePath }
+      }
+    });
+    const publicUrl = await bucket.file(destPath).getSignedUrl({ action: 'read', expires: Date.now() + 7*24*60*60*1000 });
+    return { success: true, path: destPath, url: publicUrl?.[0] };
+  } catch (error) {
+    logger.error('💥 Error generating buyer watermark:', error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError('internal', 'Erro ao gerar marca d\'água do comprador');
+  } finally {
+    try { await fsp.unlink(tmpIn); } catch (e) { logger.debug('Cleanup error:', e); }
+    try { await fsp.unlink(tmpOut); } catch (e) { logger.debug('Cleanup error:', e); }
   }
 });
 

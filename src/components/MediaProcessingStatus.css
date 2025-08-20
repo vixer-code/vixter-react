@@ -1,0 +1,59 @@
+.media-processing-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #f0f9ff;
+  border: 1px solid #0ea5e9;
+  color: #0c4a6e;
+  margin: 8px 0;
+}
+
+.media-processing-status.compact {
+  padding: 4px 8px;
+  font-size: 12px;
+  margin: 4px 0;
+}
+
+.media-processing-status.processing {
+  background-color: #fef3c7;
+  border-color: #f59e0b;
+  color: #92400e;
+}
+
+.media-processing-status.error {
+  background-color: #fef2f2;
+  border-color: #ef4444;
+  color: #dc2626;
+}
+
+.media-processing-status .status-icon {
+  flex-shrink: 0;
+}
+
+.media-processing-status .status-text {
+  flex: 1;
+  font-weight: 500;
+}
+
+.media-processing-status .error-details {
+  flex-shrink: 0;
+  cursor: help;
+  opacity: 0.7;
+}
+
+.media-processing-status .error-details:hover {
+  opacity: 1;
+}
+
+/* Animation for processing spinner */
+.media-processing-status.processing .fa-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

@@ -15,6 +15,9 @@ import {
   // Post interactions (mantidos separados)
   togglePostLike,
   addComment,
+  // Media watermarking
+  watermarkOnUpload,
+  generateBuyerWatermarkedCopy,
 } from './wallet-functions.js';
 
 export {
@@ -33,4 +36,7 @@ export {
   // Post interactions (mantidos separados pois não são CRUD básico)
   togglePostLike,
   addComment,
+  // Media watermarking
+  watermarkOnUpload,
+  generateBuyerWatermarkedCopy,
 };

@@ -383,10 +383,14 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     }));
   };
 
-  const uploadFileToStorage = async (file, path) => {
+  const uploadFileToStorage = async (file, path, metadata = {}) => {
     try {
       const fileRef = storageRef(storage, path);
-      const snap = await uploadBytes(fileRef, file);
+      const uploadMetadata = {
+        contentType: file.type || undefined,
+        customMetadata: metadata
+      };
+      const snap = await uploadBytes(fileRef, file, uploadMetadata);
       return await getDownloadURL(snap.ref);
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -545,8 +549,14 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       if (coverImageFile) {
         const coverImagePath = `servicesMedia/${currentUser.uid}/${serviceId}/cover-${Date.now()}-${coverImageFile.name}`;
         console.log('📷 Uploading cover image...');
-        baseServiceData.coverImageURL = await uploadFileToStorage(coverImageFile, coverImagePath);
-        console.log('✅ Cover image uploaded:', baseServiceData.coverImageURL);
+        const coverUrl = await uploadFileToStorage(coverImageFile, coverImagePath, {
+          resource: 'service',
+          resourceId: serviceId,
+          role: 'cover',
+          ownerId: currentUser.uid
+        });
+        baseServiceData.coverImageURL = coverUrl; // Temporary original URL
+        console.log('✅ Cover image uploaded:', coverUrl);
       } else if (formData.coverImage) {
         baseServiceData.coverImageURL = formData.coverImage;
         console.log('📷 Reusing existing cover image:', baseServiceData.coverImageURL);
@@ -557,8 +567,14 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       for (let i = 0; i < showcasePhotoFiles.length; i++) {
         const photoPath = `servicesMedia/${currentUser.uid}/${serviceId}/photo-${Date.now()}-${i}-${showcasePhotoFiles[i].name}`;
         console.log(`📸 Uploading showcase photo ${i + 1}...`);
-        const photoUrl = await uploadFileToStorage(showcasePhotoFiles[i], photoPath);
-        photoUrls.push(photoUrl);
+        const photoUrl = await uploadFileToStorage(showcasePhotoFiles[i], photoPath, {
+          resource: 'service',
+          resourceId: serviceId,
+          role: 'photo',
+          index: photoUrls.length,
+          ownerId: currentUser.uid
+        });
+        photoUrls.push(photoUrl); // Temporary original URL
         console.log(`✅ Showcase photo ${i + 1} uploaded:`, photoUrl);
       }
       baseServiceData.showcasePhotosURLs = photoUrls;
@@ -568,19 +584,29 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       for (let i = 0; i < showcaseVideoFiles.length; i++) {
         const videoPath = `servicesMedia/${currentUser.uid}/${serviceId}/video-${Date.now()}-${i}-${showcaseVideoFiles[i].name}`;
         console.log(`🎥 Uploading showcase video ${i + 1}...`);
-        const videoUrl = await uploadFileToStorage(showcaseVideoFiles[i], videoPath);
-        videoUrls.push(videoUrl);
+        const videoUrl = await uploadFileToStorage(showcaseVideoFiles[i], videoPath, {
+          resource: 'service',
+          resourceId: serviceId,
+          role: 'video',
+          index: videoUrls.length,
+          ownerId: currentUser.uid
+        });
+        videoUrls.push(videoUrl); // Temporary original URL
         console.log(`✅ Showcase video ${i + 1} uploaded:`, videoUrl);
       }
       baseServiceData.showcaseVideosURLs = videoUrls;
 
-      // Persist media URLs
+      // Persist media URLs and set processing status
       await updateService(serviceId, {
         coverImageURL: baseServiceData.coverImageURL || null,
         showcasePhotosURLs: baseServiceData.showcasePhotosURLs || [],
-        showcaseVideosURLs: baseServiceData.showcaseVideosURLs || []
+        showcaseVideosURLs: baseServiceData.showcaseVideosURLs || [],
+        mediaProcessing: {
+          status: 'processing',
+          lastUpdate: Date.now()
+        }
       });
-      showSuccess(editingService ? 'Serviço atualizado com sucesso!' : 'Serviço criado com sucesso!');
+      showSuccess(editingService ? 'Serviço atualizado com sucesso! As mídias estão sendo processadas em segundo plano.' : 'Serviço criado com sucesso! As mídias estão sendo processadas em segundo plano.');
 
       // Clear draft after successful creation/update
       localStorage.removeItem(`service-draft-${currentUser.uid}`);

@@ -119,11 +119,19 @@ service firebase.storage {
       allow read, write, delete: if isAdmin();
     }
 
-    // Backward-compatible path used by the UI for services
+    // Service media with watermark protection
     match /servicesMedia/{creatorId}/{serviceId}/{fileName} {
-      allow read: if true;
+      // Allow reading only watermarked files (wm_ or buyerwm_ prefix) or files marked as watermarked
+      allow read: if fileName.matches('(wm_|buyerwm_).*') || 
+                     (resource != null && resource.metadata != null && resource.metadata.watermarked == 'true');
+      
+      // Allow uploading only by owner
       allow write: if isAuthenticated() && isOwner(creatorId) && (isImageFile() || isVideoFile()) && isValidFileSize();
+      
+      // Allow deletion only by owner
       allow delete: if isAuthenticated() && isOwner(creatorId);
+      
+      // Admin access
       allow read, write, delete: if isAdmin();
     }
     
@@ -181,11 +189,19 @@ service firebase.storage {
       allow read, write, delete: if isAdmin();
     }
 
-    // Packs (generic path used by CreatePackModal)
+    // Packs with watermark protection
     match /packs/{creatorId}/{packId}/{allPaths=**} {
-      allow read: if true;
+      // Allow reading only watermarked files (wm_ or buyerwm_ prefix) or files marked as watermarked
+      allow read: if allPaths.matches('.*(wm_|buyerwm_).*') || 
+                     (resource != null && resource.metadata != null && resource.metadata.watermarked == 'true');
+      
+      // Allow uploading only by owner
       allow write: if isAuthenticated() && isOwner(creatorId) && (isImageFile() || isVideoFile()) && isValidFileSize();
+      
+      // Allow deletion only by owner
       allow delete: if isAuthenticated() && isOwner(creatorId);
+      
+      // Admin access
       allow read, write, delete: if isAdmin();
     }
     
