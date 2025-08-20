@@ -1807,12 +1807,12 @@ async function renderTextOverlaySvg(width, height, textLines) {
 }
 
 async function generateQrTile(text, size = 256) {
-  const dataUrl = await QRCode.toDataURL(text, { width: size, margin: 1, color: { dark: '#000000', light: '#ffffffff' } });
+  const dataUrl = await QRCode.toDataURL(text, { width: size, margin: 1, color: { dark: '#00000022', light: '#00000000' } });
   const b64 = dataUrl.split(',')[1];
   return Buffer.from(b64, 'base64');
 }
 
-async function compositeQrGrid(baseBuffer, gridOpacity = 0.18) {
+async function compositeQrGrid(baseBuffer, gridOpacity = 0.06) {
   const image = sharp(baseBuffer);
   const meta = await image.metadata();
   const width = meta.width || 1024;
@@ -1839,19 +1839,34 @@ async function compositeQrGrid(baseBuffer, gridOpacity = 0.18) {
   return await image.composite(composites).toBuffer();
 }
 
+async function getUsernameForUid(userId) {
+	try {
+		const snap = await db.collection('users').doc(userId).get();
+		if (snap.exists) {
+			const data = snap.data() || {};
+			return data.username || userId;
+		}
+	} catch (e) {
+		logger.warn('Could not resolve username, falling back to UID', { userId, error: e?.message });
+	}
+	return userId;
+}
+
 async function watermarkImage(inputPath, outputPath, ownerId, buyerId = null, addQr = false) {
   const base = sharp(inputPath);
   const meta = await base.metadata();
   const width = meta.width || 1024;
   const height = meta.height || 1024;
+  const ownerUsername = await getUsernameForUid(ownerId);
+  const buyerUsername = buyerId ? await getUsernameForUid(buyerId) : null;
   const lines = [
-    `Vixter • Proprietário: ${ownerId}`,
-    buyerId ? `Comprador: ${buyerId}` : 'Não autorizado a redistribuir'
+    `Vixter • Proprietário: ${ownerUsername}`,
+    buyerUsername ? `Comprador: ${buyerUsername}` : 'Não autorizado a redistribuir'
   ];
   const overlay = await renderTextOverlaySvg(width, height, lines);
   let composed = await base.composite([{ input: overlay, top: 0, left: 0 }]).toBuffer();
   if (addQr) {
-    composed = await compositeQrGrid(composed, 0.14);
+    composed = await compositeQrGrid(composed, 0.06);
   }
   await sharp(composed).toFile(outputPath);
 }
@@ -1860,9 +1875,11 @@ async function watermarkVideo(inputPath, outputPath, ownerId, buyerId = null) {
   // Build a semi-transparent PNG overlay using sharp (text centered)
   const overlayWidth = 1280;
   const overlayHeight = 720;
+  const ownerUsername = await getUsernameForUid(ownerId);
+  const buyerUsername = buyerId ? await getUsernameForUid(buyerId) : null;
   const lines = [
-    `Vixter • Proprietário: ${ownerId}`,
-    buyerId ? `Comprador: ${buyerId}` : 'Não autorizado a redistribuir'
+    `Vixter • Proprietário: ${ownerUsername}`,
+    buyerUsername ? `Comprador: ${buyerUsername}` : 'Não autorizado a redistribuir'
   ];
   const overlayPngPath = path.join(os.tmpdir(), `overlay_${Date.now()}.png`);
   const overlaySvg = await renderTextOverlaySvg(overlayWidth, overlayHeight, lines);
