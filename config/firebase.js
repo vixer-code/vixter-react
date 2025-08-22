@@ -19,8 +19,6 @@ const firebaseConfig = {
 
 // Initialize Firebase with proper error handling
 let app, auth, database, storage, firestore, functions;
-// RTDB instances (new and legacy)
-let databaseNew, databaseLegacy;
 
 try {
   console.log("Initializing Firebase...");
@@ -29,12 +27,8 @@ try {
   
   // Initialize Firebase services
   auth = getAuth(app);
-  // Legacy RTDB (keep compatibility)
-  databaseLegacy = getDatabase(app, "https://vixter-451b3-default-rtdb.firebaseio.com");
-  // New RTDB (segregated)
-  databaseNew = getDatabase(app, "https://vixter-451b3.firebaseio.com");
-  // Current default export: new RTDB for real-time features only
-  database = databaseNew;
+  // Current default export: use new RTDB instance
+  database =  getDatabase(app, "https://vixter-451b3.firebaseio.com");
   storage = getStorage(app);
   firestore = getFirestore(app);
   functions = getFunctions(app, 'us-east1'); // Updated to match deployed functions
@@ -42,8 +36,6 @@ try {
   console.log("Firebase services initialized:", {
     auth: !!auth,
     database: !!database,
-    databaseNew: !!databaseNew,
-    databaseLegacy: !!databaseLegacy,
     storage: !!storage,
     firestore: !!firestore,
     functions: !!functions
@@ -69,8 +61,6 @@ export {
   // default (legacy for now)
   database,
   // explicit instances for staged migration
-  databaseNew,
-  databaseLegacy,
   storage,
   firestore,
   firestore as db,

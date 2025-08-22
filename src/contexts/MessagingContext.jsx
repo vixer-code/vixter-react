@@ -81,55 +81,59 @@ export const MessagingProvider = ({ children }) => {
 
     // Load regular conversations
     const conversationsRef = ref(database, 'conversations');
-    const userConversationsQuery = query(
-      conversationsRef,
-      orderByChild(`participants/${currentUser.uid}`),
-      equalTo(true)
-    );
-
-    const unsubscribeConversations = onValue(userConversationsQuery, (snapshot) => {
+    
+    // Use onValue on the conversations root to handle empty collections gracefully
+    const unsubscribeConversations = onValue(conversationsRef, (snapshot) => {
       const conversationsData = [];
-      snapshot.forEach((childSnapshot) => {
-        const conversation = {
-          id: childSnapshot.key,
-          ...childSnapshot.val()
-        };
-        
-        // Filter out service conversations from regular list
-        if (!conversation.serviceOrderId) {
-          conversationsData.push(conversation);
-        }
-      });
       
-      // Sort by last message time
-      conversationsData.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          const conversation = {
+            id: childSnapshot.key,
+            ...childSnapshot.val()
+          };
+          
+          // Check if current user is a participant
+          if (conversation.participants && conversation.participants[currentUser.uid]) {
+            // Filter out service conversations from regular list
+            if (!conversation.serviceOrderId) {
+              conversationsData.push(conversation);
+            }
+          }
+        });
+        
+        // Sort by last message time
+        conversationsData.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+      }
+      
       setConversations(conversationsData);
       setLoading(false);
     });
 
-    // Load service conversations
-    const serviceConversationsQuery = query(
-      conversationsRef,
-      orderByChild(`participants/${currentUser.uid}`),
-      equalTo(true)
-    );
-
-    const unsubscribeServiceConversations = onValue(serviceConversationsQuery, (snapshot) => {
+    // Load service conversations (reuse the same conversationsRef)
+    const unsubscribeServiceConversations = onValue(conversationsRef, (snapshot) => {
       const serviceConversationsData = [];
-      snapshot.forEach((childSnapshot) => {
-        const conversation = {
-          id: childSnapshot.key,
-          ...childSnapshot.val()
-        };
-        
-        // Only include service conversations
-        if (conversation.serviceOrderId) {
-          serviceConversationsData.push(conversation);
-        }
-      });
       
-      // Sort by last message time
-      serviceConversationsData.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          const conversation = {
+            id: childSnapshot.key,
+            ...childSnapshot.val()
+          };
+          
+          // Check if current user is a participant
+          if (conversation.participants && conversation.participants[currentUser.uid]) {
+            // Only include service conversations
+            if (conversation.serviceOrderId) {
+              serviceConversationsData.push(conversation);
+            }
+          }
+        });
+        
+        // Sort by last message time
+        serviceConversationsData.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+      }
+      
       setServiceConversations(serviceConversationsData);
     });
 
@@ -145,9 +149,13 @@ export const MessagingProvider = ({ children }) => {
     const usersRef = ref(database, 'users');
     const unsubscribeUsers = onValue(usersRef, (snapshot) => {
       const usersData = {};
-      snapshot.forEach((childSnapshot) => {
-        usersData[childSnapshot.key] = childSnapshot.val();
-      });
+      
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          usersData[childSnapshot.key] = childSnapshot.val();
+        });
+      }
+      
       setUsers(usersData);
     });
 
@@ -168,12 +176,16 @@ export const MessagingProvider = ({ children }) => {
 
     const unsubscribeMessages = onValue(messagesQuery, (snapshot) => {
       const messagesData = [];
-      snapshot.forEach((childSnapshot) => {
-        messagesData.push({
-          id: childSnapshot.key,
-          ...childSnapshot.val()
+      
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          messagesData.push({
+            id: childSnapshot.key,
+            ...childSnapshot.val()
+          });
         });
-      });
+      }
+      
       setMessages(messagesData);
       
       // Mark messages as read

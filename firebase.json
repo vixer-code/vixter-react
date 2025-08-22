@@ -19,7 +19,8 @@
     "indexes": "firestore.indexes.json"
   },
   "database": {
-    "rules": "../vixter-react/database.rules.json"
+    "rules": "../vixter-react/database.rules.json",
+    "instance": "vixter-451b3"
   },
   "hosting": {
     "public": "dist",
