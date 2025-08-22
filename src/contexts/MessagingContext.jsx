@@ -142,27 +142,31 @@ export const MessagingProvider = ({ children }) => {
     };
   }, [currentUser, authLoading]);
 
-  // Load users data
+  // Load users data from Firestore (not RTDB)
   useEffect(() => {
     if (!currentUser) return;
 
-    const usersRef = ref(database, 'users');
-    const unsubscribeUsers = onValue(usersRef, (snapshot) => {
-      const usersData = {};
-      
-      if (snapshot.exists()) {
-        snapshot.forEach((childSnapshot) => {
-          usersData[childSnapshot.key] = childSnapshot.val();
-        });
+    // Use the existing useUser context to get users from Firestore
+    // This will populate the users state with actual user data
+    const loadUsersFromFirestore = async () => {
+      try {
+        // Get current user data first
+        const currentUserData = await getUserById(currentUser.uid);
+        if (currentUserData) {
+          setUsers(prev => ({
+            ...prev,
+            [currentUser.uid]: currentUserData
+          }));
+        }
+        
+        console.log('Users loaded from Firestore - current user:', currentUserData?.displayName || currentUserData?.name);
+      } catch (error) {
+        console.error('Error loading user from Firestore:', error);
       }
-      
-      setUsers(usersData);
-    });
-
-    return () => {
-      off(usersRef);
     };
-  }, [currentUser]);
+
+    loadUsersFromFirestore();
+  }, [currentUser, getUserById]);
 
   // Load messages for selected conversation
   useEffect(() => {
@@ -547,13 +551,32 @@ export const MessagingProvider = ({ children }) => {
   }, [currentUser, selectedConversation]);
 
   // Get other participant in conversation
-  const getOtherParticipant = useCallback((conversation) => {
+  const getOtherParticipant = useCallback(async (conversation) => {
     if (!conversation?.participants || !currentUser) return {};
     
     const participantIds = Object.keys(conversation.participants);
     const otherId = participantIds.find(id => id !== currentUser.uid);
+    
+    if (!otherId) return {};
+    
+    // If we don't have the other user's data, try to load it from Firestore
+    if (!users[otherId]) {
+      try {
+        const otherUserData = await getUserById(otherId);
+        if (otherUserData) {
+          setUsers(prev => ({
+            ...prev,
+            [otherId]: otherUserData
+          }));
+          return otherUserData;
+        }
+      } catch (error) {
+        console.error('Error loading other user from Firestore:', error);
+      }
+    }
+    
     return users[otherId] || {};
-  }, [currentUser, users]);
+  }, [currentUser, users, getUserById]);
 
   // Format time
   const formatTime = useCallback((timestamp) => {
