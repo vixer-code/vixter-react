@@ -227,10 +227,12 @@ export const MessagingProvider = ({ children }) => {
       return;
     }
 
-    const messagesRef = ref(database, `messages/${selectedConversation.id}`);
-    const messagesQuery = query(messagesRef, orderByChild('timestamp'));
+    console.log('Loading messages for conversation:', selectedConversation.id);
 
-    const unsubscribeMessages = onValue(messagesQuery, (snapshot) => {
+    const messagesRef = ref(database, `messages/${selectedConversation.id}`);
+    
+    // Use onValue directly on the messages ref for real-time updates
+    const unsubscribeMessages = onValue(messagesRef, (snapshot) => {
       const messagesData = [];
       
       if (snapshot.exists()) {
@@ -240,8 +242,12 @@ export const MessagingProvider = ({ children }) => {
             ...childSnapshot.val()
           });
         });
+        
+        // Sort messages by timestamp (oldest first)
+        messagesData.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
       }
       
+      console.log('Messages loaded:', messagesData.length);
       setMessages(messagesData);
       
       // Mark messages as read
@@ -443,17 +449,48 @@ export const MessagingProvider = ({ children }) => {
       };
 
       const messagesRef = ref(database, `messages/${selectedConversation.id}`);
-      await push(messagesRef, messageData);
+      const newMessageRef = await push(messagesRef, messageData);
 
-      // Update conversation last message
+      // Add message to local state immediately for instant UI update
+      const newMessage = {
+        id: newMessageRef.key,
+        ...messageData
+      };
+      setMessages(prev => [...prev, newMessage]);
+
+      // Update conversation last message using update instead of set
       const conversationRef = ref(database, `conversations/${selectedConversation.id}`);
-      await set(conversationRef, {
-        ...selectedConversation,
+      const updates = {};
+      updates[`conversations/${selectedConversation.id}/lastMessage`] = text.trim();
+      updates[`conversations/${selectedConversation.id}/lastMessageTime`] = Date.now();
+      updates[`conversations/${selectedConversation.id}/lastSenderId`] = currentUser.uid;
+
+      await set(ref(database), updates);
+
+      // Update local conversation state
+      setSelectedConversation(prev => ({
+        ...prev,
+        lastMessage: text.trim(),
+        lastMessageTime: Date.now(),
+        lastSenderId: currentUser.uid
+      }));
+
+      // Update conversations list
+      setConversations(prev => 
+        prev.map(conv => 
+          conv.id === selectedConversation.id 
+            ? { ...conv, lastMessage: text.trim(), lastMessageTime: Date.now(), lastSenderId: currentUser.uid }
+            : conv
+        )
+      );
+
+      console.log('Message sent successfully:', newMessage);
+      console.log('Updated conversation:', {
+        id: selectedConversation.id,
         lastMessage: text.trim(),
         lastMessageTime: Date.now(),
         lastSenderId: currentUser.uid
       });
-
       return true;
     } catch (error) {
       console.error('Error sending message:', error);
@@ -523,20 +560,43 @@ export const MessagingProvider = ({ children }) => {
       };
 
       const messagesRef = ref(database, `messages/${selectedConversation.id}`);
-      await push(messagesRef, messageData);
+      const newMessageRef = await push(messagesRef, messageData);
 
-      // Update conversation last message
-      const conversationRef = ref(database, `conversations/${selectedConversation.id}`);
+      // Add message to local state immediately for instant UI update
+      const newMessage = {
+        id: newMessageRef.key,
+        ...messageData
+      };
+      setMessages(prev => [...prev, newMessage]);
+
+      // Update conversation last message using update instead of set
       const lastMessageText = caption || `${type === MESSAGE_TYPES.IMAGE ? '📷 Foto' : 
                                        type === MESSAGE_TYPES.VIDEO ? '🎥 Vídeo' : 
                                        type === MESSAGE_TYPES.AUDIO ? '🎵 Áudio' : '📎 Arquivo'}`;
       
-      await set(conversationRef, {
-        ...selectedConversation,
+      const updates = {};
+      updates[`conversations/${selectedConversation.id}/lastMessage`] = lastMessageText;
+      updates[`conversations/${selectedConversation.id}/lastMessageTime`] = Date.now();
+      updates[`conversations/${selectedConversation.id}/lastSenderId`] = currentUser.uid;
+
+      await set(ref(database), updates);
+
+      // Update local conversation state
+      setSelectedConversation(prev => ({
+        ...prev,
         lastMessage: lastMessageText,
         lastMessageTime: Date.now(),
         lastSenderId: currentUser.uid
-      });
+      }));
+
+      // Update conversations list
+      setConversations(prev => 
+        prev.map(conv => 
+          conv.id === selectedConversation.id 
+            ? { ...conv, lastMessage: lastMessageText, lastMessageTime: Date.now(), lastSenderId: currentUser.uid }
+            : conv
+        )
+      );
 
       return true;
     } catch (error) {
