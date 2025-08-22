@@ -20,7 +20,7 @@ export const StatusProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    if (!currentUser) {
+    if (!currentUser || !currentUser.uid) {
       setUserStatus('offline');
       setSelectedStatus('online');
       return;
@@ -63,10 +63,24 @@ export const StatusProvider = ({ children }) => {
       }
     });
 
-    // Load user's selected status
-    getUserSelectedStatus(uid).then(status => {
-      setSelectedStatus(status);
-    });
+    // Load user's selected status with fallback
+    const loadSelectedStatus = async () => {
+      if (!uid) {
+        setSelectedStatus('online');
+        return;
+      }
+      
+      try {
+        const status = await getUserSelectedStatus(uid);
+        setSelectedStatus(status);
+      } catch (error) {
+        console.error('Error loading selected status, using default:', error);
+        setSelectedStatus('online');
+      }
+    };
+
+    // Try to load status, but don't fail if it doesn't exist
+    loadSelectedStatus();
 
     // Set up inactivity detection
     const inactivityTimeout = 5 * 60 * 1000; // 5 minutes
@@ -156,11 +170,28 @@ export const StatusProvider = ({ children }) => {
   }, [currentUser]);
 
   const getUserSelectedStatus = useCallback(async (uid) => {
+    if (!uid) return 'online';
+    
     try {
       const snapshot = await get(ref(database, `users/${uid}/selectedStatus`));
-      return snapshot.val() || 'online';
+      const status = snapshot.val();
+      
+      // If no selectedStatus exists, create it with default value
+      if (!status) {
+        const defaultStatus = 'online';
+        try {
+          await set(ref(database, `users/${uid}/selectedStatus`), defaultStatus);
+          return defaultStatus;
+        } catch (writeError) {
+          console.error('Error creating default selectedStatus:', writeError);
+          return defaultStatus;
+        }
+      }
+      
+      return status;
     } catch (error) {
       console.error('Error getting selected status:', error);
+      // Return default without trying to write (to avoid permission issues)
       return 'online';
     }
   }, []);
@@ -169,10 +200,37 @@ export const StatusProvider = ({ children }) => {
     try {
       const snapshot = await get(ref(database, `status/${uid}`));
       const data = snapshot.val();
-      return data && data.state ? data.state : 'offline';
+      
+      // If no status exists, create it with default value
+      if (!data || !data.state) {
+        const defaultStatus = 'offline';
+        try {
+          await set(ref(database, `status/${uid}`), {
+            state: defaultStatus,
+            last_changed: serverTimestamp(),
+          });
+          return defaultStatus;
+        } catch (writeError) {
+          console.error('Error creating default status:', writeError);
+          return defaultStatus;
+        }
+      }
+      
+      return data.state;
     } catch (error) {
       console.error('Error getting current status:', error);
-      return 'offline';
+      // Try to create the status with default value
+      try {
+        const defaultStatus = 'offline';
+        await set(ref(database, `status/${uid}`), {
+          state: defaultStatus,
+          last_changed: serverTimestamp(),
+        });
+        return defaultStatus;
+      } catch (writeError) {
+        console.error('Error creating default status after read error:', writeError);
+        return 'offline';
+      }
     }
   }, []);
 
