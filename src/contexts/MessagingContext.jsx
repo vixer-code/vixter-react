@@ -4,6 +4,7 @@ import {
   onValue, 
   push, 
   set, 
+  update,
   off, 
   query, 
   orderByChild, 
@@ -458,14 +459,13 @@ export const MessagingProvider = ({ children }) => {
       };
       setMessages(prev => [...prev, newMessage]);
 
-      // Update conversation last message using update instead of set
-      const conversationRef = ref(database, `conversations/${selectedConversation.id}`);
+      // Update conversation last message using update to preserve existing fields
       const updates = {};
-      updates['lastMessage'] = text.trim();
-      updates['lastMessageTime'] = Date.now();
-      updates['lastSenderId'] = currentUser.uid;
+      updates[`conversations/${selectedConversation.id}/lastMessage`] = text.trim();
+      updates[`conversations/${selectedConversation.id}/lastMessageTime`] = Date.now();
+      updates[`conversations/${selectedConversation.id}/lastSenderId`] = currentUser.uid;
 
-      await set(conversationRef, updates);
+      await update(ref(database), updates);
 
       // Update local conversation state
       setSelectedConversation(prev => ({
@@ -569,18 +569,17 @@ export const MessagingProvider = ({ children }) => {
       };
       setMessages(prev => [...prev, newMessage]);
 
-      // Update conversation last message using update instead of set
+      // Update conversation last message using update to preserve existing fields
       const lastMessageText = caption || `${type === MESSAGE_TYPES.IMAGE ? '📷 Foto' : 
                                        type === MESSAGE_TYPES.VIDEO ? '🎥 Vídeo' : 
                                        type === MESSAGE_TYPES.AUDIO ? '🎵 Áudio' : '📎 Arquivo'}`;
       
-      const conversationRef = ref(database, `conversations/${selectedConversation.id}`);
       const updates = {};
-      updates['lastMessage'] = lastMessageText;
-      updates['lastMessageTime'] = Date.now();
-      updates['lastSenderId'] = currentUser.uid;
+      updates[`conversations/${selectedConversation.id}/lastMessage`] = lastMessageText;
+      updates[`conversations/${selectedConversation.id}/lastMessageTime`] = Date.now();
+      updates[`conversations/${selectedConversation.id}/lastSenderId`] = currentUser.uid;
 
-      await set(conversationRef, updates);
+      await update(ref(database), updates);
 
       // Update local conversation state
       setSelectedConversation(prev => ({
@@ -674,7 +673,7 @@ export const MessagingProvider = ({ children }) => {
       });
 
       // Batch update
-      await set(ref(database), updates);
+      await update(ref(database), updates);
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }
