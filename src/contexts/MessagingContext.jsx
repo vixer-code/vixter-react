@@ -67,7 +67,7 @@ export const MessagingProvider = ({ children }) => {
 
   // Load conversations
   useEffect(() => {
-    if (!currentUser) {
+    if (!currentUser || !currentUser.uid) {
       setConversations([]);
       setServiceConversations([]);
       setLoading(false);
@@ -248,23 +248,33 @@ export const MessagingProvider = ({ children }) => {
 
   // Create new conversation (supports both direct and group conversations)
   const createConversation = useCallback(async (conversationData) => {
-    if (!currentUser || !conversationData.participantIds?.length) return null;
+    console.log('createConversation called with:', conversationData);
+    
+    if (!currentUser || !conversationData.participantIds?.length) {
+      console.log('createConversation: Missing user or participants');
+      return null;
+    }
 
     try {
       const conversationsRef = ref(database, 'conversations');
       
       // For direct conversations, check if it already exists
       if (conversationData.participantIds.length === 2 && conversationData.type !== 'service') {
+        console.log('createConversation: Checking for existing direct conversation');
         const otherUserId = conversationData.participantIds.find(id => id !== currentUser.uid);
-        const existingConversation = await createOrGetConversation(otherUserId);
-        if (existingConversation) {
-          setSelectedConversation(existingConversation);
-          setActiveTab('messages');
-          return existingConversation;
+        if (otherUserId) {
+          const existingConversation = await createOrGetConversation(otherUserId);
+          if (existingConversation) {
+            console.log('createConversation: Found existing conversation:', existingConversation.id);
+            setSelectedConversation(existingConversation);
+            setActiveTab('messages');
+            return existingConversation;
+          }
         }
       }
 
       // Create new conversation
+      console.log('createConversation: Creating new conversation');
       const newConversationRef = push(conversationsRef);
       const participants = {};
       conversationData.participantIds.forEach(id => {
@@ -288,6 +298,7 @@ export const MessagingProvider = ({ children }) => {
         newConversationData.serviceOrderId = conversationData.serviceOrderId;
       }
 
+      console.log('createConversation: Setting conversation data:', newConversationData);
       await set(newConversationRef, newConversationData);
 
       const conversation = {
@@ -295,6 +306,8 @@ export const MessagingProvider = ({ children }) => {
         ...newConversationData
       };
 
+      console.log('createConversation: Conversation created successfully:', conversation.id);
+      
       // Set as selected conversation and switch to messages tab
       setSelectedConversation(conversation);
       setActiveTab('messages');

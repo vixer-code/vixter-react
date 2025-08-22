@@ -268,11 +268,13 @@ const NewConversationModal = ({ isOpen, onClose }) => {
                         <div className="user-name">{formatUserDisplayName(user)}</div>
                         <div className="user-username">@{user.username}</div>
                       </div>
-                      {isGroupConversation && (
-                        <div className="select-indicator">
+                      <div className="select-indicator">
+                        {isGroupConversation ? (
                           <i className="fas fa-plus"></i>
-                        </div>
-                      )}
+                        ) : (
+                          <i className="fas fa-comment"></i>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

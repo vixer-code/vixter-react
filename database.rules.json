@@ -2,15 +2,15 @@
   "rules": {
     "conversations": {
       "$conversationId": {
-        ".read": "auth != null && data.child('participants').child(auth.uid).exists()",
-        ".write": "auth != null && ((!data.exists() && newData.child('participants').child(auth.uid).exists()) || (data.exists() && data.child('participants').child(auth.uid).exists()))",
+        ".read": "auth != null && (data.child('participants').child(auth.uid).exists() || !data.exists())",
+        ".write": "auth != null && (newData.child('participants').child(auth.uid).exists() || data.child('participants').child(auth.uid).exists())",
         "participants": {
           "$userId": {
-            ".validate": "$userId == auth.uid || (!data.parent().parent().exists() && newData.parent().parent().child('participants').child(auth.uid).exists()) || (data.parent().parent().exists() && data.parent().parent().child('participants').child(auth.uid).exists())"
+            ".validate": "newData.parent().parent().child('participants').child(auth.uid).exists()"
           }
         },
         "lastMessage": {
-          ".validate": "newData.isString() && newData.val().length <= 500"
+          ".validate": "newData.isString()"
         },
         "lastMessageTime": {
           ".validate": "newData.isNumber()"
@@ -19,13 +19,16 @@
           ".validate": "newData.isString()"
         },
         "type": {
-          ".validate": "newData.isString() && (newData.val() == 'regular' || newData.val() == 'service')"
+          ".validate": "newData.isString()"
         },
         "serviceOrderId": {
-          ".validate": "newData.isString() && data.parent().child('type').val() == 'service'"
+          ".validate": "newData.isString()"
         },
         "createdAt": {
           ".validate": "newData.isNumber()"
+        },
+        "name": {
+          ".validate": "newData.isString()"
         }
       }
     },
