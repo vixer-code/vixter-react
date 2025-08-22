@@ -142,6 +142,18 @@ export const MessagingProvider = ({ children }) => {
     };
   }, [currentUser, authLoading]);
 
+  // Reset state when user changes or logs out
+  useEffect(() => {
+    if (!currentUser || !currentUser.uid) {
+      setConversations([]);
+      setServiceConversations([]);
+      setSelectedConversation(null);
+      setMessages([]);
+      setUsers({});
+      setLoading(false);
+    }
+  }, [currentUser]);
+
   // Load users data from Firestore (not RTDB)
   useEffect(() => {
     if (!currentUser) return;
@@ -205,7 +217,7 @@ export const MessagingProvider = ({ children }) => {
 
   // Create or get conversation
   const createOrGetConversation = useCallback(async (otherUserId, serviceOrderId = null) => {
-    if (!currentUser || !otherUserId) return null;
+    if (!currentUser?.uid || !otherUserId) return null;
 
     try {
       // Check if conversation already exists
@@ -271,7 +283,7 @@ export const MessagingProvider = ({ children }) => {
   const createConversation = useCallback(async (conversationData) => {
     console.log('createConversation called with:', conversationData);
     
-    if (!currentUser || !conversationData.participantIds?.length) {
+    if (!currentUser?.uid || !conversationData.participantIds?.length) {
       console.log('createConversation: Missing user or participants');
       return null;
     }
@@ -359,7 +371,7 @@ export const MessagingProvider = ({ children }) => {
 
   // Send text message
   const sendMessage = useCallback(async (text, replyToId = null) => {
-    if (!text.trim() || !selectedConversation || !currentUser) return false;
+    if (!text.trim() || !selectedConversation || !currentUser?.uid) return false;
 
     try {
       setSending(true);
@@ -397,7 +409,7 @@ export const MessagingProvider = ({ children }) => {
 
   // Upload media file
   const uploadMediaFile = useCallback(async (file, type) => {
-    if (!file || !selectedConversation || !currentUser) return null;
+    if (!file || !selectedConversation || !currentUser?.uid) return null;
 
     try {
       setUploadingMedia(true);
@@ -430,7 +442,7 @@ export const MessagingProvider = ({ children }) => {
 
   // Send media message
   const sendMediaMessage = useCallback(async (file, type, caption = '') => {
-    if (!file || !selectedConversation || !currentUser) return false;
+    if (!file || !selectedConversation || !currentUser?.uid) return false;
 
     try {
       setSending(true);
@@ -481,7 +493,7 @@ export const MessagingProvider = ({ children }) => {
 
   // Send service notification
   const sendServiceNotification = useCallback(async (serviceOrderData) => {
-    if (!serviceOrderData || !currentUser) return false;
+    if (!serviceOrderData || !currentUser?.uid) return false;
 
     try {
       setSending(true);
@@ -527,7 +539,7 @@ export const MessagingProvider = ({ children }) => {
 
   // Mark messages as read
   const markMessagesAsRead = useCallback(async (messagesData) => {
-    if (!currentUser || !selectedConversation) return;
+    if (!currentUser?.uid || !selectedConversation) return;
 
     const unreadMessages = messagesData.filter(msg => 
       !msg.read && msg.senderId !== currentUser.uid
@@ -552,7 +564,7 @@ export const MessagingProvider = ({ children }) => {
 
   // Get other participant in conversation
   const getOtherParticipant = useCallback(async (conversation) => {
-    if (!conversation?.participants || !currentUser) return {};
+    if (!conversation?.participants || !currentUser?.uid) return {};
     
     const participantIds = Object.keys(conversation.participants);
     const otherId = participantIds.find(id => id !== currentUser.uid);
@@ -605,7 +617,7 @@ export const MessagingProvider = ({ children }) => {
 
   // Delete message
   const deleteMessage = useCallback(async (messageId) => {
-    if (!selectedConversation || !currentUser) return false;
+    if (!selectedConversation || !currentUser?.uid) return false;
 
     try {
       const messageRef = ref(database, `messages/${selectedConversation.id}/${messageId}`);
@@ -620,7 +632,7 @@ export const MessagingProvider = ({ children }) => {
 
   // Start conversation with user
   const startConversation = useCallback(async (userId) => {
-    if (!currentUser || !userId) return;
+    if (!currentUser?.uid || !userId) return;
 
     try {
       const conversation = await createOrGetConversation(userId);

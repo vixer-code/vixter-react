@@ -10,7 +10,7 @@ import NewConversationModal from '../components/NewConversationModal';
 import './Messages.css';
 
 const Messages = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const { showNotification } = useNotification();
   const {
     conversations,
@@ -32,6 +32,29 @@ const Messages = () => {
     setReadReceiptsEnabled
   } = useMessaging();
   const { getPendingOrdersCount } = useServiceOrder();
+
+  // Authentication guard
+  if (authLoading) {
+    return (
+      <div className="messages-container">
+        <div className="loading-spinner">Carregando autenticação...</div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="messages-container">
+        <div className="no-conversation-selected">
+          <div className="select-conversation-message">
+            <i className="fas fa-lock"></i>
+            <h3>Autenticação necessária</h3>
+            <p>Faça login para acessar suas mensagens</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   const [newMessage, setNewMessage] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
