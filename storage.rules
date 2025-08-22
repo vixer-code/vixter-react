@@ -165,28 +165,50 @@ service firebase.storage {
     }
     
     // =====================================================
-    // MESSAGE ATTACHMENTS
+    // MESSAGE MEDIA FILES
     // =====================================================
     
-    match /message-attachments/{senderId}/{conversationId}/{fileName} {
-      // Only conversation participants can read message attachments
+    match /messages/{type}/{conversationId}/{fileName} {
+      // Users can read if they are participants in the conversation
       allow read: if isAuthenticated() && 
-                    (isOwner(senderId) || 
-                     // Additional logic would be needed to verify conversation participation
-                     // This is a simplified version
-                     true);
+                    isParticipantInConversation(request.auth.uid, conversationId);
       
-      // Only message senders can upload attachments
+      // Users can upload if they are participants and it's their file
       allow write: if isAuthenticated() && 
-                     isOwner(senderId) && 
-                     (isImageFile() || isVideoFile()) && 
-                     isValidFileSize();
+                     isParticipantInConversation(request.auth.uid, conversationId) &&
+                     isValidMediaFile(type, request.resource.size, request.resource.contentType) &&
+                     fileName.matches('.*_' + request.auth.uid + '\\.(jpg|jpeg|png|gif|webp|mp4|mov|avi|webm|mp3|wav|ogg|webm|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|zip|rar|7z)$');
       
-      // Only message senders can delete their attachments
-      allow delete: if isAuthenticated() && isOwner(senderId);
+      // Users can delete their own files
+      allow delete: if isAuthenticated() &&
+                      isParticipantInConversation(request.auth.uid, conversationId) &&
+                      fileName.matches('.*_' + request.auth.uid + '\\.(jpg|jpeg|png|gif|webp|mp4|mov|avi|webm|mp3|wav|ogg|webm|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|zip|rar|7z)$');
       
       // Admin access
       allow read, write, delete: if isAdmin();
+    }
+    
+    // Helper function to check conversation participation
+    function isParticipantInConversation(userId, conversationId) {
+      // For now, allow access - in production you'd want to validate against RTDB
+      // This would require additional setup to check Firebase RTDB from Storage rules
+      return true;
+    }
+    
+    // Helper function to validate media files by type
+    function isValidMediaFile(type, size, contentType) {
+      return size < 50 * 1024 * 1024 && // Max 50MB
+             (
+               (type == 'image' && contentType.matches('image/(jpeg|jpg|png|gif|webp)')) ||
+               (type == 'video' && contentType.matches('video/(mp4|mov|avi|webm)')) ||
+               (type == 'audio' && contentType.matches('audio/(mpeg|wav|ogg|mp3|webm)')) ||
+               (type == 'file' && (
+                 contentType.matches('application/(pdf|msword|vnd\\.openxmlformats-officedocument\\..*|vnd\\.ms-.*|zip|x-rar-compressed|x-7z-compressed)') ||
+                 contentType.matches('text/(plain|csv)') ||
+                 contentType.matches('image/(jpeg|jpg|png|gif|webp)') ||
+                 contentType.matches('audio/(mpeg|wav|ogg|mp3)')
+               ))
+             );
     }
 
     // Packs with watermark protection

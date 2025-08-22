@@ -1447,8 +1447,8 @@ export const api = onCall({
     throw new HttpsError("invalid-argument", "resource, action e payload são obrigatórios");
   }
 
-  const validResources = ['service', 'pack', 'post'];
-  const validActions = ['create', 'update', 'delete'];
+  const validResources = ['service', 'pack', 'post', 'serviceOrder'];
+  const validActions = ['create', 'update', 'delete', 'accept', 'decline', 'deliver', 'confirm'];
 
   if (!validResources.includes(resource)) {
     throw new HttpsError("invalid-argument", `resource deve ser: ${validResources.join(', ')}`);
@@ -1484,6 +1484,18 @@ export const api = onCall({
         return await updatePostInternal(userId, payload);
       case 'post-delete':
         return await deletePostInternal(userId, payload);
+
+      // === SERVICE ORDERS ===
+      case 'serviceOrder-create':
+        return await createServiceOrderInternal(userId, payload);
+      case 'serviceOrder-accept':
+        return await acceptServiceOrderInternal(userId, payload);
+      case 'serviceOrder-decline':
+        return await declineServiceOrderInternal(userId, payload);
+      case 'serviceOrder-deliver':
+        return await markServiceDeliveredInternal(userId, payload);
+      case 'serviceOrder-confirm':
+        return await confirmServiceDeliveryInternal(userId, payload);
 
       default:
         throw new HttpsError("invalid-argument", `Operação não suportada: ${resource}-${action}`);
@@ -2479,3 +2491,869 @@ async function deletePostInternal(userId, payload) {
   logger.info(`✅ Post deletado: ${postId}`);
   return { success: true, postId };
 }
+
+// =====================================================
+// MESSAGING AND SERVICE ORDER FUNCTIONS
+// =====================================================
+
+/**
+ * Creates a new service order - STANDALONE FUNCTION
+ */
+export const createServiceOrderStandalone = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const userId = request.auth.uid;
+  const { serviceId, sellerId, vpAmount, additionalFeatures = [], metadata = {} } = request.data;
+
+  if (!serviceId || !sellerId || !vpAmount || vpAmount <= 0) {
+    throw new HttpsError("invalid-argument", "Dados do pedido inválidos");
+  }
+
+  try {
+    // Check if service exists
+    const serviceRef = db.collection('services').doc(serviceId);
+    const serviceDoc = await serviceRef.get();
+    
+    if (!serviceDoc.exists || !serviceDoc.data().isActive) {
+      throw new HttpsError("not-found", "Serviço não encontrado ou inativo");
+    }
+
+    const serviceData = serviceDoc.data();
+    if (serviceData.providerId !== sellerId) {
+      throw new HttpsError("invalid-argument", "Vendedor não corresponde ao provedor do serviço");
+    }
+
+    // Check buyer's wallet
+    const buyerWalletRef = db.collection('wallets').doc(userId);
+    const buyerWallet = await buyerWalletRef.get();
+    
+    if (!buyerWallet.exists || buyerWallet.data().vp < vpAmount) {
+      throw new HttpsError("failed-precondition", "VP insuficiente");
+    }
+
+    // Calculate total amount including additional features
+    const featuresTotal = additionalFeatures.reduce((total, feature) => total + (feature.price || 0), 0);
+    const totalAmount = vpAmount + featuresTotal;
+
+    if (buyerWallet.data().vp < totalAmount) {
+      throw new HttpsError("failed-precondition", "VP insuficiente para o total do pedido");
+    }
+
+    // Create service order in a transaction
+    const orderResult = await db.runTransaction(async (transaction) => {
+      // Deduct VP from buyer
+      transaction.update(buyerWalletRef, {
+        vp: admin.firestore.FieldValue.increment(-totalAmount),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Create service order
+      const orderRef = db.collection('serviceOrders').doc();
+      const orderData = {
+        id: orderRef.id,
+        serviceId,
+        buyerId: userId,
+        sellerId,
+        vpAmount: totalAmount,
+        vcAmount: Math.floor(totalAmount / 1.5), // VP to VC conversion rate
+        status: 'PENDING_ACCEPTANCE',
+        additionalFeatures,
+        metadata: {
+          serviceName: serviceData.title,
+          serviceDescription: serviceData.description,
+          ...metadata
+        },
+        timestamps: {
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          autoReleaseAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+        },
+        transactionIds: {}
+      };
+
+      transaction.set(orderRef, orderData);
+
+      // Create transaction record for buyer
+      const buyerTransactionRef = db.collection('transactions').doc();
+      const buyerTransactionData = {
+        id: buyerTransactionRef.id,
+        userId,
+        type: 'SERVICE_PURCHASE',
+        amounts: { vp: -totalAmount },
+        ref: {
+          serviceId,
+          serviceOrderId: orderRef.id,
+          targetUserId: sellerId
+        },
+        status: 'CONFIRMED',
+        metadata: {
+          description: `Compra de serviço: ${serviceData.title}`,
+          originalAmount: totalAmount
+        },
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      transaction.set(buyerTransactionRef, buyerTransactionData);
+
+      return { order: orderData, buyerTransactionId: buyerTransactionRef.id };
+    });
+
+    logger.info(`✅ Pedido de serviço criado: ${orderResult.order.id} por ${userId}`);
+    return { success: true, order: orderResult.order };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao criar pedido de serviço:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+/**
+ * Accept a service order - STANDALONE FUNCTION
+ */
+export const acceptServiceOrderStandalone = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const userId = request.auth.uid;
+  const { orderId } = request.data;
+
+  if (!orderId) {
+    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
+  }
+
+  try {
+    const orderRef = db.collection('serviceOrders').doc(orderId);
+    const orderDoc = await orderRef.get();
+
+    if (!orderDoc.exists) {
+      throw new HttpsError("not-found", "Pedido não encontrado");
+    }
+
+    const orderData = orderDoc.data();
+    
+    if (orderData.sellerId !== userId) {
+      throw new HttpsError("permission-denied", "Você não tem permissão para aceitar este pedido");
+    }
+
+    if (orderData.status !== 'PENDING_ACCEPTANCE') {
+      throw new HttpsError("failed-precondition", "Pedido não está aguardando aceitação");
+    }
+
+    // Update order status
+    await orderRef.update({
+      status: 'ACCEPTED',
+      'timestamps.acceptedAt': admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    logger.info(`✅ Pedido aceito: ${orderId} por ${userId}`);
+    return { success: true, orderId };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao aceitar pedido:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+/**
+ * Decline a service order - STANDALONE FUNCTION
+ */
+export const declineServiceOrderStandalone = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const userId = request.auth.uid;
+  const { orderId, reason = '' } = request.data;
+
+  if (!orderId) {
+    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
+  }
+
+  try {
+    const orderRef = db.collection('serviceOrders').doc(orderId);
+    const orderDoc = await orderRef.get();
+
+    if (!orderDoc.exists) {
+      throw new HttpsError("not-found", "Pedido não encontrado");
+    }
+
+    const orderData = orderDoc.data();
+    
+    if (orderData.sellerId !== userId) {
+      throw new HttpsError("permission-denied", "Você não tem permissão para recusar este pedido");
+    }
+
+    if (orderData.status !== 'PENDING_ACCEPTANCE') {
+      throw new HttpsError("failed-precondition", "Pedido não está aguardando aceitação");
+    }
+
+    // Refund VP to buyer and update order in transaction
+    await db.runTransaction(async (transaction) => {
+      // Refund VP to buyer
+      const buyerWalletRef = db.collection('wallets').doc(orderData.buyerId);
+      transaction.update(buyerWalletRef, {
+        vp: admin.firestore.FieldValue.increment(orderData.vpAmount),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Update order status
+      transaction.update(orderRef, {
+        status: 'CANCELLED',
+        'metadata.cancellationReason': reason,
+        'timestamps.cancelledAt': admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Create refund transaction
+      const refundTransactionRef = db.collection('transactions').doc();
+      const refundTransactionData = {
+        id: refundTransactionRef.id,
+        userId: orderData.buyerId,
+        type: 'SERVICE_REFUND',
+        amounts: { vp: orderData.vpAmount },
+        ref: {
+          serviceOrderId: orderId,
+          targetUserId: userId
+        },
+        status: 'CONFIRMED',
+        metadata: {
+          description: `Reembolso de serviço recusado: ${orderData.metadata.serviceName}`,
+          reason
+        },
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      transaction.set(refundTransactionRef, refundTransactionData);
+    });
+
+    logger.info(`✅ Pedido recusado: ${orderId} por ${userId}`);
+    return { success: true, orderId };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao recusar pedido:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+/**
+ * Mark service as delivered - STANDALONE FUNCTION
+ */
+export const markServiceDeliveredStandalone = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const userId = request.auth.uid;
+  const { orderId, deliveryNotes = '' } = request.data;
+
+  if (!orderId) {
+    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
+  }
+
+  try {
+    const orderRef = db.collection('serviceOrders').doc(orderId);
+    const orderDoc = await orderRef.get();
+
+    if (!orderDoc.exists) {
+      throw new HttpsError("not-found", "Pedido não encontrado");
+    }
+
+    const orderData = orderDoc.data();
+    
+    if (orderData.sellerId !== userId) {
+      throw new HttpsError("permission-denied", "Você não tem permissão para marcar este pedido como entregue");
+    }
+
+    if (orderData.status !== 'ACCEPTED') {
+      throw new HttpsError("failed-precondition", "Pedido não está aceito");
+    }
+
+    // Update order status
+    await orderRef.update({
+      status: 'DELIVERED',
+      'metadata.deliveryNotes': deliveryNotes,
+      'timestamps.deliveredAt': admin.firestore.FieldValue.serverTimestamp(),
+      'timestamps.autoReleaseAt': new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours for buyer confirmation
+    });
+
+    logger.info(`✅ Serviço marcado como entregue: ${orderId} por ${userId}`);
+    return { success: true, orderId };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao marcar serviço como entregue:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+/**
+ * Confirm service delivery (buyer) - STANDALONE FUNCTION
+ */
+export const confirmServiceDeliveryStandalone = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const userId = request.auth.uid;
+  const { orderId, feedback = '' } = request.data;
+
+  if (!orderId) {
+    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
+  }
+
+  try {
+    const orderRef = db.collection('serviceOrders').doc(orderId);
+    const orderDoc = await orderRef.get();
+
+    if (!orderDoc.exists) {
+      throw new HttpsError("not-found", "Pedido não encontrado");
+    }
+
+    const orderData = orderDoc.data();
+    
+    if (orderData.buyerId !== userId) {
+      throw new HttpsError("permission-denied", "Você não tem permissão para confirmar este pedido");
+    }
+
+    if (orderData.status !== 'DELIVERED') {
+      throw new HttpsError("failed-precondition", "Pedido não está marcado como entregue");
+    }
+
+    // Release payment to seller
+    await db.runTransaction(async (transaction) => {
+      // Add VC to seller wallet
+      const sellerWalletRef = db.collection('wallets').doc(orderData.sellerId);
+      transaction.update(sellerWalletRef, {
+        vc: admin.firestore.FieldValue.increment(orderData.vcAmount),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Update order status
+      transaction.update(orderRef, {
+        status: 'CONFIRMED',
+        'metadata.buyerFeedback': feedback,
+        'timestamps.confirmedAt': admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Create transaction for seller earnings
+      const sellerTransactionRef = db.collection('transactions').doc();
+      const sellerTransactionData = {
+        id: sellerTransactionRef.id,
+        userId: orderData.sellerId,
+        type: 'SERVICE_EARNINGS',
+        amounts: { vc: orderData.vcAmount },
+        ref: {
+          serviceOrderId: orderId,
+          targetUserId: userId
+        },
+        status: 'CONFIRMED',
+        metadata: {
+          description: `Ganhos de serviço confirmado: ${orderData.metadata.serviceName}`,
+          conversionRate: 1.5,
+          originalAmount: orderData.vpAmount
+        },
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      transaction.set(sellerTransactionRef, sellerTransactionData);
+    });
+
+    logger.info(`✅ Entrega confirmada: ${orderId} por ${userId}`);
+    return { success: true, orderId };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao confirmar entrega:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+/**
+ * Auto-release service payments after 24 hours
+ */
+export const autoReleaseServicePayments = onSchedule({
+  schedule: "every 1 hours",
+  memory: "256MiB",
+  timeoutSeconds: 300,
+}, async () => {
+  try {
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
+
+    // Find orders that should be auto-released
+    const ordersQuery = db.collection('serviceOrders')
+      .where('status', '==', 'DELIVERED')
+      .where('timestamps.deliveredAt', '<', cutoff);
+
+    const ordersSnapshot = await ordersQuery.get();
+    
+    if (ordersSnapshot.empty) {
+      logger.info('✅ Nenhum pedido para liberação automática');
+      return;
+    }
+
+    const batch = db.batch();
+    let releasedCount = 0;
+
+    for (const orderDoc of ordersSnapshot.docs) {
+      const orderData = orderDoc.data();
+      const orderRef = orderDoc.ref;
+
+      try {
+        // Add VC to seller wallet
+        const sellerWalletRef = db.collection('wallets').doc(orderData.sellerId);
+        batch.update(sellerWalletRef, {
+          vc: admin.firestore.FieldValue.increment(orderData.vcAmount),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Update order status
+        batch.update(orderRef, {
+          status: 'AUTO_RELEASED',
+          'timestamps.autoReleasedAt': admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Create transaction for seller earnings
+        const sellerTransactionRef = db.collection('transactions').doc();
+        const sellerTransactionData = {
+          id: sellerTransactionRef.id,
+          userId: orderData.sellerId,
+          type: 'SERVICE_AUTO_RELEASE',
+          amounts: { vc: orderData.vcAmount },
+          ref: {
+            serviceOrderId: orderDoc.id,
+            targetUserId: orderData.buyerId
+          },
+          status: 'CONFIRMED',
+          metadata: {
+            description: `Ganhos de serviço liberados automaticamente: ${orderData.metadata.serviceName}`,
+            conversionRate: 1.5,
+            originalAmount: orderData.vpAmount
+          },
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+
+        batch.set(sellerTransactionRef, sellerTransactionData);
+        releasedCount++;
+
+      } catch (error) {
+        logger.error(`💥 Erro ao processar liberação automática para pedido ${orderDoc.id}:`, error);
+      }
+    }
+
+    if (releasedCount > 0) {
+      await batch.commit();
+      logger.info(`✅ ${releasedCount} pagamentos liberados automaticamente`);
+    }
+
+  } catch (error) {
+    logger.error('💥 Erro na liberação automática de pagamentos:', error);
+  }
+});
+
+// =====================================================
+// INTERNAL SERVICE ORDER FUNCTIONS (for API)
+// =====================================================
+
+async function createServiceOrderInternal(userId, payload) {
+  const { serviceId, sellerId, vpAmount, additionalFeatures = [], metadata = {} } = payload;
+
+  if (!serviceId || !sellerId || !vpAmount || vpAmount <= 0) {
+    throw new HttpsError("invalid-argument", "Dados do pedido inválidos");
+  }
+
+  // Check if service exists
+  const serviceRef = db.collection('services').doc(serviceId);
+  const serviceDoc = await serviceRef.get();
+  
+  if (!serviceDoc.exists || !serviceDoc.data().isActive) {
+    throw new HttpsError("not-found", "Serviço não encontrado ou inativo");
+  }
+
+  const serviceData = serviceDoc.data();
+  if (serviceData.providerId !== sellerId) {
+    throw new HttpsError("invalid-argument", "Vendedor não corresponde ao provedor do serviço");
+  }
+
+  // Check buyer's wallet
+  const buyerWalletRef = db.collection('wallets').doc(userId);
+  const buyerWallet = await buyerWalletRef.get();
+  
+  if (!buyerWallet.exists || buyerWallet.data().vp < vpAmount) {
+    throw new HttpsError("failed-precondition", "VP insuficiente");
+  }
+
+  // Calculate total amount including additional features
+  const featuresTotal = additionalFeatures.reduce((total, feature) => total + (feature.price || 0), 0);
+  const totalAmount = vpAmount + featuresTotal;
+
+  if (buyerWallet.data().vp < totalAmount) {
+    throw new HttpsError("failed-precondition", "VP insuficiente para o total do pedido");
+  }
+
+  // Create service order in a transaction
+  const orderResult = await db.runTransaction(async (transaction) => {
+    // Deduct VP from buyer
+    transaction.update(buyerWalletRef, {
+      vp: admin.firestore.FieldValue.increment(-totalAmount),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Create service order
+    const orderRef = db.collection('serviceOrders').doc();
+    const orderData = {
+      id: orderRef.id,
+      serviceId,
+      buyerId: userId,
+      sellerId,
+      vpAmount: totalAmount,
+      vcAmount: Math.floor(totalAmount / 1.5), // VP to VC conversion rate
+      status: 'PENDING_ACCEPTANCE',
+      additionalFeatures,
+      metadata: {
+        serviceName: serviceData.title,
+        serviceDescription: serviceData.description,
+        ...metadata
+      },
+      timestamps: {
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        autoReleaseAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+      },
+      transactionIds: {}
+    };
+
+    transaction.set(orderRef, orderData);
+
+    // Create transaction record for buyer
+    const buyerTransactionRef = db.collection('transactions').doc();
+    const buyerTransactionData = {
+      id: buyerTransactionRef.id,
+      userId,
+      type: 'SERVICE_PURCHASE',
+      amounts: { vp: -totalAmount },
+      ref: {
+        serviceId,
+        serviceOrderId: orderRef.id,
+        targetUserId: sellerId
+      },
+      status: 'CONFIRMED',
+      metadata: {
+        description: `Compra de serviço: ${serviceData.title}`,
+        originalAmount: totalAmount
+      },
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    transaction.set(buyerTransactionRef, buyerTransactionData);
+
+    return { order: orderData, buyerTransactionId: buyerTransactionRef.id };
+  });
+
+  logger.info(`✅ Pedido de serviço criado: ${orderResult.order.id} por ${userId}`);
+  return { success: true, order: orderResult.order };
+}
+
+async function acceptServiceOrderInternal(userId, payload) {
+  const { orderId } = payload;
+
+  if (!orderId) {
+    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
+  }
+
+  const orderRef = db.collection('serviceOrders').doc(orderId);
+  const orderDoc = await orderRef.get();
+
+  if (!orderDoc.exists) {
+    throw new HttpsError("not-found", "Pedido não encontrado");
+  }
+
+  const orderData = orderDoc.data();
+  
+  if (orderData.sellerId !== userId) {
+    throw new HttpsError("permission-denied", "Você não tem permissão para aceitar este pedido");
+  }
+
+  if (orderData.status !== 'PENDING_ACCEPTANCE') {
+    throw new HttpsError("failed-precondition", "Pedido não está aguardando aceitação");
+  }
+
+  // Update order status
+  await orderRef.update({
+    status: 'ACCEPTED',
+    'timestamps.acceptedAt': admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  logger.info(`✅ Pedido aceito: ${orderId} por ${userId}`);
+  return { success: true, orderId };
+}
+
+async function declineServiceOrderInternal(userId, payload) {
+  const { orderId, reason = '' } = payload;
+
+  if (!orderId) {
+    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
+  }
+
+  const orderRef = db.collection('serviceOrders').doc(orderId);
+  const orderDoc = await orderRef.get();
+
+  if (!orderDoc.exists) {
+    throw new HttpsError("not-found", "Pedido não encontrado");
+  }
+
+  const orderData = orderDoc.data();
+  
+  if (orderData.sellerId !== userId) {
+    throw new HttpsError("permission-denied", "Você não tem permissão para recusar este pedido");
+  }
+
+  if (orderData.status !== 'PENDING_ACCEPTANCE') {
+    throw new HttpsError("failed-precondition", "Pedido não está aguardando aceitação");
+  }
+
+  // Refund VP to buyer and update order in transaction
+  await db.runTransaction(async (transaction) => {
+    // Refund VP to buyer
+    const buyerWalletRef = db.collection('wallets').doc(orderData.buyerId);
+    transaction.update(buyerWalletRef, {
+      vp: admin.firestore.FieldValue.increment(orderData.vpAmount),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Update order status
+    transaction.update(orderRef, {
+      status: 'CANCELLED',
+      'metadata.cancellationReason': reason,
+      'timestamps.cancelledAt': admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Create refund transaction
+    const refundTransactionRef = db.collection('transactions').doc();
+    const refundTransactionData = {
+      id: refundTransactionRef.id,
+      userId: orderData.buyerId,
+      type: 'SERVICE_REFUND',
+      amounts: { vp: orderData.vpAmount },
+      ref: {
+        serviceOrderId: orderId,
+        targetUserId: userId
+      },
+      status: 'CONFIRMED',
+      metadata: {
+        description: `Reembolso de serviço recusado: ${orderData.metadata.serviceName}`,
+        reason
+      },
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    transaction.set(refundTransactionRef, refundTransactionData);
+  });
+
+  logger.info(`✅ Pedido recusado: ${orderId} por ${userId}`);
+  return { success: true, orderId };
+}
+
+async function markServiceDeliveredInternal(userId, payload) {
+  const { orderId, deliveryNotes = '' } = payload;
+
+  if (!orderId) {
+    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
+  }
+
+  const orderRef = db.collection('serviceOrders').doc(orderId);
+  const orderDoc = await orderRef.get();
+
+  if (!orderDoc.exists) {
+    throw new HttpsError("not-found", "Pedido não encontrado");
+  }
+
+  const orderData = orderDoc.data();
+  
+  if (orderData.sellerId !== userId) {
+    throw new HttpsError("permission-denied", "Você não tem permissão para marcar este pedido como entregue");
+  }
+
+  if (orderData.status !== 'ACCEPTED') {
+    throw new HttpsError("failed-precondition", "Pedido não está aceito");
+  }
+
+  // Update order status
+  await orderRef.update({
+    status: 'DELIVERED',
+    'metadata.deliveryNotes': deliveryNotes,
+    'timestamps.deliveredAt': admin.firestore.FieldValue.serverTimestamp(),
+    'timestamps.autoReleaseAt': new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours for buyer confirmation
+  });
+
+  logger.info(`✅ Serviço marcado como entregue: ${orderId} por ${userId}`);
+  return { success: true, orderId };
+}
+
+async function confirmServiceDeliveryInternal(userId, payload) {
+  const { orderId, feedback = '' } = payload;
+
+  if (!orderId) {
+    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
+  }
+
+  const orderRef = db.collection('serviceOrders').doc(orderId);
+  const orderDoc = await orderRef.get();
+
+  if (!orderDoc.exists) {
+    throw new HttpsError("not-found", "Pedido não encontrado");
+  }
+
+  const orderData = orderDoc.data();
+  
+  if (orderData.buyerId !== userId) {
+    throw new HttpsError("permission-denied", "Você não tem permissão para confirmar este pedido");
+  }
+
+  if (orderData.status !== 'DELIVERED') {
+    throw new HttpsError("failed-precondition", "Pedido não está marcado como entregue");
+  }
+
+  // Release payment to seller
+  await db.runTransaction(async (transaction) => {
+    // Add VC to seller wallet
+    const sellerWalletRef = db.collection('wallets').doc(orderData.sellerId);
+    transaction.update(sellerWalletRef, {
+      vc: admin.firestore.FieldValue.increment(orderData.vcAmount),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Update order status
+    transaction.update(orderRef, {
+      status: 'CONFIRMED',
+      'metadata.buyerFeedback': feedback,
+      'timestamps.confirmedAt': admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Create transaction for seller earnings
+    const sellerTransactionRef = db.collection('transactions').doc();
+    const sellerTransactionData = {
+      id: sellerTransactionRef.id,
+      userId: orderData.sellerId,
+      type: 'SERVICE_EARNINGS',
+      amounts: { vc: orderData.vcAmount },
+      ref: {
+        serviceOrderId: orderId,
+        targetUserId: userId
+      },
+      status: 'CONFIRMED',
+      metadata: {
+        description: `Ganhos de serviço confirmado: ${orderData.metadata.serviceName}`,
+        conversionRate: 1.5,
+        originalAmount: orderData.vpAmount
+      },
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    transaction.set(sellerTransactionRef, sellerTransactionData);
+  });
+
+  logger.info(`✅ Entrega confirmada: ${orderId} por ${userId}`);
+  return { success: true, orderId };
+}
+
+/**
+ * Create or update conversation (for messaging)
+ */
+export const createConversation = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const userId = request.auth.uid;
+  const { otherUserId, serviceOrderId = null, type = 'regular' } = request.data;
+
+  if (!otherUserId) {
+    throw new HttpsError("invalid-argument", "ID do outro usuário é obrigatório");
+  }
+
+  try {
+    // Use Realtime Database for conversations
+    const rtdb = admin.database('https://vixter-451b3.firebaseio.com');
+    const conversationsRef = rtdb.ref('conversations');
+
+    // Check if conversation already exists
+    const existingConversationsSnapshot = await conversationsRef
+      .orderByChild('participants')
+      .once('value');
+
+    let existingConversationId = null;
+    
+    existingConversationsSnapshot.forEach((child) => {
+      const conversation = child.val();
+      if (conversation.participants && 
+          conversation.participants[userId] && 
+          conversation.participants[otherUserId] &&
+          conversation.serviceOrderId === serviceOrderId) {
+        existingConversationId = child.key;
+        return true; // break
+      }
+    });
+
+    if (existingConversationId) {
+      logger.info(`✅ Conversa existente encontrada: ${existingConversationId}`);
+      return { success: true, conversationId: existingConversationId };
+    }
+
+    // Create new conversation
+    const newConversationRef = conversationsRef.push();
+    const conversationData = {
+      participants: {
+        [userId]: true,
+        [otherUserId]: true
+      },
+      type,
+      createdAt: admin.database.ServerValue.TIMESTAMP,
+      lastMessage: '',
+      lastMessageTime: admin.database.ServerValue.TIMESTAMP,
+      lastSenderId: userId
+    };
+
+    if (serviceOrderId) {
+      conversationData.serviceOrderId = serviceOrderId;
+    }
+
+    await newConversationRef.set(conversationData);
+
+    logger.info(`✅ Nova conversa criada: ${newConversationRef.key}`);
+    return { success: true, conversationId: newConversationRef.key };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao criar conversa:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});

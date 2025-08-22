@@ -1,0 +1,351 @@
+.message-bubble {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 12px;
+  max-width: 70%;
+  position: relative;
+}
+
+.message-bubble.own-message {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+  margin-left: auto;
+}
+
+.message-bubble.other-message {
+  align-self: flex-start;
+  margin-right: auto;
+}
+
+.message-bubble.system-message {
+  align-self: center;
+  max-width: 80%;
+  margin: 16px auto;
+}
+
+.message-bubble.media-message {
+  max-width: 80%;
+}
+
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.message-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
+.message-content-wrapper {
+  background: var(--bg-secondary);
+  border-radius: 18px;
+  padding: 12px 16px;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.message-bubble.own-message .message-content-wrapper {
+  background: var(--accent-color);
+  color: white;
+  margin-right: 8px;
+}
+
+.message-bubble.system-message .message-content-wrapper {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.message-content-wrapper:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.message-reply-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent-color);
+}
+
+.message-bubble.own-message .message-reply-indicator {
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.message-content {
+  margin-bottom: 4px;
+}
+
+.message-text {
+  font-size: 14px;
+  line-height: 1.4;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* Media messages */
+.message-media {
+  max-width: 300px;
+}
+
+.message-image {
+  width: 100%;
+  max-width: 300px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.message-image:hover {
+  transform: scale(1.02);
+}
+
+.message-video {
+  width: 100%;
+  max-width: 300px;
+  border-radius: 12px;
+}
+
+.message-audio {
+  width: 250px;
+  height: 40px;
+}
+
+.audio-player {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.audio-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.message-bubble.own-message .audio-info {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.message-file {
+  min-width: 250px;
+}
+
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+}
+
+.message-bubble.own-message .file-preview {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.file-preview i {
+  font-size: 24px;
+  color: var(--accent-color);
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  font-weight: 500;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-size {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.message-bubble.own-message .file-size {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.file-download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  color: white;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.file-download:hover {
+  background: var(--accent-hover);
+  transform: scale(1.1);
+}
+
+.message-caption {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.message-bubble.own-message .message-caption {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.message-metadata {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.message-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.message-bubble.own-message .message-time {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.message-read-indicator,
+.message-sent-indicator {
+  font-size: 12px;
+  color: var(--success-color);
+}
+
+.message-sent-indicator {
+  color: var(--text-secondary);
+}
+
+.message-bubble.own-message .message-sent-indicator {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Message options */
+.message-options {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.message-option-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.message-option-btn:hover {
+  background: var(--bg-hover);
+}
+
+.message-option-btn.delete {
+  color: var(--danger-color);
+}
+
+.message-option-btn.delete:hover {
+  background: rgba(220, 53, 69, 0.1);
+}
+
+.message-options-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .message-bubble {
+    max-width: 85%;
+  }
+  
+  .message-bubble.media-message {
+    max-width: 90%;
+  }
+  
+  .message-media {
+    max-width: 250px;
+  }
+  
+  .message-image,
+  .message-video {
+    max-width: 250px;
+  }
+  
+  .message-audio {
+    width: 200px;
+  }
+  
+  .file-preview {
+    min-width: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .message-bubble {
+    max-width: 90%;
+  }
+  
+  .message-content-wrapper {
+    padding: 10px 12px;
+  }
+  
+  .message-media {
+    max-width: 200px;
+  }
+  
+  .message-image,
+  .message-video {
+    max-width: 200px;
+  }
+  
+  .message-audio {
+    width: 180px;
+  }
+}

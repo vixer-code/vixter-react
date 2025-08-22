@@ -188,35 +188,64 @@ service cloud.firestore {
     }
     
     // =====================================================
-    // MESSAGES COLLECTION RULES
+    // SERVICE ORDERS COLLECTION RULES (UPDATED)
     // =====================================================
     
-    match /conversations/{conversationId} {
-      // Users can read conversations they're part of
+    match /serviceOrders/{orderId} {
+      // Buyers and sellers can read their orders
       allow read: if isAuthenticated() && 
-                    request.auth.uid in resource.data.participants;
+                    (isOwner(resource.data.buyerId) || 
+                     isOwner(resource.data.sellerId));
       
-      // Users can update conversations they're part of (last message, etc.)
-      allow update: if isAuthenticated() && 
-                      request.auth.uid in resource.data.participants;
-      
-      // Users can create conversations
+      // Service order creation via Cloud Functions only (but allow client reads)
       allow create: if isAuthenticated() && 
-                      request.auth.uid in request.resource.data.participants;
+                      isOwner(request.resource.data.buyerId) &&
+                      isValidServiceOrder(request.resource.data);
       
-      match /messages/{messageId} {
-        // Users can read messages in conversations they're part of
-        allow read: if isAuthenticated() && 
-                      request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+      // Allow status updates for order workflow
+      allow update: if isAuthenticated() && 
+                      (isOwner(resource.data.buyerId) || 
+                       isOwner(resource.data.sellerId)) &&
+                      isValidStatusUpdate(resource.data, request.resource.data);
+      
+      allow delete: if false;
+      
+      // Admin access
+      allow read, write: if isAdmin();
+    }
+    
+    // Helper function for service order validation
+    function isValidServiceOrder(data) {
+      return data.keys().hasAll(['serviceId', 'buyerId', 'sellerId', 'vpAmount', 'status']) &&
+             data.status == 'PENDING_ACCEPTANCE' &&
+             data.vpAmount > 0;
+    }
+    
+    // Helper function for status update validation
+    function isValidStatusUpdate(currentData, newData) {
+      let currentStatus = currentData.status;
+      let newStatus = newData.status;
+      
+      return (
+        // Seller can accept or decline pending orders
+        (request.auth.uid == currentData.sellerId && 
+         currentStatus == 'PENDING_ACCEPTANCE' && 
+         (newStatus == 'ACCEPTED' || newStatus == 'CANCELLED')) ||
         
-        // Users can create messages in conversations they're part of
-        allow create: if isAuthenticated() && 
-                        request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
-                        isOwner(request.resource.data.senderId);
+        // Seller can mark accepted orders as delivered
+        (request.auth.uid == currentData.sellerId && 
+         currentStatus == 'ACCEPTED' && 
+         newStatus == 'DELIVERED') ||
         
-        // No updates or deletes for messages (append-only)
-        allow update, delete: if false;
-      }
+        // Buyer can confirm delivered orders
+        (request.auth.uid == currentData.buyerId && 
+         currentStatus == 'DELIVERED' && 
+         newStatus == 'CONFIRMED') ||
+         
+        // System can auto-release
+        (currentStatus == 'DELIVERED' && 
+         newStatus == 'AUTO_RELEASED')
+      );
     }
     
     // =====================================================
