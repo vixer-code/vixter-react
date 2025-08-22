@@ -119,9 +119,9 @@ service cloud.firestore {
       // Users can read/write their own profile
       allow read, write: if isAuthenticated() && isOwner(userId);
       
-      // Users can read other users' public profile fields only
-      allow read: if isAuthenticated() && 
-                    request.query.limit <= 50; // Prevent large queries
+      // Users can read other users' public profile fields for messaging
+      // This allows reading displayName, username, photoURL, status for conversations
+      allow read: if isAuthenticated();
       
       // Admin access
       allow read, write: if isAdmin();
