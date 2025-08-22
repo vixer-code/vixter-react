@@ -80,6 +80,8 @@ export const MessagingProvider = ({ children }) => {
       return;
     }
 
+    console.log('Setting up conversation listeners for user:', currentUser.uid);
+
     // Load regular conversations
     const conversationsRef = ref(database, 'conversations');
     
@@ -107,6 +109,7 @@ export const MessagingProvider = ({ children }) => {
         conversationsData.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
       }
       
+      console.log('Regular conversations loaded:', conversationsData.length);
       setConversations(conversationsData);
       setLoading(false);
     });
@@ -135,6 +138,7 @@ export const MessagingProvider = ({ children }) => {
         serviceConversationsData.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
       }
       
+      console.log('Service conversations loaded:', serviceConversationsData.length);
       setServiceConversations(serviceConversationsData);
     });
 
@@ -221,14 +225,73 @@ export const MessagingProvider = ({ children }) => {
     loadParticipantsData();
   }, [conversations, currentUser, users, getUserById]);
 
-  // Load messages for selected conversation
+  // Global messages listener for all conversations where user is participant
+  useEffect(() => {
+    if (!currentUser?.uid || conversations.length === 0) return;
+
+    console.log('Setting up global message listeners for', conversations.length, 'conversations');
+
+    const unsubscribers = [];
+
+    // Set up listeners for all conversations where user is participant
+    conversations.forEach(conversation => {
+      const messagesRef = ref(database, `messages/${conversation.id}`);
+      
+      const unsubscribe = onValue(messagesRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const messagesData = [];
+          snapshot.forEach((childSnapshot) => {
+            messagesData.push({
+              id: childSnapshot.key,
+              ...childSnapshot.val()
+            });
+          });
+          
+          // Sort messages by timestamp (oldest first)
+          messagesData.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+          
+          // If this is the currently selected conversation, update messages state
+          if (selectedConversation && selectedConversation.id === conversation.id) {
+            console.log('Updating messages for selected conversation:', messagesData.length);
+            setMessages(messagesData);
+            
+            // Mark messages as read
+            if (readReceiptsEnabled) {
+              markMessagesAsRead(messagesData);
+            }
+          }
+          
+          // Update conversation last message if it's different
+          const lastMessage = messagesData[messagesData.length - 1];
+          if (lastMessage && conversation.lastMessage !== lastMessage.content) {
+            console.log('Updating conversation last message:', lastMessage.content);
+            setConversations(prev => 
+              prev.map(conv => 
+                conv.id === conversation.id 
+                  ? { ...conv, lastMessage: lastMessage.content, lastMessageTime: lastMessage.timestamp, lastSenderId: lastMessage.senderId }
+                  : conv
+              )
+            );
+          }
+        }
+      });
+      
+      unsubscribers.push(() => off(messagesRef));
+    });
+
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+    };
+  }, [currentUser, conversations, selectedConversation, readReceiptsEnabled]);
+
+  // Load messages for selected conversation (simplified - just for initial load)
   useEffect(() => {
     if (!selectedConversation) {
       setMessages([]);
       return;
     }
 
-    console.log('Loading messages for conversation:', selectedConversation.id);
+    console.log('Loading initial messages for conversation:', selectedConversation.id);
 
     const messagesRef = ref(database, `messages/${selectedConversation.id}`);
     
@@ -248,7 +311,7 @@ export const MessagingProvider = ({ children }) => {
         messagesData.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
       }
       
-      console.log('Messages loaded:', messagesData.length);
+      console.log('Initial messages loaded:', messagesData.length);
       setMessages(messagesData);
       
       // Mark messages as read
