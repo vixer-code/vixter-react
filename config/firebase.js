@@ -27,8 +27,8 @@ try {
   
   // Initialize Firebase services
   auth = getAuth(app);
-  // Current default export: use new RTDB instance
-  database =  getDatabase(app, "https://vixter-451b3.firebaseio.com");
+  // Current default export: use default RTDB instance
+  database = getDatabase(app, "https://vixter-451b3-default-rtdb.firebaseio.com");
   storage = getStorage(app);
   firestore = getFirestore(app);
   functions = getFunctions(app, 'us-east1'); // Updated to match deployed functions
