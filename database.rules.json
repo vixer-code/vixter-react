@@ -2,34 +2,8 @@
   "rules": {
     "conversations": {
       "$conversationId": {
-        ".read": "auth != null && (data.child('participants').child(auth.uid).exists() || !data.exists())",
-        ".write": "auth != null && (newData.child('participants').child(auth.uid).exists() || data.child('participants').child(auth.uid).exists())",
-        "participants": {
-          "$userId": {
-            ".validate": "newData.parent().parent().child('participants').child(auth.uid).exists()"
-          }
-        },
-        "lastMessage": {
-          ".validate": "newData.isString()"
-        },
-        "lastMessageTime": {
-          ".validate": "newData.isNumber()"
-        },
-        "lastSenderId": {
-          ".validate": "newData.isString()"
-        },
-        "type": {
-          ".validate": "newData.isString()"
-        },
-        "serviceOrderId": {
-          ".validate": "newData.isString()"
-        },
-        "createdAt": {
-          ".validate": "newData.isNumber()"
-        },
-        "name": {
-          ".validate": "newData.isString()"
-        }
+        ".read": "auth != null",
+        ".write": "auth != null && newData.child('participants').child(auth.uid).exists()"
       }
     },
     "messages": {

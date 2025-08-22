@@ -261,9 +261,18 @@ export const MessagingProvider = ({ children }) => {
       // For direct conversations, check if it already exists
       if (conversationData.participantIds.length === 2 && conversationData.type !== 'service') {
         console.log('createConversation: Checking for existing direct conversation');
+        
+        // Look for existing conversation in current conversations list
         const otherUserId = conversationData.participantIds.find(id => id !== currentUser.uid);
         if (otherUserId) {
-          const existingConversation = await createOrGetConversation(otherUserId);
+          const existingConversation = conversations.find(conv => {
+            const participants = Object.keys(conv.participants || {});
+            return participants.length === 2 && 
+                   participants.includes(currentUser.uid) && 
+                   participants.includes(otherUserId) &&
+                   !conv.serviceOrderId;
+          });
+          
           if (existingConversation) {
             console.log('createConversation: Found existing conversation:', existingConversation.id);
             setSelectedConversation(existingConversation);
@@ -318,7 +327,7 @@ export const MessagingProvider = ({ children }) => {
       showError('Erro ao criar conversa');
       return null;
     }
-  }, [currentUser, showError, createOrGetConversation, setSelectedConversation, setActiveTab]);
+  }, [currentUser, showError, conversations, setSelectedConversation, setActiveTab]);
 
   // Send text message
   const sendMessage = useCallback(async (text, replyToId = null) => {
