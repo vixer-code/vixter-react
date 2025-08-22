@@ -185,6 +185,31 @@ export const MessagingProvider = ({ children }) => {
     loadUsersFromFirestore();
   }, [currentUser, getUserById]);
 
+  // Mark messages as read - Define this BEFORE useEffect hooks that use it
+  const markMessagesAsRead = useCallback(async (messagesData) => {
+    if (!currentUser?.uid || !selectedConversation) return;
+
+    const unreadMessages = messagesData.filter(msg => 
+      !msg.read && msg.senderId !== currentUser.uid
+    );
+
+    if (unreadMessages.length === 0) return;
+
+    try {
+      const updates = {};
+      unreadMessages.forEach(msg => {
+        updates[`messages/${selectedConversation.id}/${msg.id}/read`] = true;
+        updates[`messages/${selectedConversation.id}/${msg.id}/readAt`] = Date.now();
+        updates[`messages/${selectedConversation.id}/${msg.id}/readBy`] = currentUser.uid;
+      });
+
+      // Batch update
+      await update(ref(database), updates);
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  }, [currentUser?.uid, selectedConversation?.id]);
+
   // Load user data for all participants in conversations
   useEffect(() => {
     if (!currentUser?.uid || !conversations.length) return;
@@ -718,30 +743,7 @@ export const MessagingProvider = ({ children }) => {
     }
   }, [currentUser, createOrGetConversation, showError]);
 
-  // Mark messages as read
-  const markMessagesAsRead = useCallback(async (messagesData) => {
-    if (!currentUser?.uid || !selectedConversation) return;
 
-    const unreadMessages = messagesData.filter(msg => 
-      !msg.read && msg.senderId !== currentUser.uid
-    );
-
-    if (unreadMessages.length === 0) return;
-
-    try {
-      const updates = {};
-      unreadMessages.forEach(msg => {
-        updates[`messages/${selectedConversation.id}/${msg.id}/read`] = true;
-        updates[`messages/${selectedConversation.id}/${msg.id}/readAt`] = Date.now();
-        updates[`messages/${selectedConversation.id}/${msg.id}/readBy`] = currentUser.uid;
-      });
-
-      // Batch update
-      await update(ref(database), updates);
-    } catch (error) {
-      console.error('Error marking messages as read:', error);
-    }
-  }, [currentUser, selectedConversation]);
 
   // Get other participant in conversation
   const getOtherParticipant = useCallback((conversation) => {
