@@ -145,7 +145,7 @@ export const MessagingProvider = ({ children }) => {
     return () => {
       off(conversationsRef);
     };
-  }, [currentUser, authLoading]);
+  }, [currentUser?.uid, authLoading]);
 
   // Reset state when user changes or logs out
   useEffect(() => {
@@ -187,7 +187,7 @@ export const MessagingProvider = ({ children }) => {
 
   // Load user data for all participants in conversations
   useEffect(() => {
-    if (!currentUser || !conversations.length) return;
+    if (!currentUser?.uid || !conversations.length) return;
 
     const loadParticipantsData = async () => {
       const allParticipantIds = new Set();
@@ -223,7 +223,7 @@ export const MessagingProvider = ({ children }) => {
     };
 
     loadParticipantsData();
-  }, [conversations, currentUser, users, getUserById]);
+  }, [conversations, currentUser?.uid, getUserById]);
 
   // Global messages listener for all conversations where user is participant
   useEffect(() => {
@@ -282,7 +282,7 @@ export const MessagingProvider = ({ children }) => {
     return () => {
       unsubscribers.forEach(unsub => unsub());
     };
-  }, [currentUser, conversations, selectedConversation, readReceiptsEnabled]);
+  }, [currentUser?.uid, conversations, selectedConversation?.id, readReceiptsEnabled, markMessagesAsRead]);
 
   // Load messages for selected conversation (simplified - just for initial load)
   useEffect(() => {
@@ -323,7 +323,7 @@ export const MessagingProvider = ({ children }) => {
     return () => {
       off(messagesRef);
     };
-  }, [selectedConversation, readReceiptsEnabled]);
+  }, [selectedConversation?.id, readReceiptsEnabled, markMessagesAsRead]);
 
   // Create or get conversation
   const createOrGetConversation = useCallback(async (otherUserId, serviceOrderId = null) => {
@@ -554,6 +554,7 @@ export const MessagingProvider = ({ children }) => {
         lastMessageTime: Date.now(),
         lastSenderId: currentUser.uid
       });
+      console.log('Message should now be visible to other participants in real-time');
       return true;
     } catch (error) {
       console.error('Error sending message:', error);
