@@ -180,6 +180,46 @@ export const MessagingProvider = ({ children }) => {
     loadUsersFromFirestore();
   }, [currentUser, getUserById]);
 
+  // Load user data for all participants in conversations
+  useEffect(() => {
+    if (!currentUser || !conversations.length) return;
+
+    const loadParticipantsData = async () => {
+      const allParticipantIds = new Set();
+      
+      // Collect all participant IDs from conversations
+      conversations.forEach(conversation => {
+        if (conversation.participants) {
+          Object.keys(conversation.participants).forEach(uid => {
+            if (uid !== currentUser.uid) {
+              allParticipantIds.add(uid);
+            }
+          });
+        }
+      });
+
+      // Load data for participants we don't have yet
+      for (const participantId of allParticipantIds) {
+        if (!users[participantId]) {
+          try {
+            const participantData = await getUserById(participantId);
+            if (participantData) {
+              setUsers(prev => ({
+                ...prev,
+                [participantId]: participantData
+              }));
+              console.log('Loaded participant data:', participantData.displayName || participantData.name);
+            }
+          } catch (error) {
+            console.error('Error loading participant data:', error);
+          }
+        }
+      }
+    };
+
+    loadParticipantsData();
+  }, [conversations, currentUser, users, getUserById]);
+
   // Load messages for selected conversation
   useEffect(() => {
     if (!selectedConversation) {
@@ -349,6 +389,23 @@ export const MessagingProvider = ({ children }) => {
       };
 
       console.log('createConversation: Conversation created successfully:', conversation.id);
+      
+      // Load the other user's data immediately
+      const otherUserId = conversationData.participantIds.find(id => id !== currentUser.uid);
+      if (otherUserId && !users[otherUserId]) {
+        try {
+          const otherUserData = await getUserById(otherUserId);
+          if (otherUserData) {
+            setUsers(prev => ({
+              ...prev,
+              [otherUserId]: otherUserData
+            }));
+            console.log('Loaded other user data for new conversation:', otherUserData.displayName || otherUserData.name);
+          }
+        } catch (error) {
+          console.error('Error loading other user data:', error);
+        }
+      }
       
       // Add conversation to local state immediately (don't wait for Firebase listener)
       if (conversation.serviceOrderId) {
@@ -563,7 +620,7 @@ export const MessagingProvider = ({ children }) => {
   }, [currentUser, selectedConversation]);
 
   // Get other participant in conversation
-  const getOtherParticipant = useCallback(async (conversation) => {
+  const getOtherParticipant = useCallback((conversation) => {
     if (!conversation?.participants || !currentUser?.uid) return {};
     
     const participantIds = Object.keys(conversation.participants);
@@ -571,24 +628,29 @@ export const MessagingProvider = ({ children }) => {
     
     if (!otherId) return {};
     
-    // If we don't have the other user's data, try to load it from Firestore
-    if (!users[otherId]) {
-      try {
-        const otherUserData = await getUserById(otherId);
-        if (otherUserData) {
-          setUsers(prev => ({
-            ...prev,
-            [otherId]: otherUserData
-          }));
-          return otherUserData;
-        }
-      } catch (error) {
-        console.error('Error loading other user from Firestore:', error);
+    // Return the user data we already have loaded
+    return users[otherId] || {};
+  }, [currentUser, users]);
+
+  // Load specific user data by ID
+  const loadUserData = useCallback(async (userId) => {
+    if (!userId || users[userId]) return users[userId];
+    
+    try {
+      const userData = await getUserById(userId);
+      if (userData) {
+        setUsers(prev => ({
+          ...prev,
+          [userId]: userData
+        }));
+        return userData;
       }
+    } catch (error) {
+      console.error('Error loading user data:', error);
     }
     
-    return users[otherId] || {};
-  }, [currentUser, users, getUserById]);
+    return null;
+  }, [users, getUserById]);
 
   // Format time
   const formatTime = useCallback((timestamp) => {
@@ -674,6 +736,7 @@ export const MessagingProvider = ({ children }) => {
     
     // Utilities
     getOtherParticipant,
+    loadUserData,
     formatTime,
     getUnreadCount,
     
@@ -699,6 +762,7 @@ export const MessagingProvider = ({ children }) => {
     createOrGetConversation,
     deleteMessage,
     getOtherParticipant,
+    loadUserData,
     formatTime,
     getUnreadCount
   ]);
