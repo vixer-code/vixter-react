@@ -246,6 +246,67 @@ export const MessagingProvider = ({ children }) => {
     }
   }, [currentUser, showError]);
 
+  // Create new conversation (supports both direct and group conversations)
+  const createConversation = useCallback(async (conversationData) => {
+    if (!currentUser || !conversationData.participantIds?.length) return null;
+
+    try {
+      const conversationsRef = ref(database, 'conversations');
+      
+      // For direct conversations, check if it already exists
+      if (conversationData.participantIds.length === 2 && conversationData.type !== 'service') {
+        const otherUserId = conversationData.participantIds.find(id => id !== currentUser.uid);
+        const existingConversation = await createOrGetConversation(otherUserId);
+        if (existingConversation) {
+          setSelectedConversation(existingConversation);
+          setActiveTab('messages');
+          return existingConversation;
+        }
+      }
+
+      // Create new conversation
+      const newConversationRef = push(conversationsRef);
+      const participants = {};
+      conversationData.participantIds.forEach(id => {
+        participants[id] = true;
+      });
+
+      const newConversationData = {
+        participants,
+        createdAt: Date.now(),
+        lastMessage: '',
+        lastMessageTime: Date.now(),
+        lastSenderId: currentUser.uid,
+        type: conversationData.type || 'regular'
+      };
+
+      // Add optional fields
+      if (conversationData.name) {
+        newConversationData.name = conversationData.name;
+      }
+      if (conversationData.serviceOrderId) {
+        newConversationData.serviceOrderId = conversationData.serviceOrderId;
+      }
+
+      await set(newConversationRef, newConversationData);
+
+      const conversation = {
+        id: newConversationRef.key,
+        ...newConversationData
+      };
+
+      // Set as selected conversation and switch to messages tab
+      setSelectedConversation(conversation);
+      setActiveTab('messages');
+
+      return conversation;
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      showError('Erro ao criar conversa');
+      return null;
+    }
+  }, [currentUser, showError, createOrGetConversation, setSelectedConversation, setActiveTab]);
+
   // Send text message
   const sendMessage = useCallback(async (text, replyToId = null) => {
     if (!text.trim() || !selectedConversation || !currentUser) return false;
@@ -526,6 +587,7 @@ export const MessagingProvider = ({ children }) => {
     sendMediaMessage,
     sendServiceNotification,
     startConversation,
+    createConversation,
     createOrGetConversation,
     deleteMessage,
     
@@ -552,6 +614,7 @@ export const MessagingProvider = ({ children }) => {
     sendMediaMessage,
     sendServiceNotification,
     startConversation,
+    createConversation,
     createOrGetConversation,
     deleteMessage,
     getOtherParticipant,

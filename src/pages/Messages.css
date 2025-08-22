@@ -41,6 +41,7 @@
   gap: 8px;
 }
 
+.new-conversation-button,
 .settings-button {
   display: flex;
   align-items: center;
@@ -53,6 +54,17 @@
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.new-conversation-button {
+  background: linear-gradient(135deg, #8A2BE2, #00FFCA);
+  color: #0F0F1A;
+  font-weight: 600;
+}
+
+.new-conversation-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
 }
 
 .settings-button:hover {
@@ -529,6 +541,31 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.4;
+}
+
+.start-conversation-btn {
+  margin-top: 20px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #8A2BE2, #00FFCA);
+  color: #0F0F1A;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.start-conversation-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(138, 43, 226, 0.3);
+}
+
+.start-conversation-btn i {
+  font-size: 14px;
 }
 
 .settings-overlay {

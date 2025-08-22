@@ -100,6 +100,9 @@ const Header = () => {
             <li><Link to="/vixies" className={isActive('/vixies') ? 'active' : ''}>Vixies</Link></li>
             <li><Link to="/vixink" className={isActive('/vixink') ? 'active' : ''}>Vixink</Link></li>
             <li><Link to="/feed" className={isActive('/feed') ? 'active' : ''}>Comunidade</Link></li>
+            {currentUser && (
+              <li><Link to="/messages" className={isActive('/messages') ? 'active' : ''}>Mensagens</Link></li>
+            )}
             
             {!currentUser ? (
               <>
@@ -319,6 +322,11 @@ const Header = () => {
           <li><Link to="/feed" className={isActive('/feed') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
             <i className="fas fa-comments"></i>Comunidade
           </Link></li>
+          {currentUser && (
+            <li><Link to="/messages" className={isActive('/messages') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
+              <i className="fas fa-envelope"></i>Mensagens
+            </Link></li>
+          )}
           
           {!currentUser ? (
             <>

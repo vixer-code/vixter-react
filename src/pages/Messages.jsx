@@ -6,6 +6,7 @@ import { useMessaging } from '../contexts/MessagingContext';
 import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import MessageBubble from '../components/MessageBubble';
 import MediaInput from '../components/MediaInput';
+import NewConversationModal from '../components/NewConversationModal';
 import './Messages.css';
 
 const Messages = () => {
@@ -36,6 +37,7 @@ const Messages = () => {
   const [replyingTo, setReplyingTo] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [showNewConversationModal, setShowNewConversationModal] = useState(false);
   const messagesEndRef = useRef(null);
   const messageInputRef = useRef(null);
 
@@ -133,6 +135,13 @@ const Messages = () => {
             <h2>Mensagens</h2>
             <div className="header-actions">
               <button
+                onClick={() => setShowNewConversationModal(true)}
+                className="new-conversation-button"
+                title="Nova Conversa"
+              >
+                <i className="fas fa-plus"></i>
+              </button>
+              <button
                 onClick={() => setShowSettings(!showSettings)}
                 className="settings-button"
                 title="Configurações"
@@ -199,10 +208,19 @@ const Messages = () => {
                 </h3>
                 <p>
                   {activeTab === 'messages'
-                    ? 'Inicie uma conversa visitando o perfil de um usuário'
+                    ? 'Clique no botão + acima para iniciar uma nova conversa'
                     : 'Conversas de serviços aparecerão aqui quando você comprar ou vender serviços'
                   }
                 </p>
+                {activeTab === 'messages' && (
+                  <button 
+                    className="start-conversation-btn"
+                    onClick={() => setShowNewConversationModal(true)}
+                  >
+                    <i className="fas fa-plus"></i>
+                    Nova Conversa
+                  </button>
+                )}
               </div>
             </div>
           ) : (
@@ -406,6 +424,12 @@ const Messages = () => {
           onClick={() => setShowSettings(false)}
         />
       )}
+
+      {/* New Conversation Modal */}
+      <NewConversationModal
+        isOpen={showNewConversationModal}
+        onClose={() => setShowNewConversationModal(false)}
+      />
     </div>
   );
 };
