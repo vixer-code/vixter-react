@@ -461,11 +461,11 @@ export const MessagingProvider = ({ children }) => {
       // Update conversation last message using update instead of set
       const conversationRef = ref(database, `conversations/${selectedConversation.id}`);
       const updates = {};
-      updates[`conversations/${selectedConversation.id}/lastMessage`] = text.trim();
-      updates[`conversations/${selectedConversation.id}/lastMessageTime`] = Date.now();
-      updates[`conversations/${selectedConversation.id}/lastSenderId`] = currentUser.uid;
+      updates['lastMessage'] = text.trim();
+      updates['lastMessageTime'] = Date.now();
+      updates['lastSenderId'] = currentUser.uid;
 
-      await set(ref(database), updates);
+      await set(conversationRef, updates);
 
       // Update local conversation state
       setSelectedConversation(prev => ({
@@ -574,12 +574,13 @@ export const MessagingProvider = ({ children }) => {
                                        type === MESSAGE_TYPES.VIDEO ? '🎥 Vídeo' : 
                                        type === MESSAGE_TYPES.AUDIO ? '🎵 Áudio' : '📎 Arquivo'}`;
       
+      const conversationRef = ref(database, `conversations/${selectedConversation.id}`);
       const updates = {};
-      updates[`conversations/${selectedConversation.id}/lastMessage`] = lastMessageText;
-      updates[`conversations/${selectedConversation.id}/lastMessageTime`] = Date.now();
-      updates[`conversations/${selectedConversation.id}/lastSenderId`] = currentUser.uid;
+      updates['lastMessage'] = lastMessageText;
+      updates['lastMessageTime'] = Date.now();
+      updates['lastSenderId'] = currentUser.uid;
 
-      await set(ref(database), updates);
+      await set(conversationRef, updates);
 
       // Update local conversation state
       setSelectedConversation(prev => ({
