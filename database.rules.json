@@ -3,10 +3,10 @@
     "conversations": {
       "$conversationId": {
         ".read": "auth != null && data.child('participants').child(auth.uid).exists()",
-        ".write": "auth != null && (data.child('participants').child(auth.uid).exists() || newData.child('participants').child(auth.uid).exists())",
+        ".write": "auth != null && ((!data.exists() && newData.child('participants').child(auth.uid).exists()) || (data.exists() && data.child('participants').child(auth.uid).exists()))",
         "participants": {
           "$userId": {
-            ".validate": "$userId == auth.uid || data.parent().child(auth.uid).exists()"
+            ".validate": "$userId == auth.uid || (!data.parent().parent().exists() && newData.parent().parent().child('participants').child(auth.uid).exists()) || (data.parent().parent().exists() && data.parent().parent().child('participants').child(auth.uid).exists())"
           }
         },
         "lastMessage": {

@@ -11,7 +11,7 @@ import './NewConversationModal.css';
 const NewConversationModal = ({ isOpen, onClose }) => {
   const { currentUser } = useAuth();
   const { createConversation } = useMessaging();
-  const { showNotification } = useNotification();
+  const { showSuccess, showError } = useNotification();
   const { formatUserDisplayName, getUserAvatarUrl } = useUser();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -77,7 +77,7 @@ const NewConversationModal = ({ isOpen, onClose }) => {
         setSearchResults(Array.from(users.values()));
       } catch (error) {
         console.error('Error searching users:', error);
-        showNotification('Erro ao buscar usuários', 'error');
+        showError('Erro ao buscar usuários');
       } finally {
         setLoading(false);
       }
@@ -85,7 +85,7 @@ const NewConversationModal = ({ isOpen, onClose }) => {
 
     const debounceTimer = setTimeout(searchUsers, 300);
     return () => clearTimeout(debounceTimer);
-  }, [searchTerm, currentUser.uid, showNotification]);
+  }, [searchTerm, currentUser.uid, showError]);
 
   const handleUserSelect = (user) => {
     if (isGroupConversation) {
@@ -105,7 +105,7 @@ const NewConversationModal = ({ isOpen, onClose }) => {
 
   const handleCreateConversation = async (participants = selectedUsers) => {
     if (participants.length === 0) {
-      showNotification('Selecione pelo menos um usuário', 'error');
+      showError('Selecione pelo menos um usuário');
       return;
     }
 
@@ -118,11 +118,11 @@ const NewConversationModal = ({ isOpen, onClose }) => {
       };
 
       await createConversation(conversationData);
-      showNotification('Conversa criada com sucesso!', 'success');
+      showSuccess('Conversa criada com sucesso!');
       onClose();
     } catch (error) {
       console.error('Error creating conversation:', error);
-      showNotification('Erro ao criar conversa', 'error');
+      showError('Erro ao criar conversa');
     }
   };
 
