@@ -3,7 +3,7 @@
     "conversations": {
       "$conversationId": {
         ".read": "auth != null",
-        ".write": "auth != null && newData.child('participants').child(auth.uid).exists()"
+        ".write": "auth != null"
       }
     },
     "messages": {

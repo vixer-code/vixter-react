@@ -34,7 +34,7 @@ export const useMessaging = () => {
 };
 
 export const MessagingProvider = ({ children }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const { showSuccess, showError, showInfo } = useNotification();
   const { getUserById } = useUser();
   
@@ -67,6 +67,11 @@ export const MessagingProvider = ({ children }) => {
 
   // Load conversations
   useEffect(() => {
+    if (authLoading) {
+      // Don't do anything while auth is still loading
+      return;
+    }
+    
     if (!currentUser || !currentUser.uid) {
       setConversations([]);
       setServiceConversations([]);
@@ -131,7 +136,7 @@ export const MessagingProvider = ({ children }) => {
     return () => {
       off(conversationsRef);
     };
-  }, [currentUser]);
+  }, [currentUser, authLoading]);
 
   // Load users data
   useEffect(() => {
@@ -316,6 +321,13 @@ export const MessagingProvider = ({ children }) => {
       };
 
       console.log('createConversation: Conversation created successfully:', conversation.id);
+      
+      // Add conversation to local state immediately (don't wait for Firebase listener)
+      if (conversation.serviceOrderId) {
+        setServiceConversations(prev => [conversation, ...prev]);
+      } else {
+        setConversations(prev => [conversation, ...prev]);
+      }
       
       // Set as selected conversation and switch to messages tab
       setSelectedConversation(conversation);
