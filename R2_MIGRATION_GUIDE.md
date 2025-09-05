@@ -1,4 +1,4 @@
-# Guia de Migração para R2 - Vixter
+# Guia de Migração para R2 - Vixter?
 
 Este guia explica como implementar a migração da mídia do Firebase Storage para o Cloudflare R2, mantendo a funcionalidade de watermarks para packs.
 
