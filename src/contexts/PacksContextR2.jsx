@@ -9,6 +9,7 @@ import {
   getDocs,
   doc,
   getDoc,
+  deleteDoc,
   onSnapshot
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
@@ -343,31 +344,47 @@ export const PacksProviderR2 = ({ children }) => {
     }
 
     try {
+      console.log('Starting pack deletion for ID:', packId);
+      
       // Get pack data to delete media files
       const pack = await getPackById(packId);
-      if (pack) {
-        console.log('Deleting pack with data:', {
-          packId,
-          coverImage: pack.coverImage,
-          sampleImages: pack.sampleImages,
-          sampleVideos: pack.sampleVideos,
-          packContent: pack.packContent
-        });
+      if (!pack) {
+        console.error('Pack not found:', packId);
+        showError('Pack não encontrado.', 'Erro');
+        return false;
+      }
 
+      console.log('Deleting pack with data:', {
+        packId,
+        coverImage: pack.coverImage,
+        sampleImages: pack.sampleImages,
+        sampleVideos: pack.sampleVideos,
+        packContent: pack.packContent
+      });
+
+      // Delete R2 media files first
+      try {
         // Delete cover image - handle both R2 key object and URL string
         if (pack.coverImage?.key) {
           console.log('Deleting R2 cover image with key:', pack.coverImage.key);
           await deleteMedia(pack.coverImage.key);
         } else if (pack.coverImage && typeof pack.coverImage === 'string') {
-          // If coverImage is a string, it might be an R2 URL that we can extract the key from
-          // or it might be a regular URL that doesn't need R2 deletion
           console.log('Cover image is URL string:', pack.coverImage);
-          // For now, we'll skip R2 deletion for URL strings since we can't extract the key
-          // In a real implementation, you might want to store the R2 key separately
+          // Try to extract key from URL if it's an R2 URL
+          const urlParts = pack.coverImage.split('/');
+          const possibleKey = urlParts[urlParts.length - 1];
+          if (possibleKey && possibleKey.includes('.')) {
+            console.log('Attempting to delete cover image with extracted key:', possibleKey);
+            try {
+              await deleteMedia(possibleKey);
+            } catch (keyError) {
+              console.warn('Could not delete cover image with extracted key:', keyError);
+            }
+          }
         }
 
         // Delete sample images
-        if (pack.sampleImages) {
+        if (pack.sampleImages && Array.isArray(pack.sampleImages)) {
           for (const image of pack.sampleImages) {
             if (image.key) {
               console.log('Deleting R2 sample image with key:', image.key);
@@ -377,7 +394,7 @@ export const PacksProviderR2 = ({ children }) => {
         }
 
         // Delete sample videos
-        if (pack.sampleVideos) {
+        if (pack.sampleVideos && Array.isArray(pack.sampleVideos)) {
           for (const video of pack.sampleVideos) {
             if (video.key) {
               console.log('Deleting R2 sample video with key:', video.key);
@@ -387,7 +404,7 @@ export const PacksProviderR2 = ({ children }) => {
         }
 
         // Delete pack content
-        if (pack.packContent) {
+        if (pack.packContent && Array.isArray(pack.packContent)) {
           for (const content of pack.packContent) {
             if (content.key) {
               console.log('Deleting R2 pack content with key:', content.key);
@@ -395,30 +412,29 @@ export const PacksProviderR2 = ({ children }) => {
             }
           }
         }
+      } catch (mediaError) {
+        console.warn('Error deleting some media files:', mediaError);
+        // Continue with Firestore deletion even if media deletion fails
       }
 
-      const result = await apiFunc({
-        resource: 'pack',
-        action: 'delete',
-        payload: { packId }
-      });
+      // Delete from Firestore directly
+      console.log('Deleting pack from Firestore...');
+      const packRef = doc(db, 'packs', packId);
+      await deleteDoc(packRef);
+      console.log('Pack deleted from Firestore successfully');
+
+      showSuccess('Pack deletado com sucesso!', 'Pack Deletado');
       
-      if (result.data.success) {
-        showSuccess('Pack deletado com sucesso!', 'Pack Deletado');
-        
-        // Reload user packs
-        await loadUserPacks();
-        
-        return true;
-      }
+      // Reload user packs
+      await loadUserPacks();
       
-      return false;
+      return true;
     } catch (error) {
       console.error('Error deleting pack:', error);
-      showError('Erro ao deletar pack. Tente novamente.', 'Erro');
+      showError(`Erro ao deletar pack: ${error.message}`, 'Erro');
       return false;
     }
-  }, [currentUser, apiFunc, showSuccess, showError, loadUserPacks, getPackById, deleteMedia]);
+  }, [currentUser, showSuccess, showError, loadUserPacks, getPackById, deleteMedia]);
 
   // Get watermarked download URL for pack content
   const getPackContentDownloadUrl = useCallback(async (packId, contentKey) => {

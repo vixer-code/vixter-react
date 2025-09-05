@@ -9,6 +9,7 @@ import {
   getDocs,
   doc,
   getDoc,
+  deleteDoc,
   onSnapshot
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
@@ -370,31 +371,47 @@ export const ServicesProviderR2 = ({ children }) => {
     }
 
     try {
+      console.log('Starting service deletion for ID:', serviceId);
+      
       // Get service data to delete media files
       const service = await getServiceById(serviceId);
-      if (service) {
-        console.log('Deleting service with data:', {
-          serviceId,
-          coverImageURL: service.coverImageURL,
-          coverImage: service.coverImage,
-          sampleImages: service.sampleImages,
-          sampleVideos: service.sampleVideos
-        });
+      if (!service) {
+        console.error('Service not found:', serviceId);
+        showError('Serviço não encontrado.', 'Erro');
+        return false;
+      }
 
+      console.log('Deleting service with data:', {
+        serviceId,
+        coverImageURL: service.coverImageURL,
+        coverImage: service.coverImage,
+        sampleImages: service.sampleImages,
+        sampleVideos: service.sampleVideos
+      });
+
+      // Delete R2 media files first
+      try {
         // Delete cover image - handle both R2 key object and URL string
         if (service.coverImage?.key) {
           console.log('Deleting R2 cover image with key:', service.coverImage.key);
           await deleteMedia(service.coverImage.key);
         } else if (service.coverImageURL && typeof service.coverImageURL === 'string') {
-          // If coverImageURL is a string, it might be an R2 URL that we can extract the key from
-          // or it might be a regular URL that doesn't need R2 deletion
           console.log('Cover image is URL string:', service.coverImageURL);
-          // For now, we'll skip R2 deletion for URL strings since we can't extract the key
-          // In a real implementation, you might want to store the R2 key separately
+          // Try to extract key from URL if it's an R2 URL
+          const urlParts = service.coverImageURL.split('/');
+          const possibleKey = urlParts[urlParts.length - 1];
+          if (possibleKey && possibleKey.includes('.')) {
+            console.log('Attempting to delete cover image with extracted key:', possibleKey);
+            try {
+              await deleteMedia(possibleKey);
+            } catch (keyError) {
+              console.warn('Could not delete cover image with extracted key:', keyError);
+            }
+          }
         }
 
         // Delete sample images
-        if (service.sampleImages) {
+        if (service.sampleImages && Array.isArray(service.sampleImages)) {
           for (const image of service.sampleImages) {
             if (image.key) {
               console.log('Deleting R2 sample image with key:', image.key);
@@ -404,7 +421,7 @@ export const ServicesProviderR2 = ({ children }) => {
         }
 
         // Delete sample videos
-        if (service.sampleVideos) {
+        if (service.sampleVideos && Array.isArray(service.sampleVideos)) {
           for (const video of service.sampleVideos) {
             if (video.key) {
               console.log('Deleting R2 sample video with key:', video.key);
@@ -412,30 +429,29 @@ export const ServicesProviderR2 = ({ children }) => {
             }
           }
         }
+      } catch (mediaError) {
+        console.warn('Error deleting some media files:', mediaError);
+        // Continue with Firestore deletion even if media deletion fails
       }
 
-      const result = await apiFunc({
-        resource: 'service',
-        action: 'delete',
-        payload: { serviceId }
-      });
+      // Delete from Firestore directly
+      console.log('Deleting service from Firestore...');
+      const serviceRef = doc(db, 'services', serviceId);
+      await deleteDoc(serviceRef);
+      console.log('Service deleted from Firestore successfully');
+
+      showSuccess('Serviço deletado com sucesso!', 'Serviço Deletado');
       
-      if (result.data.success) {
-        showSuccess('Serviço deletado com sucesso!', 'Serviço Deletado');
-        
-        // Reload user services
-        await loadUserServices();
-        
-        return true;
-      }
+      // Reload user services
+      await loadUserServices();
       
-      return false;
+      return true;
     } catch (error) {
       console.error('Error deleting service:', error);
-      showError('Erro ao deletar serviço. Tente novamente.', 'Erro');
+      showError(`Erro ao deletar serviço: ${error.message}`, 'Erro');
       return false;
     }
-  }, [currentUser, apiFunc, showSuccess, showError, loadUserServices, getServiceById, deleteMedia]);
+  }, [currentUser, showSuccess, showError, loadUserServices, getServiceById, deleteMedia]);
 
   // Get download URL for service media
   const getServiceMediaDownloadUrl = useCallback(async (serviceId, mediaKey) => {
