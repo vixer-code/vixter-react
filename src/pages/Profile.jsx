@@ -13,6 +13,7 @@ import { useEmailVerification } from '../hooks/useEmailVerification';
 const CreateServiceModal = lazy(() => import('../components/CreateServiceModal'));
 const CreatePackModal = lazy(() => import('../components/CreatePackModal'));
 import CachedImage from '../components/CachedImage';
+import SmartMediaViewer from '../components/SmartMediaViewer';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import DeleteServiceModal from '../components/DeleteServiceModal';
 import DeletePackModal from '../components/DeletePackModal';
@@ -1414,8 +1415,10 @@ const [formData, setFormData] = useState({
                   title={isOwner ? 'Clique para editar este serviço' : 'Clique para ver detalhes e comprar com VP'}
                 >
                   <div className="service-cover">
-                    <CachedImage 
-                      src={service.coverImageURL}
+                    <SmartMediaViewer 
+                      mediaData={service.coverImageURL || service.coverImage}
+                      type="service"
+                      watermarked={false}
                       fallbackSrc="/images/default-service.jpg"
                       alt={service.title}
                       sizes={serviceCoverSizes}
@@ -1513,8 +1516,10 @@ const [formData, setFormData] = useState({
                   title={isOwner ? 'Clique para editar este pack' : 'Clique para ver detalhes e comprar com VP'}
                 >
                   <div className="pack-cover">
-                    <CachedImage 
-                      src={pack.coverImage}
+                    <SmartMediaViewer 
+                      mediaData={pack.coverImage}
+                      type="pack"
+                      watermarked={false}
                       fallbackSrc="/images/default-pack.jpg"
                       alt={pack.title}
                       sizes={packCoverSizes}
@@ -1806,8 +1811,10 @@ const [formData, setFormData] = useState({
             </div>
             <div className="modal-body">
               <div className="preview-cover">
-                <CachedImage
-                  src={serviceToPreview.coverImageURL}
+                <SmartMediaViewer
+                  mediaData={serviceToPreview.coverImageURL || serviceToPreview.coverImage}
+                  type="service"
+                  watermarked={false}
                   fallbackSrc="/images/default-service.jpg"
                   alt={serviceToPreview.title}
                   sizes="(max-width: 480px) 90vw, (max-width: 768px) 85vw, 720px"
@@ -1844,8 +1851,10 @@ const [formData, setFormData] = useState({
             </div>
             <div className="modal-body">
               <div className="preview-cover">
-                <CachedImage
-                  src={packToPreview.coverImage}
+                <SmartMediaViewer
+                  mediaData={packToPreview.coverImage}
+                  type="pack"
+                  watermarked={false}
                   fallbackSrc="/images/default-pack.jpg"
                   alt={packToPreview.title}
                   sizes="(max-width: 480px) 90vw, (max-width: 768px) 85vw, 720px"
