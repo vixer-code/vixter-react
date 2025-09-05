@@ -1415,6 +1415,12 @@ const [formData, setFormData] = useState({
                   title={isOwner ? 'Clique para editar este serviço' : 'Clique para ver detalhes e comprar com VP'}
                 >
                   <div className="service-cover">
+                    {console.log('Service data for cover image:', {
+                      serviceId: service.id,
+                      coverImageURL: service.coverImageURL,
+                      coverImage: service.coverImage,
+                      mediaData: service.coverImageURL || service.coverImage
+                    })}
                     <SmartMediaViewer 
                       mediaData={service.coverImageURL || service.coverImage}
                       type="service"
@@ -1516,6 +1522,11 @@ const [formData, setFormData] = useState({
                   title={isOwner ? 'Clique para editar este pack' : 'Clique para ver detalhes e comprar com VP'}
                 >
                   <div className="pack-cover">
+                    {console.log('Pack data for cover image:', {
+                      packId: pack.id,
+                      coverImage: pack.coverImage,
+                      mediaData: pack.coverImage
+                    })}
                     <SmartMediaViewer 
                       mediaData={pack.coverImage}
                       type="pack"

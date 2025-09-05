@@ -30,7 +30,15 @@ const SmartMediaViewer = ({
     if (typeof mediaData === 'string') {
       setIsR2Media(false);
       setR2Key(null);
-      setFallbackUrl(mediaData);
+      
+      // Ensure URL has protocol
+      let url = mediaData;
+      if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+        url = `https://${url}`;
+      }
+      
+      console.log('SmartMediaViewer: Processing URL:', { original: mediaData, processed: url });
+      setFallbackUrl(url);
       return;
     }
 
@@ -71,6 +79,13 @@ const SmartMediaViewer = ({
   }
 
   // Otherwise, use CachedImage with the URL
+  console.log('SmartMediaViewer: Using CachedImage with:', { 
+    src: fallbackUrl, 
+    fallbackSrc, 
+    isR2Media, 
+    r2Key 
+  });
+  
   return (
     <CachedImage
       src={fallbackUrl}
