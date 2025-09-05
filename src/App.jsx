@@ -7,6 +7,7 @@ import { UserProvider } from './contexts/UserContext';
 import { WalletProvider } from './contexts/WalletContext';
 import { PacksProviderR2 as PacksProvider } from './contexts/PacksContextR2';
 import { ServicesProviderR2 as ServicesProvider } from './contexts/ServicesContextR2';
+import { CentrifugoProvider } from './contexts/CentrifugoContext';
 import { MessagingProvider } from './contexts/MessagingContext';
 import { ServiceOrderProvider } from './contexts/ServiceOrderContext';
 import Header from './components/Header';
@@ -52,7 +53,8 @@ function App() {
               <PacksProvider>
                 <ServicesProvider>
                   <ServiceOrderProvider>
-                    <MessagingProvider>
+                    <CentrifugoProvider>
+                      <MessagingProvider>
                       <Router>
                         <div className="App">
                           <Header />
@@ -84,7 +86,8 @@ function App() {
                           <NotificationContainer />
                         </div>
                       </Router>
-                    </MessagingProvider>
+                      </MessagingProvider>
+                    </CentrifugoProvider>
                   </ServiceOrderProvider>
                 </ServicesProvider>
               </PacksProvider>

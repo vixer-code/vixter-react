@@ -1,20 +1,30 @@
-import { NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
+import { NextRequest, NextResponse } from 'next/server';
+import { getCentrifugoConnectionInfo } from '../../../../backend/lib/centrifugo';
 
-export async function GET(req: Request) {
-  const secret = process.env.CENTRIFUGO_JWT_SECRET!;
-  
-  // 👤 Em vez de "user123", você deve pegar o ID real do usuário (ex: via NextAuth)
-  const userId = "user123";
+export async function POST(request: NextRequest) {
+  try {
+    const { userId } = await request.json();
 
-  const now = Math.floor(Date.now() / 1000);
-  const exp = now + 60 * 60; // 1h
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
 
-  const token = jwt.sign(
-    { sub: userId, exp },
-    secret,
-    { algorithm: "HS256" }
-  );
+    // Generate Centrifugo token for the user
+    const connectionInfo = getCentrifugoConnectionInfo(userId);
 
-  return NextResponse.json({ token });
+    return NextResponse.json({
+      token: connectionInfo.token,
+      user: connectionInfo.user,
+      expires: connectionInfo.expires,
+    });
+  } catch (error) {
+    console.error('Error generating Centrifugo token:', error);
+    return NextResponse.json(
+      { error: 'Failed to generate token' },
+      { status: 500 }
+    );
+  }
 }

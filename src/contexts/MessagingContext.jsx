@@ -23,6 +23,7 @@ import { database, storage } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import { useUser } from './UserContext';
+import { useCentrifugo } from './CentrifugoContext';
 
 const MessagingContext = createContext({});
 
@@ -38,6 +39,7 @@ export const MessagingProvider = ({ children }) => {
   const { currentUser, loading: authLoading } = useAuth();
   const { showSuccess, showError, showInfo } = useNotification();
   const { getUserById } = useUser();
+  const { subscribe, unsubscribe, publish, isConnected } = useCentrifugo();
   
   // State
   const [conversations, setConversations] = useState([]);
@@ -350,6 +352,61 @@ export const MessagingProvider = ({ children }) => {
     };
   }, [selectedConversation?.id, readReceiptsEnabled, markMessagesAsRead]);
 
+  // Subscribe to Centrifugo channel for real-time messaging
+  useEffect(() => {
+    if (!selectedConversation || !isConnected) {
+      return;
+    }
+
+    const channelName = `conversation:${selectedConversation.id}`;
+    console.log('Subscribing to Centrifugo channel:', channelName);
+
+    const subscription = subscribe(channelName, {
+      onMessage: (data, ctx) => {
+        console.log('Received real-time message via Centrifugo:', data);
+        
+        // Handle different message types
+        if (data.type === 'new_message') {
+          // Add new message to local state
+          setMessages(prev => {
+            const messageExists = prev.some(msg => msg.id === data.message.id);
+            if (!messageExists) {
+              return [...prev, data.message];
+            }
+            return prev;
+          });
+        } else if (data.type === 'message_updated') {
+          // Update existing message
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === data.message.id ? data.message : msg
+            )
+          );
+        } else if (data.type === 'message_deleted') {
+          // Remove deleted message
+          setMessages(prev => 
+            prev.filter(msg => msg.id !== data.messageId)
+          );
+        } else if (data.type === 'typing') {
+          // Handle typing indicators
+          console.log('User typing:', data.userId, data.isTyping);
+        }
+      },
+      onSubscribed: (ctx) => {
+        console.log('Successfully subscribed to conversation channel');
+      },
+      onError: (ctx) => {
+        console.error('Error in conversation subscription:', ctx);
+      }
+    });
+
+    return () => {
+      if (subscription) {
+        unsubscribe(channelName);
+      }
+    };
+  }, [selectedConversation?.id, isConnected, subscribe, unsubscribe]);
+
   // Create or get conversation
   const createOrGetConversation = useCallback(async (otherUserId, serviceOrderId = null) => {
     if (!currentUser?.uid || !otherUserId) return null;
@@ -571,6 +628,21 @@ export const MessagingProvider = ({ children }) => {
             : conv
         )
       );
+
+      // Publish message via Centrifugo for real-time delivery
+      try {
+        const channelName = `conversation:${selectedConversation.id}`;
+        await publish(channelName, {
+          type: 'new_message',
+          message: newMessage,
+          conversationId: selectedConversation.id,
+          timestamp: Date.now()
+        });
+        console.log('Message published via Centrifugo');
+      } catch (error) {
+        console.error('Error publishing message via Centrifugo:', error);
+        // Don't fail the entire operation if Centrifugo publish fails
+      }
 
       console.log('Message sent successfully:', newMessage);
       console.log('Updated conversation:', {

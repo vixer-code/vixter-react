@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
 
 // Centrifugo configuration
 const CENTRIFUGO_URL = process.env.CENTRIFUGO_URL || 'https://vixter-centrifugo.fly.dev';
@@ -7,10 +7,10 @@ const CENTRIFUGO_TOKEN_SECRET = process.env.CENTRIFUGO_TOKEN_SECRET || 'default-
 const CENTRIFUGO_WS_URL = process.env.CENTRIFUGO_WS_URL || 'wss://vixter-centrifugo.fly.dev/connection/websocket';
 
 /**
- * Generate a Centrífugo token for a user
- * This token will be used by the frontend to connect to Centrífugo
+ * Generate a Centrifugo token for a user
+ * This token will be used by the frontend to connect to Centrifugo
  */
-function generateCentrifugoToken(userId) {
+export function generateCentrifugoToken(userId) {
   const payload = {
     sub: userId,
     exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiration
@@ -28,9 +28,9 @@ function generateCentrifugoToken(userId) {
 }
 
 /**
- * Validate a Centrífugo token
+ * Validate a Centrifugo token
  */
-function validateCentrifugoToken(token) {
+export function validateCentrifugoToken(token) {
   try {
     const payload = jwt.verify(token, CENTRIFUGO_TOKEN_SECRET);
     
@@ -46,7 +46,7 @@ function validateCentrifugoToken(token) {
 /**
  * Get Centrifugo connection info for frontend
  */
-function getCentrifugoConnectionInfo(userId) {
+export function getCentrifugoConnectionInfo(userId) {
   const tokenInfo = generateCentrifugoToken(userId);
   
   return {
@@ -60,7 +60,7 @@ function getCentrifugoConnectionInfo(userId) {
 /**
  * Publish message to Centrifugo channel
  */
-async function publishToChannel(channel, data) {
+export async function publishToChannel(channel, data) {
   if (!CENTRIFUGO_API_KEY) {
     throw new Error('Centrifugo API key not configured');
   }
@@ -87,24 +87,18 @@ async function publishToChannel(channel, data) {
 /**
  * Get channel name for conversation
  */
-function getConversationChannel(conversationId) {
+export function getConversationChannel(conversationId) {
   return `conversation:${conversationId}`;
 }
 
 /**
  * Get channel name for user presence
  */
-function getUserPresenceChannel(userId) {
+export function getUserPresenceChannel(userId) {
   return `user:${userId}`;
 }
 
-module.exports = {
-  generateCentrifugoToken,
-  validateCentrifugoToken,
-  getCentrifugoConnectionInfo,
-  publishToChannel,
-  getConversationChannel,
-  getUserPresenceChannel,
+export {
   CENTRIFUGO_URL,
   CENTRIFUGO_WS_URL,
   CENTRIFUGO_API_KEY,
