@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useServices } from '../contexts/ServicesContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { storage } from '../../config/firebase';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import './CreateServiceModal.css';
 
 const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService = null }) => {
@@ -383,20 +381,13 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     }));
   };
 
-  const uploadFileToStorage = async (file, path, metadata = {}) => {
-    try {
-      const fileRef = storageRef(storage, path);
-      const uploadMetadata = {
-        contentType: file.type || undefined,
-        customMetadata: metadata
-      };
-      await uploadBytes(fileRef, file, uploadMetadata);
-      // Não retorna URL do original (bloqueado pelas regras). Backend atualizará o Firestore com URL wm_.
-      return null;
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      throw error;
-    }
+  const fileToDataURL = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   const validateCurrentStep = () => {
@@ -546,79 +537,41 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       }
       console.log(`🔑 ServiceID: ${serviceId}`);
 
-      // Upload cover image
+      // Set cover image URL directly (no upload needed for display images)
       if (coverImageFile) {
-        const coverImagePath = `servicesMedia/${currentUser.uid}/${serviceId}/cover-${Date.now()}-${coverImageFile.name}`;
-        console.log('📷 Uploading cover image...');
-        await uploadFileToStorage(coverImageFile, coverImagePath, {
-          resource: 'service',
-          resourceId: serviceId,
-          role: 'cover',
-          ownerId: currentUser.uid
-        });
-        // Não definimos coverImageURL aqui; será preenchido pelo backend quando wm_ estiver pronto
-        console.log('✅ Cover image uploaded');
-        
-        // Adicionar um fallback temporário para mostrar a imagem enquanto o watermarking processa
-        const tempCoverUrl = coverImagePreview || URL.createObjectURL(coverImageFile);
-        await updateService(serviceId, { 
-          coverImageURL: tempCoverUrl,
-          mediaProcessing: {
-            status: 'processing',
-            lastUpdate: new Date().toISOString()
-          }
-        });
-        console.log('📷 Temporary cover image set while watermarking processes');
+        console.log('📷 Setting cover image URL...');
+        // Convert file to data URL for immediate display
+        const coverImageURL = await fileToDataURL(coverImageFile);
+        baseServiceData.coverImageURL = coverImageURL;
+        console.log('✅ Cover image URL set');
       } else if (formData.coverImage) {
         baseServiceData.coverImageURL = formData.coverImage;
         console.log('📷 Reusing existing cover image:', baseServiceData.coverImageURL);
       }
 
-      // Upload showcase photos
+      // Convert showcase photos to data URLs
       const photoUrls = [...formData.showcasePhotos];
       for (let i = 0; i < showcasePhotoFiles.length; i++) {
-        const photoPath = `servicesMedia/${currentUser.uid}/${serviceId}/photo-${Date.now()}-${i}-${showcasePhotoFiles[i].name}`;
-        console.log(`📸 Uploading showcase photo ${i + 1}...`);
-        await uploadFileToStorage(showcasePhotoFiles[i], photoPath, {
-          resource: 'service',
-          resourceId: serviceId,
-          role: 'photo',
-          index: photoUrls.length,
-          ownerId: currentUser.uid
-        });
-        // Não adicionamos URL temporário; backend preencherá a posição no Firestore
-        console.log(`✅ Showcase photo ${i + 1} uploaded`);
+        console.log(`📸 Converting showcase photo ${i + 1} to data URL...`);
+        const photoURL = await fileToDataURL(showcasePhotoFiles[i]);
+        photoUrls.push(photoURL);
+        console.log(`✅ Showcase photo ${i + 1} converted`);
       }
       baseServiceData.showcasePhotosURLs = photoUrls;
 
-      // Upload showcase videos
+      // Convert showcase videos to data URLs
       const videoUrls = [...formData.showcaseVideos];
       for (let i = 0; i < showcaseVideoFiles.length; i++) {
-        const videoPath = `servicesMedia/${currentUser.uid}/${serviceId}/video-${Date.now()}-${i}-${showcaseVideoFiles[i].name}`;
-        console.log(`🎥 Uploading showcase video ${i + 1}...`);
-        await uploadFileToStorage(showcaseVideoFiles[i], videoPath, {
-          resource: 'service',
-          resourceId: serviceId,
-          role: 'video',
-          index: videoUrls.length,
-          ownerId: currentUser.uid
-        });
-        // Não adicionamos URL temporário; backend preencherá a posição no Firestore
-        console.log(`✅ Showcase video ${i + 1} uploaded`);
+        console.log(`🎥 Converting showcase video ${i + 1} to data URL...`);
+        const videoURL = await fileToDataURL(showcaseVideoFiles[i]);
+        videoUrls.push(videoURL);
+        console.log(`✅ Showcase video ${i + 1} converted`);
       }
       baseServiceData.showcaseVideosURLs = videoUrls;
 
-      // Persist media URLs and set processing status
-      await updateService(serviceId, {
-        coverImageURL: baseServiceData.coverImageURL || null,
-        showcasePhotosURLs: baseServiceData.showcasePhotosURLs || [],
-        showcaseVideosURLs: baseServiceData.showcaseVideosURLs || [],
-        mediaProcessing: {
-          status: 'processing',
-          lastUpdate: Date.now()
-        }
-      });
-      showSuccess(editingService ? 'Serviço atualizado com sucesso! As mídias estão sendo processadas em segundo plano.' : 'Serviço criado com sucesso! As mídias estão sendo processadas em segundo plano.');
+      // Update service with final data including media URLs
+      await updateService(serviceId, baseServiceData);
+      showSuccess(editingService ? 'Serviço atualizado com sucesso!' : 'Serviço criado com sucesso!');
 
       // Clear draft after successful creation/update
       localStorage.removeItem(`service-draft-${currentUser.uid}`);

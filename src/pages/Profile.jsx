@@ -1425,12 +1425,6 @@ const [formData, setFormData] = useState({
                         {service.status}
                       </div>
                     )}
-                    {service.mediaProcessing && service.mediaProcessing.status === 'processing' && (
-                      <div className="media-processing-badge">
-                        <i className="fa-solid fa-spinner fa-spin"></i>
-                        Processando...
-                      </div>
-                    )}
                   </div>
                   <div className="service-info">
                     <h3 className="service-title">{service.title}</h3>

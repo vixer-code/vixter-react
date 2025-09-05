@@ -2,8 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { usePacks } from '../contexts/PacksContext';
-import { storage } from '../../config/firebase';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import './CreatePackModal.css';
 
 const subcategoriesMap = {
@@ -294,20 +292,13 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     if (currentStep > 0) setCurrentStep(s => s - 1);
   };
 
-  const uploadFileToStorage = async (file, path, metadata = {}) => {
-    try {
-      const fileRef = storageRef(storage, path);
-      const uploadMetadata = {
-        contentType: file.type || undefined,
-        customMetadata: metadata
-      };
-      await uploadBytes(fileRef, file, uploadMetadata);
-      // Não retorna URL do original; backend atualizará os campos com wm_ quando pronto
-      return null;
-    } catch (err) {
-      console.error('Upload error:', err);
-      throw err;
-    }
+  const fileToDataURL = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   // Currency helpers (same logic as Service: VC -> VP @ 1.5x)
@@ -371,66 +362,46 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         packId = result.packId;
       }
 
-      // Upload cover
-      const packBasePath = `packs/${currentUser.uid}/${packId}`;
+      // Set cover image URL
       let coverImageURL = formData.coverImage || '';
       if (coverImageFile) {
-        const namePart = coverImageFile.name?.split('.').pop() || 'jpg';
-        await uploadFileToStorage(
-          coverImageFile,
-          `${packBasePath}/cover-${Date.now()}.${namePart}`,
-          {
-            resource: 'pack',
-            resourceId: packId,
-            role: 'cover',
-            ownerId: currentUser.uid
-          }
-        );
-        // Backend preencherá coverImage com wm_ no Firestore
+        console.log('📷 Converting cover image to data URL...');
+        coverImageURL = await fileToDataURL(coverImageFile);
+        console.log('✅ Cover image converted');
       }
 
-      // Upload samples
+      // Convert sample images to data URLs
       const sampleImages = [...formData.sampleImages];
       for (let i = 0; i < sampleImageFiles.length; i++) {
-        const f = sampleImageFiles[i];
-        const ext = f.name?.split('.').pop() || 'jpg';
-        await uploadFileToStorage(f, `${packBasePath}/samples/image_${i}.${ext}`, {
-          resource: 'pack',
-          resourceId: packId,
-          role: 'sampleImage',
-          index: sampleImages.length,
-          ownerId: currentUser.uid
-        });
-        // Backend preencherá sampleImages[i] com wm_
+        console.log(`📸 Converting sample image ${i + 1} to data URL...`);
+        const imageURL = await fileToDataURL(sampleImageFiles[i]);
+        sampleImages.push(imageURL);
+        console.log(`✅ Sample image ${i + 1} converted`);
       }
 
+      // Convert sample videos to data URLs  
       const sampleVideos = [...formData.sampleVideos];
       for (let i = 0; i < sampleVideoFiles.length; i++) {
-        const f = sampleVideoFiles[i];
-        const ext = f.name?.split('.').pop() || 'mp4';
-        await uploadFileToStorage(f, `${packBasePath}/samples/video_${i}.${ext}`, {
-          resource: 'pack',
-          resourceId: packId,
-          role: 'sampleVideo',
-          index: sampleVideos.length,
-          ownerId: currentUser.uid
-        });
-        // Backend preencherá sampleVideos[i] com wm_
+        console.log(`🎥 Converting sample video ${i + 1} to data URL...`);
+        const videoURL = await fileToDataURL(sampleVideoFiles[i]);
+        sampleVideos.push(videoURL);
+        console.log(`✅ Sample video ${i + 1} converted`);
       }
 
-      // Upload pack files (downloadable content)
+      // Pack files (downloadable content) - TODO: Implement signed URLs for paid content
       let packContentURLs = [...(formData.packContent || [])];
+      // For now, we'll just store the file names/info, not actual data URLs
+      // Pack content will be handled separately with signed URLs for buyers
       for (let i = 0; i < packFiles.length; i++) {
         const f = packFiles[i];
-        const ext = f.name?.split('.').pop() || 'bin';
-        await uploadFileToStorage(f, `${packBasePath}/${packId}_${i}.${ext}`, {
-          resource: 'pack',
-          resourceId: packId,
-          role: 'packContent',
-          index: packContentURLs.length,
-          ownerId: currentUser.uid
+        packContentURLs.push({
+          name: f.name,
+          size: f.size,
+          type: f.type,
+          // TODO: Store file in secure location and provide signed URLs to buyers
+          placeholder: `pack-file-${i}-${f.name}`
         });
-        // Backend preencherá packContent[i] com wm_
+        console.log(`📦 Pack file ${i + 1} prepared: ${f.name}`);
       }
 
       // Prepare data to save (mirror create-pack.js fields)

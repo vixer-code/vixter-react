@@ -1,25 +1,13 @@
 // wallet-functions.js - Sistema de Carteiras Vixter para React
+// VERSÃO LIMPA - Removido watermarking, mantido Stripe e funcionalidades essenciais
 
 /* eslint-env node */
 import { onCall, HttpsError, onRequest } from "firebase-functions/v2/https";
-import { onSchedule } from "firebase-functions/v2/scheduler";
 import { setGlobalOptions } from "firebase-functions/v2";
 import admin from "firebase-admin";
 import { logger } from "firebase-functions";
-import { onObjectFinalized } from "firebase-functions/v2/storage";
-import path from 'node:path';
-import os from 'node:os';
-import fsp from 'node:fs/promises';
-import sharp from 'sharp';
-import QRCode from 'qrcode';
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static';
-import ffprobeStatic from 'ffprobe-static';
-import { Buffer } from 'node:buffer';
-import { randomUUID } from 'node:crypto';
-
 import { defineSecret } from 'firebase-functions/params';
-
+import { Buffer } from 'node:buffer';
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
@@ -34,18 +22,12 @@ const STRIPE_WEBHOOK_SECRET = defineSecret('STRIPE_WEBHOOK_SECRET');
 // Configurações globais
 setGlobalOptions({
   region: "us-east1",
-  // Keep overall CPU usage low per region. When using <1 vCPU, concurrency must be 1.
   cpu: 0.5,           // 0.5 vCPU per instance (Cloud Functions v2 on Cloud Run)
   maxInstances: 2,    // Cap instances per function to avoid quota overuse
   concurrency: 1,     // Required when cpu < 1 vCPU
 });
 
 const db = admin.firestore();
-// Use explicit RTDB instances to segregate legacy vs new
-// Legacy RTDB (antigo): default-rtdb
-const rtdbLegacy = admin.app().database('https://vixter-451b3-default-rtdb.firebaseio.com');
-
- 
 
 /**
  * Inicializa carteira do usuário
@@ -116,70 +98,61 @@ export const createStripeSession = onCall({
     'pack-96': { amount: 9600, vpAmount: 138, vbpBonus: 36, name: 'Pacote Safira' },
     'pack-120': { amount: 12000, vpAmount: 168, vbpBonus: 50, name: 'Pacote Ouro' },
     'pack-150': { amount: 15000, vpAmount: 218, vbpBonus: 65, name: 'Pacote Platina' },
-    'pack-200': { amount: 20000, vpAmount: 288, vbpBonus: 85, name: 'Pacote Diamante' },
-    'pack-255': { amount: 25500, vpAmount: 370, vbpBonus: 110, name: 'Pacote Épico' },
-    'pack-290': { amount: 29000, vpAmount: 415, vbpBonus: 135, name: 'Pacote Lendário' },
-    'pack-320': { amount: 32000, vpAmount: 465, vbpBonus: 155, name: 'Pacote Mítico' }
+    'pack-200': { amount: 20000, vpAmount: 295, vbpBonus: 85, name: 'Pacote Diamante' },
+    'pack-300': { amount: 30000, vpAmount: 455, vbpBonus: 130, name: 'Pacote Especial' },
+    'pack-500': { amount: 50000, vpAmount: 780, vbpBonus: 220, name: 'Pacote Premium' },
+    'pack-750': { amount: 75000, vpAmount: 1200, vbpBonus: 350, name: 'Pacote Elite' },
+    'pack-1000': { amount: 100000, vpAmount: 1650, vbpBonus: 500, name: 'Pacote Master' },
   };
 
-  const selectedPackage = packages[packageId];
-  if (!selectedPackage) {
+  const packageInfo = packages[packageId];
+  if (!packageInfo) {
     throw new HttpsError("invalid-argument", "Pacote inválido");
   }
 
   try {
     // Instantiate Stripe client with secret at runtime
     const stripe = new Stripe(STRIPE_SECRET.value(), {
-      apiVersion: '2023-10-16',
-      appInfo: {
-        name: 'Vixter Platform',
-        version: '1.0.0',
-      },
+      apiVersion: '2024-06-20',
     });
+
+    const baseUrl = 'https://vixter-react.vercel.app';
+
     // Criar sessão Stripe
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
       customer_email: request.auth.token.email,
-      metadata: {
-        userId: userId,
-        packageId: packageId,
-        vpAmount: selectedPackage.vpAmount.toString(),
-        vbpBonus: selectedPackage.vbpBonus.toString()
-      },
       line_items: [{
         price_data: {
           currency: 'brl',
           product_data: {
-            name: selectedPackage.name,
-            description: `${selectedPackage.vpAmount} VP` + 
-                        (selectedPackage.vbpBonus > 0 ? ` + ${selectedPackage.vbpBonus} VBP bônus` : ''),
-            images: ['https://vixter-451b3.firebaseapp.com/images/logoFlorColorida.svg']
+            name: packageInfo.name,
+            description: `${packageInfo.vpAmount} VP ${packageInfo.vbpBonus > 0 ? `+ ${packageInfo.vbpBonus} VBP` : ''}`,
           },
-          unit_amount: selectedPackage.amount
+          unit_amount: packageInfo.amount,
         },
-        quantity: 1
+        quantity: 1,
       }],
-      success_url: `${('https://vixter-react.vercel.app')}/wallet?session_id={CHECKOUT_SESSION_ID}&success=true`,
-      cancel_url: `${('https://vixter-react.vercel.app')}/wallet?canceled=true`,
-      // Enhanced metadata for better tracking
-      payment_intent_data: {
-        metadata: {
-          platform: 'vixter',
-          userId: userId,
-          packageId: packageId
-        }
+      success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/wallet`,
+      metadata: {
+        userId: userId,
+        packageId: packageId,
+        vpAmount: packageInfo.vpAmount.toString(),
+        vbpBonus: packageInfo.vbpBonus.toString(),
       }
     });
 
-    // Salvar informações da sessão
+    // Salvar informações da sessão no Firestore
     await db.collection('stripePayments').doc(session.id).set({
       sessionId: session.id,
       userId: userId,
-      amount: selectedPackage.amount,
-      vpAmount: selectedPackage.vpAmount,
-      vbpBonus: selectedPackage.vbpBonus,
       packageId: packageId,
+      amount: packageInfo.amount,
+      vpAmount: packageInfo.vpAmount,
+      vbpBonus: packageInfo.vbpBonus,
+      packageName: packageInfo.name,
       status: 'pending',
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
@@ -189,7 +162,7 @@ export const createStripeSession = onCall({
 
   } catch (error) {
     logger.error(`💥 Erro ao criar sessão Stripe:`, error);
-    throw new HttpsError("internal", "Erro ao processar pagamento");
+    throw new HttpsError("internal", "Erro ao criar sessão de pagamento");
   }
 });
 
@@ -197,7 +170,7 @@ export const createStripeSession = onCall({
  * Webhook do Stripe para confirmar pagamentos
  */
 export const stripeWebhook = onRequest({
-  memory: "512MiB",
+  memory: "256MiB",
   timeoutSeconds: 60,
   cors: false, // Disable CORS for webhook (Stripe calls this server-to-server)
   secrets: [STRIPE_SECRET, STRIPE_WEBHOOK_SECRET],
@@ -207,1976 +180,131 @@ export const stripeWebhook = onRequest({
 
   if (!endpointSecret) {
     logger.error(`💥 STRIPE_WEBHOOK_SECRET not configured`);
-    return res.status(500).send('Webhook secret not configured');
+    res.status(400).send('Webhook secret not configured');
+    return;
   }
 
   let event;
 
   try {
-    // Get raw body for signature verification
-    const body = req.rawBody || req.body;
+    const body = Buffer.from(req.rawBody).toString('utf8');
+    
     // Instantiate Stripe only for webhook verification and any API operations
     const stripe = new Stripe(STRIPE_SECRET.value(), {
-      apiVersion: '2023-10-16',
-      appInfo: {
-        name: 'Vixter Platform',
-        version: '1.0.0',
-      },
+      apiVersion: '2024-06-20',
     });
+
+    logger.info('🔍 Verificando assinatura do webhook Stripe...');
+    
     event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
-  } catch (err) {
-    logger.error(`💥 Webhook signature verification failed:`, err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  try {
-    // Use idempotency key to prevent duplicate processing
-    const idempotencyKey = `${event.id}_${event.type}`;
-    const processedRef = db.collection('webhookProcessed').doc(idempotencyKey);
-    const processedDoc = await processedRef.get();
-
-    if (processedDoc.exists) {
-      logger.info(`🔄 Event already processed: ${idempotencyKey}`);
-      return res.json({ received: true, status: 'already_processed' });
-    }
-
-    // Mark as being processed
-    await processedRef.set({
-      eventId: event.id,
-      eventType: event.type,
-      processedAt: admin.firestore.FieldValue.serverTimestamp(),
-      status: 'processing'
-    });
-
+    
+    logger.info(`📦 Evento Stripe recebido: ${event.type}`);
+    
+    // Handle the event
     switch (event.type) {
       case 'checkout.session.completed':
-        await handlePaymentSuccess(event.data.object);
+        await handleCheckoutSessionCompleted(event.data.object);
         break;
-      case 'checkout.session.expired':
+        
+      case 'payment_intent.succeeded':
+        logger.info('💳 Payment intent succeeded:', event.data.object.id);
+        break;
+        
       case 'payment_intent.payment_failed':
-        await handlePaymentFailure(event.data.object);
+        await handlePaymentFailed(event.data.object);
         break;
-      case 'invoice.payment_succeeded':
-        // For subscription payments (future feature)
-        logger.info(`📋 Invoice payment succeeded: ${event.data.object.id}`);
-        break;
-      case 'customer.subscription.updated':
-        // For subscription updates (future feature)
-        logger.info(`🔄 Subscription updated: ${event.data.object.id}`);
-        break;
+        
       default:
-        logger.info(`🔔 Unhandled event type: ${event.type}`);
+        logger.info(`ℹ️ Evento não tratado: ${event.type}`);
     }
 
-    // Mark as successfully processed
-    await processedRef.update({
-      status: 'completed',
-      completedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+    res.json({ received: true });
 
-    res.json({ received: true, status: 'processed' });
   } catch (error) {
     logger.error(`💥 Erro no webhook Stripe:`, error);
-    
-    // Mark as failed for retry logic
-    const idempotencyKey = `${event.id}_${event.type}`;
-    await db.collection('webhookProcessed').doc(idempotencyKey).update({
-      status: 'failed',
-      error: error.message,
-      failedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-    
-    res.status(500).send('Webhook Error');
+    res.status(400).send(`Webhook Error: ${error.message}`);
   }
 });
 
-/**
- * Processa pagamento bem-sucedido
- */
-async function handlePaymentSuccess(session) {
-  const sessionId = session.id;
-  const userId = session.metadata.userId;
-  const vpAmount = parseInt(session.metadata.vpAmount);
-  const vbpBonus = parseInt(session.metadata.vbpBonus);
+// === INTERNAL FUNCTIONS FOR STRIPE WEBHOOK ===
 
-  logger.info(`💰 Processando pagamento bem-sucedido: ${sessionId}`);
+async function handleCheckoutSessionCompleted(session) {
+  const { id: sessionId, metadata } = session;
+  const { userId, packageId, vpAmount, vbpBonus } = metadata;
 
-  // Usar transação Firestore para garantir consistência
-  await db.runTransaction(async (transaction) => {
-    // Buscar dados da sessão
+  logger.info(`✅ Checkout completado para sessão: ${sessionId}`);
+
+  try {
     const paymentRef = db.collection('stripePayments').doc(sessionId);
-    const paymentDoc = await transaction.get(paymentRef);
+    const paymentDoc = await paymentRef.get();
 
     if (!paymentDoc.exists) {
-      throw new Error(`Sessão de pagamento não encontrada: ${sessionId}`);
-    }
-
-    const paymentData = paymentDoc.data();
-    if (paymentData.status === 'completed') {
-      logger.warn(`⚠️ Pagamento já processado: ${sessionId}`);
+      logger.error(`💥 Documento de pagamento não encontrado: ${sessionId}`);
       return;
     }
 
-    // Atualizar carteira
-    const walletRef = db.collection('wallets').doc(userId);
-    const walletDoc = await transaction.get(walletRef);
-
-    let currentWallet;
-    if (!walletDoc.exists) {
-      // Criar carteira se não existir
-      currentWallet = { uid: userId, vp: 0, vc: 0, vbp: 0 };
-      transaction.set(walletRef, {
-        ...currentWallet,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-    } else {
-      currentWallet = walletDoc.data();
-    }
-
-    // Atualizar saldos
-    const newVp = (currentWallet.vp || 0) + vpAmount;
-    const newVbp = (currentWallet.vbp || 0) + vbpBonus;
-
-    transaction.update(walletRef, {
-      vp: newVp,
-      vbp: newVbp,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Criar transação
-    const transactionRef = db.collection('transactions').doc();
-    transaction.set(transactionRef, {
-      id: transactionRef.id,
-      userId: userId,
-      type: 'BUY_VP',
-      amounts: {
-        vp: vpAmount,
-        vbp: vbpBonus > 0 ? vbpBonus : null
-      },
-      ref: {
-        stripeSessionId: sessionId
-      },
-      status: 'CONFIRMED',
-      metadata: {
-        description: `Compra de ${vpAmount} VP via Stripe`,
-        currency: 'BRL',
-        originalAmount: session.amount_total
-      },
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Marcar pagamento como completo
-    transaction.update(paymentRef, {
+    // Atualizar status do pagamento
+    await paymentRef.update({
       status: 'completed',
       completedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    logger.info(`✅ VP creditado: ${vpAmount} VP + ${vbpBonus} VBP para ${userId}`);
-  });
+    // Atualizar carteira do usuário
+    const walletRef = db.collection('wallets').doc(userId);
+    const walletDoc = await walletRef.get();
+
+    if (!walletDoc.exists) {
+      logger.error(`💥 Carteira não encontrada para usuário: ${userId}`);
+      return;
+    }
+
+    const wallet = walletDoc.data();
+    const newVP = wallet.vp + parseInt(vpAmount);
+    const newVBP = wallet.vbp + parseInt(vbpBonus);
+
+    await walletRef.update({
+      vp: newVP,
+      vbp: newVBP,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Registrar transação
+    await db.collection('transactions').add({
+      userId: userId,
+      type: 'purchase',
+      amount: parseInt(vpAmount),
+      vbpBonus: parseInt(vbpBonus),
+      currency: 'VP',
+      stripeSessionId: sessionId,
+      packageId: packageId,
+      status: 'completed',
+      description: `Compra de ${vpAmount} VP via Stripe`,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    logger.info(`✅ Carteira atualizada para usuário ${userId}: +${vpAmount} VP, +${vbpBonus} VBP`);
+
+  } catch (error) {
+    logger.error(`💥 Erro ao processar checkout completado:`, error);
+  }
 }
 
-/**
- * Processa falha no pagamento
- */
-async function handlePaymentFailure(session) {
-  const sessionId = session.id;
-  logger.info(`❌ Processando falha no pagamento: ${sessionId}`);
-
-  try {
+async function handlePaymentFailed(paymentIntent) {
+  logger.info(`❌ Pagamento falhou: ${paymentIntent.id}`);
+  
+  // Encontrar sessão relacionada
+  const sessionId = paymentIntent.metadata?.sessionId;
+  if (sessionId) {
     const paymentRef = db.collection('stripePayments').doc(sessionId);
     await paymentRef.update({
       status: 'failed',
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      failedAt: admin.firestore.FieldValue.serverTimestamp(),
+      failureReason: paymentIntent.last_payment_error?.message || 'Payment failed'
     });
-  } catch (error) {
-    logger.error(`💥 Erro ao processar falha no pagamento:`, error);
   }
 }
 
-/**
- * Processa venda de pack (VC imediato)
- */
-export const processPackSale = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { buyerId, sellerId, vpAmount, packId, packName } = request.data;
-
-  // Validações
-  if (!buyerId || !sellerId || !vpAmount || vpAmount <= 0 || !packId || !packName) {
-    throw new HttpsError("invalid-argument", "Dados da venda inválidos");
-  }
-
-  if (buyerId === sellerId) {
-    throw new HttpsError("invalid-argument", "Comprador e vendedor não podem ser o mesmo");
-  }
-
-  // Calcular VC do vendedor (1 VC = 1.5 VP)
-  const vcAmount = Math.floor(vpAmount / 1.5);
-
-  try {
-    const result = await db.runTransaction(async (transaction) => {
-      // Buscar carteiras
-      const buyerWalletRef = db.collection('wallets').doc(buyerId);
-      const sellerWalletRef = db.collection('wallets').doc(sellerId);
-
-      const [buyerDoc, sellerDoc] = await Promise.all([
-        transaction.get(buyerWalletRef),
-        transaction.get(sellerWalletRef)
-      ]);
-
-      // Verificar se carteiras existem
-      if (!buyerDoc.exists || !sellerDoc.exists) {
-        throw new Error("Carteira não encontrada");
-      }
-
-      const buyerWallet = buyerDoc.data();
-      const sellerWallet = sellerDoc.data();
-
-      // Verificar saldo do comprador
-      if ((buyerWallet.vp || 0) < vpAmount) {
-        throw new Error("Saldo insuficiente");
-      }
-
-      // Atualizar saldos
-      const newBuyerVp = (buyerWallet.vp || 0) - vpAmount;
-      const newSellerVc = (sellerWallet.vc || 0) + vcAmount;
-
-      transaction.update(buyerWalletRef, {
-        vp: newBuyerVp,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      transaction.update(sellerWalletRef, {
-        vc: newSellerVc,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Criar transações
-      const buyerTransactionRef = db.collection('transactions').doc();
-      const sellerTransactionRef = db.collection('transactions').doc();
-
-      // Transação do comprador (débito VP)
-      transaction.set(buyerTransactionRef, {
-        id: buyerTransactionRef.id,
-        userId: buyerId,
-        type: 'SALE_PACK',
-        amounts: { vp: -vpAmount },
-        ref: {
-          packId: packId,
-          targetUserId: sellerId
-        },
-        status: 'CONFIRMED',
-        metadata: {
-          description: `Compra de Pack: ${packName}`,
-          conversionRate: 1.5,
-          originalAmount: vpAmount
-        },
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Transação do vendedor (crédito VC imediato)
-      transaction.set(sellerTransactionRef, {
-        id: sellerTransactionRef.id,
-        userId: sellerId,
-        type: 'SALE_PACK',
-        amounts: { vc: vcAmount },
-        ref: {
-          packId: packId,
-          targetUserId: buyerId
-        },
-        status: 'CONFIRMED',
-        metadata: {
-          description: `Venda de Pack: ${packName}`,
-          conversionRate: 1.5,
-          originalAmount: vpAmount
-        },
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      return {
-        vpDebited: vpAmount,
-        vcCredited: vcAmount,
-        conversionRate: 1.5
-      };
-    });
-
-    logger.info(`✅ Venda processada: ${vpAmount} VP → ${vcAmount} VC`);
-    return { success: true, ...result };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao processar venda de pack:`, error.message);
-    
-    if (error.message === "Saldo insuficiente") {
-      throw new HttpsError("failed-precondition", "Saldo insuficiente para realizar a compra");
-    } else if (error.message === "Carteira não encontrada") {
-      throw new HttpsError("not-found", "Carteira não encontrada");
-    }
-    
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-/**
- * Processa compra de serviço (VC vai para vcPending)
- */
-export const processServicePurchase = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { buyerId, sellerId, vpAmount, serviceId, serviceName, serviceDescription } = request.data;
-
-  // Validações
-  if (!buyerId || !sellerId || !vpAmount || vpAmount <= 0 || !serviceId || !serviceName) {
-    throw new HttpsError("invalid-argument", "Dados da compra inválidos");
-  }
-
-  if (buyerId === sellerId) {
-    throw new HttpsError("invalid-argument", "Comprador e vendedor não podem ser o mesmo");
-  }
-
-  // Calcular VC do vendedor (1 VC = 1.5 VP)
-  const vcAmount = Math.floor(vpAmount / 1.5);
-
-  try {
-    const result = await db.runTransaction(async (transaction) => {
-      // Buscar carteiras
-      const buyerWalletRef = db.collection('wallets').doc(buyerId);
-      const sellerWalletRef = db.collection('wallets').doc(sellerId);
-
-      const [buyerDoc, sellerDoc] = await Promise.all([
-        transaction.get(buyerWalletRef),
-        transaction.get(sellerWalletRef)
-      ]);
-
-      // Verificar se carteiras existem
-      if (!buyerDoc.exists || !sellerDoc.exists) {
-        throw new Error("Carteira não encontrada");
-      }
-
-      const buyerWallet = buyerDoc.data();
-      const sellerWallet = sellerDoc.data();
-
-      // Verificar saldo do comprador
-      if ((buyerWallet.vp || 0) < vpAmount) {
-        throw new Error("Saldo insuficiente");
-      }
-
-      // Atualizar saldos
-      const newBuyerVp = (buyerWallet.vp || 0) - vpAmount;
-      const newSellerVcPending = (sellerWallet.vcPending || 0) + vcAmount;
-
-      transaction.update(buyerWalletRef, {
-        vp: newBuyerVp,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      transaction.update(sellerWalletRef, {
-        vcPending: newSellerVcPending,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Criar pedido de serviço
-      const serviceOrderRef = db.collection('serviceOrders').doc();
-      const autoReleaseTime = new Date(Date.now() + (48 * 60 * 60 * 1000)); // 48h para aceitar + entregar + confirmar
-
-      transaction.set(serviceOrderRef, {
-        id: serviceOrderRef.id,
-        serviceId: serviceId,
-        buyerId: buyerId,
-        sellerId: sellerId,
-        vpAmount: vpAmount,
-        vcAmount: vcAmount,
-        status: 'PENDING_ACCEPTANCE',
-        metadata: {
-          serviceName: serviceName,
-          serviceDescription: serviceDescription || ''
-        },
-        timestamps: {
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          autoReleaseAt: autoReleaseTime
-        },
-        transactionIds: {}
-      });
-
-      // Criar transações
-      const buyerTransactionRef = db.collection('transactions').doc();
-      const sellerTransactionRef = db.collection('transactions').doc();
-
-      // Transação do comprador (débito VP)
-      transaction.set(buyerTransactionRef, {
-        id: buyerTransactionRef.id,
-        userId: buyerId,
-        type: 'SALE_SERVICE',
-        amounts: { vp: -vpAmount },
-        ref: {
-          serviceId: serviceId,
-          serviceOrderId: serviceOrderRef.id,
-          targetUserId: sellerId
-        },
-        status: 'CONFIRMED',
-        metadata: {
-          description: `Compra de Serviço: ${serviceName}`,
-          conversionRate: 1.5,
-          originalAmount: vpAmount
-        },
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Transação do vendedor (VC pendente)
-      transaction.set(sellerTransactionRef, {
-        id: sellerTransactionRef.id,
-        userId: sellerId,
-        type: 'SALE_SERVICE',
-        amounts: { vcPending: vcAmount },
-        ref: {
-          serviceId: serviceId,
-          serviceOrderId: serviceOrderRef.id,
-          targetUserId: buyerId
-        },
-        status: 'CONFIRMED',
-        metadata: {
-          description: `Venda de Serviço: ${serviceName} (Pendente)`,
-          conversionRate: 1.5,
-          originalAmount: vpAmount
-        },
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Atualizar pedido com IDs das transações
-      transaction.update(serviceOrderRef, {
-        'transactionIds.purchaseId': buyerTransactionRef.id
-      });
-
-      return {
-        vpDebited: vpAmount,
-        vcPending: vcAmount,
-        serviceOrderId: serviceOrderRef.id,
-        conversionRate: 1.5
-      };
-    });
-
-    logger.info(`✅ Compra de serviço processada: ${vpAmount} VP → ${vcAmount} VC pendente`);
-    return { success: true, ...result };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao processar compra de serviço:`, error.message);
-    
-    if (error.message === "Saldo insuficiente") {
-      throw new HttpsError("failed-precondition", "Saldo insuficiente para realizar a compra");
-    } else if (error.message === "Carteira não encontrada") {
-      throw new HttpsError("not-found", "Carteira não encontrada");
-    }
-    
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-/**
- * Concede bônus diário VBP
- */
-export const claimDailyBonus = onCall({
-  memory: "256MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const userId = request.auth.uid;
-
-  try {
-    const result = await db.runTransaction(async (transaction) => {
-      // Verificar último bônus
-      const userBonusRef = db.collection('users').doc(userId);
-      const userBonusDoc = await transaction.get(userBonusRef);
-
-      if (userBonusDoc.exists) {
-        const userData = userBonusDoc.data();
-        const lastBonus = userData.lastDailyBonus;
-        
-        if (lastBonus) {
-          const lastBonusDate = new Date(lastBonus.toDate()).toDateString();
-          const today = new Date().toDateString();
-          
-          if (lastBonusDate === today) {
-            throw new Error("Bônus já coletado hoje");
-          }
-        }
-      }
-
-      // Gerar bônus aleatório
-      const bonusAmount = Math.floor(Math.random() * 201) + 50; // 50-250 VBP
-
-      // Atualizar carteira
-      const walletRef = db.collection('wallets').doc(userId);
-      const walletDoc = await transaction.get(walletRef);
-
-      if (!walletDoc.exists) {
-        throw new Error("Carteira não encontrada");
-      }
-
-      const wallet = walletDoc.data();
-      const newVbp = (wallet.vbp || 0) + bonusAmount;
-
-      transaction.update(walletRef, {
-        vbp: newVbp,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Marcar bônus como coletado no Firestore
-      const userDocRef = db.collection('users').doc(userId);
-      const userDocSnap = await transaction.get(userDocRef);
-      
-      if (userDocSnap.exists) {
-        transaction.update(userDocRef, {
-          lastDailyBonus: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-      }
-
-      // Criar transação
-      const transactionRef = db.collection('transactions').doc();
-      transaction.set(transactionRef, {
-        id: transactionRef.id,
-        userId: userId,
-        type: 'BONUS',
-        amounts: { vbp: bonusAmount },
-        status: 'CONFIRMED',
-        metadata: {
-          description: 'Bônus Diário'
-        },
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      return { bonusAmount };
-    });
-
-    logger.info(`✅ Bônus diário concedido: ${result.bonusAmount} VBP para ${userId}`);
-    return { success: true, bonusAmount: result.bonusAmount };
-
-  } catch (error) {
-    if (error.message === "Bônus já coletado hoje") {
-      throw new HttpsError("already-exists", "Bônus diário já foi coletado hoje");
-    } else if (error.message === "Carteira não encontrada") {
-      throw new HttpsError("not-found", "Carteira não encontrada");
-    }
-
-    logger.error(`💥 Erro ao conceder bônus diário:`, error);
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-/**
- * Confirma entrega de serviço e libera VC pendente
- */
-export const confirmServiceDelivery = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { serviceOrderId, feedback } = request.data;
-  if (!serviceOrderId) {
-    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
-  }
-
-  const userId = request.auth.uid;
-
-  try {
-    const result = await db.runTransaction(async (transaction) => {
-      // Buscar pedido de serviço
-      const orderRef = db.collection('serviceOrders').doc(serviceOrderId);
-      const orderDoc = await transaction.get(orderRef);
-
-      if (!orderDoc.exists) {
-        throw new Error("Pedido não encontrado");
-      }
-
-      const order = orderDoc.data();
-
-      // Verificar se o usuário é o comprador
-      if (order.buyerId !== userId) {
-        throw new Error("Não autorizado");
-      }
-
-      // Verificar se o pedido está entregue
-      if (order.status !== 'DELIVERED') {
-        throw new Error("Pedido não está marcado como entregue");
-      }
-
-      // Atualizar carteira do vendedor (VC pendente → VC real)
-      const sellerWalletRef = db.collection('wallets').doc(order.sellerId);
-      const sellerWalletDoc = await transaction.get(sellerWalletRef);
-
-      if (!sellerWalletDoc.exists) {
-        throw new Error("Carteira do vendedor não encontrada");
-      }
-
-      const sellerWallet = sellerWalletDoc.data();
-      const newVc = (sellerWallet.vc || 0) + order.vcAmount;
-      const newVcPending = Math.max(0, (sellerWallet.vcPending || 0) - order.vcAmount);
-
-      // Atualizar carteira
-      transaction.update(sellerWalletRef, {
-        vc: newVc,
-        vcPending: newVcPending,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Atualizar status do pedido
-      transaction.update(orderRef, {
-        status: 'CONFIRMED',
-        'metadata.buyerFeedback': feedback || '',
-        'timestamps.confirmedAt': admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Criar transação de confirmação
-      const transactionRef = db.collection('transactions').doc();
-      transaction.set(transactionRef, {
-        id: transactionRef.id,
-        userId: order.sellerId,
-        type: 'SERVICE_CONFIRM',
-        amounts: { 
-          vc: order.vcAmount,
-          vcPending: -order.vcAmount
-        },
-        ref: {
-          serviceId: order.serviceId,
-          serviceOrderId: serviceOrderId,
-          targetUserId: order.buyerId
-        },
-        status: 'CONFIRMED',
-        metadata: {
-          description: `Serviço Confirmado: ${order.metadata.serviceName}`,
-          buyerFeedback: feedback || ''
-        },
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Atualizar pedido com ID da transação
-      transaction.update(orderRef, {
-        'transactionIds.confirmationId': transactionRef.id
-      });
-
-      return {
-        vcReleased: order.vcAmount,
-        orderId: serviceOrderId
-      };
-    });
-
-    logger.info(`✅ Serviço confirmado: ${serviceOrderId} - ${result.vcReleased} VC liberado`);
-    return { success: true, ...result };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao confirmar serviço:`, error.message);
-    
-    if (error.message === "Pedido não encontrado") {
-      throw new HttpsError("not-found", "Pedido não encontrado");
-    } else if (error.message === "Não autorizado") {
-      throw new HttpsError("permission-denied", "Você não tem permissão para confirmar este pedido");
-    } else if (error.message === "Pedido não está marcado como entregue") {
-      throw new HttpsError("failed-precondition", "O pedido precisa estar marcado como entregue primeiro");
-    }
-    
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-/**
- * Rejeita pedido de serviço e reembolsa VP ao comprador
- */
-export const rejectServiceOrder = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { serviceOrderId, reason } = request.data;
-  if (!serviceOrderId) {
-    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
-  }
-
-  const userId = request.auth.uid;
-
-  try {
-    const result = await db.runTransaction(async (transaction) => {
-      // Buscar pedido de serviço
-      const orderRef = db.collection('serviceOrders').doc(serviceOrderId);
-      const orderDoc = await transaction.get(orderRef);
-
-      if (!orderDoc.exists) {
-        throw new Error("Pedido não encontrado");
-      }
-
-      const order = orderDoc.data();
-
-      // Verificar se o usuário é o comprador
-      if (order.buyerId !== userId) {
-        throw new Error("Não autorizado");
-      }
-
-      // Verificar se o pedido pode ser rejeitado
-      if (!['PENDING_ACCEPTANCE', 'ACCEPTED'].includes(order.status)) {
-        throw new Error("Pedido não pode ser rejeitado neste estado");
-      }
-
-      // Reembolsar VP ao comprador
-      const buyerWalletRef = db.collection('wallets').doc(order.buyerId);
-      const buyerWalletDoc = await transaction.get(buyerWalletRef);
-
-      if (!buyerWalletDoc.exists) {
-        throw new Error("Carteira do comprador não encontrada");
-      }
-
-      const buyerWallet = buyerWalletDoc.data();
-      const newVp = (buyerWallet.vp || 0) + order.vpAmount;
-
-      // Atualizar carteira do comprador
-      transaction.update(buyerWalletRef, {
-        vp: newVp,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Remover VC pendente do vendedor
-      const sellerWalletRef = db.collection('wallets').doc(order.sellerId);
-      const sellerWalletDoc = await transaction.get(sellerWalletRef);
-
-      if (sellerWalletDoc.exists) {
-        const sellerWallet = sellerWalletDoc.data();
-        const newVcPending = Math.max(0, (sellerWallet.vcPending || 0) - order.vcAmount);
-
-        transaction.update(sellerWalletRef, {
-          vcPending: newVcPending,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-      }
-
-      // Atualizar status do pedido
-      transaction.update(orderRef, {
-        status: 'REJECTED',
-        'metadata.rejectionReason': reason || 'Rejeitado pelo comprador',
-        'timestamps.rejectedAt': admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Criar transação de reembolso para o comprador
-      const refundTransactionRef = db.collection('transactions').doc();
-      transaction.set(refundTransactionRef, {
-        id: refundTransactionRef.id,
-        userId: order.buyerId,
-        type: 'SERVICE_REFUND',
-        amounts: { vp: order.vpAmount },
-        ref: {
-          serviceId: order.serviceId,
-          serviceOrderId: serviceOrderId,
-          targetUserId: order.sellerId
-        },
-        status: 'CONFIRMED',
-        metadata: {
-          description: `Reembolso: ${order.metadata.serviceName}`,
-          rejectionReason: reason || 'Rejeitado pelo comprador'
-        },
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Criar transação de cancelamento para o vendedor
-      const cancelTransactionRef = db.collection('transactions').doc();
-      transaction.set(cancelTransactionRef, {
-        id: cancelTransactionRef.id,
-        userId: order.sellerId,
-        type: 'SERVICE_CANCEL',
-        amounts: { vcPending: -order.vcAmount },
-        ref: {
-          serviceId: order.serviceId,
-          serviceOrderId: serviceOrderId,
-          targetUserId: order.buyerId
-        },
-        status: 'CONFIRMED',
-        metadata: {
-          description: `Serviço Cancelado: ${order.metadata.serviceName}`,
-          rejectionReason: reason || 'Rejeitado pelo comprador'
-        },
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      return {
-        vpRefunded: order.vpAmount,
-        orderId: serviceOrderId
-      };
-    });
-
-    logger.info(`✅ Serviço rejeitado: ${serviceOrderId} - ${result.vpRefunded} VP reembolsado`);
-    return { success: true, ...result };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao rejeitar serviço:`, error.message);
-    
-    if (error.message === "Pedido não encontrado") {
-      throw new HttpsError("not-found", "Pedido não encontrado");
-    } else if (error.message === "Não autorizado") {
-      throw new HttpsError("permission-denied", "Você não tem permissão para rejeitar este pedido");
-    } else if (error.message === "Pedido não pode ser rejeitado neste estado") {
-      throw new HttpsError("failed-precondition", "Este pedido não pode mais ser rejeitado");
-    }
-    
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-/**
- * Migra dados de usuário do RTDB para Firestore
- */
-export const migrateUserToFirestore = onCall({
-  memory: "256MiB",
-  timeoutSeconds: 300,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const userId = request.auth.uid;
-
-  try {
-    // Buscar dados do usuário no RTDB
-    // Read from legacy RTDB during migration
-    const userSnapshot = await rtdbLegacy.ref(`users/${userId}`).once('value');
-    
-    if (!userSnapshot.exists()) {
-      throw new Error("Usuário não encontrado no RTDB");
-    }
-
-    const rtdbUserData = userSnapshot.val();
-
-    // Estrutura otimizada para Firestore
-    const firestoreUserData = {
-      // Dados básicos do perfil
-      uid: userId,
-      email: rtdbUserData.email || '',
-      displayName: rtdbUserData.displayName || '',
-      username: rtdbUserData.username || '',
-      name: rtdbUserData.name || '',
-      
-      // Perfil detalhado
-      bio: rtdbUserData.bio || '',
-      aboutMe: rtdbUserData.aboutMe || '',
-      location: rtdbUserData.location || '',
-      languages: rtdbUserData.languages || '',
-      hobbies: rtdbUserData.hobbies || '',
-      interests: rtdbUserData.interests || '',
-      
-      // URLs de mídia
-      profilePictureURL: rtdbUserData.profilePictureURL || null,
-      coverPhotoURL: rtdbUserData.coverPhotoURL || null,
-      
-      // Configurações da conta
-      accountType: rtdbUserData.accountType || 'both',
-      profileComplete: rtdbUserData.profileComplete || false,
-      specialAssistance: rtdbUserData.specialAssistance || false,
-      selectedStatus: rtdbUserData.selectedStatus || 'online',
-      
-      // Preferências de comunicação
-      communicationPreferences: rtdbUserData.communicationPreferences || {},
-      
-      // Timestamps
-      createdAt: rtdbUserData.createdAt ? admin.firestore.Timestamp.fromMillis(rtdbUserData.createdAt) : admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      
-      // Dados do último bônus (se existir)
-      lastDailyBonus: rtdbUserData.lastDailyBonus ? admin.firestore.Timestamp.fromMillis(rtdbUserData.lastDailyBonus) : null,
-      
-      // Índices para queries (denormalizados para performance)
-      searchTerms: [
-        (rtdbUserData.displayName || '').toLowerCase(),
-        (rtdbUserData.username || '').toLowerCase(),
-        (rtdbUserData.location || '').toLowerCase()
-      ].filter(term => term.length > 0),
-      
-      // Contadores para performance
-      stats: {
-        totalPosts: 0,
-        totalServices: 0,
-        totalPacks: 0,
-        totalSales: 0
-      }
-    };
-
-    // Salvar no Firestore
-    const userRef = db.collection('users').doc(userId);
-    await userRef.set(firestoreUserData);
-
-    logger.info(`✅ Usuário ${userId} migrado para Firestore`);
-    return { 
-      success: true, 
-      message: 'Usuário migrado com sucesso',
-      userData: firestoreUserData 
-    };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao migrar usuário ${userId}:`, error);
-    throw new HttpsError("internal", `Erro na migração: ${error.message}`);
-  }
-});
-
-/**
- * Migra todos os usuários do RTDB para Firestore (admin only)
- */
-export const migrateAllUsers = onCall({
-  memory: "512MiB",
-  timeoutSeconds: 540,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  // TODO: Adicionar verificação de admin
-  // const isAdmin = await checkAdminStatus(request.auth.uid);
-  // if (!isAdmin) {
-  //   throw new HttpsError("permission-denied", "Apenas administradores podem executar migração em massa");
-  // }
-
-  try {
-    // Buscar todos os usuários do RTDB
-    // Read all users from legacy RTDB during migration
-    const usersSnapshot = await rtdbLegacy.ref('users').once('value');
-    
-    if (!usersSnapshot.exists()) {
-      return { success: true, message: 'Nenhum usuário encontrado para migrar', count: 0 };
-    }
-
-    const users = usersSnapshot.val();
-    const userIds = Object.keys(users);
-    const batch = db.batch();
-    let migratedCount = 0;
-
-    for (const userId of userIds) {
-      const rtdbUserData = users[userId];
-      
-      // Estrutura otimizada para Firestore (mesmo código acima)
-      const firestoreUserData = {
-        uid: userId,
-        email: rtdbUserData.email || '',
-        displayName: rtdbUserData.displayName || '',
-        username: rtdbUserData.username || '',
-        name: rtdbUserData.name || '',
-        bio: rtdbUserData.bio || '',
-        aboutMe: rtdbUserData.aboutMe || '',
-        location: rtdbUserData.location || '',
-        languages: rtdbUserData.languages || '',
-        hobbies: rtdbUserData.hobbies || '',
-        interests: rtdbUserData.interests || '',
-        profilePictureURL: rtdbUserData.profilePictureURL || null,
-        coverPhotoURL: rtdbUserData.coverPhotoURL || null,
-        accountType: rtdbUserData.accountType || 'both',
-        profileComplete: rtdbUserData.profileComplete || false,
-        specialAssistance: rtdbUserData.specialAssistance || false,
-        selectedStatus: rtdbUserData.selectedStatus || 'online',
-        communicationPreferences: rtdbUserData.communicationPreferences || {},
-        createdAt: rtdbUserData.createdAt ? admin.firestore.Timestamp.fromMillis(rtdbUserData.createdAt) : admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        lastDailyBonus: rtdbUserData.lastDailyBonus ? admin.firestore.Timestamp.fromMillis(rtdbUserData.lastDailyBonus) : null,
-        searchTerms: [
-          (rtdbUserData.displayName || '').toLowerCase(),
-          (rtdbUserData.username || '').toLowerCase(),
-          (rtdbUserData.location || '').toLowerCase()
-        ].filter(term => term.length > 0),
-        stats: {
-          totalPosts: 0,
-          totalServices: 0,
-          totalPacks: 0,
-          totalSales: 0
-        }
-      };
-
-      const userRef = db.collection('users').doc(userId);
-      batch.set(userRef, firestoreUserData);
-      migratedCount++;
-
-      // Commit em lotes de 500 (limite do Firestore)
-      if (migratedCount % 500 === 0) {
-        await batch.commit();
-        logger.info(`📦 Batch de ${migratedCount} usuários migrados`);
-      }
-    }
-
-    // Commit final
-    if (migratedCount % 500 !== 0) {
-      await batch.commit();
-    }
-
-    logger.info(`✅ Migração completa: ${migratedCount} usuários migrados para Firestore`);
-    return { 
-      success: true, 
-      message: `${migratedCount} usuários migrados com sucesso`,
-      count: migratedCount 
-    };
-
-  } catch (error) {
-    logger.error(`💥 Erro na migração em massa:`, error);
-    throw new HttpsError("internal", `Erro na migração: ${error.message}`);
-  }
-});
-
-/**
- * Migra packs do RTDB legado -> Firestore (packs collection)
- */
-export const migratePacksFromLegacy = onCall({
-  memory: "512MiB",
-  timeoutSeconds: 540,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  try {
-    const packsSnap = await rtdbLegacy.ref('packs').once('value');
-    if (!packsSnap.exists()) {
-      return { success: true, migrated: 0 };
-    }
-
-    let migrated = 0;
-    const packsByUser = packsSnap.val();
-    for (const authorId of Object.keys(packsByUser)) {
-      const userPacks = packsByUser[authorId] || {};
-      for (const packId of Object.keys(userPacks)) {
-        const p = userPacks[packId] || {};
-        // Basic mapping with safe defaults
-        const packRef = db.collection('packs').doc();
-        await packRef.set({
-          id: packRef.id,
-          authorId,
-          title: (p.title || `Pack ${packId}`).toString().slice(0, 120),
-          description: (p.description || '').toString().slice(0, 2000),
-          price: Math.max(0, Number(p.price || 0)),
-          category: (p.category || 'geral').toString(),
-          tags: Array.isArray(p.tags) ? p.tags : [],
-          mediaUrls: Array.isArray(p.mediaUrls) ? p.mediaUrls : [],
-          isActive: p.isActive !== false,
-          purchaseCount: Number(p.purchaseCount || 0),
-          rating: Number(p.rating || 0),
-          totalRating: Number(p.totalRating || 0),
-          ratingCount: Number(p.ratingCount || 0),
-          searchTerms: [
-            String(p.title || '').toLowerCase(),
-            String(p.description || '').toLowerCase(),
-            String(p.category || 'geral').toLowerCase(),
-          ].filter(Boolean),
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
-        migrated++;
-      }
-    }
-
-    logger.info(`✅ Packs migrados: ${migrated}`);
-    return { success: true, migrated };
-  } catch (error) {
-    logger.error('💥 Erro ao migrar packs:', error);
-    throw new HttpsError('internal', 'Erro ao migrar packs');
-  }
-});
-
-/**
- * Migra services do RTDB legado -> Firestore (services collection)
- */
-export const migrateServicesFromLegacy = onCall({
-  memory: "512MiB",
-  timeoutSeconds: 540,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  try {
-    const servicesSnap = await rtdbLegacy.ref('services').once('value');
-    if (!servicesSnap.exists()) {
-      return { success: true, migrated: 0 };
-    }
-
-    let migrated = 0;
-    const servicesByUser = servicesSnap.val();
-    for (const providerId of Object.keys(servicesByUser)) {
-      const userServices = servicesByUser[providerId] || {};
-      for (const serviceId of Object.keys(userServices)) {
-        const s = userServices[serviceId] || {};
-        const serviceRef = db.collection('services').doc();
-        await serviceRef.set({
-          id: serviceRef.id,
-          providerId,
-          title: (s.title || `Serviço ${serviceId}`).toString().slice(0, 120),
-          description: (s.description || '').toString().slice(0, 2000),
-          price: Math.max(0, Number(s.price || 0)),
-          category: (s.category || 'geral').toString(),
-          tags: Array.isArray(s.tags) ? s.tags : [],
-          deliveryTime: (s.deliveryTime || 'negociavel').toString(),
-          isActive: s.isActive !== false,
-          orderCount: Number(s.orderCount || 0),
-          rating: Number(s.rating || 0),
-          totalRating: Number(s.totalRating || 0),
-          ratingCount: Number(s.ratingCount || 0),
-          searchTerms: [
-            String(s.title || '').toLowerCase(),
-            String(s.description || '').toLowerCase(),
-            String(s.category || 'geral').toLowerCase(),
-          ].filter(Boolean),
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
-        migrated++;
-      }
-    }
-
-    logger.info(`✅ Serviços migrados: ${migrated}`);
-    return { success: true, migrated };
-  } catch (error) {
-    logger.error('💥 Erro ao migrar serviços:', error);
-    throw new HttpsError('internal', 'Erro ao migrar serviços');
-  }
-});
-
-/**
- * Migra followers do RTDB legado -> Firestore (subcoleções users/{uid}/followers)
- */
-export const migrateFollowersFromLegacy = onCall({
-  memory: "512MiB",
-  timeoutSeconds: 540,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  try {
-    const followersSnap = await rtdbLegacy.ref('followers').once('value');
-    if (!followersSnap.exists()) {
-      return { success: true, migrated: 0 };
-    }
-
-    let migrated = 0;
-    const batch = db.batch();
-    const all = followersSnap.val();
-    for (const targetUserId of Object.keys(all)) {
-      const followers = all[targetUserId] || {};
-      for (const followerId of Object.keys(followers)) {
-        const followerRef = db.collection('users').doc(targetUserId)
-          .collection('followers').doc(followerId);
-        batch.set(followerRef, {
-          userId: targetUserId,
-          followerId,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
-        migrated++;
-      }
-    }
-
-    if (migrated > 0) await batch.commit();
-    logger.info(`✅ Followers migrados: ${migrated}`);
-    return { success: true, migrated };
-  } catch (error) {
-    logger.error('💥 Erro ao migrar followers:', error);
-    throw new HttpsError('internal', 'Erro ao migrar followers');
-  }
-});
-
-/**
- * Migra packs, services e followers numa chamada só (users já possui função própria)
- */
-export const migrateAllLegacyData = onCall({
-  memory: "512MiB",
-  timeoutSeconds: 540,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  try {
-    const [packs, services, followers] = await Promise.all([
-      migratePacksFromLegacy.run?.() || migratePacksFromLegacy({ auth: request.auth, data: {} }),
-      migrateServicesFromLegacy.run?.() || migrateServicesFromLegacy({ auth: request.auth, data: {} }),
-      migrateFollowersFromLegacy.run?.() || migrateFollowersFromLegacy({ auth: request.auth, data: {} })
-    ]);
-
-    return {
-      success: true,
-      packs: packs?.data || packs,
-      services: services?.data || services,
-      followers: followers?.data || followers,
-    };
-  } catch (error) {
-    logger.error('💥 Erro ao migrar dados legados:', error);
-    throw new HttpsError('internal', 'Erro ao migrar dados legados');
-  }
-});
-
-/**
- * API unificada para operações CRUD de Services, Packs e Posts
- */
-export const api = onCall({
-  memory: "256MiB",
-  timeoutSeconds: 90,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { resource, action, payload } = request.data;
-  const userId = request.auth.uid;
-
-  // Validação dos parâmetros
-  if (!resource || !action || !payload) {
-    throw new HttpsError("invalid-argument", "resource, action e payload são obrigatórios");
-  }
-
-  const validResources = ['service', 'pack', 'post', 'serviceOrder'];
-  const validActions = ['create', 'update', 'delete', 'accept', 'decline', 'deliver', 'confirm'];
-
-  if (!validResources.includes(resource)) {
-    throw new HttpsError("invalid-argument", `resource deve ser: ${validResources.join(', ')}`);
-  }
-
-  if (!validActions.includes(action)) {
-    throw new HttpsError("invalid-argument", `action deve ser: ${validActions.join(', ')}`);
-  }
-
-  try {
-    // Roteamento interno baseado no resource e action
-    switch (`${resource}-${action}`) {
-      // === SERVICES ===
-      case 'service-create':
-        return await createServiceInternal(userId, payload);
-      case 'service-update':
-        return await updateServiceInternal(userId, payload);
-      case 'service-delete':
-        return await deleteServiceInternal(userId, payload);
-
-      // === PACKS ===
-      case 'pack-create':
-        return await createPackInternal(userId, payload);
-      case 'pack-update':
-        return await updatePackInternal(userId, payload);
-      case 'pack-delete':
-        return await deletePackInternal(userId, payload);
-
-      // === POSTS ===
-      case 'post-create':
-        return await createPostInternal(userId, payload);
-      case 'post-update':
-        return await updatePostInternal(userId, payload);
-      case 'post-delete':
-        return await deletePostInternal(userId, payload);
-
-      // === SERVICE ORDERS ===
-      case 'serviceOrder-create':
-        return await createServiceOrderInternal(userId, payload);
-      case 'serviceOrder-accept':
-        return await acceptServiceOrderInternal(userId, payload);
-      case 'serviceOrder-decline':
-        return await declineServiceOrderInternal(userId, payload);
-      case 'serviceOrder-deliver':
-        return await markServiceDeliveredInternal(userId, payload);
-      case 'serviceOrder-confirm':
-        return await confirmServiceDeliveryInternal(userId, payload);
-
-      default:
-        throw new HttpsError("invalid-argument", `Operação não suportada: ${resource}-${action}`);
-    }
-  } catch (error) {
-    logger.error(`💥 Erro na API ${resource}-${action}:`, error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-/**
- * CRUD operations for Packs
- */
-
-// REMOVIDO: createPack - agora usa a API unificada
-
-// REMOVIDO: updatePack - agora usa a API unificada
-
-// REMOVIDO: deletePack - agora usa a API unificada
-
-/**
- * CRUD operations for Services (LEGADO - mantido para compatibilidade)
- */
-
-// REMOVIDO: Todas as funções CRUD individuais - agora usa a API unificada
-// createService, updateService, deleteService, createPost, updatePost, deletePost removidas
-
-// Mantidas apenas as funções que não são CRUD básico
-export const togglePostLike = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { postId } = request.data;
-  const userId = request.auth.uid;
-
-  if (!postId) {
-    throw new HttpsError("invalid-argument", "ID do post é obrigatório");
-  }
-
-  try {
-    const result = await db.runTransaction(async (transaction) => {
-      // Check if post exists
-      const postRef = db.collection('posts').doc(postId);
-      const postDoc = await transaction.get(postRef);
-
-      if (!postDoc.exists) {
-        throw new Error("Post não encontrado");
-      }
-
-      // Check if user already liked this post
-      const likeRef = db.collection('posts').doc(postId).collection('likes').doc(userId);
-      const likeDoc = await transaction.get(likeRef);
-
-      const postData = postDoc.data();
-      let isLiked = false;
-      let newLikeCount = postData.likes || 0;
-
-      if (likeDoc.exists) {
-        // Unlike the post
-        transaction.delete(likeRef);
-        newLikeCount = Math.max(0, newLikeCount - 1);
-        isLiked = false;
-      } else {
-        // Like the post
-        transaction.set(likeRef, {
-          userId,
-          likedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-        newLikeCount += 1;
-        isLiked = true;
-      }
-
-      // Update post like count
-      transaction.update(postRef, {
-        likes: newLikeCount,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      return { isLiked, newLikeCount };
-    });
-
-    logger.info(`✅ Post ${result.isLiked ? 'curtido' : 'descurtido'}: ${postId} por ${userId}`);
-    return { success: true, isLiked: result.isLiked, likes: result.newLikeCount };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao curtir/descurtir post:`, error);
-    if (error.message === "Post não encontrado") {
-      throw new HttpsError("not-found", "Post não encontrado");
-    }
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-// Add comment to a post
-export const addComment = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { postId, content } = request.data;
-  const userId = request.auth.uid;
-
-  if (!postId || !content || content.trim().length === 0) {
-    throw new HttpsError("invalid-argument", "ID do post e conteúdo do comentário são obrigatórios");
-  }
-
-  if (content.length > 500) {
-    throw new HttpsError("invalid-argument", "Comentário muito longo (máximo 500 caracteres)");
-  }
-
-  try {
-    const result = await db.runTransaction(async (transaction) => {
-      // Check if post exists
-      const postRef = db.collection('posts').doc(postId);
-      const postDoc = await transaction.get(postRef);
-
-      if (!postDoc.exists) {
-        throw new Error("Post não encontrado");
-      }
-
-      // Create comment
-      const commentRef = db.collection('posts').doc(postId).collection('comments').doc();
-      const commentData = {
-        id: commentRef.id,
-        authorId: userId,
-        content: content.trim(),
-        likes: 0,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      };
-
-      transaction.set(commentRef, commentData);
-
-      // Update post comment count
-      const postData = postDoc.data();
-      const newCommentCount = (postData.comments || 0) + 1;
-
-      transaction.update(postRef, {
-        comments: newCommentCount,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      return { commentData, newCommentCount };
-    });
-
-    logger.info(`✅ Comentário adicionado ao post ${postId} por ${userId}`);
-    return { 
-      success: true, 
-      commentId: result.commentData.id, 
-      comment: result.commentData,
-      comments: result.newCommentCount 
-    };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao adicionar comentário:`, error);
-    if (error.message === "Post não encontrado") {
-      throw new HttpsError("not-found", "Post não encontrado");
-    }
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-/**
- * Função agendada para liberar automaticamente VC pendente após 24h
- */
-export const autoReleaseServices = onSchedule({
-  schedule: "*/30 * * * *", // A cada 30 minutos
-  timeZone: "America/Sao_Paulo",
-  memory: "64MiB",
-  timeoutSeconds: 540,
-}, async () => {
-  try {
-    logger.info("🕐 Iniciando liberação automática de serviços...");
-
-    const now = admin.firestore.Timestamp.now();
-    
-    // Buscar pedidos entregues que passaram do prazo
-    const expiredOrdersQuery = db.collection('serviceOrders')
-      .where('status', '==', 'DELIVERED')
-      .where('timestamps.autoReleaseAt', '<=', now)
-      .limit(50); // Processar em lotes
-
-    const expiredOrdersSnapshot = await expiredOrdersQuery.get();
-
-    if (expiredOrdersSnapshot.empty) {
-      logger.info("✅ Nenhum serviço para liberar automaticamente");
-      return { processed: 0 };
-    }
-
-    let processedCount = 0;
-    const batch = db.batch();
-
-    for (const orderDoc of expiredOrdersSnapshot.docs) {
-      const order = orderDoc.data();
-      const orderRef = orderDoc.ref;
-
-      try {
-        // Liberar VC pendente para VC real
-        const sellerWalletRef = db.collection('wallets').doc(order.sellerId);
-        const sellerWalletDoc = await sellerWalletRef.get();
-
-        if (!sellerWalletDoc.exists) {
-          logger.warn(`⚠️ Carteira não encontrada para vendedor: ${order.sellerId}`);
-          continue;
-        }
-
-        const sellerWallet = sellerWalletDoc.data();
-        const newVc = (sellerWallet.vc || 0) + order.vcAmount;
-        const newVcPending = Math.max(0, (sellerWallet.vcPending || 0) - order.vcAmount);
-
-        // Atualizar carteira
-        batch.update(sellerWalletRef, {
-          vc: newVc,
-          vcPending: newVcPending,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-
-        // Atualizar status do pedido
-        batch.update(orderRef, {
-          status: 'AUTO_RELEASED',
-          'timestamps.confirmedAt': admin.firestore.FieldValue.serverTimestamp()
-        });
-
-        // Criar transação de liberação automática
-        const transactionRef = db.collection('transactions').doc();
-        batch.set(transactionRef, {
-          id: transactionRef.id,
-          userId: order.sellerId,
-          type: 'SERVICE_AUTO_RELEASE',
-          amounts: { 
-            vc: order.vcAmount,
-            vcPending: -order.vcAmount
-          },
-          ref: {
-            serviceId: order.serviceId,
-            serviceOrderId: orderDoc.id,
-            targetUserId: order.buyerId
-          },
-          status: 'CONFIRMED',
-          metadata: {
-            description: `Serviço Auto-Liberado: ${order.metadata.serviceName}`,
-            reason: 'Comprador não confirmou em 24h'
-          },
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-
-        // Atualizar pedido com ID da transação
-        batch.update(orderRef, {
-          'transactionIds.confirmationId': transactionRef.id
-        });
-
-        processedCount++;
-        logger.info(`✅ Serviço auto-liberado: ${orderDoc.id} - ${order.vcAmount} VC`);
-
-      } catch (error) {
-        logger.error(`💥 Erro ao processar pedido ${orderDoc.id}:`, error);
-      }
-    }
-
-    if (processedCount > 0) {
-      await batch.commit();
-      logger.info(`✅ ${processedCount} serviços liberados automaticamente`);
-    }
-
-    return { processed: processedCount };
-
-  } catch (error) {
-    logger.error("💥 Erro na liberação automática:", error);
-    throw error;
-  }
-});
-
-// ====================== WATERMARKING ======================
-
-ffmpeg.setFfmpegPath(ffmpegStatic);
-ffmpeg.setFfprobePath(ffprobeStatic.path);
-
-function shouldProcessPath(objectName) {
-  // Only process services and packs media; skip already watermarked outputs
-  if (!objectName) return false;
-  if (objectName.startsWith('servicesMedia/') || objectName.startsWith('packs/')) {
-    const base = path.basename(objectName);
-    if (base.startsWith('wm_') || base.startsWith('buyerwm_')) return false;
-    // Skip thumbnails or temporary
-    if (objectName.includes('/tmp/') || objectName.includes('/thumbnails/')) return false;
-    return true;
-  }
-  return false;
-}
-
-function deriveWatermarkedName(objectName, buyerId = null) {
-  const dirname = path.posix.dirname(objectName);
-  const filename = path.posix.basename(objectName);
-  const prefix = buyerId ? 'buyerwm_' : 'wm_';
-  return `${dirname}/${prefix}${filename}`;
-}
-
-async function renderTextOverlaySvg(width, height, textLines) {
-  const fontSize = Math.max(18, Math.round(Math.min(width, height) * 0.035));
-  const lineHeight = Math.round(fontSize * 1.4);
-  const svg = `<?xml version="1.0" encoding="UTF-8"?>
-  <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-    <rect width="100%" height="100%" fill="transparent"/>
-    <g opacity="0.25">
-      <rect x="0" y="${Math.round(height/2 - (textLines.length*lineHeight)/2) - 20}" width="100%" height="${textLines.length*lineHeight + 40}" fill="black"/>
-    </g>
-    <g font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" fill="white" text-anchor="middle">
-      ${textLines.map((t, idx) => `<text x="50%" y="${Math.round(height/2 + (idx - (textLines.length-1)/2)*lineHeight)}">${t}</text>`).join('\n')}
-    </g>
-  </svg>`;
-  return Buffer.from(svg);
-}
-
-async function generateQrTile(text, size = 256) {
-  const dataUrl = await QRCode.toDataURL(text, { width: size, margin: 1, color: { dark: '#00000022', light: '#00000000' } });
-  const b64 = dataUrl.split(',')[1];
-  return Buffer.from(b64, 'base64');
-}
-
-async function compositeQrGrid(baseBuffer, gridOpacity = 0.06) {
-  const image = sharp(baseBuffer);
-  const meta = await image.metadata();
-  const width = meta.width || 1024;
-  const height = meta.height || 1024;
-
-  // Create a QR tile with encoded notice
-  const qrText = 'Vixter - Conteúdo protegido contra vazamentos';
-  const tile = await generateQrTile(qrText, 180);
-  const tileImg = sharp(tile).png();
-  const tileMeta = await tileImg.metadata();
-  const tileW = tileMeta.width || 180;
-  const tileH = tileMeta.height || 180;
-
-  const cols = Math.ceil(width / (tileW * 1.5));
-  const rows = Math.ceil(height / (tileH * 1.5));
-  const composites = [];
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const x = Math.round(c * tileW * 1.5);
-      const y = Math.round(r * tileH * 1.5);
-      composites.push({ input: await tileImg.toBuffer(), top: y, left: x, blend: 'over', opacity: gridOpacity });
-    }
-  }
-  return await image.composite(composites).toBuffer();
-}
-
-async function getUsernameForUid(userId) {
-	try {
-		const snap = await db.collection('users').doc(userId).get();
-		if (snap.exists) {
-			const data = snap.data() || {};
-			return data.username || userId;
-		}
-	} catch (e) {
-		logger.warn('Could not resolve username, falling back to UID', { userId, error: e?.message });
-	}
-	return userId;
-}
-
-async function watermarkImage(inputPath, outputPath, ownerId, buyerId = null, addQr = false) {
-  const base = sharp(inputPath);
-  const meta = await base.metadata();
-  const width = meta.width || 1024;
-  const height = meta.height || 1024;
-  const ownerUsername = await getUsernameForUid(ownerId);
-  const buyerUsername = buyerId ? await getUsernameForUid(buyerId) : null;
-  const lines = [
-    `Vixter • Proprietário: ${ownerUsername}`,
-    buyerUsername ? `Comprador: ${buyerUsername}` : 'Não autorizado a redistribuir'
-  ];
-  const overlay = await renderTextOverlaySvg(width, height, lines);
-  let composed = await base.composite([{ input: overlay, top: 0, left: 0 }]).toBuffer();
-  if (addQr) {
-    composed = await compositeQrGrid(composed, 0.06);
-  }
-  await sharp(composed).toFile(outputPath);
-}
-
-async function watermarkVideo(inputPath, outputPath, ownerId, buyerId = null) {
-  // Build a semi-transparent PNG overlay using sharp (text centered)
-  const overlayWidth = 1280;
-  const overlayHeight = 720;
-  const ownerUsername = await getUsernameForUid(ownerId);
-  const buyerUsername = buyerId ? await getUsernameForUid(buyerId) : null;
-  const lines = [
-    `Vixter • Proprietário: ${ownerUsername}`,
-    buyerUsername ? `Comprador: ${buyerUsername}` : 'Não autorizado a redistribuir'
-  ];
-  const overlayPngPath = path.join(os.tmpdir(), `overlay_${Date.now()}.png`);
-  const overlaySvg = await renderTextOverlaySvg(overlayWidth, overlayHeight, lines);
-  await sharp(overlaySvg).png().toFile(overlayPngPath);
-
-  await new Promise((resolve, reject) => {
-    ffmpeg()
-      .input(inputPath)
-      .input(overlayPngPath)
-      .complexFilter([
-        {
-          filter: 'scale',
-          options: 'trunc(iw/2)*2:trunc(ih/2)*2',
-          inputs: '[0:v]',
-          outputs: 'v0'
-        },
-        {
-          filter: 'scale',
-          options: 'trunc(iw/2)*2:trunc(ih/2)*2',
-          inputs: '[1:v]',
-          outputs: 'ovr'
-        },
-        {
-          filter: 'overlay',
-          options: '(main_w-overlay_w)/2:(main_h-overlay_h)/2:format=auto',
-          inputs: ['v0', 'ovr'],
-          outputs: 'vout'
-        }
-      ])
-      .outputOptions([
-        '-map', '[vout]',
-        '-map', '0:a?',
-        '-c:v', 'libx264',
-        '-preset', 'veryfast',
-        '-crf', '23',
-        '-c:a', 'copy'
-      ])
-      .on('end', resolve)
-      .on('error', reject)
-      .save(outputPath);
-  });
-  try { await fsp.unlink(overlayPngPath); } catch (e) { logger.debug('Cleanup error:', e); }
-}
-
-async function getOwnerIdFromPath(objectName) {
-  // servicesMedia/{ownerId}/{serviceId}/... or packs/{ownerId}/{packId}/...
-  const parts = objectName.split('/');
-  if (parts.length >= 2) {
-    const ownerId = parts[1];
-    logger.info(`🔍 Extracted ownerId from path: ${objectName} -> ${ownerId}`);
-    return ownerId;
-  }
-  logger.warn(`⚠️ Could not extract ownerId from path: ${objectName}`);
-  return 'unknown';
-}
-
-export const watermarkOnUpload = onObjectFinalized({
-  memory: '1GiB',
-  timeoutSeconds: 540,
-  concurrency: 1,
-  cpu: 1,
-}, async (event) => {
-  const { name: objectName, contentType, metadata = {}, bucket: bucketName } = event.data;
-  
-  logger.info(`🔄 Watermarking triggered for: ${objectName}`);
-  logger.info(`📋 Metadata:`, metadata);
-  logger.info(`📦 Content type: ${contentType}`);
-  
-  if (!shouldProcessPath(objectName)) {
-    logger.info(`⏭️ Skipping watermarking - path not eligible: ${objectName}`);
-    return;
-  }
-  
-  if (metadata.watermarked === 'true') {
-    logger.info(`⏭️ Skipping watermarking - already watermarked: ${objectName}`);
-    return;
-  }
-
-  const bucket = admin.storage().bucket(bucketName);
-  const tmpIn = path.join(os.tmpdir(), path.basename(objectName));
-  const tmpOut = path.join(os.tmpdir(), `wm_${Date.now()}_${path.basename(objectName)}`);
-
-  try {
-    logger.info(`📥 Downloading file: ${objectName}`);
-    await bucket.file(objectName).download({ destination: tmpIn });
-    
-    const ownerId = await getOwnerIdFromPath(objectName);
-    logger.info(`👤 Owner ID: ${ownerId}`);
-
-    if ((contentType || '').startsWith('image/')) {
-      logger.info(`🖼️ Processing image watermarking`);
-      await watermarkImage(tmpIn, tmpOut, ownerId, null, true);
-    } else if ((contentType || '').startsWith('video/')) {
-      logger.info(`🎥 Processing video watermarking`);
-      await watermarkVideo(tmpIn, tmpOut, ownerId, null);
-    } else {
-      logger.info(`⏭️ Skipping - unsupported content type: ${contentType}`);
-      return;
-    }
-
-    const destPath = deriveWatermarkedName(objectName);
-    const downloadToken = randomUUID();
-    
-    logger.info(`📤 Uploading watermarked file: ${destPath}`);
-    await bucket.upload(tmpOut, {
-      destination: destPath,
-      metadata: {
-        contentType,
-        metadata: { watermarked: 'true', originPath: objectName, firebaseStorageDownloadTokens: downloadToken }
-      }
-    });
-
-    // Build Firebase download URL using token (avoids signBlob permission)
-    const encoded = encodeURIComponent(destPath);
-    const watermarkedURL = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encoded}?alt=media&token=${downloadToken}`;
-
-    logger.info(`🔗 Watermarked URL: ${watermarkedURL}`);
-
-    // Update Firestore document with watermarked URL
-    await updateFirestoreWithWatermarkedURL(objectName, watermarkedURL, metadata);
-
-    logger.info(`✅ Watermarked file created and Firestore updated: ${destPath}`);
-  } catch (err) {
-    logger.error('💥 Error watermarking upload:', objectName, err);
-    // Mark as failed in Firestore
-    await updateFirestoreWithWatermarkError(objectName, err.message, metadata);
-  } finally {
-    try { await fsp.unlink(tmpIn); } catch (e) { logger.debug('Cleanup error:', e); }
-    try { await fsp.unlink(tmpOut); } catch (e) { logger.debug('Cleanup error:', e); }
-  }
-});
-
-async function updateFirestoreWithWatermarkedURL(objectName, watermarkedURL, metadata) {
-  const { resource, resourceId, role, index } = metadata;
-  
-  logger.info(`🔄 Updating Firestore with watermarked URL:`, {
-    objectName,
-    watermarkedURL,
-    metadata,
-    resource,
-    resourceId,
-    role,
-    index
-  });
-  
-  if (!resource || !resourceId || !role) {
-    logger.warn('Missing metadata for Firestore update:', { objectName, metadata });
-    return;
-  }
-
-  try {
-    const collection = resource === 'service' ? 'services' : 'packs';
-    const docRef = db.collection(collection).doc(resourceId);
-    const snap = await docRef.get();
-    const data = snap.exists ? snap.data() : {};
-
-    logger.info(`📄 Document exists: ${snap.exists}, data:`, data);
-
-    const ensureAtIndex = (arr, idx, value) => {
-      const clone = Array.isArray(arr) ? [...arr] : [];
-      const i = Number.isFinite(Number(idx)) ? Number(idx) : clone.length;
-      clone[i] = value;
-      return clone;
-    };
-
-    const updateData = {
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      'mediaProcessing.status': 'completed',
-      'mediaProcessing.lastUpdate': admin.firestore.FieldValue.serverTimestamp(),
-    };
-
-    switch (role) {
-      case 'cover':
-        updateData.coverImageURL = watermarkedURL;
-        logger.info(`🖼️ Setting coverImageURL: ${watermarkedURL}`);
-        break;
-      case 'photo':
-        updateData.showcasePhotosURLs = ensureAtIndex(data.showcasePhotosURLs, index, watermarkedURL);
-        logger.info(`📸 Setting showcasePhotosURLs[${index}]: ${watermarkedURL}`);
-        break;
-      case 'video':
-        updateData.showcaseVideosURLs = ensureAtIndex(data.showcaseVideosURLs, index, watermarkedURL);
-        logger.info(`🎥 Setting showcaseVideosURLs[${index}]: ${watermarkedURL}`);
-        break;
-      case 'sampleImage':
-        updateData.sampleImages = ensureAtIndex(data.sampleImages, index, watermarkedURL);
-        logger.info(`🖼️ Setting sampleImages[${index}]: ${watermarkedURL}`);
-        break;
-      case 'sampleVideo':
-        updateData.sampleVideos = ensureAtIndex(data.sampleVideos, index, watermarkedURL);
-        logger.info(`🎥 Setting sampleVideos[${index}]: ${watermarkedURL}`);
-        break;
-      case 'packContent':
-        updateData.packContent = ensureAtIndex(data.packContent, index, watermarkedURL);
-        logger.info(`📦 Setting packContent[${index}]: ${watermarkedURL}`);
-        break;
-      default:
-        logger.warn(`⚠️ Unknown role: ${role}`);
-        break;
-    }
-
-    logger.info(`📝 Update data:`, updateData);
-    await docRef.set(updateData, { merge: true });
-    logger.info(`✅ Firestore updated for ${collection}/${resourceId} role=${role}`);
-  } catch (error) {
-    logger.error('💥 Error updating Firestore:', error);
-  }
-}
-
-async function updateFirestoreWithWatermarkError(objectName, errorMessage, metadata) {
-  const { resource, resourceId } = metadata;
-  
-  if (!resource || !resourceId) return;
-
-  try {
-    const collection = resource === 'service' ? 'services' : 'packs';
-    const docRef = db.collection(collection).doc(resourceId);
-    
-    await docRef.update({
-      'mediaProcessing.status': 'error',
-      'mediaProcessing.error': errorMessage,
-      'mediaProcessing.lastUpdate': admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-  } catch (error) {
-    logger.error('💥 Error updating Firestore with error:', error);
-  }
-}
-
-export const generateBuyerWatermarkedCopy = onCall({
-  memory: '1GiB',
-  timeoutSeconds: 540,
-  concurrency: 1,
-  cpu: 1,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'Usuário não autenticado');
-  }
-  const { sourcePath, buyerId } = request.data || {};
-  if (!sourcePath || !buyerId) {
-    throw new HttpsError('invalid-argument', 'sourcePath e buyerId são obrigatórios');
-  }
-  if (!sourcePath.startsWith('servicesMedia/') && !sourcePath.startsWith('packs/')) {
-    throw new HttpsError('permission-denied', 'Caminho inválido');
-  }
-  const bucket = admin.storage().bucket();
-  const [file] = await bucket.file(sourcePath).get();
-  const [metadata] = await file.getMetadata();
-  const contentType = metadata.contentType || '';
-  const tmpIn = path.join(os.tmpdir(), path.basename(sourcePath));
-  const tmpOut = path.join(os.tmpdir(), `buyerwm_${Date.now()}_${path.basename(sourcePath)}`);
-  const ownerId = await getOwnerIdFromPath(sourcePath);
-  await bucket.file(sourcePath).download({ destination: tmpIn });
-
-  try {
-    if (contentType.startsWith('image/')) {
-      await watermarkImage(tmpIn, tmpOut, ownerId, buyerId, true);
-    } else if (contentType.startsWith('video/')) {
-      await watermarkVideo(tmpIn, tmpOut, ownerId, buyerId);
-    } else {
-      throw new HttpsError('failed-precondition', 'Tipo de arquivo não suportado');
-    }
-    const destPath = deriveWatermarkedName(sourcePath, buyerId);
-    const downloadToken = randomUUID();
-    await bucket.upload(tmpOut, {
-      destination: destPath,
-      metadata: {
-        contentType,
-        metadata: { watermarked: 'true', buyerId, originPath: sourcePath, firebaseStorageDownloadTokens: downloadToken }
-      }
-    });
-    const encoded = encodeURIComponent(destPath);
-    const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encoded}?alt=media&token=${downloadToken}`;
-    return { success: true, path: destPath, url: publicUrl };
-  } catch (error) {
-    logger.error('💥 Error generating buyer watermark:', error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError('internal', 'Erro ao gerar marca d\'água do comprador');
-  } finally {
-    try { await fsp.unlink(tmpIn); } catch (e) { logger.debug('Cleanup error:', e); }
-    try { await fsp.unlink(tmpOut); } catch (e) { logger.debug('Cleanup error:', e); }
-  }
-});
-
-// === INTERNAL FUNCTIONS FOR API ===
+// === SERVICES AND PACKS FUNCTIONS (WITHOUT WATERMARKING) ===
 
 // Services Internal Functions
 async function createServiceInternal(userId, payload) {
@@ -2200,113 +328,37 @@ async function createServiceInternal(userId, payload) {
     status: status || 'active',
     currency: currency || 'VC',
     isActive: true,
-    orderCount: 0,
-    rating: 0,
-    totalRating: 0,
-    ratingCount: 0,
-    createdAt: payload.createdAt ? admin.firestore.Timestamp.fromMillis(payload.createdAt) : admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: payload.updatedAt ? admin.firestore.Timestamp.fromMillis(payload.updatedAt) : admin.firestore.FieldValue.serverTimestamp(),
-    searchTerms: [
-      title.toLowerCase(),
-      description.toLowerCase(),
-      category.toLowerCase(),
-      ...tags.map(tag => tag.toLowerCase())
-    ].filter(term => term.length > 0)
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    // Media URLs are now data URLs passed directly
+    coverImageURL: payload.coverImageURL || null,
+    showcasePhotosURLs: payload.showcasePhotosURLs || [],
+    showcaseVideosURLs: payload.showcaseVideosURLs || []
   };
 
   await serviceRef.set(serviceData);
-
-  const userRef = db.collection('users').doc(userId);
-  await userRef.update({
-    'stats.totalServices': admin.firestore.FieldValue.increment(1),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp()
-  });
-
-  logger.info(`✅ Serviço criado: ${serviceRef.id} por ${userId}`);
-  return { success: true, serviceId: serviceRef.id, service: serviceData };
+  logger.info(`✅ Service created: ${serviceRef.id}`);
+  return { success: true, serviceId: serviceRef.id };
 }
 
-async function updateServiceInternal(userId, payload) {
-  const { serviceId, updates } = payload;
-
-  if (!serviceId || !updates) {
-    throw new HttpsError("invalid-argument", "ID do serviço e atualizações são obrigatórios");
-  }
-
+async function updateServiceInternal(serviceId, payload) {
   const serviceRef = db.collection('services').doc(serviceId);
-  const serviceDoc = await serviceRef.get();
-
-  if (!serviceDoc.exists) {
-    throw new HttpsError("not-found", "Serviço não encontrado");
-  }
-
-  const serviceData = serviceDoc.data();
-  if (serviceData.providerId !== userId) {
-    throw new HttpsError("permission-denied", "Você não tem permissão para editar este serviço");
-  }
-
   const updateData = {
-    ...updates,
+    ...payload,
     updatedAt: admin.firestore.FieldValue.serverTimestamp()
   };
-
-  if (updates.title || updates.description || updates.category || updates.tags) {
-    const newTitle = updates.title || serviceData.title;
-    const newDescription = updates.description || serviceData.description;
-    const newCategory = updates.category || serviceData.category;
-    const newTags = updates.tags || serviceData.tags;
-
-    updateData.searchTerms = [
-      newTitle.toLowerCase(),
-      newDescription.toLowerCase(),
-      newCategory.toLowerCase(),
-      ...newTags.map(tag => tag.toLowerCase())
-    ].filter(term => term.length > 0);
-  }
-
+  
   await serviceRef.update(updateData);
-
-  logger.info(`✅ Serviço atualizado: ${serviceId}`);
-  return { success: true, serviceId };
-}
-
-async function deleteServiceInternal(userId, payload) {
-  const { serviceId } = payload;
-
-  if (!serviceId) {
-    throw new HttpsError("invalid-argument", "ID do serviço é obrigatório");
-  }
-
-  const serviceRef = db.collection('services').doc(serviceId);
-  const serviceDoc = await serviceRef.get();
-
-  if (!serviceDoc.exists) {
-    throw new HttpsError("not-found", "Serviço não encontrado");
-  }
-
-  const serviceData = serviceDoc.data();
-  if (serviceData.providerId !== userId) {
-    throw new HttpsError("permission-denied", "Você não tem permissão para deletar este serviço");
-  }
-
-  await serviceRef.update({
-    isActive: false,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp()
-  });
-
-  const userRef = db.collection('users').doc(userId);
-  await userRef.update({
-    'stats.totalServices': admin.firestore.FieldValue.increment(-1),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp()
-  });
-
-  logger.info(`✅ Serviço deletado: ${serviceId}`);
-  return { success: true, serviceId };
+  logger.info(`✅ Service updated: ${serviceId}`);
+  return { success: true };
 }
 
 // Packs Internal Functions
 async function createPackInternal(userId, payload) {
-  const { title, description, price, category, tags, features, subcategory, packType, discount } = payload;
+  const { 
+    title, description, category, subcategory, packType, price, discount, currency,
+    features, tags, licenseOptions, coverImage, sampleImages, sampleVideos, packContent
+  } = payload;
 
   if (!title || !description || !price || price <= 0) {
     throw new HttpsError("invalid-argument", "Dados do pack são obrigatórios");
@@ -2315,1091 +367,105 @@ async function createPackInternal(userId, payload) {
   const packRef = db.collection('packs').doc();
   const packData = {
     id: packRef.id,
-    authorId: userId,
+    creatorId: userId,
     title: title.trim(),
     description: description.trim(),
-    price: Math.round(price),
-    category: category || 'geral',
+    category,
     subcategory: subcategory || '',
-    packType: packType || 'download',
-    discount: discount || 0,
-    tags: Array.isArray(tags) ? tags : [],
+    packType,
+    price: Math.round(price),
+    discount: Number(discount) || 0,
+    currency: currency || 'VC',
     features: Array.isArray(features) ? features : [],
-    isActive: payload.isActive !== false,
-    purchaseCount: 0,
-    rating: 0,
-    totalRating: 0,
-    ratingCount: 0,
-    createdAt: payload.createdAt ? admin.firestore.Timestamp.fromMillis(payload.createdAt) : admin.firestore.FieldValue.serverTimestamp(),
+    tags: Array.isArray(tags) ? tags : [],
+    licenseOptions: Array.isArray(licenseOptions) ? licenseOptions : [],
+    status: 'active',
+    isActive: true,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    searchTerms: [
-      title.toLowerCase(),
-      description.toLowerCase(),
-      category.toLowerCase(),
-      ...tags.map(tag => tag.toLowerCase())
-    ].filter(term => term.length > 0)
+    // Media URLs are now data URLs passed directly
+    coverImage: coverImage || null,
+    sampleImages: Array.isArray(sampleImages) ? sampleImages : [],
+    sampleVideos: Array.isArray(sampleVideos) ? sampleVideos : [],
+    packContent: Array.isArray(packContent) ? packContent : [] // Metadata only for paid content
   };
 
   await packRef.set(packData);
-
-  const userRef = db.collection('users').doc(userId);
-  await userRef.update({
-    'stats.totalPacks': admin.firestore.FieldValue.increment(1),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp()
-  });
-
-  logger.info(`✅ Pack criado: ${packRef.id} por ${userId}`);
-  return { success: true, packId: packRef.id, pack: packData };
+  logger.info(`✅ Pack created: ${packRef.id}`);
+  return { success: true, packId: packRef.id };
 }
 
-async function updatePackInternal(userId, payload) {
-  const { packId, updates } = payload;
-
-  if (!packId || !updates) {
-    throw new HttpsError("invalid-argument", "ID do pack e atualizações são obrigatórios");
-  }
-
+async function updatePackInternal(packId, payload) {
   const packRef = db.collection('packs').doc(packId);
-  const packDoc = await packRef.get();
-
-  if (!packDoc.exists) {
-    throw new HttpsError("not-found", "Pack não encontrado");
-  }
-
-  const packData = packDoc.data();
-  if (packData.authorId !== userId) {
-    throw new HttpsError("permission-denied", "Você não tem permissão para editar este pack");
-  }
-
   const updateData = {
-    ...updates,
+    ...payload,
     updatedAt: admin.firestore.FieldValue.serverTimestamp()
   };
-
-  if (updates.title || updates.description || updates.category || updates.tags) {
-    const newTitle = updates.title || packData.title;
-    const newDescription = updates.description || packData.description;
-    const newCategory = updates.category || packData.category;
-    const newTags = updates.tags || packData.tags;
-
-    updateData.searchTerms = [
-      newTitle.toLowerCase(),
-      newDescription.toLowerCase(),
-      newCategory.toLowerCase(),
-      ...newTags.map(tag => tag.toLowerCase())
-    ].filter(term => term.length > 0);
-  }
-
+  
   await packRef.update(updateData);
-
-  logger.info(`✅ Pack atualizado: ${packId}`);
-  return { success: true, packId };
+  logger.info(`✅ Pack updated: ${packId}`);
+  return { success: true };
 }
 
-async function deletePackInternal(userId, payload) {
-  const { packId } = payload;
+// === EXPORT FUNCTIONS FOR CLIENT USE ===
 
-  if (!packId) {
-    throw new HttpsError("invalid-argument", "ID do pack é obrigatório");
-  }
-
-  const packRef = db.collection('packs').doc(packId);
-  const packDoc = await packRef.get();
-
-  if (!packDoc.exists) {
-    throw new HttpsError("not-found", "Pack não encontrado");
-  }
-
-  const packData = packDoc.data();
-  if (packData.authorId !== userId) {
-    throw new HttpsError("permission-denied", "Você não tem permissão para deletar este pack");
-  }
-
-  await packRef.update({
-    isActive: false,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp()
-  });
-
-  const userRef = db.collection('users').doc(userId);
-  await userRef.update({
-    'stats.totalPacks': admin.firestore.FieldValue.increment(-1),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp()
-  });
-
-  logger.info(`✅ Pack deletado: ${packId}`);
-  return { success: true, packId };
-}
-
-// Posts Internal Functions
-async function createPostInternal(userId, payload) {
-  const { content, mediaUrls, visibility } = payload;
-
-  if (!content || content.trim().length === 0) {
-    throw new HttpsError("invalid-argument", "Conteúdo do post é obrigatório");
-  }
-
-  if (content.length > 2000) {
-    throw new HttpsError("invalid-argument", "Conteúdo do post muito longo (máximo 2000 caracteres)");
-  }
-
-  const postRef = db.collection('posts').doc();
-  const postData = {
-    id: postRef.id,
-    authorId: userId,
-    content: content.trim(),
-    mediaUrls: Array.isArray(mediaUrls) ? mediaUrls : [],
-    visibility: visibility || 'public',
-    likes: 0,
-    comments: 0,
-    shares: 0,
-    isVisible: true,
-    createdAt: payload.createdAt ? admin.firestore.Timestamp.fromMillis(payload.createdAt) : admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: payload.updatedAt ? admin.firestore.Timestamp.fromMillis(payload.updatedAt) : admin.firestore.FieldValue.serverTimestamp(),
-    searchTerms: content.toLowerCase().split(' ').filter(term => term.length > 2)
-  };
-
-  await postRef.set(postData);
-
-  const userRef = db.collection('users').doc(userId);
-  await userRef.update({
-    'stats.totalPosts': admin.firestore.FieldValue.increment(1),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp()
-  });
-
-  logger.info(`✅ Post criado: ${postRef.id} por ${userId}`);
-  return { success: true, postId: postRef.id, post: postData };
-}
-
-async function updatePostInternal(userId, payload) {
-  const { postId, updates } = payload;
-
-  if (!postId || !updates) {
-    throw new HttpsError("invalid-argument", "ID do post e atualizações são obrigatórios");
-  }
-
-  const postRef = db.collection('posts').doc(postId);
-  const postDoc = await postRef.get();
-
-  if (!postDoc.exists) {
-    throw new HttpsError("not-found", "Post não encontrado");
-  }
-
-  const postData = postDoc.data();
-  if (postData.authorId !== userId) {
-    throw new HttpsError("permission-denied", "Você não tem permissão para editar este post");
-  }
-
-  const updateData = {
-    ...updates,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp()
-  };
-
-  if (updates.content) {
-    updateData.searchTerms = updates.content.toLowerCase().split(' ').filter(term => term.length > 2);
-  }
-
-  await postRef.update(updateData);
-
-  logger.info(`✅ Post atualizado: ${postId}`);
-  return { success: true, postId };
-}
-
-async function deletePostInternal(userId, payload) {
-  const { postId } = payload;
-
-  if (!postId) {
-    throw new HttpsError("invalid-argument", "ID do post é obrigatório");
-  }
-
-  const postRef = db.collection('posts').doc(postId);
-  const postDoc = await postRef.get();
-
-  if (!postDoc.exists) {
-    throw new HttpsError("not-found", "Post não encontrado");
-  }
-
-  const postData = postDoc.data();
-  if (postData.authorId !== userId) {
-    throw new HttpsError("permission-denied", "Você não tem permissão para deletar este post");
-  }
-
-  await postRef.update({
-    isVisible: false,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp()
-  });
-
-  const userRef = db.collection('users').doc(userId);
-  await userRef.update({
-    'stats.totalPosts': admin.firestore.FieldValue.increment(-1),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp()
-  });
-
-  logger.info(`✅ Post deletado: ${postId}`);
-  return { success: true, postId };
-}
-
-// =====================================================
-// MESSAGING AND SERVICE ORDER FUNCTIONS
-// =====================================================
-
-/**
- * Creates a new service order - STANDALONE FUNCTION
- */
-export const createServiceOrderStandalone = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
+export const createService = onCall(async (request) => {
   if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
-
-  const userId = request.auth.uid;
-  const { serviceId, sellerId, vpAmount, additionalFeatures = [], metadata = {} } = request.data;
-
-  if (!serviceId || !sellerId || !vpAmount || vpAmount <= 0) {
-    throw new HttpsError("invalid-argument", "Dados do pedido inválidos");
-  }
-
+  
   try {
-    // Check if service exists
-    const serviceRef = db.collection('services').doc(serviceId);
-    const serviceDoc = await serviceRef.get();
-    
-    if (!serviceDoc.exists || !serviceDoc.data().isActive) {
-      throw new HttpsError("not-found", "Serviço não encontrado ou inativo");
-    }
-
-    const serviceData = serviceDoc.data();
-    if (serviceData.providerId !== sellerId) {
-      throw new HttpsError("invalid-argument", "Vendedor não corresponde ao provedor do serviço");
-    }
-
-    // Check buyer's wallet
-    const buyerWalletRef = db.collection('wallets').doc(userId);
-    const buyerWallet = await buyerWalletRef.get();
-    
-    if (!buyerWallet.exists || buyerWallet.data().vp < vpAmount) {
-      throw new HttpsError("failed-precondition", "VP insuficiente");
-    }
-
-    // Calculate total amount including additional features
-    const featuresTotal = additionalFeatures.reduce((total, feature) => total + (feature.price || 0), 0);
-    const totalAmount = vpAmount + featuresTotal;
-
-    if (buyerWallet.data().vp < totalAmount) {
-      throw new HttpsError("failed-precondition", "VP insuficiente para o total do pedido");
-    }
-
-    // Create service order in a transaction
-    const orderResult = await db.runTransaction(async (transaction) => {
-      // Deduct VP from buyer
-      transaction.update(buyerWalletRef, {
-        vp: admin.firestore.FieldValue.increment(-totalAmount),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Create service order
-      const orderRef = db.collection('serviceOrders').doc();
-      const orderData = {
-        id: orderRef.id,
-        serviceId,
-        buyerId: userId,
-        sellerId,
-        vpAmount: totalAmount,
-        vcAmount: Math.floor(totalAmount / 1.5), // VP to VC conversion rate
-        status: 'PENDING_ACCEPTANCE',
-        additionalFeatures,
-        metadata: {
-          serviceName: serviceData.title,
-          serviceDescription: serviceData.description,
-          ...metadata
-        },
-        timestamps: {
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          autoReleaseAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
-        },
-        transactionIds: {}
-      };
-
-      transaction.set(orderRef, orderData);
-
-      // Create transaction record for buyer
-      const buyerTransactionRef = db.collection('transactions').doc();
-      const buyerTransactionData = {
-        id: buyerTransactionRef.id,
-        userId,
-        type: 'SERVICE_PURCHASE',
-        amounts: { vp: -totalAmount },
-        ref: {
-          serviceId,
-          serviceOrderId: orderRef.id,
-          targetUserId: sellerId
-        },
-        status: 'CONFIRMED',
-        metadata: {
-          description: `Compra de serviço: ${serviceData.title}`,
-          originalAmount: totalAmount
-        },
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      };
-
-      transaction.set(buyerTransactionRef, buyerTransactionData);
-
-      return { order: orderData, buyerTransactionId: buyerTransactionRef.id };
-    });
-
-    logger.info(`✅ Pedido de serviço criado: ${orderResult.order.id} por ${userId}`);
-    return { success: true, order: orderResult.order };
-
+    return await createServiceInternal(request.auth.uid, request.data);
   } catch (error) {
-    logger.error(`💥 Erro ao criar pedido de serviço:`, error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Erro interno do servidor");
+    logger.error('Error creating service:', error);
+    throw new HttpsError('internal', 'Failed to create service');
   }
 });
 
-/**
- * Accept a service order - STANDALONE FUNCTION
- */
-export const acceptServiceOrderStandalone = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
+export const updateService = onCall(async (request) => {
   if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
-
-  const userId = request.auth.uid;
-  const { orderId } = request.data;
-
-  if (!orderId) {
-    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
-  }
-
+  
+  const { serviceId, ...updateData } = request.data;
+  
   try {
-    const orderRef = db.collection('serviceOrders').doc(orderId);
-    const orderDoc = await orderRef.get();
-
-    if (!orderDoc.exists) {
-      throw new HttpsError("not-found", "Pedido não encontrado");
-    }
-
-    const orderData = orderDoc.data();
-    
-    if (orderData.sellerId !== userId) {
-      throw new HttpsError("permission-denied", "Você não tem permissão para aceitar este pedido");
-    }
-
-    if (orderData.status !== 'PENDING_ACCEPTANCE') {
-      throw new HttpsError("failed-precondition", "Pedido não está aguardando aceitação");
-    }
-
-    // Update order status
-    await orderRef.update({
-      status: 'ACCEPTED',
-      'timestamps.acceptedAt': admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    logger.info(`✅ Pedido aceito: ${orderId} por ${userId}`);
-    return { success: true, orderId };
-
+    return await updateServiceInternal(serviceId, updateData);
   } catch (error) {
-    logger.error(`💥 Erro ao aceitar pedido:`, error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Erro interno do servidor");
+    logger.error('Error updating service:', error);
+    throw new HttpsError('internal', 'Failed to update service');
   }
 });
 
-/**
- * Decline a service order - STANDALONE FUNCTION
- */
-export const declineServiceOrderStandalone = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
+export const createPack = onCall(async (request) => {
   if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
-
-  const userId = request.auth.uid;
-  const { orderId, reason = '' } = request.data;
-
-  if (!orderId) {
-    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
-  }
-
+  
   try {
-    const orderRef = db.collection('serviceOrders').doc(orderId);
-    const orderDoc = await orderRef.get();
-
-    if (!orderDoc.exists) {
-      throw new HttpsError("not-found", "Pedido não encontrado");
-    }
-
-    const orderData = orderDoc.data();
-    
-    if (orderData.sellerId !== userId) {
-      throw new HttpsError("permission-denied", "Você não tem permissão para recusar este pedido");
-    }
-
-    if (orderData.status !== 'PENDING_ACCEPTANCE') {
-      throw new HttpsError("failed-precondition", "Pedido não está aguardando aceitação");
-    }
-
-    // Refund VP to buyer and update order in transaction
-    await db.runTransaction(async (transaction) => {
-      // Refund VP to buyer
-      const buyerWalletRef = db.collection('wallets').doc(orderData.buyerId);
-      transaction.update(buyerWalletRef, {
-        vp: admin.firestore.FieldValue.increment(orderData.vpAmount),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Update order status
-      transaction.update(orderRef, {
-        status: 'CANCELLED',
-        'metadata.cancellationReason': reason,
-        'timestamps.cancelledAt': admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Create refund transaction
-      const refundTransactionRef = db.collection('transactions').doc();
-      const refundTransactionData = {
-        id: refundTransactionRef.id,
-        userId: orderData.buyerId,
-        type: 'SERVICE_REFUND',
-        amounts: { vp: orderData.vpAmount },
-        ref: {
-          serviceOrderId: orderId,
-          targetUserId: userId
-        },
-        status: 'CONFIRMED',
-        metadata: {
-          description: `Reembolso de serviço recusado: ${orderData.metadata.serviceName}`,
-          reason
-        },
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      };
-
-      transaction.set(refundTransactionRef, refundTransactionData);
-    });
-
-    logger.info(`✅ Pedido recusado: ${orderId} por ${userId}`);
-    return { success: true, orderId };
-
+    return await createPackInternal(request.auth.uid, request.data);
   } catch (error) {
-    logger.error(`💥 Erro ao recusar pedido:`, error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Erro interno do servidor");
+    logger.error('Error creating pack:', error);
+    throw new HttpsError('internal', 'Failed to create pack');
   }
 });
 
-/**
- * Mark service as delivered - STANDALONE FUNCTION
- */
-export const markServiceDeliveredStandalone = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
+export const updatePack = onCall(async (request) => {
   if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
-
-  const userId = request.auth.uid;
-  const { orderId, deliveryNotes = '' } = request.data;
-
-  if (!orderId) {
-    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
-  }
-
+  
+  const { packId, ...updateData } = request.data;
+  
   try {
-    const orderRef = db.collection('serviceOrders').doc(orderId);
-    const orderDoc = await orderRef.get();
-
-    if (!orderDoc.exists) {
-      throw new HttpsError("not-found", "Pedido não encontrado");
-    }
-
-    const orderData = orderDoc.data();
-    
-    if (orderData.sellerId !== userId) {
-      throw new HttpsError("permission-denied", "Você não tem permissão para marcar este pedido como entregue");
-    }
-
-    if (orderData.status !== 'ACCEPTED') {
-      throw new HttpsError("failed-precondition", "Pedido não está aceito");
-    }
-
-    // Update order status
-    await orderRef.update({
-      status: 'DELIVERED',
-      'metadata.deliveryNotes': deliveryNotes,
-      'timestamps.deliveredAt': admin.firestore.FieldValue.serverTimestamp(),
-      'timestamps.autoReleaseAt': new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours for buyer confirmation
-    });
-
-    logger.info(`✅ Serviço marcado como entregue: ${orderId} por ${userId}`);
-    return { success: true, orderId };
-
+    return await updatePackInternal(packId, updateData);
   } catch (error) {
-    logger.error(`💥 Erro ao marcar serviço como entregue:`, error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Erro interno do servidor");
+    logger.error('Error updating pack:', error);
+    throw new HttpsError('internal', 'Failed to update pack');
   }
 });
 
-/**
- * Confirm service delivery (buyer) - STANDALONE FUNCTION
- */
-export const confirmServiceDeliveryStandalone = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
+// === UTILITY FUNCTIONS ===
+// (Utility functions can be added here as needed)
 
-  const userId = request.auth.uid;
-  const { orderId, feedback = '' } = request.data;
-
-  if (!orderId) {
-    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
-  }
-
-  try {
-    const orderRef = db.collection('serviceOrders').doc(orderId);
-    const orderDoc = await orderRef.get();
-
-    if (!orderDoc.exists) {
-      throw new HttpsError("not-found", "Pedido não encontrado");
-    }
-
-    const orderData = orderDoc.data();
-    
-    if (orderData.buyerId !== userId) {
-      throw new HttpsError("permission-denied", "Você não tem permissão para confirmar este pedido");
-    }
-
-    if (orderData.status !== 'DELIVERED') {
-      throw new HttpsError("failed-precondition", "Pedido não está marcado como entregue");
-    }
-
-    // Release payment to seller
-    await db.runTransaction(async (transaction) => {
-      // Add VC to seller wallet
-      const sellerWalletRef = db.collection('wallets').doc(orderData.sellerId);
-      transaction.update(sellerWalletRef, {
-        vc: admin.firestore.FieldValue.increment(orderData.vcAmount),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Update order status
-      transaction.update(orderRef, {
-        status: 'CONFIRMED',
-        'metadata.buyerFeedback': feedback,
-        'timestamps.confirmedAt': admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Create transaction for seller earnings
-      const sellerTransactionRef = db.collection('transactions').doc();
-      const sellerTransactionData = {
-        id: sellerTransactionRef.id,
-        userId: orderData.sellerId,
-        type: 'SERVICE_EARNINGS',
-        amounts: { vc: orderData.vcAmount },
-        ref: {
-          serviceOrderId: orderId,
-          targetUserId: userId
-        },
-        status: 'CONFIRMED',
-        metadata: {
-          description: `Ganhos de serviço confirmado: ${orderData.metadata.serviceName}`,
-          conversionRate: 1.5,
-          originalAmount: orderData.vpAmount
-        },
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      };
-
-      transaction.set(sellerTransactionRef, sellerTransactionData);
-    });
-
-    logger.info(`✅ Entrega confirmada: ${orderId} por ${userId}`);
-    return { success: true, orderId };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao confirmar entrega:`, error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
-
-/**
- * Auto-release service payments after 24 hours
- */
-export const autoReleaseServicePayments = onSchedule({
-  schedule: "every 1 hours",
-  memory: "256MiB",
-  timeoutSeconds: 300,
-}, async () => {
-  try {
-    const now = new Date();
-    const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
-
-    // Find orders that should be auto-released
-    const ordersQuery = db.collection('serviceOrders')
-      .where('status', '==', 'DELIVERED')
-      .where('timestamps.deliveredAt', '<', cutoff);
-
-    const ordersSnapshot = await ordersQuery.get();
-    
-    if (ordersSnapshot.empty) {
-      logger.info('✅ Nenhum pedido para liberação automática');
-      return;
-    }
-
-    const batch = db.batch();
-    let releasedCount = 0;
-
-    for (const orderDoc of ordersSnapshot.docs) {
-      const orderData = orderDoc.data();
-      const orderRef = orderDoc.ref;
-
-      try {
-        // Add VC to seller wallet
-        const sellerWalletRef = db.collection('wallets').doc(orderData.sellerId);
-        batch.update(sellerWalletRef, {
-          vc: admin.firestore.FieldValue.increment(orderData.vcAmount),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-
-        // Update order status
-        batch.update(orderRef, {
-          status: 'AUTO_RELEASED',
-          'timestamps.autoReleasedAt': admin.firestore.FieldValue.serverTimestamp()
-        });
-
-        // Create transaction for seller earnings
-        const sellerTransactionRef = db.collection('transactions').doc();
-        const sellerTransactionData = {
-          id: sellerTransactionRef.id,
-          userId: orderData.sellerId,
-          type: 'SERVICE_AUTO_RELEASE',
-          amounts: { vc: orderData.vcAmount },
-          ref: {
-            serviceOrderId: orderDoc.id,
-            targetUserId: orderData.buyerId
-          },
-          status: 'CONFIRMED',
-          metadata: {
-            description: `Ganhos de serviço liberados automaticamente: ${orderData.metadata.serviceName}`,
-            conversionRate: 1.5,
-            originalAmount: orderData.vpAmount
-          },
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        };
-
-        batch.set(sellerTransactionRef, sellerTransactionData);
-        releasedCount++;
-
-      } catch (error) {
-        logger.error(`💥 Erro ao processar liberação automática para pedido ${orderDoc.id}:`, error);
-      }
-    }
-
-    if (releasedCount > 0) {
-      await batch.commit();
-      logger.info(`✅ ${releasedCount} pagamentos liberados automaticamente`);
-    }
-
-  } catch (error) {
-    logger.error('💥 Erro na liberação automática de pagamentos:', error);
-  }
-});
-
-// =====================================================
-// INTERNAL SERVICE ORDER FUNCTIONS (for API)
-// =====================================================
-
-async function createServiceOrderInternal(userId, payload) {
-  const { serviceId, sellerId, vpAmount, additionalFeatures = [], metadata = {} } = payload;
-
-  if (!serviceId || !sellerId || !vpAmount || vpAmount <= 0) {
-    throw new HttpsError("invalid-argument", "Dados do pedido inválidos");
-  }
-
-  // Check if service exists
-  const serviceRef = db.collection('services').doc(serviceId);
-  const serviceDoc = await serviceRef.get();
-  
-  if (!serviceDoc.exists || !serviceDoc.data().isActive) {
-    throw new HttpsError("not-found", "Serviço não encontrado ou inativo");
-  }
-
-  const serviceData = serviceDoc.data();
-  if (serviceData.providerId !== sellerId) {
-    throw new HttpsError("invalid-argument", "Vendedor não corresponde ao provedor do serviço");
-  }
-
-  // Check buyer's wallet
-  const buyerWalletRef = db.collection('wallets').doc(userId);
-  const buyerWallet = await buyerWalletRef.get();
-  
-  if (!buyerWallet.exists || buyerWallet.data().vp < vpAmount) {
-    throw new HttpsError("failed-precondition", "VP insuficiente");
-  }
-
-  // Calculate total amount including additional features
-  const featuresTotal = additionalFeatures.reduce((total, feature) => total + (feature.price || 0), 0);
-  const totalAmount = vpAmount + featuresTotal;
-
-  if (buyerWallet.data().vp < totalAmount) {
-    throw new HttpsError("failed-precondition", "VP insuficiente para o total do pedido");
-  }
-
-  // Create service order in a transaction
-  const orderResult = await db.runTransaction(async (transaction) => {
-    // Deduct VP from buyer
-    transaction.update(buyerWalletRef, {
-      vp: admin.firestore.FieldValue.increment(-totalAmount),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Create service order
-    const orderRef = db.collection('serviceOrders').doc();
-    const orderData = {
-      id: orderRef.id,
-      serviceId,
-      buyerId: userId,
-      sellerId,
-      vpAmount: totalAmount,
-      vcAmount: Math.floor(totalAmount / 1.5), // VP to VC conversion rate
-      status: 'PENDING_ACCEPTANCE',
-      additionalFeatures,
-      metadata: {
-        serviceName: serviceData.title,
-        serviceDescription: serviceData.description,
-        ...metadata
-      },
-      timestamps: {
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        autoReleaseAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
-      },
-      transactionIds: {}
-    };
-
-    transaction.set(orderRef, orderData);
-
-    // Create transaction record for buyer
-    const buyerTransactionRef = db.collection('transactions').doc();
-    const buyerTransactionData = {
-      id: buyerTransactionRef.id,
-      userId,
-      type: 'SERVICE_PURCHASE',
-      amounts: { vp: -totalAmount },
-      ref: {
-        serviceId,
-        serviceOrderId: orderRef.id,
-        targetUserId: sellerId
-      },
-      status: 'CONFIRMED',
-      metadata: {
-        description: `Compra de serviço: ${serviceData.title}`,
-        originalAmount: totalAmount
-      },
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    };
-
-    transaction.set(buyerTransactionRef, buyerTransactionData);
-
-    return { order: orderData, buyerTransactionId: buyerTransactionRef.id };
-  });
-
-  logger.info(`✅ Pedido de serviço criado: ${orderResult.order.id} por ${userId}`);
-  return { success: true, order: orderResult.order };
-}
-
-async function acceptServiceOrderInternal(userId, payload) {
-  const { orderId } = payload;
-
-  if (!orderId) {
-    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
-  }
-
-  const orderRef = db.collection('serviceOrders').doc(orderId);
-  const orderDoc = await orderRef.get();
-
-  if (!orderDoc.exists) {
-    throw new HttpsError("not-found", "Pedido não encontrado");
-  }
-
-  const orderData = orderDoc.data();
-  
-  if (orderData.sellerId !== userId) {
-    throw new HttpsError("permission-denied", "Você não tem permissão para aceitar este pedido");
-  }
-
-  if (orderData.status !== 'PENDING_ACCEPTANCE') {
-    throw new HttpsError("failed-precondition", "Pedido não está aguardando aceitação");
-  }
-
-  // Update order status
-  await orderRef.update({
-    status: 'ACCEPTED',
-    'timestamps.acceptedAt': admin.firestore.FieldValue.serverTimestamp()
-  });
-
-  logger.info(`✅ Pedido aceito: ${orderId} por ${userId}`);
-  return { success: true, orderId };
-}
-
-async function declineServiceOrderInternal(userId, payload) {
-  const { orderId, reason = '' } = payload;
-
-  if (!orderId) {
-    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
-  }
-
-  const orderRef = db.collection('serviceOrders').doc(orderId);
-  const orderDoc = await orderRef.get();
-
-  if (!orderDoc.exists) {
-    throw new HttpsError("not-found", "Pedido não encontrado");
-  }
-
-  const orderData = orderDoc.data();
-  
-  if (orderData.sellerId !== userId) {
-    throw new HttpsError("permission-denied", "Você não tem permissão para recusar este pedido");
-  }
-
-  if (orderData.status !== 'PENDING_ACCEPTANCE') {
-    throw new HttpsError("failed-precondition", "Pedido não está aguardando aceitação");
-  }
-
-  // Refund VP to buyer and update order in transaction
-  await db.runTransaction(async (transaction) => {
-    // Refund VP to buyer
-    const buyerWalletRef = db.collection('wallets').doc(orderData.buyerId);
-    transaction.update(buyerWalletRef, {
-      vp: admin.firestore.FieldValue.increment(orderData.vpAmount),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Update order status
-    transaction.update(orderRef, {
-      status: 'CANCELLED',
-      'metadata.cancellationReason': reason,
-      'timestamps.cancelledAt': admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Create refund transaction
-    const refundTransactionRef = db.collection('transactions').doc();
-    const refundTransactionData = {
-      id: refundTransactionRef.id,
-      userId: orderData.buyerId,
-      type: 'SERVICE_REFUND',
-      amounts: { vp: orderData.vpAmount },
-      ref: {
-        serviceOrderId: orderId,
-        targetUserId: userId
-      },
-      status: 'CONFIRMED',
-      metadata: {
-        description: `Reembolso de serviço recusado: ${orderData.metadata.serviceName}`,
-        reason
-      },
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    };
-
-    transaction.set(refundTransactionRef, refundTransactionData);
-  });
-
-  logger.info(`✅ Pedido recusado: ${orderId} por ${userId}`);
-  return { success: true, orderId };
-}
-
-async function markServiceDeliveredInternal(userId, payload) {
-  const { orderId, deliveryNotes = '' } = payload;
-
-  if (!orderId) {
-    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
-  }
-
-  const orderRef = db.collection('serviceOrders').doc(orderId);
-  const orderDoc = await orderRef.get();
-
-  if (!orderDoc.exists) {
-    throw new HttpsError("not-found", "Pedido não encontrado");
-  }
-
-  const orderData = orderDoc.data();
-  
-  if (orderData.sellerId !== userId) {
-    throw new HttpsError("permission-denied", "Você não tem permissão para marcar este pedido como entregue");
-  }
-
-  if (orderData.status !== 'ACCEPTED') {
-    throw new HttpsError("failed-precondition", "Pedido não está aceito");
-  }
-
-  // Update order status
-  await orderRef.update({
-    status: 'DELIVERED',
-    'metadata.deliveryNotes': deliveryNotes,
-    'timestamps.deliveredAt': admin.firestore.FieldValue.serverTimestamp(),
-    'timestamps.autoReleaseAt': new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours for buyer confirmation
-  });
-
-  logger.info(`✅ Serviço marcado como entregue: ${orderId} por ${userId}`);
-  return { success: true, orderId };
-}
-
-async function confirmServiceDeliveryInternal(userId, payload) {
-  const { orderId, feedback = '' } = payload;
-
-  if (!orderId) {
-    throw new HttpsError("invalid-argument", "ID do pedido é obrigatório");
-  }
-
-  const orderRef = db.collection('serviceOrders').doc(orderId);
-  const orderDoc = await orderRef.get();
-
-  if (!orderDoc.exists) {
-    throw new HttpsError("not-found", "Pedido não encontrado");
-  }
-
-  const orderData = orderDoc.data();
-  
-  if (orderData.buyerId !== userId) {
-    throw new HttpsError("permission-denied", "Você não tem permissão para confirmar este pedido");
-  }
-
-  if (orderData.status !== 'DELIVERED') {
-    throw new HttpsError("failed-precondition", "Pedido não está marcado como entregue");
-  }
-
-  // Release payment to seller
-  await db.runTransaction(async (transaction) => {
-    // Add VC to seller wallet
-    const sellerWalletRef = db.collection('wallets').doc(orderData.sellerId);
-    transaction.update(sellerWalletRef, {
-      vc: admin.firestore.FieldValue.increment(orderData.vcAmount),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Update order status
-    transaction.update(orderRef, {
-      status: 'CONFIRMED',
-      'metadata.buyerFeedback': feedback,
-      'timestamps.confirmedAt': admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Create transaction for seller earnings
-    const sellerTransactionRef = db.collection('transactions').doc();
-    const sellerTransactionData = {
-      id: sellerTransactionRef.id,
-      userId: orderData.sellerId,
-      type: 'SERVICE_EARNINGS',
-      amounts: { vc: orderData.vcAmount },
-      ref: {
-        serviceOrderId: orderId,
-        targetUserId: userId
-      },
-      status: 'CONFIRMED',
-      metadata: {
-        description: `Ganhos de serviço confirmado: ${orderData.metadata.serviceName}`,
-        conversionRate: 1.5,
-        originalAmount: orderData.vpAmount
-      },
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    };
-
-    transaction.set(sellerTransactionRef, sellerTransactionData);
-  });
-
-  logger.info(`✅ Entrega confirmada: ${orderId} por ${userId}`);
-  return { success: true, orderId };
-}
-
-/**
- * Create or update conversation (for messaging)
- */
-export const createConversation = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const userId = request.auth.uid;
-  const { otherUserId, serviceOrderId = null, type = 'regular' } = request.data;
-
-  if (!otherUserId) {
-    throw new HttpsError("invalid-argument", "ID do outro usuário é obrigatório");
-  }
-
-  try {
-    // Use Realtime Database for conversations
-    const rtdb = admin.database('https://vixter-451b3.firebaseio.com');
-    const conversationsRef = rtdb.ref('conversations');
-
-    // Check if conversation already exists
-    const existingConversationsSnapshot = await conversationsRef
-      .orderByChild('participants')
-      .once('value');
-
-    let existingConversationId = null;
-    
-    existingConversationsSnapshot.forEach((child) => {
-      const conversation = child.val();
-      if (conversation.participants && 
-          conversation.participants[userId] && 
-          conversation.participants[otherUserId] &&
-          conversation.serviceOrderId === serviceOrderId) {
-        existingConversationId = child.key;
-        return true; // break
-      }
-    });
-
-    if (existingConversationId) {
-      logger.info(`✅ Conversa existente encontrada: ${existingConversationId}`);
-      return { success: true, conversationId: existingConversationId };
-    }
-
-    // Create new conversation
-    const newConversationRef = conversationsRef.push();
-    const conversationData = {
-      participants: {
-        [userId]: true,
-        [otherUserId]: true
-      },
-      type,
-      createdAt: admin.database.ServerValue.TIMESTAMP,
-      lastMessage: '',
-      lastMessageTime: admin.database.ServerValue.TIMESTAMP,
-      lastSenderId: userId
-    };
-
-    if (serviceOrderId) {
-      conversationData.serviceOrderId = serviceOrderId;
-    }
-
-    await newConversationRef.set(conversationData);
-
-    logger.info(`✅ Nova conversa criada: ${newConversationRef.key}`);
-    return { success: true, conversationId: newConversationRef.key };
-
-  } catch (error) {
-    logger.error(`💥 Erro ao criar conversa:`, error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Erro interno do servidor");
-  }
-});
+logger.info('✅ Wallet functions loaded - Stripe preserved, watermarking removed');

@@ -16,9 +16,7 @@ import {
   togglePostLike,
   addComment,
   
-  // Media watermarking
-  watermarkOnUpload,
-  generateBuyerWatermarkedCopy,
+  // Media watermarking - REMOVED (no longer needed without Firebase Storage)
 
   // Messaging and Service Orders
   createServiceOrderStandalone,
@@ -47,9 +45,7 @@ export {
   togglePostLike,
   addComment,
   
-  // Media watermarking
-  watermarkOnUpload,
-  generateBuyerWatermarkedCopy,
+  // Media watermarking - REMOVED (no longer needed without Firebase Storage)
 
   // Messaging and Service Orders
   createServiceOrderStandalone,
