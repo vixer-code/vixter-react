@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { requireAuth, getCorsHeaders, handleCors } from '@/lib/auth';
+import { requireAuth, getCorsHeaders, handleCors, AuthenticatedUser } from '@/lib/auth';
 import { generateDownloadSignedUrl, generateWatermarkUrl } from '@/lib/r2';
 
 export async function OPTIONS(request: NextRequest) {
