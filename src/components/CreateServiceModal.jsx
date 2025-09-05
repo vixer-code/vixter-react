@@ -558,6 +558,17 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
         });
         // Não definimos coverImageURL aqui; será preenchido pelo backend quando wm_ estiver pronto
         console.log('✅ Cover image uploaded');
+        
+        // Adicionar um fallback temporário para mostrar a imagem enquanto o watermarking processa
+        const tempCoverUrl = coverImagePreview || URL.createObjectURL(coverImageFile);
+        await updateService(serviceId, { 
+          coverImageURL: tempCoverUrl,
+          mediaProcessing: {
+            status: 'processing',
+            lastUpdate: new Date().toISOString()
+          }
+        });
+        console.log('📷 Temporary cover image set while watermarking processes');
       } else if (formData.coverImage) {
         baseServiceData.coverImageURL = formData.coverImage;
         console.log('📷 Reusing existing cover image:', baseServiceData.coverImageURL);

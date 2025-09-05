@@ -1939,7 +1939,12 @@ async function watermarkVideo(inputPath, outputPath, ownerId, buyerId = null) {
 async function getOwnerIdFromPath(objectName) {
   // servicesMedia/{ownerId}/{serviceId}/... or packs/{ownerId}/{packId}/...
   const parts = objectName.split('/');
-  if (parts.length >= 2) return parts[1];
+  if (parts.length >= 2) {
+    const ownerId = parts[1];
+    logger.info(`🔍 Extracted ownerId from path: ${objectName} -> ${ownerId}`);
+    return ownerId;
+  }
+  logger.warn(`⚠️ Could not extract ownerId from path: ${objectName}`);
   return 'unknown';
 }
 
@@ -1950,28 +1955,47 @@ export const watermarkOnUpload = onObjectFinalized({
   cpu: 1,
 }, async (event) => {
   const { name: objectName, contentType, metadata = {}, bucket: bucketName } = event.data;
-  if (!shouldProcessPath(objectName)) return;
-  if (metadata.watermarked === 'true') return;
+  
+  logger.info(`🔄 Watermarking triggered for: ${objectName}`);
+  logger.info(`📋 Metadata:`, metadata);
+  logger.info(`📦 Content type: ${contentType}`);
+  
+  if (!shouldProcessPath(objectName)) {
+    logger.info(`⏭️ Skipping watermarking - path not eligible: ${objectName}`);
+    return;
+  }
+  
+  if (metadata.watermarked === 'true') {
+    logger.info(`⏭️ Skipping watermarking - already watermarked: ${objectName}`);
+    return;
+  }
 
   const bucket = admin.storage().bucket(bucketName);
   const tmpIn = path.join(os.tmpdir(), path.basename(objectName));
   const tmpOut = path.join(os.tmpdir(), `wm_${Date.now()}_${path.basename(objectName)}`);
 
   try {
+    logger.info(`📥 Downloading file: ${objectName}`);
     await bucket.file(objectName).download({ destination: tmpIn });
+    
     const ownerId = await getOwnerIdFromPath(objectName);
+    logger.info(`👤 Owner ID: ${ownerId}`);
 
     if ((contentType || '').startsWith('image/')) {
+      logger.info(`🖼️ Processing image watermarking`);
       await watermarkImage(tmpIn, tmpOut, ownerId, null, true);
     } else if ((contentType || '').startsWith('video/')) {
+      logger.info(`🎥 Processing video watermarking`);
       await watermarkVideo(tmpIn, tmpOut, ownerId, null);
     } else {
-      // Unsupported type
+      logger.info(`⏭️ Skipping - unsupported content type: ${contentType}`);
       return;
     }
 
     const destPath = deriveWatermarkedName(objectName);
     const downloadToken = randomUUID();
+    
+    logger.info(`📤 Uploading watermarked file: ${destPath}`);
     await bucket.upload(tmpOut, {
       destination: destPath,
       metadata: {
@@ -1983,6 +2007,8 @@ export const watermarkOnUpload = onObjectFinalized({
     // Build Firebase download URL using token (avoids signBlob permission)
     const encoded = encodeURIComponent(destPath);
     const watermarkedURL = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encoded}?alt=media&token=${downloadToken}`;
+
+    logger.info(`🔗 Watermarked URL: ${watermarkedURL}`);
 
     // Update Firestore document with watermarked URL
     await updateFirestoreWithWatermarkedURL(objectName, watermarkedURL, metadata);
@@ -2001,6 +2027,16 @@ export const watermarkOnUpload = onObjectFinalized({
 async function updateFirestoreWithWatermarkedURL(objectName, watermarkedURL, metadata) {
   const { resource, resourceId, role, index } = metadata;
   
+  logger.info(`🔄 Updating Firestore with watermarked URL:`, {
+    objectName,
+    watermarkedURL,
+    metadata,
+    resource,
+    resourceId,
+    role,
+    index
+  });
+  
   if (!resource || !resourceId || !role) {
     logger.warn('Missing metadata for Firestore update:', { objectName, metadata });
     return;
@@ -2011,6 +2047,8 @@ async function updateFirestoreWithWatermarkedURL(objectName, watermarkedURL, met
     const docRef = db.collection(collection).doc(resourceId);
     const snap = await docRef.get();
     const data = snap.exists ? snap.data() : {};
+
+    logger.info(`📄 Document exists: ${snap.exists}, data:`, data);
 
     const ensureAtIndex = (arr, idx, value) => {
       const clone = Array.isArray(arr) ? [...arr] : [];
@@ -2028,26 +2066,34 @@ async function updateFirestoreWithWatermarkedURL(objectName, watermarkedURL, met
     switch (role) {
       case 'cover':
         updateData.coverImageURL = watermarkedURL;
+        logger.info(`🖼️ Setting coverImageURL: ${watermarkedURL}`);
         break;
       case 'photo':
         updateData.showcasePhotosURLs = ensureAtIndex(data.showcasePhotosURLs, index, watermarkedURL);
+        logger.info(`📸 Setting showcasePhotosURLs[${index}]: ${watermarkedURL}`);
         break;
       case 'video':
         updateData.showcaseVideosURLs = ensureAtIndex(data.showcaseVideosURLs, index, watermarkedURL);
+        logger.info(`🎥 Setting showcaseVideosURLs[${index}]: ${watermarkedURL}`);
         break;
       case 'sampleImage':
         updateData.sampleImages = ensureAtIndex(data.sampleImages, index, watermarkedURL);
+        logger.info(`🖼️ Setting sampleImages[${index}]: ${watermarkedURL}`);
         break;
       case 'sampleVideo':
         updateData.sampleVideos = ensureAtIndex(data.sampleVideos, index, watermarkedURL);
+        logger.info(`🎥 Setting sampleVideos[${index}]: ${watermarkedURL}`);
         break;
       case 'packContent':
         updateData.packContent = ensureAtIndex(data.packContent, index, watermarkedURL);
+        logger.info(`📦 Setting packContent[${index}]: ${watermarkedURL}`);
         break;
       default:
+        logger.warn(`⚠️ Unknown role: ${role}`);
         break;
     }
 
+    logger.info(`📝 Update data:`, updateData);
     await docRef.set(updateData, { merge: true });
     logger.info(`✅ Firestore updated for ${collection}/${resourceId} role=${role}`);
   } catch (error) {

@@ -1185,6 +1185,28 @@
   text-transform: uppercase;
 }
 
+.media-processing-badge {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0, 255, 202, 0.9);
+  color: #000000;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
 .service-status-badge.draft {
   background: rgba(255, 193, 7, 0.9);
   color: #000000;
