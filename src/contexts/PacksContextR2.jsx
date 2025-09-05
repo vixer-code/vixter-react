@@ -346,15 +346,31 @@ export const PacksProviderR2 = ({ children }) => {
       // Get pack data to delete media files
       const pack = await getPackById(packId);
       if (pack) {
-        // Delete cover image
+        console.log('Deleting pack with data:', {
+          packId,
+          coverImage: pack.coverImage,
+          sampleImages: pack.sampleImages,
+          sampleVideos: pack.sampleVideos,
+          packContent: pack.packContent
+        });
+
+        // Delete cover image - handle both R2 key object and URL string
         if (pack.coverImage?.key) {
+          console.log('Deleting R2 cover image with key:', pack.coverImage.key);
           await deleteMedia(pack.coverImage.key);
+        } else if (pack.coverImage && typeof pack.coverImage === 'string') {
+          // If coverImage is a string, it might be an R2 URL that we can extract the key from
+          // or it might be a regular URL that doesn't need R2 deletion
+          console.log('Cover image is URL string:', pack.coverImage);
+          // For now, we'll skip R2 deletion for URL strings since we can't extract the key
+          // In a real implementation, you might want to store the R2 key separately
         }
 
         // Delete sample images
         if (pack.sampleImages) {
           for (const image of pack.sampleImages) {
             if (image.key) {
+              console.log('Deleting R2 sample image with key:', image.key);
               await deleteMedia(image.key);
             }
           }
@@ -364,6 +380,7 @@ export const PacksProviderR2 = ({ children }) => {
         if (pack.sampleVideos) {
           for (const video of pack.sampleVideos) {
             if (video.key) {
+              console.log('Deleting R2 sample video with key:', video.key);
               await deleteMedia(video.key);
             }
           }
@@ -373,6 +390,7 @@ export const PacksProviderR2 = ({ children }) => {
         if (pack.packContent) {
           for (const content of pack.packContent) {
             if (content.key) {
+              console.log('Deleting R2 pack content with key:', content.key);
               await deleteMedia(content.key);
             }
           }

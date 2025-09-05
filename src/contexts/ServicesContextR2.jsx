@@ -373,15 +373,31 @@ export const ServicesProviderR2 = ({ children }) => {
       // Get service data to delete media files
       const service = await getServiceById(serviceId);
       if (service) {
-        // Delete cover image
+        console.log('Deleting service with data:', {
+          serviceId,
+          coverImageURL: service.coverImageURL,
+          coverImage: service.coverImage,
+          sampleImages: service.sampleImages,
+          sampleVideos: service.sampleVideos
+        });
+
+        // Delete cover image - handle both R2 key object and URL string
         if (service.coverImage?.key) {
+          console.log('Deleting R2 cover image with key:', service.coverImage.key);
           await deleteMedia(service.coverImage.key);
+        } else if (service.coverImageURL && typeof service.coverImageURL === 'string') {
+          // If coverImageURL is a string, it might be an R2 URL that we can extract the key from
+          // or it might be a regular URL that doesn't need R2 deletion
+          console.log('Cover image is URL string:', service.coverImageURL);
+          // For now, we'll skip R2 deletion for URL strings since we can't extract the key
+          // In a real implementation, you might want to store the R2 key separately
         }
 
         // Delete sample images
         if (service.sampleImages) {
           for (const image of service.sampleImages) {
             if (image.key) {
+              console.log('Deleting R2 sample image with key:', image.key);
               await deleteMedia(image.key);
             }
           }
@@ -391,6 +407,7 @@ export const ServicesProviderR2 = ({ children }) => {
         if (service.sampleVideos) {
           for (const video of service.sampleVideos) {
             if (video.key) {
+              console.log('Deleting R2 sample video with key:', video.key);
               await deleteMedia(video.key);
             }
           }

@@ -5,8 +5,8 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import { database, storage } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
-import { usePacks } from '../contexts/PacksContext';
-import { useServices } from '../contexts/ServicesContext';
+import { usePacksR2 as usePacks } from '../contexts/PacksContextR2';
+import { useServicesR2 as useServices } from '../contexts/ServicesContextR2';
 import { useNotification } from '../contexts/NotificationContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import { useEmailVerification } from '../hooks/useEmailVerification';
