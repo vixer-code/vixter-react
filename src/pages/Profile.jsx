@@ -849,7 +849,7 @@ const [formData, setFormData] = useState({
     }
     try {
       const token = await currentUser.getIdToken();
-      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL || window.location.origin}/api/provider/manual-payout`, {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'https://vixter-react-llyd.vercel.app'}/api/provider/manual-payout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ amount })

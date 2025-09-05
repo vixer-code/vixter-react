@@ -1,5 +1,5 @@
 // API configuration utility
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://vixter-react-llyd.vercel.app';
 
 export const getBackendUrl = () => BACKEND_URL;
 

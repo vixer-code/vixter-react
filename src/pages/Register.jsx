@@ -194,7 +194,7 @@ const Register = () => {
     setCpfVerificationState(prev => ({ ...prev, isVerifying: true }));
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || window.location.origin}/api/verify-id`, {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'https://vixter-react-llyd.vercel.app'}/api/verify-id`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

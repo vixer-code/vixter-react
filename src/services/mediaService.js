@@ -1,5 +1,5 @@
 // Media service for R2 integration
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://vixter-react-llyd.vercel.app';
 
 class MediaService {
   constructor() {
