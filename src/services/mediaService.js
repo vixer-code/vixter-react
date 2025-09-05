@@ -10,7 +10,7 @@ class MediaService {
    * Get Firebase ID token for authentication
    */
   async getAuthToken() {
-    const { auth } = await import('../config/firebase');
+    const { auth } = await import('../../config/firebase');
     const user = auth.currentUser;
     if (!user) {
       throw new Error('User not authenticated');
