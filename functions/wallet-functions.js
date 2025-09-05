@@ -478,37 +478,51 @@ export const api = onCall(async (request) => {
   const { resource, action, payload } = request.data;
   const userId = request.auth.uid;
 
+  logger.info(`API Call: ${resource}/${action}`, { userId, payloadKeys: Object.keys(payload || {}) });
+
   try {
+    let result;
     switch (resource) {
       case 'service':
         switch (action) {
           case 'create':
-            return await createServiceInternal(userId, payload);
+            result = await createServiceInternal(userId, payload);
+            break;
           case 'update':
-            return await updateServiceInternal(payload.serviceId, payload.updates);
+            result = await updateServiceInternal(payload.serviceId, payload.updates);
+            break;
           case 'delete':
             // Add delete logic if needed
-            return { success: true };
+            result = { success: true };
+            break;
           default:
             throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
         }
+        break;
       
       case 'pack':
         switch (action) {
           case 'create':
-            return await createPackInternal(userId, payload);
+            result = await createPackInternal(userId, payload);
+            break;
           case 'update':
-            return await updatePackInternal(payload.packId, payload.updates);
+            result = await updatePackInternal(payload.packId, payload.updates);
+            break;
           case 'delete':
             // Add delete logic if needed
-            return { success: true };
+            result = { success: true };
+            break;
           default:
             throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
         }
+        break;
       
       default:
         throw new HttpsError('invalid-argument', `Unknown resource: ${resource}`);
     }
+
+    logger.info(`API Success: ${resource}/${action}`, { result });
+    return result;
   } catch (error) {
     logger.error(`API Error [${resource}/${action}]:`, error);
     if (error instanceof HttpsError) throw error;
