@@ -513,6 +513,7 @@ export const ServicesProviderR2 = ({ children }) => {
     getServiceById,
     createService,
     updateService,
+    updateServiceStatus,
     deleteService,
     loadUserServices,
     getServiceMediaDownloadUrl,
