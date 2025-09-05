@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getServiceMediaUrl, getPackContentUrl } from '../services/mediaService';
+import mediaService from '../services/mediaService';
 import './R2MediaViewer.css';
 
 const R2MediaViewer = ({ 
@@ -29,11 +29,11 @@ const R2MediaViewer = ({
       
       if (type === 'pack' && watermarked) {
         // Get watermarked URL for pack content
-        const result = await getPackContentUrl(mediaKey);
+        const result = await mediaService.getPackContentUrl(mediaKey);
         downloadUrl = result.downloadUrl;
       } else {
         // Get regular download URL for service media
-        const result = await getServiceMediaUrl(mediaKey);
+        const result = await mediaService.getServiceMediaUrl(mediaKey);
         downloadUrl = result.downloadUrl;
       }
 
