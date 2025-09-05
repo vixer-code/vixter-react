@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useServices } from '../contexts/ServicesContext';
+import { useServicesR2 as useServices } from '../contexts/ServicesContextR2';
 import { useNotification } from '../contexts/NotificationContext';
 import useR2Media from '../hooks/useR2Media';
 import './CreateServiceModal.css';

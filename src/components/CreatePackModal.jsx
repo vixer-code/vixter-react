@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { usePacks } from '../contexts/PacksContext';
+import { usePacksR2 as usePacks } from '../contexts/PacksContextR2';
 import useR2Media from '../hooks/useR2Media';
 import './CreatePackModal.css';
 
