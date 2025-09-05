@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { usePacks } from '../contexts/PacksContext';
+import useR2Media from '../hooks/useR2Media';
 import './CreatePackModal.css';
 
 const subcategoriesMap = {
@@ -33,6 +34,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   const { currentUser } = useAuth();
   const { createPack, updatePack } = usePacks();
   const { showSuccess, showError } = useNotification();
+  const { uploadPackMedia, uploading, uploadProgress } = useR2Media();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -292,14 +294,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     if (currentStep > 0) setCurrentStep(s => s - 1);
   };
 
-  const fileToDataURL = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
+  // fileToDataURL removed - now using R2 upload
 
   // Currency helpers (same logic as Service: VC -> VP @ 1.5x)
   const convertVCtoVP = (vcAmount) => vcAmount * 1.5;
@@ -362,30 +357,31 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         packId = result.packId;
       }
 
-      // Set cover image URL
+      // Upload cover image to R2
       let coverImageURL = formData.coverImage || '';
       if (coverImageFile) {
-        console.log('📷 Converting cover image to data URL...');
-        coverImageURL = await fileToDataURL(coverImageFile);
-        console.log('✅ Cover image converted');
+        console.log('📷 Uploading cover image to R2...');
+        const coverResult = await uploadPackMedia(coverImageFile, packId);
+        coverImageURL = coverResult.publicUrl;
+        console.log('✅ Cover image uploaded:', coverImageURL);
       }
 
-      // Convert sample images to data URLs
+      // Upload sample images to R2
       const sampleImages = [...formData.sampleImages];
       for (let i = 0; i < sampleImageFiles.length; i++) {
-        console.log(`📸 Converting sample image ${i + 1} to data URL...`);
-        const imageURL = await fileToDataURL(sampleImageFiles[i]);
-        sampleImages.push(imageURL);
-        console.log(`✅ Sample image ${i + 1} converted`);
+        console.log(`📸 Uploading sample image ${i + 1} to R2...`);
+        const imageResult = await uploadPackMedia(sampleImageFiles[i], packId);
+        sampleImages.push(imageResult.publicUrl);
+        console.log(`✅ Sample image ${i + 1} uploaded:`, imageResult.publicUrl);
       }
 
-      // Convert sample videos to data URLs  
+      // Upload sample videos to R2
       const sampleVideos = [...formData.sampleVideos];
       for (let i = 0; i < sampleVideoFiles.length; i++) {
-        console.log(`🎥 Converting sample video ${i + 1} to data URL...`);
-        const videoURL = await fileToDataURL(sampleVideoFiles[i]);
-        sampleVideos.push(videoURL);
-        console.log(`✅ Sample video ${i + 1} converted`);
+        console.log(`🎥 Uploading sample video ${i + 1} to R2...`);
+        const videoResult = await uploadPackMedia(sampleVideoFiles[i], packId);
+        sampleVideos.push(videoResult.publicUrl);
+        console.log(`✅ Sample video ${i + 1} uploaded:`, videoResult.publicUrl);
       }
 
       // Pack files (downloadable content) - TODO: Implement signed URLs for paid content
@@ -1013,10 +1009,10 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
               <button
                 type="button"
                 className="btn primary"
-                disabled={isSubmitting || uploadingFiles}
+                disabled={isSubmitting || uploading}
                 onClick={handleSubmit}
               >
-                {isSubmitting ? (editingPack ? 'Atualizando...' : 'Criando...') : uploadingFiles ? 'Fazendo upload...' : (editingPack ? 'Atualizar Pack' : 'Criar Pack')}
+                {isSubmitting ? (editingPack ? 'Atualizando...' : 'Criando...') : uploading ? `Fazendo upload... ${Math.round(uploadProgress)}%` : (editingPack ? 'Atualizar Pack' : 'Criar Pack')}
               </button>
             )}
           </div>

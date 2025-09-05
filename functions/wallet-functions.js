@@ -468,4 +468,52 @@ export const updatePack = onCall(async (request) => {
 // === UTILITY FUNCTIONS ===
 // (Utility functions can be added here as needed)
 
+// === UNIFIED API FUNCTION ===
+
+export const api = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  const { resource, action, payload } = request.data;
+  const userId = request.auth.uid;
+
+  try {
+    switch (resource) {
+      case 'service':
+        switch (action) {
+          case 'create':
+            return await createServiceInternal(userId, payload);
+          case 'update':
+            return await updateServiceInternal(payload.serviceId, payload.updates);
+          case 'delete':
+            // Add delete logic if needed
+            return { success: true };
+          default:
+            throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
+        }
+      
+      case 'pack':
+        switch (action) {
+          case 'create':
+            return await createPackInternal(userId, payload);
+          case 'update':
+            return await updatePackInternal(payload.packId, payload.updates);
+          case 'delete':
+            // Add delete logic if needed
+            return { success: true };
+          default:
+            throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
+        }
+      
+      default:
+        throw new HttpsError('invalid-argument', `Unknown resource: ${resource}`);
+    }
+  } catch (error) {
+    logger.error(`API Error [${resource}/${action}]:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError('internal', 'Internal server error');
+  }
+});
+
 logger.info('✅ Wallet functions loaded - Stripe preserved, watermarking removed');

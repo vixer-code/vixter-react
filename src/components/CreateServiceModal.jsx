@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useServices } from '../contexts/ServicesContext';
 import { useNotification } from '../contexts/NotificationContext';
+import useR2Media from '../hooks/useR2Media';
 import './CreateServiceModal.css';
 
 const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService = null }) => {
   const { currentUser } = useAuth();
   const { createService, updateService } = useServices();
   const { showSuccess, showError } = useNotification();
+  const { uploadServiceMedia, uploading, uploadProgress } = useR2Media();
   
   // Debug notification context
   console.log('Notification context functions:', { showSuccess: !!showSuccess, showError: !!showError });
@@ -381,14 +383,7 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     }));
   };
 
-  const fileToDataURL = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
+  // fileToDataURL removed - now using R2 upload
 
   const validateCurrentStep = () => {
     switch (currentStep) {
@@ -537,35 +532,34 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       }
       console.log(`🔑 ServiceID: ${serviceId}`);
 
-      // Set cover image URL directly (no upload needed for display images)
+      // Upload cover image to R2
       if (coverImageFile) {
-        console.log('📷 Setting cover image URL...');
-        // Convert file to data URL for immediate display
-        const coverImageURL = await fileToDataURL(coverImageFile);
-        baseServiceData.coverImageURL = coverImageURL;
-        console.log('✅ Cover image URL set');
+        console.log('📷 Uploading cover image to R2...');
+        const coverResult = await uploadServiceMedia(coverImageFile, serviceId);
+        baseServiceData.coverImageURL = coverResult.publicUrl;
+        console.log('✅ Cover image uploaded:', baseServiceData.coverImageURL);
       } else if (formData.coverImage) {
         baseServiceData.coverImageURL = formData.coverImage;
         console.log('📷 Reusing existing cover image:', baseServiceData.coverImageURL);
       }
 
-      // Convert showcase photos to data URLs
+      // Upload showcase photos to R2
       const photoUrls = [...formData.showcasePhotos];
       for (let i = 0; i < showcasePhotoFiles.length; i++) {
-        console.log(`📸 Converting showcase photo ${i + 1} to data URL...`);
-        const photoURL = await fileToDataURL(showcasePhotoFiles[i]);
-        photoUrls.push(photoURL);
-        console.log(`✅ Showcase photo ${i + 1} converted`);
+        console.log(`📸 Uploading showcase photo ${i + 1} to R2...`);
+        const photoResult = await uploadServiceMedia(showcasePhotoFiles[i], serviceId);
+        photoUrls.push(photoResult.publicUrl);
+        console.log(`✅ Showcase photo ${i + 1} uploaded:`, photoResult.publicUrl);
       }
       baseServiceData.showcasePhotosURLs = photoUrls;
 
-      // Convert showcase videos to data URLs
+      // Upload showcase videos to R2
       const videoUrls = [...formData.showcaseVideos];
       for (let i = 0; i < showcaseVideoFiles.length; i++) {
-        console.log(`🎥 Converting showcase video ${i + 1} to data URL...`);
-        const videoURL = await fileToDataURL(showcaseVideoFiles[i]);
-        videoUrls.push(videoURL);
-        console.log(`✅ Showcase video ${i + 1} converted`);
+        console.log(`🎥 Uploading showcase video ${i + 1} to R2...`);
+        const videoResult = await uploadServiceMedia(showcaseVideoFiles[i], serviceId);
+        videoUrls.push(videoResult.publicUrl);
+        console.log(`✅ Showcase video ${i + 1} uploaded:`, videoResult.publicUrl);
       }
       baseServiceData.showcaseVideosURLs = videoUrls;
 
@@ -1193,9 +1187,9 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                 type="button" 
                 onClick={handleSubmit} 
                 className="btn primary"
-                disabled={isSubmitting || uploadingFiles}
+                disabled={isSubmitting || uploading}
               >
-                {isSubmitting ? (editingService ? 'Atualizando...' : 'Criando...') : uploadingFiles ? 'Fazendo upload...' : (editingService ? 'Atualizar Serviço' : 'Criar Serviço')}
+                {isSubmitting ? (editingService ? 'Atualizando...' : 'Criando...') : uploading ? `Fazendo upload... ${Math.round(uploadProgress)}%` : (editingService ? 'Atualizar Serviço' : 'Criar Serviço')}
               </button>
             )}
           </div>
