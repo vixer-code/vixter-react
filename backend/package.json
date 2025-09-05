@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Backend para Vixter - R2 Media Management",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

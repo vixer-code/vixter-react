@@ -74,13 +74,9 @@ export function getCorsHeaders() {
 /**
  * Handle CORS preflight requests
  */
-export function handleCors(request: NextRequest) {
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 200,
-      headers: getCorsHeaders(),
-    });
-  }
-  
-  return null;
+export function handleCors(request: NextRequest): Response {
+  return new Response(null, {
+    status: 200,
+    headers: getCorsHeaders(),
+  });
 }

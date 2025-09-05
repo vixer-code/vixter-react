@@ -1,13 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-  },
+  // Remove deprecated options for Next.js 14
 }
 
 module.exports = nextConfig
