@@ -9,6 +9,7 @@ import { PacksProviderR2 as PacksProvider } from './contexts/PacksContextR2';
 import { ServicesProviderR2 as ServicesProvider } from './contexts/ServicesContextR2';
 import { CentrifugoProvider } from './contexts/CentrifugoContext';
 import { MessagingProvider } from './contexts/MessagingContext';
+import { EnhancedMessagingProvider } from './contexts/EnhancedMessagingContext';
 import { ServiceOrderProvider } from './contexts/ServiceOrderContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -25,6 +26,7 @@ const Feed = lazy(() => import('./pages/Feed'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Wallet = lazy(() => import('./pages/Wallet'));
 const Messages = lazy(() => import('./pages/Messages'));
+const EnhancedMessages = lazy(() => import('./pages/EnhancedMessages'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -55,6 +57,7 @@ function App() {
                   <ServiceOrderProvider>
                     <CentrifugoProvider>
                       <MessagingProvider>
+                        <EnhancedMessagingProvider>
                       <Router>
                         <div className="App">
                           <Header />
@@ -69,6 +72,7 @@ function App() {
                                 <Route path="/profile/:userId" element={<Profile />} />
                                 <Route path="/wallet" element={<Wallet />} />
                                 <Route path="/messages" element={<Messages />} />
+                                <Route path="/enhanced-messages" element={<EnhancedMessages />} />
                                 <Route path="/verify-email" element={<VerifyEmail />} />
                                 {/* Placeholder routes for other pages */}
                                 <Route path="/vixies" element={<div>Vixies Page - Coming Soon</div>} />
@@ -86,6 +90,7 @@ function App() {
                           <NotificationContainer />
                         </div>
                       </Router>
+                        </EnhancedMessagingProvider>
                       </MessagingProvider>
                     </CentrifugoProvider>
                   </ServiceOrderProvider>
