@@ -356,10 +356,10 @@ export const EnhancedMessagingProvider = ({ children }) => {
       console.log('Messages loaded:', messagesData.length);
       setMessages(messagesData);
       
-      // Mark messages as read (temporarily disabled due to Firebase permissions)
-      // if (readReceiptsEnabled) {
-      //   markMessagesAsRead(messagesData);
-      // }
+      // Mark messages as read
+      if (readReceiptsEnabled) {
+        markMessagesAsRead(messagesData);
+      }
     });
 
     return () => {
