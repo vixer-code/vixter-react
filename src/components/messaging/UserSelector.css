@@ -16,7 +16,7 @@
   border-radius: 12px;
   width: 90%;
   max-width: 500px;
-  max-height: 80vh;
+  max-height: 80dvh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
@@ -274,7 +274,7 @@
 @media (max-width: 768px) {
   .user-selector-modal {
     width: 95%;
-    max-height: 90vh;
+    max-height: 90dvh;
   }
   
   .user-selector-header,

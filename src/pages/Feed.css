@@ -3,7 +3,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 100%);
   color: #ffffff;
 }

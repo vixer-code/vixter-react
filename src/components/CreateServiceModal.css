@@ -22,7 +22,7 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   width: 100%;
   max-width: 1200px; /* Increased from 1200px to use more screen space */
-  max-height: 90vh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -166,7 +166,7 @@
   flex-direction: column;
   min-height: 0;
   position: relative;
-  max-height: calc(90vh - 200px); /* Account for header, progress, and actions */
+  max-height: calc(90dvh - 200px); /* Account for header, progress, and actions */
   /* Override conflicting styles from other CSS files */
   background: transparent;
   border-radius: 0;
@@ -1160,7 +1160,7 @@
   }
   
   .create-service-modal {
-    max-height: calc(100vh - 40px);
+    max-height: calc(100dvh - 40px);
     border-radius: 12px;
     width: 100%;
     margin: 0;
@@ -1216,7 +1216,7 @@
   }
   
   .create-service-modal {
-    max-height: calc(100vh - 20px);
+    max-height: calc(100dvh - 20px);
     border-radius: 8px;
     max-width: 100%; /* Use full width on small mobile */
   }
@@ -1419,11 +1419,11 @@
 /* Ensure proper content alignment and prevent overflow */
 @media (max-height: 600px) {
   .create-service-modal {
-    max-height: calc(100vh - 20px);
+    max-height: calc(100dvh - 20px);
   }
   
   .create-service-modal .modal-content {
-    max-height: 60vh;
+    max-height: 60dvh;
   }
 }
 

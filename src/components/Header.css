@@ -425,7 +425,7 @@ header .vp-balance .vp-icon svg,
   transform: translateY(-10px);
   transition: all 0.3s ease;
   z-index: 1000;
-  max-height: 70vh; /* prevent huge dropdown causing page scroll */
+  max-height: 70dvh; /* prevent huge dropdown causing page scroll */
   overflow-y: auto;
   overscroll-behavior: contain; /* prevent body scroll chaining on mobile */
 }
@@ -520,7 +520,7 @@ header .vp-balance .vp-icon svg,
   visibility: hidden;
   opacity: 0;
   overflow-y: auto;
-  height: 100vh;
+  height: 100dvh;
   touch-action: manipulation;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain; /* avoid background scroll */

@@ -1,12 +1,12 @@
 /* Rewards Page Styles */
 .rewards-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
   color: #ffffff;
 }
 
 .rewards-loading {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;

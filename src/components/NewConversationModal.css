@@ -20,7 +20,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   width: 100%;
   max-width: 500px;
-  max-height: 80vh;
+  max-height: 80dvh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -415,7 +415,7 @@
   }
 
   .new-conversation-modal {
-    max-height: 90vh;
+    max-height: 90dvh;
   }
 
   .modal-header,

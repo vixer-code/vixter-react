@@ -1829,7 +1829,7 @@ const [formData, setFormData] = useState({
                   fallbackSrc="/images/default-service.jpg"
                   alt={serviceToPreview.title}
                   sizes="(max-width: 480px) 90vw, (max-width: 768px) 85vw, 720px"
-                  style={{ width: '100%', height: 'auto', maxHeight: '60vh', objectFit: 'cover', borderRadius: '8px' }}
+                  style={{ width: '100%', height: 'auto', maxHeight: '60dvh', objectFit: 'cover', borderRadius: '8px' }}
                 />
               </div>
               <div className="preview-info">
@@ -1869,7 +1869,7 @@ const [formData, setFormData] = useState({
                   fallbackSrc="/images/default-pack.jpg"
                   alt={packToPreview.title}
                   sizes="(max-width: 480px) 90vw, (max-width: 768px) 85vw, 720px"
-                  style={{ width: '100%', height: 'auto', maxHeight: '60vh', objectFit: 'cover', borderRadius: '8px' }}
+                  style={{ width: '100%', height: 'auto', maxHeight: '60dvh', objectFit: 'cover', borderRadius: '8px' }}
                 />
               </div>
               <div className="preview-info">

@@ -1,6 +1,6 @@
 /* Success Page Styles */
 .success-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
   display: flex;
   align-items: center;
