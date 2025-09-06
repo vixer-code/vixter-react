@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useEnhancedMessaging } from '../../contexts/EnhancedMessagingContext';
-import { useCentrifugo } from '../../contexts/CentrifugoContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import TypingIndicator from './TypingIndicator';
@@ -19,7 +18,6 @@ const ChatInterface = ({ conversation, onClose }) => {
     getTypingUsers
   } = useEnhancedMessaging();
   
-  const { publish, isConnected } = useCentrifugo();
   const { currentUser } = useAuth();
   const { showError } = useNotification();
   
@@ -39,29 +37,8 @@ const ChatInterface = ({ conversation, onClose }) => {
     scrollToBottom();
   }, [messages]);
 
-  // Subscribe to typing indicators
-  useEffect(() => {
-    if (!conversation || !isConnected) return;
-
-    const typingChannel = `typing:${conversation.id}`;
-    
-    const subscription = publish ? {
-      onMessage: (data) => {
-        if (data.userId !== currentUser?.uid) {
-          setOtherUserTyping(data.isTyping);
-          
-          // Clear typing indicator after 3 seconds
-          if (data.isTyping) {
-            setTimeout(() => setOtherUserTyping(false), 3000);
-          }
-        }
-      }
-    } : null;
-
-    return () => {
-      // Cleanup if needed
-    };
-  }, [conversation?.id, isConnected, currentUser?.uid, publish]);
+  // Typing indicators now handled by EnhancedMessagingContext
+  // All typing state and functions moved to context for better management
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
