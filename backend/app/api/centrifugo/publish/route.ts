@@ -12,7 +12,7 @@ export async function OPTIONS(request: NextRequest) {
   ];
   
   const headers = new Headers();
-  headers.set('Access-Control-Allow-Origin', allowedOrigins.includes(origin) ? origin : '*');
+  headers.set('Access-Control-Allow-Origin', allowedOrigins.includes(origin || '') ? (origin || '*') : '*');
   headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   headers.set('Access-Control-Max-Age', '86400');
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   ];
   
   const headers = new Headers();
-  headers.set('Access-Control-Allow-Origin', allowedOrigins.includes(origin) ? origin : '*');
+  headers.set('Access-Control-Allow-Origin', allowedOrigins.includes(origin || '') ? (origin || '*') : '*');
   headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   headers.set('Access-Control-Allow-Credentials', 'true');
