@@ -220,7 +220,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
     });
 
     return () => {
-      off(conversationsRef);
+      unsubscribeConversations();
+      unsubscribeServiceConversations();
       clearTimeout(loadingTimeout);
     };
   }, [currentUser?.uid, authLoading]);
@@ -475,9 +476,11 @@ export const EnhancedMessagingProvider = ({ children }) => {
           if (conversationId !== selectedConversationRef.current?.id) {
             console.log('🔔 New message in different conversation:', conversationId);
             
+            let conversationUpdated = false;
+            
             // Update conversations list with new message info
-            setConversations(prev => 
-              prev.map(conv => 
+            setConversations(prev => {
+              const updated = prev.map(conv => 
                 conv.id === conversationId 
                   ? { 
                       ...conv, 
@@ -487,12 +490,19 @@ export const EnhancedMessagingProvider = ({ children }) => {
                       hasUnreadMessages: true
                     }
                   : conv
-              )
-            );
+              );
+              
+              // Re-sort conversations by last message time
+              updated.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+              
+              conversationUpdated = updated.some(conv => conv.id === conversationId);
+              console.log('📋 Updated conversations list, conversation found:', conversationUpdated);
+              return updated;
+            });
 
             // Also update service conversations if it's a service conversation
-            setServiceConversations(prev => 
-              prev.map(conv => 
+            setServiceConversations(prev => {
+              const updated = prev.map(conv => 
                 conv.id === conversationId 
                   ? { 
                       ...conv, 
@@ -502,11 +512,26 @@ export const EnhancedMessagingProvider = ({ children }) => {
                       hasUnreadMessages: true
                     }
                   : conv
-              )
-            );
+              );
+              
+              // Re-sort service conversations by last message time
+              updated.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+              
+              if (!conversationUpdated) {
+                conversationUpdated = updated.some(conv => conv.id === conversationId);
+                console.log('📋 Updated service conversations list, conversation found:', conversationUpdated);
+              }
+              return updated;
+            });
 
-            // Show notification
-            showError(`New message in conversation ${conversationId}`, 'info');
+            // Show notification regardless of whether conversation was found in state
+            // This ensures users always see notifications even if there's a state sync issue
+            showInfo(`New message from ${message.senderName || 'Someone'}`, 'New Message');
+            
+            if (!conversationUpdated) {
+              console.warn('⚠️ Received message for conversation not in local state:', conversationId);
+              console.log('📝 This might indicate a state sync issue or new conversation creation');
+            }
           }
         }
       },
