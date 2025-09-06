@@ -411,8 +411,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
   }, [selectedConversation?.id, isConnected, subscribe, unsubscribe]);
 
   // Create or get conversation
-  const createOrGetConversation = useCallback(async (otherUserId, serviceOrderId = null) => {
-    console.log('🔄 createOrGetConversation called with:', { otherUserId, serviceOrderId, currentUser: currentUser?.uid });
+  const createOrGetConversation = useCallback(async (otherUserId, serviceOrderId = null, skipExistingCheck = false) => {
+    console.log('🔄 createOrGetConversation called with:', { otherUserId, serviceOrderId, currentUser: currentUser?.uid, skipExistingCheck });
     
     if (!currentUser?.uid || !otherUserId) {
       console.log('❌ Missing required data:', { currentUser: currentUser?.uid, otherUserId });
@@ -420,53 +420,86 @@ export const EnhancedMessagingProvider = ({ children }) => {
     }
 
     try {
-      // Generate deterministic conversation ID
-      const conversationId = generateConversationId(currentUser.uid, otherUserId, serviceOrderId);
-      console.log('🎯 Generated deterministic conversation ID:', conversationId);
-
-      const conversationRef = ref(database, `conversations/${conversationId}`);
+      const conversationsRef = ref(database, 'conversations');
+      let existingConversation = null;
       
-      // First check if conversation already exists in local state
-      const allConversations = [...conversations, ...serviceConversations];
-      let existingConversation = allConversations.find(conv => conv.id === conversationId);
-      
-      if (existingConversation) {
-        console.log('✅ Found existing conversation in local state:', conversationId);
-        return existingConversation;
-      }
-
-      // Check if conversation exists in Firebase
-      const snapshot = await new Promise((resolve, reject) => {
-        const timeoutId = setTimeout(() => {
-          reject(new Error('Firebase query timeout'));
-        }, 5000);
+      // Skip existing conversation check if requested (for debugging)
+      if (!skipExistingCheck) {
+        console.log('🔍 Checking for existing conversations in local state first...');
         
-        onValue(conversationRef, (snapshot) => {
-          clearTimeout(timeoutId);
-          resolve(snapshot);
-        }, { onlyOnce: true });
-      });
+        // First check in already loaded conversations (much faster!)
+        const allConversations = [...conversations, ...serviceConversations];
+        console.log('🔍 Checking', allConversations.length, 'loaded conversations for participants:', [currentUser.uid, otherUserId]);
+        
+        existingConversation = allConversations.find(conv => {
+          const participants = Object.keys(conv.participants || {});
+          const isMatch = participants.includes(currentUser.uid) && 
+                         participants.includes(otherUserId) &&
+                         conv.serviceOrderId === serviceOrderId &&
+                         participants.length === 2; // Ensure it's a direct conversation
+          
+          if (participants.includes(currentUser.uid) && participants.includes(otherUserId)) {
+            console.log('🔍 Found conversation with matching participants:', conv.id, 'participants:', participants);
+          }
+          
+          return isMatch;
+        });
 
-      if (snapshot.exists()) {
-        console.log('✅ Found existing conversation in Firebase:', conversationId);
-        const existingData = snapshot.val();
-        const conversation = {
-          id: conversationId,
-          ...existingData
-        };
-
-        // Add to local state
-        if (serviceOrderId) {
-          setServiceConversations(prev => [conversation, ...prev]);
-        } else {
-          setConversations(prev => [conversation, ...prev]);
+        if (existingConversation) {
+          console.log('✅ Found existing conversation in local state:', existingConversation.id);
+          return existingConversation;
         }
 
-        return conversation;
+        console.log('🔍 Not found in local state, checking Firebase...');
+        
+        try {
+          const snapshot = await new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+              reject(new Error('Firebase query timeout'));
+            }, 5000); // Reduced to 5 second timeout
+            
+            onValue(conversationsRef, (snapshot) => {
+              clearTimeout(timeoutId);
+              resolve(snapshot);
+            }, { onlyOnce: true });
+          });
+
+          console.log('📊 Firebase snapshot exists:', snapshot.exists());
+          
+          if (snapshot.exists()) {
+            snapshot.forEach((childSnapshot) => {
+              const conv = childSnapshot.val();
+              const participants = Object.keys(conv.participants || {});
+              
+              // Check if this is the same conversation (same participants and service order)
+              if (participants.includes(currentUser.uid) && 
+                  participants.includes(otherUserId) &&
+                  conv.serviceOrderId === serviceOrderId &&
+                  participants.length === 2) {
+                existingConversation = {
+                  id: childSnapshot.key,
+                  ...conv
+                };
+              }
+            });
+          }
+
+          if (existingConversation) {
+            console.log('✅ Found existing conversation in Firebase:', existingConversation.id);
+            return existingConversation;
+          }
+        } catch (error) {
+          console.log('⚠️ Firebase query failed, will create new conversation:', error.message);
+        }
+        
+        console.log('🔍 No existing conversation found, creating new one...');
+      } else {
+        console.log('⚡ Skipping existing conversation check - creating new one directly...');
       }
 
-      // Create new conversation with deterministic ID
-      console.log('🆕 Creating new conversation with ID:', conversationId);
+      // Create new conversation
+      console.log('🆕 Creating new conversation...');
+      const newConversationRef = push(conversationsRef);
       const conversationData = {
         participants: {
           [currentUser.uid]: true,
@@ -486,11 +519,11 @@ export const EnhancedMessagingProvider = ({ children }) => {
       }
 
       console.log('💾 Saving conversation to Firebase...');
-      await set(conversationRef, conversationData);
+      await set(newConversationRef, conversationData);
       console.log('✅ Conversation saved to Firebase successfully');
 
       const newConversation = {
-        id: conversationId,
+        id: newConversationRef.key,
         ...conversationData
       };
       
@@ -898,8 +931,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
     try {
       console.log('🚀 Starting conversation with user ID:', userId);
-      // Use deterministic conversation ID approach
-      const conversation = await createOrGetConversation(userId, null);
+      // Use existing conversation check (fixed to not hang)
+      const conversation = await createOrGetConversation(userId, null, false);
       if (conversation) {
         console.log('✅ Conversation created/found:', conversation.id);
         setSelectedConversation(conversation);
