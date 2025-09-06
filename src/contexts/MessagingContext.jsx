@@ -359,7 +359,9 @@ export const MessagingProvider = ({ children }) => {
     }
 
     const channelName = `conversation:${selectedConversation.id}`;
-    console.log('Subscribing to Centrifugo channel:', channelName);
+    console.log('🔔 SUBSCRIBING TO CHANNEL:', channelName);
+    console.log('🔔 CONVERSATION ID:', selectedConversation.id);
+    console.log('🔔 CURRENT USER:', currentUser.uid);
 
     const subscription = subscribe(channelName, {
       onMessage: (data, ctx) => {
@@ -632,13 +634,15 @@ export const MessagingProvider = ({ children }) => {
       // Publish message via Centrifugo for real-time delivery
       try {
         const channelName = `conversation:${selectedConversation.id}`;
+        console.log('📤 PUBLISHING TO CHANNEL:', channelName);
+        console.log('📤 MESSAGE DATA:', newMessage);
         await publish(channelName, {
           type: 'new_message',
           message: newMessage,
           conversationId: selectedConversation.id,
           timestamp: Date.now()
         });
-        console.log('Message published via Centrifugo');
+        console.log('✅ Message published via Centrifugo successfully');
       } catch (error) {
         console.error('Error publishing message via Centrifugo:', error);
         // Don't fail the entire operation if Centrifugo publish fails

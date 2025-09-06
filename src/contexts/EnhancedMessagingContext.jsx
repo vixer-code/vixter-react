@@ -349,7 +349,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
     }
 
     const channelName = `conversation:${selectedConversation.id}`;
-    console.log('Subscribing to Centrifugo channel:', channelName);
+    console.log('🔔 ENHANCED - SUBSCRIBING TO CHANNEL:', channelName);
+    console.log('🔔 ENHANCED - CONVERSATION ID:', selectedConversation.id);
+    console.log('🔔 ENHANCED - CURRENT USER:', currentUser.uid);
 
     const subscription = subscribe(channelName, {
       onMessage: (data, ctx) => {
@@ -601,13 +603,15 @@ export const EnhancedMessagingProvider = ({ children }) => {
       if (centrifugoAvailable && publish) {
         try {
           const channelName = `conversation:${conversationId}`;
+          console.log('📤 ENHANCED - PUBLISHING TO CHANNEL:', channelName);
+          console.log('📤 ENHANCED - MESSAGE DATA:', newMessage);
           await publish(channelName, {
             type: 'new_message',
             message: newMessage,
             conversationId: conversationId,
             timestamp: Date.now()
           });
-          console.log('Message published via Centrifugo');
+          console.log('✅ ENHANCED - Message published via Centrifugo successfully');
         } catch (error) {
           console.error('Error publishing message via Centrifugo:', error);
           // Disable Centrifugo if it fails consistently
