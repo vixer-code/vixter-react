@@ -223,6 +223,9 @@ export const CentrifugoProvider = ({ children }) => {
   // Publish message to a channel (via backend API)
   const publish = useCallback(async (channel, data) => {
     try {
+      console.log('Publishing message to channel:', channel, 'with data:', data);
+      console.log('Making request to:', 'https://vixter-react-llyd.vercel.app/api/centrifugo/publish');
+      
       const response = await fetch('https://vixter-react-llyd.vercel.app/api/centrifugo/publish', {
         method: 'POST',
         headers: {
@@ -231,13 +234,25 @@ export const CentrifugoProvider = ({ children }) => {
         body: JSON.stringify({ channel, data })
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error('Failed to publish message');
+        const errorText = await response.text();
+        console.error('Response error text:', errorText);
+        throw new Error(`Failed to publish message: ${response.status} - ${errorText}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log('Message published successfully:', result);
+      return result;
     } catch (error) {
       console.error('Error publishing message:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }, []);

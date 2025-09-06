@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import UserSelector from '../components/messaging/UserSelector';
 import ChatInterface from '../components/messaging/ChatInterface';
 import DebugMessaging from '../components/DebugMessaging';
+import CorsTest from '../components/CorsTest';
 import './EnhancedMessages.css';
 
 const EnhancedMessages = () => {
@@ -117,6 +118,8 @@ const EnhancedMessages = () => {
     <div className="enhanced-messages">
       {/* Debug Component */}
       <DebugMessaging />
+      {/* CORS Test Component */}
+      <CorsTest />
       
       {/* Connection Status */}
       <div className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}>
