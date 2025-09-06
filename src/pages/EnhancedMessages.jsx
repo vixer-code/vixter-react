@@ -4,6 +4,7 @@ import { useCentrifugo } from '../contexts/CentrifugoContext';
 import { useAuth } from '../contexts/AuthContext';
 import UserSelector from '../components/messaging/UserSelector';
 import ChatInterface from '../components/messaging/ChatInterface';
+import DebugMessaging from '../components/DebugMessaging';
 import './EnhancedMessages.css';
 
 const EnhancedMessages = () => {
@@ -114,6 +115,9 @@ const EnhancedMessages = () => {
 
   return (
     <div className="enhanced-messages">
+      {/* Debug Component */}
+      <DebugMessaging />
+      
       {/* Connection Status */}
       <div className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}>
         <div className="status-indicator">

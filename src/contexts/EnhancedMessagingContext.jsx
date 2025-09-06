@@ -41,6 +41,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
   const { getUserById } = useUser();
   const { subscribe, unsubscribe, publish, isConnected } = useCentrifugo();
   
+  // Fallback for when Centrifugo is not available
+  const [centrifugoAvailable, setCentrifugoAvailable] = useState(true);
+  
   // State
   const [conversations, setConversations] = useState([]);
   const [serviceConversations, setServiceConversations] = useState([]);
@@ -122,6 +125,12 @@ export const EnhancedMessagingProvider = ({ children }) => {
       return;
     }
 
+    // Add timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      console.warn('Conversations loading timeout - setting loading to false');
+      setLoading(false);
+    }, 10000); // 10 second timeout
+
     console.log('Setting up conversation listeners for user:', currentUser.uid);
 
     // Load regular conversations
@@ -153,6 +162,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       console.log('Regular conversations loaded:', conversationsData.length);
       setConversations(conversationsData);
       setLoading(false);
+      clearTimeout(loadingTimeout);
     });
 
     // Load service conversations
@@ -185,6 +195,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
     return () => {
       off(conversationsRef);
+      clearTimeout(loadingTimeout);
     };
   }, [currentUser?.uid, authLoading]);
 
@@ -582,17 +593,23 @@ export const EnhancedMessagingProvider = ({ children }) => {
       await update(ref(database), updates);
 
       // Publish message via Centrifugo for real-time delivery
-      try {
-        const channelName = `conversation:${conversationId}`;
-        await publish(channelName, {
-          type: 'new_message',
-          message: newMessage,
-          conversationId: conversationId,
-          timestamp: Date.now()
-        });
-        console.log('Message published via Centrifugo');
-      } catch (error) {
-        console.error('Error publishing message via Centrifugo:', error);
+      if (centrifugoAvailable && publish) {
+        try {
+          const channelName = `conversation:${conversationId}`;
+          await publish(channelName, {
+            type: 'new_message',
+            message: newMessage,
+            conversationId: conversationId,
+            timestamp: Date.now()
+          });
+          console.log('Message published via Centrifugo');
+        } catch (error) {
+          console.error('Error publishing message via Centrifugo:', error);
+          // Disable Centrifugo if it fails consistently
+          setCentrifugoAvailable(false);
+        }
+      } else {
+        console.log('Centrifugo not available - message saved to Firebase only');
       }
 
       return true;

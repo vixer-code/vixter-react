@@ -64,10 +64,19 @@ export const CentrifugoProvider = ({ children }) => {
       setIsConnecting(true);
       setConnectionError(null);
 
+      // Add timeout for token generation
+      const tokenPromise = getToken();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Token generation timeout')), 10000)
+      );
+      
+      const token = await Promise.race([tokenPromise, timeoutPromise]);
+
       const centrifugeInstance = new Centrifuge(CENTRIFUGO_WS_URL, {
-        getToken: getToken,
+        token: token,
         // Token refresh interval (in milliseconds)
         tokenRefreshInterval: 30 * 60 * 1000, // 30 minutes
+        getToken: getToken,
       });
 
       // Connection event handlers
@@ -97,6 +106,7 @@ export const CentrifugoProvider = ({ children }) => {
         console.error('Centrifugo error:', ctx);
         setConnectionError(ctx.message || 'Connection error');
         setIsConnecting(false);
+        setIsConnected(false);
       });
 
       centrifugeInstance.on('token', (ctx) => {
@@ -108,12 +118,24 @@ export const CentrifugoProvider = ({ children }) => {
       
       centrifugeRef.current = centrifugeInstance;
       setCentrifuge(centrifugeInstance);
+
+      // Add connection timeout
+      setTimeout(() => {
+        if (!isConnected && isConnecting) {
+          console.warn('Centrifugo connection timeout');
+          setConnectionError('Connection timeout');
+          setIsConnecting(false);
+          setIsConnected(false);
+        }
+      }, 15000); // 15 second timeout
+
     } catch (error) {
       console.error('Error initializing Centrifugo:', error);
       setConnectionError(error.message);
       setIsConnecting(false);
+      setIsConnected(false);
     }
-  }, [currentUser?.uid, getToken]);
+  }, [currentUser?.uid, getToken, isConnected, isConnecting]);
 
   // Subscribe to a channel
   const subscribe = useCallback((channel, handlers = {}) => {
