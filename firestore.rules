@@ -157,11 +157,11 @@ service cloud.firestore {
       
       // Only service owners can create/update their services
       allow create, update: if isAuthenticated() && 
-                              isOwner(request.resource.data.creatorId);
+                              isOwner(request.resource.data.providerId);
       
       // Only service owners can delete their services
       allow delete: if isAuthenticated() && 
-                      isOwner(resource.data.creatorId);
+                      isOwner(resource.data.providerId);
       
       // Admin access
       allow read, write: if isAdmin();

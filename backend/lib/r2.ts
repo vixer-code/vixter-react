@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, CopyObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // Initialize R2 client (Cloudflare R2 is S3-compatible)
@@ -106,6 +106,35 @@ export async function deleteMedia(key: string): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('Error deleting media from R2:', error);
+    return false;
+  }
+}
+
+/**
+ * Rename/move media file in R2 (copy to new location and delete original)
+ */
+export async function renameMedia(oldKey: string, newKey: string): Promise<boolean> {
+  try {
+    // Copy the file to the new location
+    const copyCommand = new CopyObjectCommand({
+      Bucket: BUCKET_NAME,
+      CopySource: `${BUCKET_NAME}/${oldKey}`,
+      Key: newKey,
+    });
+
+    await r2Client.send(copyCommand);
+
+    // Delete the original file
+    const deleteCommand = new DeleteObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: oldKey,
+    });
+
+    await r2Client.send(deleteCommand);
+    
+    return true;
+  } catch (error) {
+    console.error('Error renaming media in R2:', error);
     return false;
   }
 }

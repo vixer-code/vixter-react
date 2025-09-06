@@ -407,6 +407,49 @@ async function updatePackInternal(packId, payload) {
   return { success: true };
 }
 
+async function deleteServiceInternal(serviceId, userId) {
+  try {
+    // Get service data first to handle R2 file renaming
+    const serviceRef = db.collection('services').doc(serviceId);
+    const serviceDoc = await serviceRef.get();
+
+    if (!serviceDoc.exists) {
+      throw new HttpsError('not-found', 'Service not found');
+    }
+
+    const serviceData = serviceDoc.data();
+    
+    // Check if user owns the service
+    if (serviceData.providerId !== userId) {
+      throw new HttpsError('permission-denied', 'Unauthorized to delete this service');
+    }
+
+    // Call the backend API to rename R2 files
+    const backendUrl = 'https://vixter-react-llyd.vercel.app';
+    const response = await fetch(`${backendUrl}/api/services/delete`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-Id': userId // Pass user ID in header instead of auth token
+      },
+      body: JSON.stringify({ serviceId })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to delete service');
+    }
+
+    const result = await response.json();
+    logger.info(`✅ Service deleted: ${serviceId}`, { result });
+    return result;
+  } catch (error) {
+    logger.error(`💥 Error deleting service ${serviceId}:`, error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError('internal', 'Failed to delete service');
+  }
+}
+
 // === EXPORT FUNCTIONS FOR CLIENT USE ===
 
 export const createService = onCall(async (request) => {
@@ -492,8 +535,7 @@ export const api = onCall(async (request) => {
             result = await updateServiceInternal(payload.serviceId, payload.updates);
             break;
           case 'delete':
-            // Add delete logic if needed
-            result = { success: true };
+            result = await deleteServiceInternal(payload.serviceId, userId);
             break;
           default:
             throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
