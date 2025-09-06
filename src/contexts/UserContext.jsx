@@ -127,7 +127,7 @@ export const UserProvider = ({ children }) => {
 
     try {
       const searchTermLower = searchTerm.toLowerCase();
-      console.log('🔍 Searching for users with term:', searchTermLower);
+      // console.log('🔍 Searching for users with term:', searchTermLower);
       
       // Try searchTerms array first (optimal but requires index)
       try {
@@ -143,15 +143,18 @@ export const UserProvider = ({ children }) => {
         
         snapshot.forEach((doc) => {
           const userData = doc.data();
-          console.log('👤 Found user via searchTerms:', userData.displayName);
+          // console.log('👤 Found user via searchTerms:', userData.displayName);
+          
+          // Remove sensitive data before returning
+          const { email, ...safeUserData } = userData;
           users.push({
             id: doc.id,
-            ...userData
+            ...safeUserData
           });
         });
 
         if (users.length > 0) {
-          console.log('🔍 Search results via searchTerms:', users.length, 'users found');
+          // console.log('🔍 Search results via searchTerms:', users.length, 'users found');
           return users;
         }
       } catch (indexError) {
@@ -169,17 +172,20 @@ export const UserProvider = ({ children }) => {
       snapshot.forEach((doc) => {
         const userData = doc.data();
         const displayName = (userData.displayName || '').toLowerCase();
-        const email = (userData.email || '').toLowerCase();
         const username = (userData.username || '').toLowerCase();
+        const name = (userData.name || '').toLowerCase();
         
-        // Check if search term matches any field
+        // Check if search term matches displayName, username, or name (but NOT email for privacy)
         if (displayName.includes(searchTermLower) || 
-            email.includes(searchTermLower) || 
-            username.includes(searchTermLower)) {
-          console.log('👤 Found user via fallback:', userData.displayName);
+            username.includes(searchTermLower) ||
+            name.includes(searchTermLower)) {
+          // console.log('👤 Found user via fallback:', userData.displayName);
+          
+          // Remove sensitive data before returning
+          const { email, ...safeUserData } = userData;
           users.push({
             id: doc.id,
-            ...userData
+            ...safeUserData
           });
         }
       });
@@ -201,7 +207,7 @@ export const UserProvider = ({ children }) => {
           return aName.localeCompare(bName);
         });
 
-      console.log('🔍 Fallback search results:', limitedUsers.length, 'users found');
+      // console.log('🔍 Fallback search results:', limitedUsers.length, 'users found');
       return limitedUsers;
     } catch (error) {
       console.error('❌ Error searching users:', error);

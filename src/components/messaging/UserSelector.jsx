@@ -48,13 +48,19 @@ const UserSelector = ({ onUserSelected, isOpen, onClose }) => {
   // Handle user selection
   const handleUserSelect = async (user) => {
     try {
-      const conversation = await startConversation(user.uid);
+      // console.log('🚀 Starting conversation with user:', user.displayName, 'UID:', user.uid || user.id);
+      const userId = user.uid || user.id; // Handle both uid and id fields
+      const conversation = await startConversation(userId);
       if (conversation) {
+        console.log('✅ Conversation created successfully:', conversation.id);
         onUserSelected(conversation);
         onClose();
+      } else {
+        console.error('❌ Failed to create conversation - no conversation returned');
+        showError('Falha ao criar conversa');
       }
     } catch (error) {
-      console.error('Error starting conversation:', error);
+      console.error('❌ Error starting conversation:', error);
       showError('Erro ao iniciar conversa');
     }
   };
@@ -118,8 +124,8 @@ const UserSelector = ({ onUserSelected, isOpen, onClose }) => {
               <h4>Resultados da busca</h4>
               {searchResults.map((user) => (
                 <div
-                  key={user.uid}
-                  className={`user-item ${hasConversationWith(user.uid) ? 'has-conversation' : ''}`}
+                  key={user.uid || user.id}
+                  className={`user-item ${hasConversationWith(user.uid || user.id) ? 'has-conversation' : ''}`}
                   onClick={() => handleUserSelect(user)}
                 >
                   <div className="user-avatar">
@@ -135,10 +141,10 @@ const UserSelector = ({ onUserSelected, isOpen, onClose }) => {
                     <div className="user-name">
                       {user.displayName || user.name || 'Usuário sem nome'}
                     </div>
-                    <div className="user-email">
-                      {user.email}
+                    <div className="user-username">
+                      @{user.username || (user.uid || user.id || '').substring(0, 8)}
                     </div>
-                    {hasConversationWith(user.uid) && (
+                    {hasConversationWith(user.uid || user.id) && (
                       <div className="conversation-indicator">
                         Já possui conversa
                       </div>
@@ -147,9 +153,13 @@ const UserSelector = ({ onUserSelected, isOpen, onClose }) => {
                   <div className="user-actions">
                     <button
                       className="start-chat-button"
-                      disabled={hasConversationWith(user.uid)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUserSelect(user);
+                      }}
+                      disabled={hasConversationWith(user.uid || user.id)}
                     >
-                      {hasConversationWith(user.uid) ? 'Conversar' : 'Iniciar Chat'}
+                      {hasConversationWith(user.uid || user.id) ? 'Conversar' : 'Iniciar Chat'}
                     </button>
                   </div>
                 </div>

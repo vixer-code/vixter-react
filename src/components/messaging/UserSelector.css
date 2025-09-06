@@ -209,12 +209,14 @@
   text-overflow: ellipsis;
 }
 
-.user-email {
-  font-size: 0.9rem;
+.user-username {
+  font-size: 0.85rem;
   color: #666;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-weight: 500;
 }
 
 .last-message {
