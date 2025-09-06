@@ -161,8 +161,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
       
       console.log('Regular conversations loaded:', conversationsData.length);
       setConversations(conversationsData);
-      setLoading(false);
-      clearTimeout(loadingTimeout);
+      
+      // Only set loading to false after both regular and service conversations are loaded
+      // This will be handled by the service conversations listener
     });
 
     // Load service conversations
@@ -191,6 +192,10 @@ export const EnhancedMessagingProvider = ({ children }) => {
       
       console.log('Service conversations loaded:', serviceConversationsData.length);
       setServiceConversations(serviceConversationsData);
+      
+      // Set loading to false after both regular and service conversations are loaded
+      setLoading(false);
+      clearTimeout(loadingTimeout);
     });
 
     return () => {
