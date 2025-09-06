@@ -184,7 +184,7 @@ const ChatInterface = ({ conversation, onClose }) => {
           <button className="action-button" title="Informações">
             ℹ️
           </button>
-          <button className="action-button" onClick={onClose} title="Fechar">
+          <button className="action-button close-button" onClick={onClose} title="Fechar conversa">
             ×
           </button>
         </div>

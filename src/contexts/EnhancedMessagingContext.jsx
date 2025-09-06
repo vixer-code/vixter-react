@@ -356,10 +356,10 @@ export const EnhancedMessagingProvider = ({ children }) => {
       console.log('Messages loaded:', messagesData.length);
       setMessages(messagesData);
       
-      // Mark messages as read
-      if (readReceiptsEnabled) {
-        markMessagesAsRead(messagesData);
-      }
+      // Mark messages as read (disabled to avoid permission issues)
+      // if (readReceiptsEnabled) {
+      //   markMessagesAsRead(messagesData);
+      // }
     });
 
     return () => {
@@ -461,10 +461,19 @@ export const EnhancedMessagingProvider = ({ children }) => {
   }, [selectedConversation?.id, isConnected, subscribe, unsubscribe]);
 
   // Global user subscription for receiving messages from any conversation
+  const globalSubscriptionRef = useRef(null);
+  
   useEffect(() => {
     if (!currentUser?.uid || !isConnected || !subscribe || !unsubscribe) return;
 
     const userChannel = `user:${currentUser.uid}`;
+    
+    // Check if subscription already exists
+    if (globalSubscriptionRef.current) {
+      console.log('🌐 Global subscription already exists, skipping...');
+      return;
+    }
+    
     console.log('🌐 Subscribing to global user channel:', userChannel);
 
     const subscription = subscribe(userChannel, {
@@ -558,19 +567,36 @@ export const EnhancedMessagingProvider = ({ children }) => {
       },
       onSubscribed: (ctx) => {
         console.log('✅ Successfully subscribed to global user channel');
+        globalSubscriptionRef.current = subscription;
       },
       onError: (ctx) => {
         console.error('❌ Error in global user subscription:', ctx);
+        globalSubscriptionRef.current = null;
       }
     });
 
     return () => {
       console.log('🌐 Unsubscribing from global user channel:', userChannel);
-      if (subscription) {
+      if (globalSubscriptionRef.current) {
         unsubscribe(userChannel);
+        globalSubscriptionRef.current = null;
       }
     };
   }, [currentUser?.uid, isConnected, subscribe, unsubscribe]);
+
+  // Cleanup global subscription on unmount
+  useEffect(() => {
+    return () => {
+      if (globalSubscriptionRef.current && currentUser?.uid) {
+        const userChannel = `user:${currentUser.uid}`;
+        console.log('🧹 Cleaning up global subscription on unmount:', userChannel);
+        if (unsubscribe) {
+          unsubscribe(userChannel);
+        }
+        globalSubscriptionRef.current = null;
+      }
+    };
+  }, [currentUser?.uid, unsubscribe]);
 
   // Typing indicators functions
   const sendTypingIndicator = useCallback(async (isTyping) => {

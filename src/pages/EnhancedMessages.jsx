@@ -52,7 +52,10 @@ const EnhancedMessages = () => {
       if (targetConversation) {
         console.log('✅ Found conversation from URL, selecting:', targetConversation.id);
         setSelectedConversation(targetConversation);
-        setShowMobileChat(true);
+        // Only show mobile chat on mobile devices
+        if (window.innerWidth <= 768) {
+          setShowMobileChat(true);
+        }
         
         // Clear URL parameter after handling
         const newUrl = window.location.pathname;
@@ -89,9 +92,10 @@ const EnhancedMessages = () => {
     setShowMobileChat(true);
   };
 
-  // Close mobile chat
+  // Close mobile chat and clear selected conversation
   const handleCloseMobileChat = () => {
     setShowMobileChat(false);
+    setSelectedConversation(null);
   };
 
   // Get conversation display name
@@ -313,6 +317,16 @@ const EnhancedMessages = () => {
 
         {/* Chat Interface */}
         <div className={`chat-container ${showMobileChat ? 'mobile-visible' : ''}`}>
+          {/* Mobile back button */}
+          {showMobileChat && (
+            <button 
+              className="mobile-back-button" 
+              onClick={handleCloseMobileChat}
+              title="Voltar para conversas"
+            >
+              ←
+            </button>
+          )}
           <ChatInterface
             conversation={selectedConversation}
             onClose={handleCloseMobileChat}

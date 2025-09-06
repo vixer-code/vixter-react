@@ -1,9 +1,11 @@
 .enhanced-messages {
   height: 100dvh;
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
   background: linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 100%);
   color: #FFFFFF;
+  overflow: hidden;
 }
 
 .enhanced-messages.loading {
@@ -296,6 +298,7 @@
   flex-direction: column;
   background: var(--vixter-bg-primary);
   min-height: 0; /* Important for flex child to shrink */
+  height: 100vh; /* Fixed height */
   max-height: 100vh; /* Limit height */
   overflow: hidden;
 }
@@ -326,6 +329,37 @@
   
   .sidebar-header {
     padding: 15px;
+  }
+  
+  /* Mobile back button */
+  .mobile-back-button {
+    display: none;
+  }
+  
+  .chat-container.mobile-visible .mobile-back-button {
+    display: block;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 20;
+    background: var(--vixter-bg-primary);
+    border: 2px solid var(--vixter-accent-primary);
+    color: var(--vixter-accent-primary);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--vixter-shadow);
+  }
+  
+  .mobile-back-button:hover {
+    background: var(--vixter-accent-primary);
+    color: var(--vixter-bg-primary);
+    transform: scale(1.1);
   }
   
   .sidebar-header h2 {
