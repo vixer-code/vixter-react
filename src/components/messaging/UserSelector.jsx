@@ -48,7 +48,7 @@ const UserSelector = ({ onUserSelected, isOpen, onClose }) => {
   // Handle user selection
   const handleUserSelect = async (user) => {
     try {
-      // console.log('🚀 Starting conversation with user:', user.displayName, 'UID:', user.uid || user.id);
+      console.log('🚀 Starting conversation with user:', user.displayName, 'UID:', user.uid || user.id);
       const userId = user.uid || user.id; // Handle both uid and id fields
       const conversation = await startConversation(userId);
       if (conversation) {
@@ -155,6 +155,7 @@ const UserSelector = ({ onUserSelected, isOpen, onClose }) => {
                       className="start-chat-button"
                       onClick={(e) => {
                         e.stopPropagation();
+                        console.log('🖱️ Button clicked for user:', user.displayName);
                         handleUserSelect(user);
                       }}
                       disabled={hasConversationWith(user.uid || user.id)}

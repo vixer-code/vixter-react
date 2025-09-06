@@ -27,9 +27,11 @@ const EnhancedMessages = () => {
 
   // Handle user selection
   const handleUserSelected = (conversation) => {
+    console.log('📱 EnhancedMessages: User selected, conversation:', conversation);
     setSelectedConversation(conversation);
     setShowUserSelector(false);
     setShowMobileChat(true);
+    console.log('📱 EnhancedMessages: UI state updated, mobile chat should show');
   };
 
   // Handle conversation selection

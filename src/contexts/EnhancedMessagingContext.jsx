@@ -410,7 +410,12 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
   // Create or get conversation
   const createOrGetConversation = useCallback(async (otherUserId, serviceOrderId = null) => {
-    if (!currentUser?.uid || !otherUserId) return null;
+    console.log('🔄 createOrGetConversation called with:', { otherUserId, serviceOrderId, currentUser: currentUser?.uid });
+    
+    if (!currentUser?.uid || !otherUserId) {
+      console.log('❌ Missing required data:', { currentUser: currentUser?.uid, otherUserId });
+      return null;
+    }
 
     try {
       // Check if conversation already exists
@@ -436,10 +441,12 @@ export const EnhancedMessagingProvider = ({ children }) => {
       });
 
       if (existingConversation) {
+        console.log('✅ Found existing conversation:', existingConversation.id);
         return existingConversation;
       }
 
       // Create new conversation
+      console.log('🆕 Creating new conversation...');
       const newConversationRef = push(conversationsRef);
       const conversationData = {
         participants: {
@@ -461,10 +468,13 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
       await set(newConversationRef, conversationData);
 
-      return {
+      const newConversation = {
         id: newConversationRef.key,
         ...conversationData
       };
+      
+      console.log('✅ Created new conversation:', newConversation.id);
+      return newConversation;
     } catch (error) {
       console.error('Error creating conversation:', error);
       showError('Erro ao criar conversa');
@@ -807,17 +817,22 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
   // Start conversation with user
   const startConversation = useCallback(async (userId) => {
-    if (!currentUser?.uid || !userId) return;
+    if (!currentUser?.uid || !userId) return null;
 
     try {
+      console.log('🚀 Starting conversation with user ID:', userId);
       const conversation = await createOrGetConversation(userId);
       if (conversation) {
+        console.log('✅ Conversation created/found:', conversation.id);
         setSelectedConversation(conversation);
         setActiveTab('messages');
+        return conversation; // Return the conversation so UserSelector can use it
       }
+      return null;
     } catch (error) {
-      console.error('Error starting conversation:', error);
+      console.error('❌ Error starting conversation:', error);
       showError('Erro ao iniciar conversa');
+      return null;
     }
   }, [currentUser, createOrGetConversation, showError]);
 
