@@ -81,6 +81,14 @@ export const EnhancedMessagingProvider = ({ children }) => {
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef(null);
   
+  // Ref to access current selectedConversation in global subscription
+  const selectedConversationRef = useRef(selectedConversation);
+  
+  // Update ref when selectedConversation changes
+  useEffect(() => {
+    selectedConversationRef.current = selectedConversation;
+  }, [selectedConversation]);
+  
   // Message types
   const MESSAGE_TYPES = {
     TEXT: 'text',
@@ -464,7 +472,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
           
           // If this is for the currently selected conversation, it will be handled by the conversation subscription
           // If not, update the conversations list to show new message indicator
-          if (conversationId !== selectedConversation?.id) {
+          if (conversationId !== selectedConversationRef.current?.id) {
             console.log('🔔 New message in different conversation:', conversationId);
             
             // Update conversations list with new message info
@@ -516,7 +524,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
         unsubscribe(userChannel);
       }
     };
-  }, [currentUser?.uid, isConnected, subscribe, unsubscribe, selectedConversation?.id, showError, setConversations, setServiceConversations]);
+  }, [currentUser?.uid, isConnected, subscribe, unsubscribe]);
 
   // Typing indicators functions
   const sendTypingIndicator = useCallback(async (isTyping) => {
