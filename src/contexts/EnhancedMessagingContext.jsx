@@ -347,7 +347,13 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
   // Subscribe to Centrifugo channel for real-time messaging
   useEffect(() => {
-    if (!selectedConversation || !isConnected) {
+    if (!selectedConversation) {
+      return;
+    }
+
+    // If Centrifugo is not connected, still show a message but don't fail
+    if (!isConnected) {
+      console.log('⚠️ Centrifugo not connected, messages will only sync via Firebase');
       return;
     }
 

@@ -127,30 +127,84 @@ export const UserProvider = ({ children }) => {
 
     try {
       const searchTermLower = searchTerm.toLowerCase();
+      console.log('🔍 Searching for users with term:', searchTermLower);
       
-      // Query users by searchTerms array
-      const usersRef = collection(db, 'users');
-      const q = query(
-        usersRef,
-        where('searchTerms', 'array-contains', searchTermLower),
-        orderBy('displayName'),
-        limit(limitCount)
-      );
+      // Try searchTerms array first (optimal but requires index)
+      try {
+        const usersRef = collection(db, 'users');
+        const q = query(
+          usersRef,
+          where('searchTerms', 'array-contains', searchTermLower),
+          limit(limitCount)
+        );
 
+        const snapshot = await getDocs(q);
+        const users = [];
+        
+        snapshot.forEach((doc) => {
+          const userData = doc.data();
+          console.log('👤 Found user via searchTerms:', userData.displayName);
+          users.push({
+            id: doc.id,
+            ...userData
+          });
+        });
+
+        if (users.length > 0) {
+          console.log('🔍 Search results via searchTerms:', users.length, 'users found');
+          return users;
+        }
+      } catch (indexError) {
+        console.log('⚠️ SearchTerms query failed, trying fallback method:', indexError.message);
+      }
+
+      // Fallback: Get all users and filter client-side (less efficient but more reliable)
+      console.log('🔄 Using fallback search method...');
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, limit(100)); // Get more to filter
+      
       const snapshot = await getDocs(q);
       const users = [];
       
       snapshot.forEach((doc) => {
         const userData = doc.data();
-        users.push({
-          id: doc.id,
-          ...userData
-        });
+        const displayName = (userData.displayName || '').toLowerCase();
+        const email = (userData.email || '').toLowerCase();
+        const username = (userData.username || '').toLowerCase();
+        
+        // Check if search term matches any field
+        if (displayName.includes(searchTermLower) || 
+            email.includes(searchTermLower) || 
+            username.includes(searchTermLower)) {
+          console.log('👤 Found user via fallback:', userData.displayName);
+          users.push({
+            id: doc.id,
+            ...userData
+          });
+        }
       });
 
-      return users;
+      // Limit results and sort by relevance
+      const limitedUsers = users
+        .slice(0, limitCount)
+        .sort((a, b) => {
+          const aName = (a.displayName || '').toLowerCase();
+          const bName = (b.displayName || '').toLowerCase();
+          
+          // Prioritize exact matches at the beginning
+          const aStartsWith = aName.startsWith(searchTermLower);
+          const bStartsWith = bName.startsWith(searchTermLower);
+          
+          if (aStartsWith && !bStartsWith) return -1;
+          if (!aStartsWith && bStartsWith) return 1;
+          
+          return aName.localeCompare(bName);
+        });
+
+      console.log('🔍 Fallback search results:', limitedUsers.length, 'users found');
+      return limitedUsers;
     } catch (error) {
-      console.error('Error searching users:', error);
+      console.error('❌ Error searching users:', error);
       showError('Erro ao buscar usuários.', 'Erro de Busca');
       return [];
     }

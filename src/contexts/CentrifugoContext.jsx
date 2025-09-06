@@ -71,12 +71,14 @@ export const CentrifugoProvider = ({ children }) => {
       );
       
       const token = await Promise.race([tokenPromise, timeoutPromise]);
+      console.log('🔑 Token received, attempting WebSocket connection to:', CENTRIFUGO_WS_URL);
 
       const centrifugeInstance = new Centrifuge(CENTRIFUGO_WS_URL, {
         token: token,
         // Token refresh interval (in milliseconds)
         tokenRefreshInterval: 30 * 60 * 1000, // 30 minutes
         getToken: getToken,
+        debug: true, // Enable debug mode
       });
 
       // Connection event handlers
@@ -119,15 +121,26 @@ export const CentrifugoProvider = ({ children }) => {
       centrifugeRef.current = centrifugeInstance;
       setCentrifuge(centrifugeInstance);
 
-      // Add connection timeout
-      setTimeout(() => {
+      // Add connection timeout - increased to 30 seconds for slow networks
+      const connectionTimeout = setTimeout(() => {
         if (!isConnected && isConnecting) {
-          console.warn('Centrifugo connection timeout');
-          setConnectionError('Connection timeout');
+          console.warn('Centrifugo connection timeout after 30 seconds');
+          setConnectionError('Connection timeout - please check your internet connection');
           setIsConnecting(false);
           setIsConnected(false);
+          // Try to reconnect after a delay
+          setTimeout(() => {
+            console.log('Attempting to reconnect...');
+            setConnectionError(null);
+            initializeCentrifugo();
+          }, 5000);
         }
-      }, 15000); // 15 second timeout
+      }, 30000); // 30 second timeout
+
+      // Clear timeout when connected
+      centrifugeInstance.on('connected', () => {
+        clearTimeout(connectionTimeout);
+      });
 
     } catch (error) {
       console.error('Error initializing Centrifugo:', error);
