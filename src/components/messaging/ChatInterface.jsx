@@ -14,7 +14,7 @@ const ChatInterface = ({ conversation, onClose }) => {
     formatTime,
     sending,
     uploadingMedia 
-  } = useMessaging();
+  } = useEnhancedMessaging();
   
   const { publish, isConnected } = useCentrifugo();
   const { currentUser } = useAuth();

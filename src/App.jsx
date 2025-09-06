@@ -27,6 +27,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Wallet = lazy(() => import('./pages/Wallet'));
 const Messages = lazy(() => import('./pages/Messages'));
 const EnhancedMessages = lazy(() => import('./pages/EnhancedMessages'));
+const MessagingTestPage = lazy(() => import('./pages/MessagingTestPage'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -73,6 +74,7 @@ function App() {
                                 <Route path="/wallet" element={<Wallet />} />
                                 <Route path="/messages" element={<Messages />} />
                                 <Route path="/enhanced-messages" element={<EnhancedMessages />} />
+                                <Route path="/messaging-test" element={<MessagingTestPage />} />
                                 <Route path="/verify-email" element={<VerifyEmail />} />
                                 {/* Placeholder routes for other pages */}
                                 <Route path="/vixies" element={<div>Vixies Page - Coming Soon</div>} />
