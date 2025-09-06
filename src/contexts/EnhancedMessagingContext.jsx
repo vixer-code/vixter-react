@@ -186,6 +186,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       }
       
       console.log('Regular conversations loaded:', conversationsData.length);
+      console.log('Conversations data:', conversationsData);
       setConversations(conversationsData);
       setLoading(false); // Set loading to false immediately after first load
       clearTimeout(loadingTimeout);
@@ -279,10 +280,12 @@ export const EnhancedMessagingProvider = ({ children }) => {
         updates[`messages/${selectedConversation.id}/${msg.id}/readBy`] = currentUser.uid;
       });
 
-      // Batch update
-      await update(ref(database), updates);
+      // Batch update using the correct database reference
+      const rootRef = ref(database);
+      await update(rootRef, updates);
     } catch (error) {
       console.error('Error marking messages as read:', error);
+      // Don't throw the error to prevent breaking the UI
     }
   }, [currentUser?.uid, selectedConversation?.id]);
 
@@ -353,10 +356,10 @@ export const EnhancedMessagingProvider = ({ children }) => {
       console.log('Messages loaded:', messagesData.length);
       setMessages(messagesData);
       
-      // Mark messages as read
-      if (readReceiptsEnabled) {
-        markMessagesAsRead(messagesData);
-      }
+      // Mark messages as read (temporarily disabled due to Firebase permissions)
+      // if (readReceiptsEnabled) {
+      //   markMessagesAsRead(messagesData);
+      // }
     });
 
     return () => {
@@ -467,6 +470,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
     const subscription = subscribe(userChannel, {
       onMessage: (data, ctx) => {
         console.log('🌐 Received global message notification:', data);
+        console.log('🌐 Notification data type:', data.type);
+        console.log('🌐 Message data:', data.message);
+        console.log('🌐 Conversation ID:', data.conversationId);
         
         if (data.type === 'new_message') {
           const { message, conversationId } = data;
@@ -526,12 +532,16 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
             // Show notification regardless of whether conversation was found in state
             // This ensures users always see notifications even if there's a state sync issue
+            console.log('🔔 About to show notification for message:', message);
+            console.log('🔔 Notification will show:', `New message from ${message.senderName || 'Someone'}`);
+            
             showInfo(
               `New message from ${message.senderName || 'Someone'}`, 
               'New Message',
               7000,
               {
                 onClick: (data) => {
+                  console.log('🔔 Notification clicked, navigating to:', data.conversationId);
                   // Navigate to messages page and select conversation
                   window.location.href = `/messages?conversation=${data.conversationId}`;
                 },

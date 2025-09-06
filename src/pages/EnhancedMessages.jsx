@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useCentrifugo } from '../contexts/CentrifugoContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { useLocation } from 'react-router-dom';
 import UserSelector from '../components/messaging/UserSelector';
 import ChatInterface from '../components/messaging/ChatInterface';
@@ -23,6 +24,7 @@ const EnhancedMessages = () => {
   
   const { isConnected, isConnecting } = useCentrifugo();
   const { currentUser } = useAuth();
+  const { showInfo } = useNotification();
   const location = useLocation();
   
   const [showUserSelector, setShowUserSelector] = useState(false);
@@ -149,6 +151,15 @@ const EnhancedMessages = () => {
     }
   };
 
+  // Debug logging
+  console.log('EnhancedMessages render:', {
+    loading,
+    conversationsCount: conversations.length,
+    serviceConversationsCount: serviceConversations.length,
+    selectedConversation: selectedConversation?.id,
+    activeTab
+  });
+
   if (loading) {
     return (
       <div className="enhanced-messages loading">
@@ -213,11 +224,23 @@ const EnhancedMessages = () => {
                 <div className="empty-state">
                   <div className="empty-icon">💬</div>
                   <p>Nenhuma conversa ainda</p>
+                  <p style={{fontSize: '12px', opacity: 0.7}}>
+                    Debug: Loading: {loading ? 'Yes' : 'No'}, 
+                    Conversations: {conversations.length}, 
+                    User: {currentUser?.uid ? 'Logged in' : 'Not logged in'}
+                  </p>
                   <button
                     className="start-conversation-button"
                     onClick={() => setShowUserSelector(true)}
                   >
                     Iniciar conversa
+                  </button>
+                  <button
+                    className="start-conversation-button"
+                    onClick={() => showInfo('Test notification!', 'Test', 3000)}
+                    style={{marginTop: '10px', background: '#8A2BE2'}}
+                  >
+                    Test Notification
                   </button>
                 </div>
               ) : (
