@@ -132,7 +132,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     const loadingTimeout = setTimeout(() => {
       console.warn('Conversations loading timeout - setting loading to false');
       setLoading(false);
-    }, 10000); // 10 second timeout
+    }, 15000); // 15 second timeout (increased from 10)
 
     console.log('Setting up conversation listeners for user:', currentUser.uid);
 
@@ -164,9 +164,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
       
       console.log('Regular conversations loaded:', conversationsData.length);
       setConversations(conversationsData);
-      
-      // Only set loading to false after both regular and service conversations are loaded
-      // This will be handled by the service conversations listener
+      setLoading(false); // Set loading to false immediately after first load
+      clearTimeout(loadingTimeout);
     });
 
     // Load service conversations
@@ -195,10 +194,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
       
       console.log('Service conversations loaded:', serviceConversationsData.length);
       setServiceConversations(serviceConversationsData);
-      
-      // Set loading to false after both regular and service conversations are loaded
-      setLoading(false);
-      clearTimeout(loadingTimeout);
     });
 
     return () => {
@@ -474,6 +469,15 @@ export const EnhancedMessagingProvider = ({ children }) => {
       };
       
       console.log('✅ Created new conversation:', newConversation.id);
+      
+      // Add conversation to local state immediately (don't wait for Firebase listener)
+      if (conversationData.serviceOrderId) {
+        setServiceConversations(prev => [newConversation, ...prev]);
+      } else {
+        setConversations(prev => [newConversation, ...prev]);
+      }
+      console.log('📱 Added conversation to local state');
+      
       return newConversation;
     } catch (error) {
       console.error('Error creating conversation:', error);

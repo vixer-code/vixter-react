@@ -25,13 +25,24 @@ const EnhancedMessages = () => {
   const [showUserSelector, setShowUserSelector] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
 
+  // Debug effect to track selectedConversation changes
+  useEffect(() => {
+    console.log('🔄 selectedConversation changed to:', selectedConversation?.id);
+  }, [selectedConversation]);
+
   // Handle user selection
   const handleUserSelected = (conversation) => {
     console.log('📱 EnhancedMessages: User selected, conversation:', conversation);
+    console.log('📱 Previous selectedConversation:', selectedConversation?.id);
     setSelectedConversation(conversation);
     setShowUserSelector(false);
     setShowMobileChat(true);
     console.log('📱 EnhancedMessages: UI state updated, mobile chat should show');
+    
+    // Force a small delay to ensure state has updated
+    setTimeout(() => {
+      console.log('📱 Current selectedConversation after update:', selectedConversation?.id);
+    }, 100);
   };
 
   // Handle conversation selection
