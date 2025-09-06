@@ -65,13 +65,16 @@
             ".validate": "newData.isNumber() && newData.val() <= now + 300000"
           },
           "read": {
-            ".validate": "newData.isBoolean()"
+            ".validate": "newData.isBoolean()",
+            ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()"
           },
           "readAt": {
-            ".validate": "newData.isNumber()"
+            ".validate": "newData.isNumber()",
+            ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()"
           },
           "readBy": {
-            ".validate": "newData.isString()"
+            ".validate": "newData.isString()",
+            ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()"
           },
           "replyTo": {
             ".validate": "newData.isString()"
