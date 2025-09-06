@@ -404,8 +404,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
   }, [selectedConversation?.id, isConnected, subscribe, unsubscribe]);
 
   // Create or get conversation
-  const createOrGetConversation = useCallback(async (otherUserId, serviceOrderId = null) => {
-    console.log('🔄 createOrGetConversation called with:', { otherUserId, serviceOrderId, currentUser: currentUser?.uid });
+  const createOrGetConversation = useCallback(async (otherUserId, serviceOrderId = null, skipExistingCheck = false) => {
+    console.log('🔄 createOrGetConversation called with:', { otherUserId, serviceOrderId, currentUser: currentUser?.uid, skipExistingCheck });
     
     if (!currentUser?.uid || !otherUserId) {
       console.log('❌ Missing required data:', { currentUser: currentUser?.uid, otherUserId });
@@ -413,31 +413,51 @@ export const EnhancedMessagingProvider = ({ children }) => {
     }
 
     try {
-      // Check if conversation already exists
       const conversationsRef = ref(database, 'conversations');
-      const snapshot = await new Promise((resolve, reject) => {
-        onValue(conversationsRef, resolve, { onlyOnce: true });
-      });
-
       let existingConversation = null;
-      snapshot.forEach((childSnapshot) => {
-        const conv = childSnapshot.val();
-        const participants = Object.keys(conv.participants || {});
+      
+      // Skip existing conversation check if requested (for debugging)
+      if (!skipExistingCheck) {
+        console.log('🔍 Checking for existing conversations...');
         
-        // Check if this is the same conversation (same participants and service order)
-        if (participants.includes(currentUser.uid) && 
-            participants.includes(otherUserId) &&
-            conv.serviceOrderId === serviceOrderId) {
-          existingConversation = {
-            id: childSnapshot.key,
-            ...conv
-          };
-        }
-      });
+        const snapshot = await new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            reject(new Error('Firebase query timeout'));
+          }, 10000); // 10 second timeout
+          
+          onValue(conversationsRef, (snapshot) => {
+            clearTimeout(timeoutId);
+            resolve(snapshot);
+          }, { onlyOnce: true });
+        });
 
-      if (existingConversation) {
-        console.log('✅ Found existing conversation:', existingConversation.id);
-        return existingConversation;
+        console.log('📊 Firebase snapshot exists:', snapshot.exists());
+        
+        if (snapshot.exists()) {
+          snapshot.forEach((childSnapshot) => {
+            const conv = childSnapshot.val();
+            const participants = Object.keys(conv.participants || {});
+            
+            // Check if this is the same conversation (same participants and service order)
+            if (participants.includes(currentUser.uid) && 
+                participants.includes(otherUserId) &&
+                conv.serviceOrderId === serviceOrderId) {
+              existingConversation = {
+                id: childSnapshot.key,
+                ...conv
+              };
+            }
+          });
+        }
+
+        if (existingConversation) {
+          console.log('✅ Found existing conversation:', existingConversation.id);
+          return existingConversation;
+        }
+        
+        console.log('🔍 No existing conversation found, creating new one...');
+      } else {
+        console.log('⚡ Skipping existing conversation check - creating new one directly...');
       }
 
       // Create new conversation
@@ -461,7 +481,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
         conversationData.type = 'regular';
       }
 
+      console.log('💾 Saving conversation to Firebase...');
       await set(newConversationRef, conversationData);
+      console.log('✅ Conversation saved to Firebase successfully');
 
       const newConversation = {
         id: newConversationRef.key,
@@ -480,7 +502,54 @@ export const EnhancedMessagingProvider = ({ children }) => {
       
       return newConversation;
     } catch (error) {
-      console.error('Error creating conversation:', error);
+      console.error('❌ Error creating conversation:', error);
+      
+      // If the error is a timeout, try creating the conversation anyway
+      if (error.message === 'Firebase query timeout') {
+        console.log('⚠️ Firebase query timed out, creating conversation anyway...');
+        try {
+          const conversationsRef = ref(database, 'conversations');
+          const newConversationRef = push(conversationsRef);
+          const conversationData = {
+            participants: {
+              [currentUser.uid]: true,
+              [otherUserId]: true
+            },
+            createdAt: Date.now(),
+            lastMessage: '',
+            lastMessageTime: Date.now(),
+            lastSenderId: currentUser.uid,
+            type: serviceOrderId ? 'service' : 'regular'
+          };
+
+          if (serviceOrderId) {
+            conversationData.serviceOrderId = serviceOrderId;
+          }
+
+          await set(newConversationRef, conversationData);
+          
+          const newConversation = {
+            id: newConversationRef.key,
+            ...conversationData
+          };
+          
+          console.log('✅ Fallback conversation created:', newConversation.id);
+          
+          // Add to local state
+          if (conversationData.serviceOrderId) {
+            setServiceConversations(prev => [newConversation, ...prev]);
+          } else {
+            setConversations(prev => [newConversation, ...prev]);
+          }
+          
+          return newConversation;
+        } catch (fallbackError) {
+          console.error('❌ Fallback creation also failed:', fallbackError);
+          showError('Erro ao criar conversa - problema de conexão');
+          return null;
+        }
+      }
+      
       showError('Erro ao criar conversa');
       return null;
     }
@@ -825,7 +894,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
     try {
       console.log('🚀 Starting conversation with user ID:', userId);
-      const conversation = await createOrGetConversation(userId);
+      // Temporarily skip existing conversation check to bypass the hanging Firebase query
+      const conversation = await createOrGetConversation(userId, null, true);
       if (conversation) {
         console.log('✅ Conversation created/found:', conversation.id);
         setSelectedConversation(conversation);
