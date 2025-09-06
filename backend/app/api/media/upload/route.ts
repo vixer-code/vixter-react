@@ -23,7 +23,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
         JSON.stringify({ error: 'Missing required fields: type, contentType' }),
         { 
           status: 400,
-          headers: { 'Content-Type': 'application/json', ...getCorsHeaders() }
+          headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
         }
       );
     }
@@ -35,7 +35,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
         JSON.stringify({ error: 'Invalid type. Must be one of: pack, service, profile, message' }),
         { 
           status: 400,
-          headers: { 'Content-Type': 'application/json', ...getCorsHeaders() }
+          headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
         }
       );
     }
@@ -58,7 +58,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json', ...getCorsHeaders() }
+        headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
       }
     );
   } catch (error) {
@@ -67,7 +67,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       JSON.stringify({ error: 'Failed to generate upload URL' }),
       { 
         status: 500,
-        headers: { 'Content-Type': 'application/json', ...getCorsHeaders() }
+        headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
       }
     );
   }

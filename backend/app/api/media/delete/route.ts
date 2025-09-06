@@ -17,7 +17,7 @@ export const DELETE = requireAuth(async (request: NextRequest, user: Authenticat
         JSON.stringify({ error: 'Missing required field: key' }),
         { 
           status: 400,
-          headers: { 'Content-Type': 'application/json', ...getCorsHeaders() }
+          headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
         }
       );
     }
@@ -45,7 +45,7 @@ export const DELETE = requireAuth(async (request: NextRequest, user: Authenticat
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json', ...getCorsHeaders() }
+        headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
       }
     );
   } catch (error) {
@@ -54,7 +54,7 @@ export const DELETE = requireAuth(async (request: NextRequest, user: Authenticat
       JSON.stringify({ error: 'Failed to delete media' }),
       { 
         status: 500,
-        headers: { 'Content-Type': 'application/json', ...getCorsHeaders() }
+        headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
       }
     );
   }

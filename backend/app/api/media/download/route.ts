@@ -21,7 +21,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
         JSON.stringify({ error: 'Missing required field: key' }),
         { 
           status: 400,
-          headers: { 'Content-Type': 'application/json', ...getCorsHeaders() }
+          headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
         }
       );
     }
@@ -52,7 +52,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json', ...getCorsHeaders() }
+        headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
       }
     );
   } catch (error) {
@@ -61,7 +61,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       JSON.stringify({ error: 'Failed to generate download URL' }),
       { 
         status: 500,
-        headers: { 'Content-Type': 'application/json', ...getCorsHeaders() }
+        headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
       }
     );
   }

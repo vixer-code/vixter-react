@@ -62,11 +62,19 @@ export function requireAuth(handler: (request: NextRequest, user: AuthenticatedU
 /**
  * CORS headers for API responses
  */
-export function getCorsHeaders() {
+export function getCorsHeaders(origin?: string | null) {
+  const allowedOrigins = [
+    'https://vixter-react.vercel.app',
+    'https://vixter-react-llyd.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ];
+
   return {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': allowedOrigins.includes(origin || '') ? origin : '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Max-Age': '86400',
   };
 }
@@ -75,8 +83,9 @@ export function getCorsHeaders() {
  * Handle CORS preflight requests
  */
 export function handleCors(request: NextRequest): Response {
+  const origin = request.headers.get('origin');
   return new Response(null, {
     status: 200,
-    headers: getCorsHeaders(),
+    headers: getCorsHeaders(origin),
   });
 }
