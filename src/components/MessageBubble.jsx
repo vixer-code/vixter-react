@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useMessaging } from '../contexts/MessagingContext';
+import { useMessaging } from '../contexts/EnhancedMessagingContext';
 import MediaViewer from './MediaViewer';
 import ServiceNotificationCard from './ServiceNotificationCard';
 import './MessageBubble.css';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../../contexts/UserContext';
-import { useMessaging } from '../../contexts/MessagingContext';
+import { useMessaging } from '../../contexts/EnhancedMessagingContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import './UserSelector.css';
 

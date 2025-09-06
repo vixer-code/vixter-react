@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useMessaging } from '../contexts/MessagingContext';
+import { useMessaging } from '../contexts/EnhancedMessagingContext';
 import AudioRecorder from './AudioRecorder';
 import './MediaInput.css';
 

@@ -35,6 +35,9 @@ export const useEnhancedMessaging = () => {
   return context;
 };
 
+// Alias for backward compatibility
+export const useMessaging = useEnhancedMessaging;
+
 export const EnhancedMessagingProvider = ({ children }) => {
   const { currentUser, loading: authLoading } = useAuth();
   const { showSuccess, showError, showInfo } = useNotification();
@@ -349,9 +352,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
     }
 
     const channelName = `conversation:${selectedConversation.id}`;
-    console.log('🔔 ENHANCED - SUBSCRIBING TO CHANNEL:', channelName);
-    console.log('🔔 ENHANCED - CONVERSATION ID:', selectedConversation.id);
-    console.log('🔔 ENHANCED - CURRENT USER:', currentUser.uid);
+    console.log('🔔 SUBSCRIBING TO CHANNEL:', channelName);
+    console.log('🔔 CONVERSATION ID:', selectedConversation.id);
+    console.log('🔔 CURRENT USER:', currentUser.uid);
 
     const subscription = subscribe(channelName, {
       onMessage: (data, ctx) => {
@@ -603,15 +606,15 @@ export const EnhancedMessagingProvider = ({ children }) => {
       if (centrifugoAvailable && publish) {
         try {
           const channelName = `conversation:${conversationId}`;
-          console.log('📤 ENHANCED - PUBLISHING TO CHANNEL:', channelName);
-          console.log('📤 ENHANCED - MESSAGE DATA:', newMessage);
+          console.log('📤 PUBLISHING TO CHANNEL:', channelName);
+          console.log('📤 MESSAGE DATA:', newMessage);
           await publish(channelName, {
             type: 'new_message',
             message: newMessage,
             conversationId: conversationId,
             timestamp: Date.now()
           });
-          console.log('✅ ENHANCED - Message published via Centrifugo successfully');
+          console.log('✅ Message published via Centrifugo successfully');
         } catch (error) {
           console.error('Error publishing message via Centrifugo:', error);
           // Disable Centrifugo if it fails consistently

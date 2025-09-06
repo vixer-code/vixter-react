@@ -8,8 +8,7 @@ import { WalletProvider } from './contexts/WalletContext';
 import { PacksProviderR2 as PacksProvider } from './contexts/PacksContextR2';
 import { ServicesProviderR2 as ServicesProvider } from './contexts/ServicesContextR2';
 import { CentrifugoProvider } from './contexts/CentrifugoContext';
-import { MessagingProvider } from './contexts/MessagingContext';
-import { EnhancedMessagingProvider } from './contexts/EnhancedMessagingContext';
+import { EnhancedMessagingProvider as MessagingProvider } from './contexts/EnhancedMessagingContext';
 import { ServiceOrderProvider } from './contexts/ServiceOrderContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -25,8 +24,7 @@ const Register = lazy(() => import('./pages/Register'));
 const Feed = lazy(() => import('./pages/Feed'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Wallet = lazy(() => import('./pages/Wallet'));
-const Messages = lazy(() => import('./pages/Messages'));
-const EnhancedMessages = lazy(() => import('./pages/EnhancedMessages'));
+const Messages = lazy(() => import('./pages/EnhancedMessages'));
 const MessagingTestPage = lazy(() => import('./pages/MessagingTestPage'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const NotFound = lazy(() => import('./pages/NotFound'));
@@ -58,7 +56,6 @@ function App() {
                   <ServiceOrderProvider>
                     <CentrifugoProvider>
                       <MessagingProvider>
-                        <EnhancedMessagingProvider>
                       <Router>
                         <div className="App">
                           <Header />
@@ -73,7 +70,6 @@ function App() {
                                 <Route path="/profile/:userId" element={<Profile />} />
                                 <Route path="/wallet" element={<Wallet />} />
                                 <Route path="/messages" element={<Messages />} />
-                                <Route path="/enhanced-messages" element={<EnhancedMessages />} />
                                 <Route path="/messaging-test" element={<MessagingTestPage />} />
                                 <Route path="/verify-email" element={<VerifyEmail />} />
                                 {/* Placeholder routes for other pages */}
@@ -92,7 +88,6 @@ function App() {
                           <NotificationContainer />
                         </div>
                       </Router>
-                        </EnhancedMessagingProvider>
                       </MessagingProvider>
                     </CentrifugoProvider>
                   </ServiceOrderProvider>

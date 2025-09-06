@@ -15,7 +15,7 @@ import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
-import { useMessaging } from './MessagingContext';
+import { useMessaging } from './EnhancedMessagingContext';
 
 const ServiceOrderContext = createContext({});
 

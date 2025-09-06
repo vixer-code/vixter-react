@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, limit, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { useMessaging } from '../contexts/MessagingContext';
+import { useMessaging } from '../contexts/EnhancedMessagingContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useUser } from '../contexts/UserContext';
 import CachedImage from './CachedImage';
