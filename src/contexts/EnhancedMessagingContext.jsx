@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { 
   ref, 
   onValue, 
@@ -28,7 +28,10 @@ import { useCentrifugo } from './CentrifugoContext';
 // Generate deterministic conversation ID from participants
 const generateConversationId = (userA, userB, serviceOrderId = null) => {
   const sorted = [userA, userB].sort(); // Ensure same order regardless of who initiates
-  const baseId = `conv_${sorted[0]}_${sorted[1]}`;
+  // Replace special characters that might cause Firebase key issues
+  const cleanUserA = sorted[0].replace(/[.#$[\]]/g, '_');
+  const cleanUserB = sorted[1].replace(/[.#$[\]]/g, '_');
+  const baseId = `conv_${cleanUserA}_${cleanUserB}`;
   return serviceOrderId ? `${baseId}_service_${serviceOrderId}` : baseId;
 };
 
@@ -72,6 +75,11 @@ export const EnhancedMessagingProvider = ({ children }) => {
   
   // Settings
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
+  
+  // Typing indicators
+  const [typingUsers, setTypingUsers] = useState({}); // { conversationId: { userId: { name, timestamp } } }
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef(null);
   
   // Message types
   const MESSAGE_TYPES = {
@@ -392,7 +400,37 @@ export const EnhancedMessagingProvider = ({ children }) => {
           );
         } else if (data.type === 'typing') {
           // Handle typing indicators
-          console.log('User typing:', data.userId, data.isTyping);
+          console.log('📝 Received typing indicator:', data.userId, data.isTyping);
+          
+          // Don't show typing indicator for current user
+          if (data.userId !== currentUser?.uid) {
+            setTypingUsers(prev => {
+              const conversationId = selectedConversation?.id;
+              if (!conversationId) return prev;
+
+              const updated = { ...prev };
+              
+              if (!updated[conversationId]) {
+                updated[conversationId] = {};
+              }
+
+              if (data.isTyping) {
+                updated[conversationId][data.userId] = {
+                  name: data.userName,
+                  timestamp: Date.now()
+                };
+              } else {
+                delete updated[conversationId][data.userId];
+                
+                // Remove conversation if no users typing
+                if (Object.keys(updated[conversationId]).length === 0) {
+                  delete updated[conversationId];
+                }
+              }
+
+              return updated;
+            });
+          }
         }
       },
       onSubscribed: (ctx) => {
@@ -409,6 +447,177 @@ export const EnhancedMessagingProvider = ({ children }) => {
       }
     };
   }, [selectedConversation?.id, isConnected, subscribe, unsubscribe]);
+
+  // Global user subscription for receiving messages from any conversation
+  useEffect(() => {
+    if (!currentUser?.uid || !isConnected || !subscribe || !unsubscribe) return;
+
+    const userChannel = `user:${currentUser.uid}`;
+    console.log('🌐 Subscribing to global user channel:', userChannel);
+
+    const subscription = subscribe(userChannel, {
+      onMessage: (data, ctx) => {
+        console.log('🌐 Received global message notification:', data);
+        
+        if (data.type === 'new_message') {
+          const { message, conversationId } = data;
+          
+          // If this is for the currently selected conversation, it will be handled by the conversation subscription
+          // If not, update the conversations list to show new message indicator
+          if (conversationId !== selectedConversation?.id) {
+            console.log('🔔 New message in different conversation:', conversationId);
+            
+            // Update conversations list with new message info
+            setConversations(prev => 
+              prev.map(conv => 
+                conv.id === conversationId 
+                  ? { 
+                      ...conv, 
+                      lastMessage: message.content,
+                      lastMessageTime: message.timestamp,
+                      lastSenderId: message.senderId,
+                      hasUnreadMessages: true
+                    }
+                  : conv
+              )
+            );
+
+            // Also update service conversations if it's a service conversation
+            setServiceConversations(prev => 
+              prev.map(conv => 
+                conv.id === conversationId 
+                  ? { 
+                      ...conv, 
+                      lastMessage: message.content,
+                      lastMessageTime: message.timestamp,
+                      lastSenderId: message.senderId,
+                      hasUnreadMessages: true
+                    }
+                  : conv
+              )
+            );
+
+            // Show notification
+            showError(`New message in conversation ${conversationId}`, 'info');
+          }
+        }
+      },
+      onSubscribed: (ctx) => {
+        console.log('✅ Successfully subscribed to global user channel');
+      },
+      onError: (ctx) => {
+        console.error('❌ Error in global user subscription:', ctx);
+      }
+    });
+
+    return () => {
+      console.log('🌐 Unsubscribing from global user channel:', userChannel);
+      if (subscription) {
+        unsubscribe(userChannel);
+      }
+    };
+  }, [currentUser?.uid, isConnected, subscribe, unsubscribe, selectedConversation?.id, showError, setConversations, setServiceConversations]);
+
+  // Typing indicators functions
+  const sendTypingIndicator = useCallback(async (isTyping) => {
+    if (!selectedConversation?.id || !currentUser?.uid || !isConnected || !publish) return;
+
+    try {
+      const channelName = `conversation:${selectedConversation.id}`;
+      await publish(channelName, {
+        type: 'typing',
+        userId: currentUser.uid,
+        userName: currentUser.displayName || 'User',
+        isTyping: isTyping,
+        timestamp: Date.now()
+      });
+      console.log('📝 Typing indicator sent:', isTyping);
+    } catch (error) {
+      console.error('Error sending typing indicator:', error);
+    }
+  }, [selectedConversation?.id, currentUser, isConnected, publish]);
+
+  const startTyping = useCallback(() => {
+    if (isTyping) return; // Already typing
+    
+    setIsTyping(true);
+    sendTypingIndicator(true);
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set timeout to stop typing after 3 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      stopTyping();
+    }, 3000);
+  }, [isTyping, sendTypingIndicator]);
+
+  const stopTyping = useCallback(() => {
+    if (!isTyping) return; // Not typing
+
+    setIsTyping(false);
+    sendTypingIndicator(false);
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+  }, [isTyping, sendTypingIndicator]);
+
+  const handleTypingChange = useCallback((typing) => {
+    if (typing) {
+      startTyping();
+    } else {
+      // Reset timeout when user continues typing
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => {
+          stopTyping();
+        }, 3000);
+      }
+    }
+  }, [startTyping, stopTyping]);
+
+  // Clean up typing indicators older than 5 seconds
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      setTypingUsers(prev => {
+        const updated = { ...prev };
+        let hasChanges = false;
+
+        Object.keys(updated).forEach(conversationId => {
+          Object.keys(updated[conversationId]).forEach(userId => {
+            if (now - updated[conversationId][userId].timestamp > 5000) {
+              delete updated[conversationId][userId];
+              hasChanges = true;
+              
+              // Remove conversation if no users typing
+              if (Object.keys(updated[conversationId]).length === 0) {
+                delete updated[conversationId];
+              }
+            }
+          });
+        });
+
+        return hasChanges ? updated : prev;
+      });
+    }, 1000); // Check every second
+
+    return () => clearInterval(cleanupInterval);
+  }, []);
+
+  // Clean up typing state when conversation changes
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      setIsTyping(false);
+    };
+  }, [selectedConversation?.id]);
 
   // Create or get conversation
   const createOrGetConversation = useCallback(async (otherUserId, serviceOrderId = null) => {
@@ -429,7 +638,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       // First check if conversation already exists in local state
       const allConversations = [...conversations, ...serviceConversations];
       let existingConversation = allConversations.find(conv => conv.id === conversationId);
-      
+
       if (existingConversation) {
         console.log('✅ Found existing conversation in local state:', conversationId);
         return existingConversation;
@@ -528,14 +737,14 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
           if (serviceOrderId) {
             conversationData.serviceOrderId = serviceOrderId;
-          }
+      }
 
-          await set(newConversationRef, conversationData);
-          
+      await set(newConversationRef, conversationData);
+
           const newConversation = {
-            id: newConversationRef.key,
-            ...conversationData
-          };
+        id: newConversationRef.key,
+        ...conversationData
+      };
           
           console.log('✅ Fallback conversation created:', newConversation.id);
           
@@ -688,12 +897,14 @@ export const EnhancedMessagingProvider = ({ children }) => {
       };
 
       // Update conversation last message
-      const updates = {};
-      updates[`conversations/${conversationId}/lastMessage`] = text.trim();
-      updates[`conversations/${conversationId}/lastMessageTime`] = Date.now();
-      updates[`conversations/${conversationId}/lastSenderId`] = currentUser.uid;
+      const conversationRef = ref(database, `conversations/${conversationId}`);
+      const conversationUpdates = {
+        lastMessage: text.trim(),
+        lastMessageTime: Date.now(),
+        lastSenderId: currentUser.uid
+      };
 
-      await update(ref(database), updates);
+      await update(conversationRef, conversationUpdates);
 
       // Publish message via Centrifugo for real-time delivery
       if (centrifugoAvailable && publish) {
@@ -708,6 +919,34 @@ export const EnhancedMessagingProvider = ({ children }) => {
             timestamp: Date.now()
           });
           console.log('✅ Message published via Centrifugo successfully');
+
+          // Also publish to recipient's global user channel for notifications
+          const conversation = conversations.find(c => c.id === conversationId) || 
+                              serviceConversations.find(c => c.id === conversationId);
+          
+          if (conversation) {
+            const participantIds = Object.keys(conversation.participants || {});
+            const recipientIds = participantIds.filter(id => id !== currentUser.uid);
+            
+            for (const recipientId of recipientIds) {
+              try {
+                const userChannel = `user:${recipientId}`;
+                console.log('🌐 Publishing global notification to:', userChannel);
+                await publish(userChannel, {
+                  type: 'new_message',
+                  message: {
+                    ...newMessage,
+                    senderName: currentUser.displayName || 'Someone'
+                  },
+                  conversationId: conversationId,
+                  timestamp: Date.now()
+                });
+                console.log('✅ Global notification sent to:', recipientId);
+              } catch (globalError) {
+                console.error('Error sending global notification to', recipientId, ':', globalError);
+              }
+            }
+          }
         } catch (error) {
           console.error('Error publishing message via Centrifugo:', error);
           // Disable Centrifugo if it fails consistently
@@ -722,7 +961,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       console.error('Error sending message:', error);
       return false;
     }
-  }, [currentUser, publish]);
+  }, [currentUser, publish, conversations, serviceConversations]);
 
   // Send text message (main function)
   const sendMessage = useCallback(async (text, replyToId = null) => {
@@ -844,12 +1083,15 @@ export const EnhancedMessagingProvider = ({ children }) => {
                                        type === MESSAGE_TYPES.VIDEO ? '🎥 Vídeo' : 
                                        type === MESSAGE_TYPES.AUDIO ? '🎵 Áudio' : '📎 Arquivo'}`;
       
-      const updates = {};
-      updates[`conversations/${selectedConversation.id}/lastMessage`] = lastMessageText;
-      updates[`conversations/${selectedConversation.id}/lastMessageTime`] = Date.now();
-      updates[`conversations/${selectedConversation.id}/lastSenderId`] = currentUser.uid;
+      // Update conversation last message
+      const conversationRef = ref(database, `conversations/${selectedConversation.id}`);
+      const conversationUpdates = {
+        lastMessage: lastMessageText,
+        lastMessageTime: Date.now(),
+        lastSenderId: currentUser.uid
+      };
 
-      await update(ref(database), updates);
+      await update(conversationRef, conversationUpdates);
 
       // Publish message via Centrifugo
       try {
@@ -861,6 +1103,29 @@ export const EnhancedMessagingProvider = ({ children }) => {
           timestamp: Date.now()
         });
         console.log('Media message published via Centrifugo');
+
+        // Also publish to recipient's global user channel for notifications
+        const participantIds = Object.keys(selectedConversation.participants || {});
+        const recipientIds = participantIds.filter(id => id !== currentUser.uid);
+        
+        for (const recipientId of recipientIds) {
+          try {
+            const userChannel = `user:${recipientId}`;
+            console.log('🌐 Publishing global media notification to:', userChannel);
+            await publish(userChannel, {
+              type: 'new_message',
+              message: {
+                ...newMessage,
+                senderName: currentUser.displayName || 'Someone'
+              },
+              conversationId: selectedConversation.id,
+              timestamp: Date.now()
+            });
+            console.log('✅ Global media notification sent to:', recipientId);
+          } catch (globalError) {
+            console.error('Error sending global media notification to', recipientId, ':', globalError);
+          }
+        }
       } catch (error) {
         console.error('Error publishing media message via Centrifugo:', error);
       }
@@ -979,6 +1244,20 @@ export const EnhancedMessagingProvider = ({ children }) => {
     }
   }, [selectedConversation, currentUser, showError]);
 
+  // Get typing users for current conversation
+  const getTypingUsers = useCallback(() => {
+    if (!selectedConversation?.id) return [];
+    
+    const conversationTyping = typingUsers[selectedConversation.id];
+    if (!conversationTyping) return [];
+    
+    return Object.keys(conversationTyping).map(userId => ({
+      userId,
+      name: conversationTyping[userId].name,
+      timestamp: conversationTyping[userId].timestamp
+    }));
+  }, [selectedConversation?.id, typingUsers]);
+
   const value = useMemo(() => ({
     // State
     conversations,
@@ -994,6 +1273,10 @@ export const EnhancedMessagingProvider = ({ children }) => {
     readReceiptsEnabled,
     offlineMessages,
     isOnline,
+    
+    // Typing indicators
+    typingUsers,
+    isTyping,
 
     // Actions
     setSelectedConversation,
@@ -1005,6 +1288,12 @@ export const EnhancedMessagingProvider = ({ children }) => {
     createConversation,
     createOrGetConversation,
     deleteMessage,
+    
+    // Typing functions
+    handleTypingChange,
+    startTyping,
+    stopTyping,
+    getTypingUsers,
     
     // Utilities
     getOtherParticipant,

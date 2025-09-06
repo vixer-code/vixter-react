@@ -3,6 +3,7 @@ import { useEnhancedMessaging } from '../../contexts/EnhancedMessagingContext';
 import { useCentrifugo } from '../../contexts/CentrifugoContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import TypingIndicator from './TypingIndicator';
 import './ChatInterface.css';
 
 const ChatInterface = ({ conversation, onClose }) => {
@@ -13,7 +14,9 @@ const ChatInterface = ({ conversation, onClose }) => {
     getOtherParticipant,
     formatTime,
     sending,
-    uploadingMedia 
+    uploadingMedia,
+    handleTypingChange,
+    getTypingUsers
   } = useEnhancedMessaging();
   
   const { publish, isConnected } = useCentrifugo();
@@ -21,9 +24,7 @@ const ChatInterface = ({ conversation, onClose }) => {
   const { showError } = useNotification();
   
   const [messageText, setMessageText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [otherUserTyping, setOtherUserTyping] = useState(false);
-  const [typingTimeout, setTypingTimeout] = useState(null);
+  // Removed old typing state - now using context
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   
@@ -66,47 +67,7 @@ const ChatInterface = ({ conversation, onClose }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Handle message input change with typing indicator
-  const handleMessageChange = (e) => {
-    const value = e.target.value;
-    setMessageText(value);
-
-    // Send typing indicator
-    if (value.trim() && !isTyping) {
-      setIsTyping(true);
-      sendTypingIndicator(true);
-    }
-
-    // Clear existing timeout
-    if (typingTimeout) {
-      clearTimeout(typingTimeout);
-    }
-
-    // Set new timeout to stop typing indicator
-    const timeout = setTimeout(() => {
-      setIsTyping(false);
-      sendTypingIndicator(false);
-    }, 1000);
-
-    setTypingTimeout(timeout);
-  };
-
-  // Send typing indicator via Centrifugo
-  const sendTypingIndicator = useCallback(async (typing) => {
-    if (!conversation || !isConnected) return;
-
-    try {
-      const typingChannel = `typing:${conversation.id}`;
-      await publish(typingChannel, {
-        type: 'typing',
-        userId: currentUser?.uid,
-        isTyping: typing,
-        conversationId: conversation.id
-      });
-    } catch (error) {
-      console.error('Error sending typing indicator:', error);
-    }
-  }, [conversation, isConnected, publish, currentUser?.uid]);
+  // Removed old typing functions - now using context
 
   // Handle message send
   const handleSendMessage = async (e) => {
@@ -116,13 +77,6 @@ const ChatInterface = ({ conversation, onClose }) => {
 
     const messageToSend = messageText.trim();
     setMessageText('');
-    
-    // Stop typing indicator
-    setIsTyping(false);
-    sendTypingIndicator(false);
-    if (typingTimeout) {
-      clearTimeout(typingTimeout);
-    }
 
     try {
       await sendMessage(messageToSend);
@@ -159,6 +113,17 @@ const ChatInterface = ({ conversation, onClose }) => {
     setMessageText(prev => prev + emoji);
     setShowEmojiPicker(false);
     textareaRef.current?.focus();
+  };
+
+  // Handle message input change with typing indicators
+  const handleMessageChange = (e) => {
+    const value = e.target.value;
+    setMessageText(value);
+    
+    // Trigger typing indicator
+    if (value.trim()) {
+      handleTypingChange(true);
+    }
   };
 
   // Handle key press
@@ -302,6 +267,10 @@ const ChatInterface = ({ conversation, onClose }) => {
               </div>
             ))
           )}
+          
+          {/* Typing Indicator */}
+          <TypingIndicator typingUsers={getTypingUsers()} />
+          
           <div ref={messagesEndRef} />
         </div>
       </div>
