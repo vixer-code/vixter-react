@@ -10,12 +10,17 @@ const CENTRIFUGO_WS_URL = process.env.CENTRIFUGO_WS_URL || 'wss://vixter-centrif
  * Generate a Centrifugo token for a user
  * This token will be used by the frontend to connect to Centrifugo
  */
-function generateCentrifugoToken(userId) {
+function generateCentrifugoToken(userId, channels = []) {
   const payload = {
     sub: userId,
     exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiration
     iat: Math.floor(Date.now() / 1000),
   };
+
+  // Add channel permissions if provided
+  if (channels.length > 0) {
+    payload.channels = channels;
+  }
 
   // Sign JWT with the secret
   const token = jwt.sign(payload, CENTRIFUGO_TOKEN_SECRET);
@@ -46,8 +51,8 @@ function validateCentrifugoToken(token) {
 /**
  * Get Centrifugo connection info for frontend
  */
-function getCentrifugoConnectionInfo(userId) {
-  const tokenInfo = generateCentrifugoToken(userId);
+function getCentrifugoConnectionInfo(userId, channels = []) {
+  const tokenInfo = generateCentrifugoToken(userId, channels);
   
   return {
     url: CENTRIFUGO_WS_URL,
