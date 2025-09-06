@@ -259,8 +259,17 @@ export const CentrifugoProvider = ({ children }) => {
 
   // Initialize connection when user is authenticated
   useEffect(() => {
+    console.log('🔌 CentrifugoContext: useEffect triggered');
+    console.log('🔌 Current user UID:', currentUser?.uid);
+    console.log('🔌 Centrifuge ref current:', !!centrifugeRef.current);
+    
     if (currentUser?.uid && !centrifugeRef.current) {
+      console.log('🔌 Initializing Centrifugo connection...');
       initializeCentrifugo();
+    } else if (!currentUser?.uid) {
+      console.log('🔌 No user logged in, skipping Centrifugo');
+    } else if (centrifugeRef.current) {
+      console.log('🔌 Centrifugo already initialized');
     }
   }, [currentUser?.uid, initializeCentrifugo]);
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useMessaging } from '../../contexts/MessagingContext';
+import { useEnhancedMessaging } from '../../contexts/EnhancedMessagingContext';
 import { useCentrifugo } from '../../contexts/CentrifugoContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
