@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useCentrifugo } from '../contexts/CentrifugoContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 import UserSelector from '../components/messaging/UserSelector';
 import ChatInterface from '../components/messaging/ChatInterface';
 import './EnhancedMessages.css';
@@ -16,14 +17,49 @@ const EnhancedMessages = () => {
     setActiveTab,
     setSelectedConversation,
     isOnline,
-    offlineMessages
+    offlineMessages,
+    users
   } = useEnhancedMessaging();
   
   const { isConnected, isConnecting } = useCentrifugo();
   const { currentUser } = useAuth();
+  const location = useLocation();
   
   const [showUserSelector, setShowUserSelector] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
+
+  // Handle URL parameters for conversation selection
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const conversationIdFromUrl = searchParams.get('conversation');
+    
+    if (conversationIdFromUrl && conversations.length > 0) {
+      console.log('🔗 URL parameter conversation:', conversationIdFromUrl);
+      
+      // Find conversation in regular conversations
+      let targetConversation = conversations.find(conv => conv.id === conversationIdFromUrl);
+      
+      // If not found, check service conversations
+      if (!targetConversation && serviceConversations.length > 0) {
+        targetConversation = serviceConversations.find(conv => conv.id === conversationIdFromUrl);
+        if (targetConversation) {
+          setActiveTab('services');
+        }
+      }
+      
+      if (targetConversation) {
+        console.log('✅ Found conversation from URL, selecting:', targetConversation.id);
+        setSelectedConversation(targetConversation);
+        setShowMobileChat(true);
+        
+        // Clear URL parameter after handling
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      } else {
+        console.warn('⚠️ Conversation not found:', conversationIdFromUrl);
+      }
+    }
+  }, [conversations, serviceConversations, location.search, setSelectedConversation, setActiveTab]);
 
   // Debug effect to track selectedConversation changes
   useEffect(() => {
@@ -66,10 +102,9 @@ const EnhancedMessages = () => {
       .find(uid => uid !== currentUser?.uid);
     
     if (otherUserId) {
-      const otherUser = conversations.find(conv => 
-        Object.keys(conv.participants || {}).includes(otherUserId)
-      );
-      return otherUser?.displayName || 'Usuário sem nome';
+      // Get user data from the enhanced messaging context users state
+      const otherUser = users[otherUserId];
+      return otherUser?.displayName || otherUser?.name || 'Usuário sem nome';
     }
     
     return 'Conversa sem nome';

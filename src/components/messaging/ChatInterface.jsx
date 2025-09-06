@@ -30,13 +30,40 @@ const ChatInterface = ({ conversation, onClose }) => {
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   const otherUser = getOtherParticipant(conversation);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Check if user is near bottom to determine auto-scroll behavior
+  const isNearBottom = () => {
+    if (!messagesContainerRef.current) return false;
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    return scrollHeight - scrollTop - clientHeight < 100; // 100px threshold
+  };
+
+  // Handle scroll events to detect user scrolling
+  const handleScroll = () => {
+    if (!messagesContainerRef.current) return;
+    
+    const wasNearBottom = isNearBottom();
+    setShouldAutoScroll(wasNearBottom);
+    
+    // Reset user scrolling flag after a delay
+    clearTimeout(window.scrollTimeout);
+    setIsUserScrolling(true);
+    window.scrollTimeout = setTimeout(() => {
+      setIsUserScrolling(false);
+    }, 150);
+  };
+
+  // Auto-scroll to bottom when new messages arrive (only if user hasn't scrolled up)
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (shouldAutoScroll && !isUserScrolling) {
+      scrollToBottom();
+    }
+  }, [messages, shouldAutoScroll, isUserScrolling]);
 
   // Typing indicators now handled by EnhancedMessagingContext
   // All typing state and functions moved to context for better management
@@ -165,7 +192,7 @@ const ChatInterface = ({ conversation, onClose }) => {
 
       {/* Messages Area */}
       <div className="messages-container">
-        <div className="messages-list">
+        <div className="messages-list" ref={messagesContainerRef} onScroll={handleScroll}>
           {messages.length === 0 ? (
             <div className="no-messages">
               <div className="no-messages-icon">💬</div>

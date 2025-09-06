@@ -526,7 +526,18 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
             // Show notification regardless of whether conversation was found in state
             // This ensures users always see notifications even if there's a state sync issue
-            showInfo(`New message from ${message.senderName || 'Someone'}`, 'New Message');
+            showInfo(
+              `New message from ${message.senderName || 'Someone'}`, 
+              'New Message',
+              7000,
+              {
+                onClick: (data) => {
+                  // Navigate to messages page and select conversation
+                  window.location.href = `/messages?conversation=${data.conversationId}`;
+                },
+                data: { conversationId, messageId: message.id }
+              }
+            );
             
             if (!conversationUpdated) {
               console.warn('⚠️ Received message for conversation not in local state:', conversationId);

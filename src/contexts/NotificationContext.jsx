@@ -21,6 +21,8 @@ export const NotificationProvider = ({ children }) => {
       title: '',
       message: '',
       duration: 5000,
+      onClick: null, // New: callback for when notification is clicked
+      data: null, // New: additional data that can be passed
       ...notification,
     };
 
@@ -67,12 +69,13 @@ export const NotificationProvider = ({ children }) => {
     });
   }, [addNotification]);
 
-  const showInfo = useCallback((message, title = 'Info', duration = 5000) => {
+  const showInfo = useCallback((message, title = 'Info', duration = 5000, options = {}) => {
     return addNotification({
       type: 'info',
       title,
       message,
       duration,
+      ...options,
     });
   }, [addNotification]);
 

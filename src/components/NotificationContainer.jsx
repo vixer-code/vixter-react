@@ -25,8 +25,14 @@ const NotificationContainer = () => {
       {notifications.map((notification) => (
         <div
           key={notification.id}
-          className={`notification notification-${notification.type}`}
-          onClick={() => removeNotification(notification.id)}
+          className={`notification notification-${notification.type} ${notification.onClick ? 'clickable' : ''}`}
+          onClick={() => {
+            if (notification.onClick) {
+              notification.onClick(notification.data);
+            } else {
+              removeNotification(notification.id);
+            }
+          }}
         >
           <div className="notification-icon">
             {getIcon(notification.type)}
