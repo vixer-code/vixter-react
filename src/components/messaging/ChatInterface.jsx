@@ -15,7 +15,8 @@ const ChatInterface = ({ conversation, onClose }) => {
     sending,
     uploadingMedia,
     handleTypingChange,
-    getTypingUsers
+    getTypingUsers,
+    users
   } = useEnhancedMessaging();
   
   const { currentUser } = useAuth();
@@ -145,7 +146,10 @@ const ChatInterface = ({ conversation, onClose }) => {
               {otherUser.displayName || otherUser.name || 'Usuário sem nome'}
             </div>
             <div className="user-status">
-              {otherUserTyping ? 'Digitando...' : 'Online'}
+              {getTypingUsers().length > 0 ? 'Digitando...' : 
+               users[otherUser.uid]?.status === 'online' ? 'Online' : 
+               users[otherUser.uid]?.status === 'ausente' ? 'Ausente' : 
+               users[otherUser.uid]?.status === 'invisivel' ? 'Invisível' : 'Offline'}
             </div>
           </div>
         </div>
