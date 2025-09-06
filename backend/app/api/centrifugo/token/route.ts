@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCentrifugoConnectionInfo } from '../../../../backend/lib/centrifugo';
+const { getCentrifugoConnectionInfo } = require('../../../../lib/centrifugo');
 
 export async function POST(request: NextRequest) {
   try {

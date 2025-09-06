@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { publishToChannel } from '../../../../backend/lib/centrifugo';
+const { publishToChannel } = require('../../../../lib/centrifugo');
 
 export async function POST(request: NextRequest) {
   try {

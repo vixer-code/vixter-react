@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+const jwt = require('jsonwebtoken');
 
 // Centrifugo configuration
 const CENTRIFUGO_URL = process.env.CENTRIFUGO_URL || 'https://vixter-centrifugo.fly.dev';
@@ -10,7 +10,7 @@ const CENTRIFUGO_WS_URL = process.env.CENTRIFUGO_WS_URL || 'wss://vixter-centrif
  * Generate a Centrifugo token for a user
  * This token will be used by the frontend to connect to Centrifugo
  */
-export function generateCentrifugoToken(userId) {
+function generateCentrifugoToken(userId) {
   const payload = {
     sub: userId,
     exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiration
@@ -30,7 +30,7 @@ export function generateCentrifugoToken(userId) {
 /**
  * Validate a Centrifugo token
  */
-export function validateCentrifugoToken(token) {
+function validateCentrifugoToken(token) {
   try {
     const payload = jwt.verify(token, CENTRIFUGO_TOKEN_SECRET);
     
@@ -46,7 +46,7 @@ export function validateCentrifugoToken(token) {
 /**
  * Get Centrifugo connection info for frontend
  */
-export function getCentrifugoConnectionInfo(userId) {
+function getCentrifugoConnectionInfo(userId) {
   const tokenInfo = generateCentrifugoToken(userId);
   
   return {
@@ -60,7 +60,7 @@ export function getCentrifugoConnectionInfo(userId) {
 /**
  * Publish message to Centrifugo channel
  */
-export async function publishToChannel(channel, data) {
+async function publishToChannel(channel, data) {
   if (!CENTRIFUGO_API_KEY) {
     throw new Error('Centrifugo API key not configured');
   }
@@ -87,18 +87,24 @@ export async function publishToChannel(channel, data) {
 /**
  * Get channel name for conversation
  */
-export function getConversationChannel(conversationId) {
+function getConversationChannel(conversationId) {
   return `conversation:${conversationId}`;
 }
 
 /**
  * Get channel name for user presence
  */
-export function getUserPresenceChannel(userId) {
+function getUserPresenceChannel(userId) {
   return `user:${userId}`;
 }
 
-export {
+module.exports = {
+  generateCentrifugoToken,
+  validateCentrifugoToken,
+  getCentrifugoConnectionInfo,
+  publishToChannel,
+  getConversationChannel,
+  getUserPresenceChannel,
   CENTRIFUGO_URL,
   CENTRIFUGO_WS_URL,
   CENTRIFUGO_API_KEY,
