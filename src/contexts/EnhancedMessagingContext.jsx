@@ -469,7 +469,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     return () => {
       clearAllSubscriptions();
     };
-  }, [selectedConversation?.id, isConnected, subscribe, unsubscribe, clearAllSubscriptions]);
+  }, [selectedConversation?.id, isConnected, subscribe, unsubscribe]);
 
   // Global user subscription for receiving messages from any conversation
   const globalSubscriptionRef = useRef(null);
