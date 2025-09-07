@@ -244,9 +244,12 @@ const EnhancedMessages = () => {
     conversationsCount: conversations.length,
     usersType: typeof users,
     isArray: Array.isArray(users),
+    loading: loading,
     conversations: conversations.map(conv => ({
       id: conv.id,
-      participants: conv.participants ? Object.keys(conv.participants) : 'no participants'
+      participants: conv.participants ? Object.keys(conv.participants) : 'no participants',
+      lastMessage: conv.lastMessage,
+      lastMessageTime: conv.lastMessageTime
     }))
   });
 
@@ -319,7 +322,7 @@ const EnhancedMessages = () => {
 
           <div className="conversations-list">
             {activeTab === 'messages' ? (
-              conversations.length === 0 ? (
+              conversations.length === 0 || !Array.isArray(conversations) ? (
                 <div className="empty-state">
                   <div className="empty-icon">💬</div>
                   <p>Nenhuma conversa ainda</p>
@@ -328,6 +331,9 @@ const EnhancedMessages = () => {
                     Conversations: {conversations.length}, 
                     User: {currentUser?.uid ? 'Logged in' : 'Not logged in'}
                   </p>
+                  <div style={{fontSize: '10px', opacity: 0.5, marginTop: '10px'}}>
+                    Conversations: {JSON.stringify(conversations.map(c => ({id: c.id, participants: Object.keys(c.participants || {})})), null, 2)}
+                  </div>
                   <button
                     className="start-conversation-button"
                     onClick={() => setShowUserSelector(true)}

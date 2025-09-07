@@ -16,17 +16,18 @@ const UserSelector = ({ onUserSelected, isOpen, onClose }) => {
   // Search users when search term changes
   useEffect(() => {
     const searchUsersDebounced = async () => {
-      if (searchTerm.trim().length < 2) {
-        setSearchResults([]);
-        return;
-      }
-
-      setIsSearching(true);
       try {
+        if (searchTerm.trim().length < 2) {
+          setSearchResults([]);
+          return;
+        }
+
+        setIsSearching(true);
         const results = await searchUsers(searchTerm);
-        setSearchResults(results);
+        setSearchResults(Array.isArray(results) ? results : []);
       } catch (error) {
         console.error('Error searching users:', error);
+        setSearchResults([]);
         showError('Erro ao buscar usuários');
       } finally {
         setIsSearching(false);
@@ -39,10 +40,23 @@ const UserSelector = ({ onUserSelected, isOpen, onClose }) => {
 
   // Check if user already has a conversation
   const hasConversationWith = (userId) => {
-    return conversations.some(conv => {
-      const participants = Object.keys(conv.participants || {});
-      return participants.includes(userId);
-    });
+    try {
+      if (!Array.isArray(conversations) || !userId) return false;
+      
+      return conversations.some(conv => {
+        try {
+          if (!conv || !conv.participants) return false;
+          const participants = Object.keys(conv.participants);
+          return participants.includes(userId);
+        } catch (error) {
+          console.warn('Error checking conversation participants:', error, conv);
+          return false;
+        }
+      });
+    } catch (error) {
+      console.warn('Error in hasConversationWith:', error);
+      return false;
+    }
   };
 
   // Handle user selection
@@ -122,12 +136,22 @@ const UserSelector = ({ onUserSelected, isOpen, onClose }) => {
           {!isSearching && searchTerm && searchResults.length > 0 && (
             <div className="search-results">
               <h4>Resultados da busca</h4>
-              {searchResults.map((user) => (
-                <div
-                  key={user.uid || user.id}
-                  className={`user-item ${hasConversationWith(user.uid || user.id) ? 'has-conversation' : ''}`}
-                  onClick={() => handleUserSelect(user)}
-                >
+              {searchResults.map((user) => {
+                try {
+                  if (!user || (!user.uid && !user.id)) {
+                    console.warn('Invalid user object in search results:', user);
+                    return null;
+                  }
+                  
+                  const userId = user.uid || user.id;
+                  const hasConversation = hasConversationWith(userId);
+                  
+                  return (
+                    <div
+                      key={userId}
+                      className={`user-item ${hasConversation ? 'has-conversation' : ''}`}
+                      onClick={() => handleUserSelect(user)}
+                    >
                   <div className="user-avatar">
                     {user.photoURL ? (
                       <img src={user.photoURL} alt={user.displayName || user.name} />
@@ -164,7 +188,12 @@ const UserSelector = ({ onUserSelected, isOpen, onClose }) => {
                     </button>
                   </div>
                 </div>
-              ))}
+                  );
+                } catch (error) {
+                  console.error('Error rendering user item:', error, user);
+                  return null;
+                }
+              }).filter(Boolean)}
             </div>
           )}
 
