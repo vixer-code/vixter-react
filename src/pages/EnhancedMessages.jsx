@@ -147,9 +147,13 @@ const EnhancedMessages = () => {
               return otherUser?.displayName || otherUser?.name || fallbackName;
             }
           } else {
-            // User data not available, trigger loading
-            console.log('User data not available, triggering load for:', otherUserId);
-            loadUserData(otherUserId);
+            // User data not available, trigger loading only if users object is valid
+            if (users && typeof users === 'object' && !Array.isArray(users)) {
+              console.log('User data not available, triggering load for:', otherUserId);
+              loadUserData(otherUserId);
+            } else {
+              console.warn('Users object is invalid, cannot load user data for:', otherUserId);
+            }
           }
         } catch (userAccessError) {
           console.warn('Error accessing user data:', userAccessError, { otherUserId, users, usersType: typeof users });
@@ -238,6 +242,19 @@ const EnhancedMessages = () => {
     );
   }
 
+  // Additional safety check - if users object becomes invalid during render, show loading
+  if (Object.keys(users).length === 0 && conversations.length > 0) {
+    console.warn('Users object is empty but conversations exist, showing loading state');
+    return (
+      <div className="enhanced-messages loading">
+        <div className="loading-content">
+          <div className="spinner"></div>
+          <p>Carregando dados dos usuários...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Debug logging for search operations
   console.log('EnhancedMessages render:', { 
     usersKeys: Object.keys(users), 
@@ -255,22 +272,30 @@ const EnhancedMessages = () => {
 
   // Check if we need to load missing user data
   const missingUserIds = [];
-  conversations.forEach(conversation => {
-    if (conversation.participants) {
-      Object.keys(conversation.participants).forEach(participantId => {
-        if (participantId !== currentUser?.uid && !users[participantId]) {
-          missingUserIds.push(participantId);
+  if (users && typeof users === 'object' && !Array.isArray(users)) {
+    conversations.forEach(conversation => {
+      if (conversation.participants) {
+        Object.keys(conversation.participants).forEach(participantId => {
+          if (participantId !== currentUser?.uid && !users[participantId]) {
+            missingUserIds.push(participantId);
+          }
+        });
+      }
+    });
+
+    if (missingUserIds.length > 0) {
+      console.log('Missing user data for participants:', missingUserIds);
+      // Load missing user data
+      missingUserIds.forEach(userId => {
+        try {
+          loadUserData(userId);
+        } catch (error) {
+          console.error('Error loading user data for participant:', error, userId);
         }
       });
     }
-  });
-
-  if (missingUserIds.length > 0) {
-    console.log('Missing user data for participants:', missingUserIds);
-    // Load missing user data
-    missingUserIds.forEach(userId => {
-      loadUserData(userId);
-    });
+  } else {
+    console.warn('Users object is invalid, cannot check for missing user data');
   }
 
   return (
@@ -363,6 +388,23 @@ const EnhancedMessages = () => {
                       return null;
                     }
                     
+                    // Additional safety check for users object during rendering
+                    if (!users || typeof users !== 'object' || Array.isArray(users)) {
+                      console.warn('Users object became invalid during conversation rendering, skipping conversation:', conversation.id);
+                      return (
+                        <div
+                          key={conversation.id}
+                          className="conversation-item error"
+                        >
+                          <div className="conversation-content">
+                            <div className="conversation-name">
+                              Carregando...
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
                     const displayName = getConversationDisplayName(conversation);
                     return (
                       <div
@@ -393,7 +435,7 @@ const EnhancedMessages = () => {
                       </div>
                     );
                   } catch (error) {
-                    console.error('Error rendering conversation:', error, { conversation, users, currentUser });
+                    console.error('Error rendering conversation:', error, { conversation, users, currentUser, usersType: typeof users });
                     return (
                       <div
                         key={conversation?.id || 'error-' + Math.random()}
