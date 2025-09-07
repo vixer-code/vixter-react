@@ -382,12 +382,13 @@ export const EnhancedMessagingProvider = ({ children }) => {
     const channelName = `conversation:${selectedConversation.id}`;
     
     // Clear any existing subscription before creating new one
-    if (conversationSubscriptionRef.current) {
-      console.log('🔔 Clearing existing conversation subscription before creating new one');
+    if (conversationSubscriptionRef.current && currentChannelRef.current) {
+      console.log('🔔 Clearing existing conversation subscription:', currentChannelRef.current);
       if (unsubscribe) {
-        unsubscribe(conversationSubscriptionRef.current);
+        unsubscribe(currentChannelRef.current);
       }
       conversationSubscriptionRef.current = null;
+      currentChannelRef.current = null;
     }
     
     console.log('🔔 SUBSCRIBING TO CHANNEL:', channelName);
@@ -458,18 +459,21 @@ export const EnhancedMessagingProvider = ({ children }) => {
       onSubscribed: (ctx) => {
         console.log('Successfully subscribed to conversation channel');
         conversationSubscriptionRef.current = subscription;
+        currentChannelRef.current = channelName;
       },
       onError: (ctx) => {
         console.error('Error in conversation subscription:', ctx);
         conversationSubscriptionRef.current = null;
+        currentChannelRef.current = null;
       }
     });
 
     return () => {
-      if (conversationSubscriptionRef.current) {
-        console.log('🔔 UNSUBSCRIBING FROM CHANNEL:', channelName);
-        unsubscribe(channelName);
+      if (conversationSubscriptionRef.current && currentChannelRef.current) {
+        console.log('🔔 UNSUBSCRIBING FROM CHANNEL:', currentChannelRef.current);
+        unsubscribe(currentChannelRef.current);
         conversationSubscriptionRef.current = null;
+        currentChannelRef.current = null;
       }
     };
   }, [selectedConversation?.id, isConnected, subscribe, unsubscribe]);
@@ -479,6 +483,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
   
   // Conversation subscription tracking
   const conversationSubscriptionRef = useRef(null);
+  const currentChannelRef = useRef(null);
   
   useEffect(() => {
     if (!currentUser?.uid || !isConnected || !subscribe || !unsubscribe) return;
@@ -618,16 +623,16 @@ export const EnhancedMessagingProvider = ({ children }) => {
   // Cleanup conversation subscription on unmount
   useEffect(() => {
     return () => {
-      if (conversationSubscriptionRef.current && selectedConversation?.id) {
-        const channelName = `conversation:${selectedConversation.id}`;
-        console.log('🧹 Cleaning up conversation subscription on unmount:', channelName);
+      if (conversationSubscriptionRef.current && currentChannelRef.current) {
+        console.log('🧹 Cleaning up conversation subscription on unmount:', currentChannelRef.current);
         if (unsubscribe) {
-          unsubscribe(channelName);
+          unsubscribe(currentChannelRef.current);
         }
         conversationSubscriptionRef.current = null;
+        currentChannelRef.current = null;
       }
     };
-  }, [selectedConversation?.id, unsubscribe]);
+  }, [unsubscribe]);
 
   // Typing indicators functions
   const sendTypingIndicator = useCallback(async (isTyping) => {
