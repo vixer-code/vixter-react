@@ -24,6 +24,7 @@ import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import { useUser } from './UserContext';
 import { useCentrifugo } from './CentrifugoContext';
+import { useStatus } from './StatusContext';
 import { 
   saveConversation, 
   getUserConversations, 
@@ -66,6 +67,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
   const { showSuccess, showError, showInfo } = useNotification();
   const { getUserById } = useUser();
   const { subscribe, unsubscribe, publish, isConnected } = useCentrifugo();
+  const { userStatus, selectedStatus } = useStatus();
   
   // Fallback for when Centrifugo is not available
   const [centrifugoAvailable, setCentrifugoAvailable] = useState(true);
@@ -81,6 +83,53 @@ export const EnhancedMessagingProvider = ({ children }) => {
   const [activeTab, setActiveTab] = useState('messages');
   const [offlineMessages, setOfflineMessages] = useState([]);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
+  // Update isOnline based on user status
+  useEffect(() => {
+    setIsOnline(userStatus === 'online' && navigator.onLine);
+  }, [userStatus]);
+
+  // Subscribe to status updates for users in conversations
+  useEffect(() => {
+    if (!currentUser?.uid || conversations.length === 0) return;
+
+    const statusUnsubscribers = [];
+
+    // Get all unique user IDs from conversations
+    const allUserIds = new Set();
+    conversations.forEach(conversation => {
+      if (conversation.participants) {
+        Object.keys(conversation.participants).forEach(userId => {
+          if (userId !== currentUser.uid) {
+            allUserIds.add(userId);
+          }
+        });
+      }
+    });
+
+    // Subscribe to status updates for each user
+    allUserIds.forEach(userId => {
+      const statusRef = ref(database, `status/${userId}`);
+      const unsubscribe = onValue(statusRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const statusData = snapshot.val();
+          setUsers(prev => ({
+            ...prev,
+            [userId]: {
+              ...prev[userId],
+              status: statusData.state || 'offline',
+              lastSeen: statusData.last_changed
+            }
+          }));
+        }
+      });
+      statusUnsubscribers.push(unsubscribe);
+    });
+
+    return () => {
+      statusUnsubscribers.forEach(unsubscribe => unsubscribe());
+    };
+  }, [conversations, currentUser?.uid]);
   
   // Media states
   const [uploadingMedia, setUploadingMedia] = useState(false);
@@ -1418,12 +1467,15 @@ export const EnhancedMessagingProvider = ({ children }) => {
     const conversationTyping = typingUsers[selectedConversation.id];
     if (!conversationTyping) return [];
     
-    return Object.keys(conversationTyping).map(userId => ({
-      userId,
-      name: conversationTyping[userId].name,
-      timestamp: conversationTyping[userId].timestamp
-    }));
-  }, [selectedConversation?.id, typingUsers]);
+    return Object.keys(conversationTyping).map(userId => {
+      const user = users[userId];
+      return {
+        userId,
+        name: user?.displayName || user?.name || `User ${userId.slice(0, 8)}`,
+        timestamp: conversationTyping[userId]
+      };
+    });
+  }, [selectedConversation?.id, typingUsers, users]);
 
   const value = useMemo(() => ({
     // State
