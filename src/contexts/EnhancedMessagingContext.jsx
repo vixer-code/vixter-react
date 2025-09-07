@@ -370,6 +370,16 @@ export const EnhancedMessagingProvider = ({ children }) => {
   // Subscribe to Centrifugo channel for real-time messaging
   useEffect(() => {
     if (!selectedConversation) {
+      // Clear subscription when no conversation is selected
+      if (conversationSubscriptionRef.current && currentChannelRef.current) {
+        console.log('🔔 Clearing subscription - no conversation selected');
+        if (unsubscribe) {
+          unsubscribe(currentChannelRef.current);
+        }
+        conversationSubscriptionRef.current = null;
+        currentChannelRef.current = null;
+        isSubscribingRef.current = false;
+      }
       return;
     }
 
@@ -380,6 +390,12 @@ export const EnhancedMessagingProvider = ({ children }) => {
     }
 
     const channelName = `conversation:${selectedConversation.id}`;
+    
+    // Check if we're already subscribing to this channel
+    if (isSubscribingRef.current && currentChannelRef.current === channelName) {
+      console.log('🔔 Already subscribing to this channel, skipping...');
+      return;
+    }
     
     // Clear any existing subscription before creating new one
     if (conversationSubscriptionRef.current && currentChannelRef.current) {
@@ -394,6 +410,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
     console.log('🔔 SUBSCRIBING TO CHANNEL:', channelName);
     console.log('🔔 CONVERSATION ID:', selectedConversation.id);
     console.log('🔔 CURRENT USER:', currentUser.uid);
+    
+    isSubscribingRef.current = true;
+    currentChannelRef.current = channelName;
 
     const subscription = subscribe(channelName, {
       onMessage: (data, ctx) => {
@@ -459,12 +478,13 @@ export const EnhancedMessagingProvider = ({ children }) => {
       onSubscribed: (ctx) => {
         console.log('Successfully subscribed to conversation channel');
         conversationSubscriptionRef.current = subscription;
-        currentChannelRef.current = channelName;
+        isSubscribingRef.current = false;
       },
       onError: (ctx) => {
         console.error('Error in conversation subscription:', ctx);
         conversationSubscriptionRef.current = null;
         currentChannelRef.current = null;
+        isSubscribingRef.current = false;
       }
     });
 
@@ -474,6 +494,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
         unsubscribe(currentChannelRef.current);
         conversationSubscriptionRef.current = null;
         currentChannelRef.current = null;
+        isSubscribingRef.current = false;
       }
     };
   }, [selectedConversation?.id, isConnected, subscribe, unsubscribe]);
@@ -484,6 +505,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
   // Conversation subscription tracking
   const conversationSubscriptionRef = useRef(null);
   const currentChannelRef = useRef(null);
+  const isSubscribingRef = useRef(false);
   
   useEffect(() => {
     if (!currentUser?.uid || !isConnected || !subscribe || !unsubscribe) return;
@@ -630,6 +652,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
         }
         conversationSubscriptionRef.current = null;
         currentChannelRef.current = null;
+        isSubscribingRef.current = false;
       }
     };
   }, [unsubscribe]);
