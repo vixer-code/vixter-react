@@ -188,6 +188,36 @@ export const EnhancedMessagingProvider = ({ children }) => {
       console.log('Regular conversations loaded:', conversationsData.length);
       console.log('Conversations data:', conversationsData);
       setConversations(conversationsData);
+      
+      // Load user data for all participants
+      const allParticipantIds = new Set();
+      conversationsData.forEach(conversation => {
+        if (conversation.participants) {
+          Object.keys(conversation.participants).forEach(participantId => {
+            if (participantId !== currentUser.uid) {
+              allParticipantIds.add(participantId);
+            }
+          });
+        }
+      });
+      
+      // Load missing user data
+      allParticipantIds.forEach(participantId => {
+        if (!users[participantId]) {
+          // Load user data asynchronously
+          getUserById(participantId).then(userData => {
+            if (userData) {
+              setUsers(prev => ({
+                ...prev,
+                [participantId]: userData
+              }));
+            }
+          }).catch(error => {
+            console.error('Error loading user data for participant:', error, participantId);
+          });
+        }
+      });
+      
       setLoading(false); // Set loading to false immediately after first load
       clearTimeout(loadingTimeout);
     });

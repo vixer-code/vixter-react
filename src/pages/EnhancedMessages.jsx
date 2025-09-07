@@ -19,7 +19,8 @@ const EnhancedMessages = () => {
     setSelectedConversation,
     isOnline,
     offlineMessages,
-    users
+    users,
+    loadUserData
   } = useEnhancedMessaging();
   
   const { isConnected, isConnecting } = useCentrifugo();
@@ -145,6 +146,10 @@ const EnhancedMessages = () => {
             if (otherUser && typeof otherUser === 'object') {
               return otherUser?.displayName || otherUser?.name || fallbackName;
             }
+          } else {
+            // User data not available, trigger loading
+            console.log('User data not available, triggering load for:', otherUserId);
+            loadUserData(otherUserId);
           }
         } catch (userAccessError) {
           console.warn('Error accessing user data:', userAccessError, { otherUserId, users, usersType: typeof users });
@@ -238,8 +243,32 @@ const EnhancedMessages = () => {
     usersKeys: Object.keys(users), 
     conversationsCount: conversations.length,
     usersType: typeof users,
-    isArray: Array.isArray(users)
+    isArray: Array.isArray(users),
+    conversations: conversations.map(conv => ({
+      id: conv.id,
+      participants: conv.participants ? Object.keys(conv.participants) : 'no participants'
+    }))
   });
+
+  // Check if we need to load missing user data
+  const missingUserIds = [];
+  conversations.forEach(conversation => {
+    if (conversation.participants) {
+      Object.keys(conversation.participants).forEach(participantId => {
+        if (participantId !== currentUser?.uid && !users[participantId]) {
+          missingUserIds.push(participantId);
+        }
+      });
+    }
+  });
+
+  if (missingUserIds.length > 0) {
+    console.log('Missing user data for participants:', missingUserIds);
+    // Load missing user data
+    missingUserIds.forEach(userId => {
+      loadUserData(userId);
+    });
+  }
 
   return (
     <div className="enhanced-messages">
