@@ -369,17 +369,11 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
   // Subscribe to Centrifugo channel for real-time messaging
   useEffect(() => {
+    // Always clear any existing subscription first
+    clearAllSubscriptions();
+
     if (!selectedConversation) {
-      // Clear subscription when no conversation is selected
-      if (conversationSubscriptionRef.current && currentChannelRef.current) {
-        console.log('🔔 Clearing subscription - no conversation selected');
-        if (unsubscribe) {
-          unsubscribe(currentChannelRef.current);
-        }
-        conversationSubscriptionRef.current = null;
-        currentChannelRef.current = null;
-        isSubscribingRef.current = false;
-      }
+      console.log('🔔 No conversation selected, subscription cleared');
       return;
     }
 
@@ -390,22 +384,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
     }
 
     const channelName = `conversation:${selectedConversation.id}`;
-    
-    // Check if we're already subscribing to this channel
-    if (isSubscribingRef.current && currentChannelRef.current === channelName) {
-      console.log('🔔 Already subscribing to this channel, skipping...');
-      return;
-    }
-    
-    // Clear any existing subscription before creating new one
-    if (conversationSubscriptionRef.current && currentChannelRef.current) {
-      console.log('🔔 Clearing existing conversation subscription:', currentChannelRef.current);
-      if (unsubscribe) {
-        unsubscribe(currentChannelRef.current);
-      }
-      conversationSubscriptionRef.current = null;
-      currentChannelRef.current = null;
-    }
     
     console.log('🔔 SUBSCRIBING TO CHANNEL:', channelName);
     console.log('🔔 CONVERSATION ID:', selectedConversation.id);
@@ -489,15 +467,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
     });
 
     return () => {
-      if (conversationSubscriptionRef.current && currentChannelRef.current) {
-        console.log('🔔 UNSUBSCRIBING FROM CHANNEL:', currentChannelRef.current);
-        unsubscribe(currentChannelRef.current);
-        conversationSubscriptionRef.current = null;
-        currentChannelRef.current = null;
-        isSubscribingRef.current = false;
-      }
+      clearAllSubscriptions();
     };
-  }, [selectedConversation?.id, isConnected, subscribe, unsubscribe]);
+  }, [selectedConversation?.id, isConnected, subscribe, unsubscribe, clearAllSubscriptions]);
 
   // Global user subscription for receiving messages from any conversation
   const globalSubscriptionRef = useRef(null);
@@ -506,6 +478,17 @@ export const EnhancedMessagingProvider = ({ children }) => {
   const conversationSubscriptionRef = useRef(null);
   const currentChannelRef = useRef(null);
   const isSubscribingRef = useRef(false);
+  
+  // Function to clear all subscriptions
+  const clearAllSubscriptions = useCallback(() => {
+    console.log('🧹 Clearing all subscriptions');
+    if (conversationSubscriptionRef.current && currentChannelRef.current && unsubscribe) {
+      unsubscribe(currentChannelRef.current);
+    }
+    conversationSubscriptionRef.current = null;
+    currentChannelRef.current = null;
+    isSubscribingRef.current = false;
+  }, [unsubscribe]);
   
   useEffect(() => {
     if (!currentUser?.uid || !isConnected || !subscribe || !unsubscribe) return;
@@ -645,17 +628,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
   // Cleanup conversation subscription on unmount
   useEffect(() => {
     return () => {
-      if (conversationSubscriptionRef.current && currentChannelRef.current) {
-        console.log('🧹 Cleaning up conversation subscription on unmount:', currentChannelRef.current);
-        if (unsubscribe) {
-          unsubscribe(currentChannelRef.current);
-        }
-        conversationSubscriptionRef.current = null;
-        currentChannelRef.current = null;
-        isSubscribingRef.current = false;
-      }
+      clearAllSubscriptions();
     };
-  }, [unsubscribe]);
+  }, [clearAllSubscriptions]);
 
   // Typing indicators functions
   const sendTypingIndicator = useCallback(async (isTyping) => {

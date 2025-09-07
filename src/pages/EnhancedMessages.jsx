@@ -107,7 +107,7 @@ const EnhancedMessages = () => {
     const otherUserId = Object.keys(conversation.participants || {})
       .find(uid => uid !== currentUser?.uid);
     
-    if (otherUserId) {
+    if (otherUserId && users && users[otherUserId]) {
       // Get user data from the enhanced messaging context users state
       const otherUser = users[otherUserId];
       return otherUser?.displayName || otherUser?.name || 'Usuário sem nome';
