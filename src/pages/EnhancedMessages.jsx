@@ -113,21 +113,37 @@ const EnhancedMessages = () => {
         return 'Conversa sem nome';
       }
       
-      const participantIds = Object.keys(conversation.participants);
+      let participantIds;
+      try {
+        participantIds = Object.keys(conversation.participants);
+      } catch (keysError) {
+        console.warn('Error getting participant keys:', keysError, { conversation });
+        return 'Conversa sem nome';
+      }
+      
       if (!participantIds || participantIds.length === 0) {
         return 'Conversa sem nome';
       }
       
-      const otherUserId = participantIds.find(uid => uid !== currentUser?.uid);
+      let otherUserId;
+      try {
+        otherUserId = participantIds.find(uid => uid !== currentUser?.uid);
+      } catch (findError) {
+        console.warn('Error finding other user ID:', findError, { participantIds, currentUser });
+        return 'Conversa sem nome';
+      }
       
       if (otherUserId) {
+        // Always return fallback first to prevent any errors
+        const fallbackName = `Usuário ${otherUserId.slice(0, 8)}`;
+        
         // Try to get user data, but don't fail if users object is not available
         try {
           // Additional safety check for users object
           if (users && typeof users === 'object' && !Array.isArray(users) && users.hasOwnProperty(otherUserId) && users[otherUserId]) {
             const otherUser = users[otherUserId];
             if (otherUser && typeof otherUser === 'object') {
-              return otherUser?.displayName || otherUser?.name || `Usuário ${otherUserId.slice(0, 8)}`;
+              return otherUser?.displayName || otherUser?.name || fallbackName;
             }
           }
         } catch (userAccessError) {
@@ -135,7 +151,7 @@ const EnhancedMessages = () => {
         }
         
         // Fallback to showing partial user ID if users data is not available
-        return `Usuário ${otherUserId.slice(0, 8)}`;
+        return fallbackName;
       }
       
       return 'Conversa sem nome';
@@ -203,6 +219,27 @@ const EnhancedMessages = () => {
       </div>
     );
   }
+
+  // Guard clause to ensure users object is properly initialized
+  if (!users || typeof users !== 'object' || Array.isArray(users)) {
+    console.warn('Users object is not properly initialized:', { users, usersType: typeof users, conversationsCount: conversations.length });
+    return (
+      <div className="enhanced-messages loading">
+        <div className="loading-content">
+          <div className="spinner"></div>
+          <p>Carregando dados dos usuários...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Debug logging for search operations
+  console.log('EnhancedMessages render:', { 
+    usersKeys: Object.keys(users), 
+    conversationsCount: conversations.length,
+    usersType: typeof users,
+    isArray: Array.isArray(users)
+  });
 
   return (
     <div className="enhanced-messages">
