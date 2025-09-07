@@ -122,11 +122,16 @@ const EnhancedMessages = () => {
       
       if (otherUserId) {
         // Try to get user data, but don't fail if users object is not available
-        if (users && typeof users === 'object' && users.hasOwnProperty(otherUserId) && users[otherUserId]) {
-          const otherUser = users[otherUserId];
-          if (otherUser && typeof otherUser === 'object') {
-            return otherUser?.displayName || otherUser?.name || `Usuário ${otherUserId.slice(0, 8)}`;
+        try {
+          // Additional safety check for users object
+          if (users && typeof users === 'object' && !Array.isArray(users) && users.hasOwnProperty(otherUserId) && users[otherUserId]) {
+            const otherUser = users[otherUserId];
+            if (otherUser && typeof otherUser === 'object') {
+              return otherUser?.displayName || otherUser?.name || `Usuário ${otherUserId.slice(0, 8)}`;
+            }
           }
+        } catch (userAccessError) {
+          console.warn('Error accessing user data:', userAccessError, { otherUserId, users, usersType: typeof users });
         }
         
         // Fallback to showing partial user ID if users data is not available
@@ -135,7 +140,7 @@ const EnhancedMessages = () => {
       
       return 'Conversa sem nome';
     } catch (error) {
-      console.error('Error getting conversation display name:', error, { conversation, users, currentUser });
+      console.error('Error getting conversation display name:', error, { conversation, users, currentUser, usersType: typeof users });
       return 'Conversa sem nome';
     }
   };
@@ -272,11 +277,17 @@ const EnhancedMessages = () => {
                   </button>
                 </div>
               ) : (
-                conversations.map((conversation) => {
+                Array.isArray(conversations) ? conversations.map((conversation) => {
                   try {
                     // Additional safety checks
                     if (!conversation || !conversation.id) {
                       console.warn('Invalid conversation object:', conversation);
+                      return null;
+                    }
+                    
+                    // Ensure conversation.participants is valid before processing
+                    if (!conversation.participants || typeof conversation.participants !== 'object') {
+                      console.warn('Invalid conversation participants:', conversation);
                       return null;
                     }
                     
@@ -324,7 +335,7 @@ const EnhancedMessages = () => {
                       </div>
                     );
                   }
-                }).filter(Boolean)
+                }).filter(Boolean) : []
               )
             ) : (
               serviceConversations.length === 0 ? (
@@ -333,7 +344,7 @@ const EnhancedMessages = () => {
                   <p>Nenhuma conversa de serviço</p>
                 </div>
               ) : (
-                serviceConversations.map((conversation) => {
+                Array.isArray(serviceConversations) ? serviceConversations.map((conversation) => {
                   try {
                     // Additional safety checks
                     if (!conversation || !conversation.id) {
@@ -382,7 +393,7 @@ const EnhancedMessages = () => {
                       </div>
                     );
                   }
-                }).filter(Boolean)
+                }).filter(Boolean) : []
               )
             )}
           </div>
