@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useEnhancedMessaging } from '../../contexts/EnhancedMessagingContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
-import TypingIndicator from './TypingIndicator';
 import './ChatInterface.css';
 
 const ChatInterface = ({ conversation, onClose }) => {
@@ -15,7 +14,6 @@ const ChatInterface = ({ conversation, onClose }) => {
     sending,
     uploadingMedia,
     handleTypingChange,
-    getTypingUsers,
     users
   } = useEnhancedMessaging();
   
@@ -173,17 +171,13 @@ const ChatInterface = ({ conversation, onClose }) => {
               {otherUser.displayName || otherUser.name || 'Usuário sem nome'}
             </div>
             <div className="user-status">
-              {getTypingUsers().length > 0 ? 'Digitando...' : 
-               users[otherUser.uid]?.status === 'online' ? 'Online' : 
+              {users[otherUser.uid]?.status === 'online' ? 'Online' : 
                users[otherUser.uid]?.status === 'ausente' ? 'Ausente' : 
                users[otherUser.uid]?.status === 'invisivel' ? 'Invisível' : 'Offline'}
             </div>
           </div>
         </div>
         <div className="chat-actions">
-          <button className="action-button" title="Informações">
-            ℹ️
-          </button>
           <button className="action-button close-button" onClick={onClose} title="Fechar conversa">
             ×
           </button>
@@ -275,9 +269,6 @@ const ChatInterface = ({ conversation, onClose }) => {
               </div>
             ))
           )}
-          
-          {/* Typing Indicator */}
-          <TypingIndicator typingUsers={getTypingUsers()} />
           
           <div ref={messagesEndRef} />
         </div>

@@ -129,22 +129,9 @@ const EnhancedMessages = () => {
     );
   }
 
-  // Guard clause to ensure users object is properly initialized
-  if (!users || typeof users !== 'object' || Array.isArray(users)) {
-    console.warn('Users object is not properly initialized:', { users, usersType: typeof users, conversationsCount: conversations.length });
-    return (
-      <div className="enhanced-messages loading">
-        <div className="loading-content">
-          <div className="spinner"></div>
-          <p>Carregando dados dos usuários...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Additional safety check - if users object becomes invalid during render, show loading
-  if (Object.keys(users).length === 0 && conversations.length > 0) {
-    console.warn('Users object is empty but conversations exist, showing loading state');
+  // Simplified guard clause - only show loading if users object is completely invalid
+  if (users === null || users === undefined) {
+    console.warn('Users object is null/undefined, showing loading state');
     return (
       <div className="enhanced-messages loading">
         <div className="loading-content">
@@ -247,109 +234,54 @@ const EnhancedMessages = () => {
 
           <div className="conversations-list">
             {activeTab === 'messages' ? (
-              conversations.length === 0 || !Array.isArray(conversations) ? (
+              conversations.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-icon">💬</div>
                   <p>Nenhuma conversa ainda</p>
-                  <p style={{fontSize: '12px', opacity: 0.7}}>
-                    Debug: Loading: {loading ? 'Yes' : 'No'}, 
-                    Conversations: {conversations.length}, 
-                    User: {currentUser?.uid ? 'Logged in' : 'Not logged in'}
-                  </p>
-                  <div style={{fontSize: '10px', opacity: 0.5, marginTop: '10px'}}>
-                    Conversations: {JSON.stringify(conversations.map(c => ({id: c.id, participants: Object.keys(c.participants || {})})), null, 2)}
-                  </div>
                   <button
                     className="start-conversation-button"
                     onClick={() => setShowUserSelector(true)}
                   >
                     Iniciar conversa
                   </button>
-                  <button
-                    className="start-conversation-button"
-                    onClick={() => showInfo('Test notification!', 'Test', 3000)}
-                    style={{marginTop: '10px', background: '#8A2BE2'}}
-                  >
-                    Test Notification
-                  </button>
                 </div>
               ) : (
-                Array.isArray(conversations) ? conversations.map((conversation) => {
-                  try {
-                    // Additional safety checks
-                    if (!conversation || !conversation.id) {
-                      console.warn('Invalid conversation object:', conversation);
-                      return null;
-                    }
-                    
-                    // Ensure conversation.participants is valid before processing
-                    if (!conversation.participants || typeof conversation.participants !== 'object') {
-                      console.warn('Invalid conversation participants:', conversation);
-                      return null;
-                    }
-                    
-                    // Additional safety check for users object during rendering
-                    if (!users || typeof users !== 'object' || Array.isArray(users)) {
-                      console.warn('Users object became invalid during conversation rendering, skipping conversation:', conversation.id);
-                      return (
-                        <div
-                          key={conversation.id}
-                          className="conversation-item error"
-                        >
-                          <div className="conversation-content">
-                            <div className="conversation-name">
-                              Carregando...
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-                    
-                    const displayName = getConversationDisplayName(conversation, users, currentUser?.uid);
-                    return (
-                      <div
-                        key={conversation.id}
-                        className={`conversation-item ${
-                          selectedConversation?.id === conversation.id ? 'active' : ''
-                        }`}
-                        onClick={() => handleConversationSelect(conversation)}
-                      >
-                        <div className="conversation-avatar">
-                          <div className="default-avatar">
-                            {displayName && displayName.length > 0 ? displayName.charAt(0).toUpperCase() : '?'}
-                          </div>
-                        </div>
-                        <div className="conversation-content">
-                          <div className="conversation-header">
-                            <div className="conversation-name">
-                              {displayName || 'Conversa sem nome'}
-                            </div>
-                            <div className="conversation-time">
-                              {formatLastMessageTime(conversation.lastMessageTime)}
-                            </div>
-                          </div>
-                          <div className="conversation-preview">
-                            {getLastMessagePreview(conversation)}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  } catch (error) {
-                    console.error('Error rendering conversation:', error, { conversation, users, currentUser, usersType: typeof users });
-                    return (
-                      <div
-                        key={conversation?.id || 'error-' + Math.random()}
-                        className="conversation-item error"
-                      >
-                        <div className="conversation-content">
-                          <div className="conversation-name">
-                            Erro ao carregar conversa
-                          </div>
-                        </div>
-                      </div>
-                    );
+                conversations.map((conversation) => {
+                  if (!conversation || !conversation.id) {
+                    return null;
                   }
-                }).filter(Boolean) : []
+                  
+                  const displayName = getConversationDisplayName(conversation, users || {}, currentUser?.uid);
+                  
+                  return (
+                    <div
+                      key={conversation.id}
+                      className={`conversation-item ${
+                        selectedConversation?.id === conversation.id ? 'active' : ''
+                      }`}
+                      onClick={() => handleConversationSelect(conversation)}
+                    >
+                      <div className="conversation-avatar">
+                        <div className="default-avatar">
+                          {displayName && displayName.length > 0 ? displayName.charAt(0).toUpperCase() : '?'}
+                        </div>
+                      </div>
+                      <div className="conversation-content">
+                        <div className="conversation-header">
+                          <div className="conversation-name">
+                            {displayName || 'Conversa sem nome'}
+                          </div>
+                          <div className="conversation-time">
+                            {formatLastMessageTime(conversation.lastMessageTime)}
+                          </div>
+                        </div>
+                        <div className="conversation-preview">
+                          {getLastMessagePreview(conversation)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }).filter(Boolean)
               )
             ) : (
               serviceConversations.length === 0 ? (
@@ -358,56 +290,38 @@ const EnhancedMessages = () => {
                   <p>Nenhuma conversa de serviço</p>
                 </div>
               ) : (
-                Array.isArray(serviceConversations) ? serviceConversations.map((conversation) => {
-                  try {
-                    // Additional safety checks
-                    if (!conversation || !conversation.id) {
-                      console.warn('Invalid service conversation object:', conversation);
-                      return null;
-                    }
-                    
-                    return (
-                      <div
-                        key={conversation.id}
-                        className={`conversation-item ${
-                          selectedConversation?.id === conversation.id ? 'active' : ''
-                        }`}
-                        onClick={() => handleConversationSelect(conversation)}
-                      >
-                        <div className="conversation-avatar">
-                          <div className="service-avatar">🛠️</div>
-                        </div>
-                        <div className="conversation-content">
-                          <div className="conversation-header">
-                            <div className="conversation-name">
-                              Serviço #{conversation.serviceOrderId || 'N/A'}
-                            </div>
-                            <div className="conversation-time">
-                              {formatLastMessageTime(conversation.lastMessageTime)}
-                            </div>
-                          </div>
-                          <div className="conversation-preview">
-                            {getLastMessagePreview(conversation)}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  } catch (error) {
-                    console.error('Error rendering service conversation:', error, { conversation, users, currentUser });
-                    return (
-                      <div
-                        key={conversation?.id || 'error-service-' + Math.random()}
-                        className="conversation-item error"
-                      >
-                        <div className="conversation-content">
-                          <div className="conversation-name">
-                            Erro ao carregar serviço
-                          </div>
-                        </div>
-                      </div>
-                    );
+                serviceConversations.map((conversation) => {
+                  if (!conversation || !conversation.id) {
+                    return null;
                   }
-                }).filter(Boolean) : []
+                  
+                  return (
+                    <div
+                      key={conversation.id}
+                      className={`conversation-item ${
+                        selectedConversation?.id === conversation.id ? 'active' : ''
+                      }`}
+                      onClick={() => handleConversationSelect(conversation)}
+                    >
+                      <div className="conversation-avatar">
+                        <div className="service-avatar">🛠️</div>
+                      </div>
+                      <div className="conversation-content">
+                        <div className="conversation-header">
+                          <div className="conversation-name">
+                            Serviço #{conversation.serviceOrderId || 'N/A'}
+                          </div>
+                          <div className="conversation-time">
+                            {formatLastMessageTime(conversation.lastMessageTime)}
+                          </div>
+                        </div>
+                        <div className="conversation-preview">
+                          {getLastMessagePreview(conversation)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }).filter(Boolean)
               )
             )}
           </div>
