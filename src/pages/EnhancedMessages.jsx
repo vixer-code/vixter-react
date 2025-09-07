@@ -113,14 +113,20 @@ const EnhancedMessages = () => {
         return 'Conversa sem nome';
       }
       
-      const otherUserId = Object.keys(conversation.participants)
-        .find(uid => uid !== currentUser?.uid);
+      const participantIds = Object.keys(conversation.participants);
+      if (!participantIds || participantIds.length === 0) {
+        return 'Conversa sem nome';
+      }
+      
+      const otherUserId = participantIds.find(uid => uid !== currentUser?.uid);
       
       if (otherUserId) {
         // Try to get user data, but don't fail if users object is not available
-        if (users && typeof users === 'object' && users[otherUserId]) {
+        if (users && typeof users === 'object' && users.hasOwnProperty(otherUserId) && users[otherUserId]) {
           const otherUser = users[otherUserId];
-          return otherUser?.displayName || otherUser?.name || `Usuário ${otherUserId.slice(0, 8)}`;
+          if (otherUser && typeof otherUser === 'object') {
+            return otherUser?.displayName || otherUser?.name || `Usuário ${otherUserId.slice(0, 8)}`;
+          }
         }
         
         // Fallback to showing partial user ID if users data is not available
@@ -129,7 +135,7 @@ const EnhancedMessages = () => {
       
       return 'Conversa sem nome';
     } catch (error) {
-      console.error('Error getting conversation display name:', error);
+      console.error('Error getting conversation display name:', error, { conversation, users, currentUser });
       return 'Conversa sem nome';
     }
   };
@@ -268,6 +274,12 @@ const EnhancedMessages = () => {
               ) : (
                 conversations.map((conversation) => {
                   try {
+                    // Additional safety checks
+                    if (!conversation || !conversation.id) {
+                      console.warn('Invalid conversation object:', conversation);
+                      return null;
+                    }
+                    
                     const displayName = getConversationDisplayName(conversation);
                     return (
                       <div
@@ -279,13 +291,13 @@ const EnhancedMessages = () => {
                       >
                         <div className="conversation-avatar">
                           <div className="default-avatar">
-                            {displayName.charAt(0).toUpperCase()}
+                            {displayName && displayName.length > 0 ? displayName.charAt(0).toUpperCase() : '?'}
                           </div>
                         </div>
                         <div className="conversation-content">
                           <div className="conversation-header">
                             <div className="conversation-name">
-                              {displayName}
+                              {displayName || 'Conversa sem nome'}
                             </div>
                             <div className="conversation-time">
                               {formatLastMessageTime(conversation.lastMessageTime)}
@@ -298,10 +310,10 @@ const EnhancedMessages = () => {
                       </div>
                     );
                   } catch (error) {
-                    console.error('Error rendering conversation:', error, conversation);
+                    console.error('Error rendering conversation:', error, { conversation, users, currentUser });
                     return (
                       <div
-                        key={conversation.id}
+                        key={conversation?.id || 'error-' + Math.random()}
                         className="conversation-item error"
                       >
                         <div className="conversation-content">
@@ -312,7 +324,7 @@ const EnhancedMessages = () => {
                       </div>
                     );
                   }
-                })
+                }).filter(Boolean)
               )
             ) : (
               serviceConversations.length === 0 ? (
@@ -323,6 +335,12 @@ const EnhancedMessages = () => {
               ) : (
                 serviceConversations.map((conversation) => {
                   try {
+                    // Additional safety checks
+                    if (!conversation || !conversation.id) {
+                      console.warn('Invalid service conversation object:', conversation);
+                      return null;
+                    }
+                    
                     return (
                       <div
                         key={conversation.id}
@@ -350,10 +368,10 @@ const EnhancedMessages = () => {
                       </div>
                     );
                   } catch (error) {
-                    console.error('Error rendering service conversation:', error, conversation);
+                    console.error('Error rendering service conversation:', error, { conversation, users, currentUser });
                     return (
                       <div
-                        key={conversation.id}
+                        key={conversation?.id || 'error-service-' + Math.random()}
                         className="conversation-item error"
                       >
                         <div className="conversation-content">
@@ -364,7 +382,7 @@ const EnhancedMessages = () => {
                       </div>
                     );
                   }
-                })
+                }).filter(Boolean)
               )
             )}
           </div>
