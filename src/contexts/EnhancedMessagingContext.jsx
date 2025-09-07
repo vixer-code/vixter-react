@@ -446,7 +446,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
           // Don't show typing indicator for current user
           if (data.userId !== currentUser?.uid) {
             setTypingUsers(prev => {
-              const conversationId = selectedConversation?.id;
+              const conversationId = data.conversationId || selectedConversationRef.current?.id;
               if (!conversationId) return prev;
 
               const updated = { ...prev };
@@ -479,7 +479,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     // Store in pool
     subscriptionPool.current.set(channelName, subscription);
     return subscription;
-  }, [subscribe, unsubscribe, currentUser?.uid, selectedConversation?.id]);
+  }, [subscribe, unsubscribe, currentUser?.uid]);
   
   // Function to clear all subscriptions
   const clearAllSubscriptions = useCallback(() => {
