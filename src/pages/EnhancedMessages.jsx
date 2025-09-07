@@ -100,20 +100,33 @@ const EnhancedMessages = () => {
 
   // Get conversation display name
   const getConversationDisplayName = (conversation) => {
-    if (conversation.name) {
-      return conversation.name;
+    try {
+      if (!conversation) {
+        return 'Conversa sem nome';
+      }
+      
+      if (conversation.name) {
+        return conversation.name;
+      }
+      
+      if (!conversation.participants || typeof conversation.participants !== 'object') {
+        return 'Conversa sem nome';
+      }
+      
+      const otherUserId = Object.keys(conversation.participants)
+        .find(uid => uid !== currentUser?.uid);
+      
+      if (otherUserId && users && typeof users === 'object' && users[otherUserId]) {
+        // Get user data from the enhanced messaging context users state
+        const otherUser = users[otherUserId];
+        return otherUser?.displayName || otherUser?.name || 'Usuário sem nome';
+      }
+      
+      return 'Conversa sem nome';
+    } catch (error) {
+      console.error('Error getting conversation display name:', error);
+      return 'Conversa sem nome';
     }
-    
-    const otherUserId = Object.keys(conversation.participants || {})
-      .find(uid => uid !== currentUser?.uid);
-    
-    if (otherUserId && users && users[otherUserId]) {
-      // Get user data from the enhanced messaging context users state
-      const otherUser = users[otherUserId];
-      return otherUser?.displayName || otherUser?.name || 'Usuário sem nome';
-    }
-    
-    return 'Conversa sem nome';
   };
 
   // Get conversation last message preview
@@ -248,34 +261,53 @@ const EnhancedMessages = () => {
                   </button>
                 </div>
               ) : (
-                conversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    className={`conversation-item ${
-                      selectedConversation?.id === conversation.id ? 'active' : ''
-                    }`}
-                    onClick={() => handleConversationSelect(conversation)}
-                  >
-                    <div className="conversation-avatar">
-                      <div className="default-avatar">
-                        {getConversationDisplayName(conversation).charAt(0).toUpperCase()}
-                      </div>
-                    </div>
-                    <div className="conversation-content">
-                      <div className="conversation-header">
-                        <div className="conversation-name">
-                          {getConversationDisplayName(conversation)}
+                conversations.map((conversation) => {
+                  try {
+                    const displayName = getConversationDisplayName(conversation);
+                    return (
+                      <div
+                        key={conversation.id}
+                        className={`conversation-item ${
+                          selectedConversation?.id === conversation.id ? 'active' : ''
+                        }`}
+                        onClick={() => handleConversationSelect(conversation)}
+                      >
+                        <div className="conversation-avatar">
+                          <div className="default-avatar">
+                            {displayName.charAt(0).toUpperCase()}
+                          </div>
                         </div>
-                        <div className="conversation-time">
-                          {formatLastMessageTime(conversation.lastMessageTime)}
+                        <div className="conversation-content">
+                          <div className="conversation-header">
+                            <div className="conversation-name">
+                              {displayName}
+                            </div>
+                            <div className="conversation-time">
+                              {formatLastMessageTime(conversation.lastMessageTime)}
+                            </div>
+                          </div>
+                          <div className="conversation-preview">
+                            {getLastMessagePreview(conversation)}
+                          </div>
                         </div>
                       </div>
-                      <div className="conversation-preview">
-                        {getLastMessagePreview(conversation)}
+                    );
+                  } catch (error) {
+                    console.error('Error rendering conversation:', error, conversation);
+                    return (
+                      <div
+                        key={conversation.id}
+                        className="conversation-item error"
+                      >
+                        <div className="conversation-content">
+                          <div className="conversation-name">
+                            Erro ao carregar conversa
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))
+                    );
+                  }
+                })
               )
             ) : (
               serviceConversations.length === 0 ? (
@@ -284,32 +316,50 @@ const EnhancedMessages = () => {
                   <p>Nenhuma conversa de serviço</p>
                 </div>
               ) : (
-                serviceConversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    className={`conversation-item ${
-                      selectedConversation?.id === conversation.id ? 'active' : ''
-                    }`}
-                    onClick={() => handleConversationSelect(conversation)}
-                  >
-                    <div className="conversation-avatar">
-                      <div className="service-avatar">🛠️</div>
-                    </div>
-                    <div className="conversation-content">
-                      <div className="conversation-header">
-                        <div className="conversation-name">
-                          Serviço #{conversation.serviceOrderId}
+                serviceConversations.map((conversation) => {
+                  try {
+                    return (
+                      <div
+                        key={conversation.id}
+                        className={`conversation-item ${
+                          selectedConversation?.id === conversation.id ? 'active' : ''
+                        }`}
+                        onClick={() => handleConversationSelect(conversation)}
+                      >
+                        <div className="conversation-avatar">
+                          <div className="service-avatar">🛠️</div>
                         </div>
-                        <div className="conversation-time">
-                          {formatLastMessageTime(conversation.lastMessageTime)}
+                        <div className="conversation-content">
+                          <div className="conversation-header">
+                            <div className="conversation-name">
+                              Serviço #{conversation.serviceOrderId || 'N/A'}
+                            </div>
+                            <div className="conversation-time">
+                              {formatLastMessageTime(conversation.lastMessageTime)}
+                            </div>
+                          </div>
+                          <div className="conversation-preview">
+                            {getLastMessagePreview(conversation)}
+                          </div>
                         </div>
                       </div>
-                      <div className="conversation-preview">
-                        {getLastMessagePreview(conversation)}
+                    );
+                  } catch (error) {
+                    console.error('Error rendering service conversation:', error, conversation);
+                    return (
+                      <div
+                        key={conversation.id}
+                        className="conversation-item error"
+                      >
+                        <div className="conversation-content">
+                          <div className="conversation-name">
+                            Erro ao carregar serviço
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))
+                    );
+                  }
+                })
               )
             )}
           </div>
