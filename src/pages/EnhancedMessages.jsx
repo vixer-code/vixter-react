@@ -116,10 +116,15 @@ const EnhancedMessages = () => {
       const otherUserId = Object.keys(conversation.participants)
         .find(uid => uid !== currentUser?.uid);
       
-      if (otherUserId && users && typeof users === 'object' && users[otherUserId]) {
-        // Get user data from the enhanced messaging context users state
-        const otherUser = users[otherUserId];
-        return otherUser?.displayName || otherUser?.name || 'Usuário sem nome';
+      if (otherUserId) {
+        // Try to get user data, but don't fail if users object is not available
+        if (users && typeof users === 'object' && users[otherUserId]) {
+          const otherUser = users[otherUserId];
+          return otherUser?.displayName || otherUser?.name || `Usuário ${otherUserId.slice(0, 8)}`;
+        }
+        
+        // Fallback to showing partial user ID if users data is not available
+        return `Usuário ${otherUserId.slice(0, 8)}`;
       }
       
       return 'Conversa sem nome';

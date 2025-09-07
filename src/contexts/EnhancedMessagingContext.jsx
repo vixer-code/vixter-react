@@ -369,11 +369,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
   // Subscribe to Centrifugo channel for real-time messaging
   useEffect(() => {
-    // Always clear any existing subscription first
-    clearAllSubscriptions();
-
     if (!selectedConversation) {
-      console.log('🔔 No conversation selected, subscription cleared');
+      console.log('🔔 No conversation selected');
+      currentActiveSubscription.current = null;
       return;
     }
 
@@ -383,15 +381,38 @@ export const EnhancedMessagingProvider = ({ children }) => {
       return;
     }
 
-    const channelName = `conversation:${selectedConversation.id}`;
+    console.log('🔔 ACTIVATING SUBSCRIPTION FOR:', selectedConversation.id);
     
-    console.log('🔔 SUBSCRIBING TO CHANNEL:', channelName);
-    console.log('🔔 CONVERSATION ID:', selectedConversation.id);
-    console.log('🔔 CURRENT USER:', currentUser.uid);
-    
-    isSubscribingRef.current = true;
-    currentChannelRef.current = channelName;
+    // Get or create subscription for this conversation
+    const subscription = getOrCreateSubscription(selectedConversation.id);
+    currentActiveSubscription.current = subscription;
 
+    return () => {
+      // Don't clear subscription, just mark as inactive
+      console.log('🔔 DEACTIVATING SUBSCRIPTION FOR:', selectedConversation.id);
+      currentActiveSubscription.current = null;
+    };
+  }, [selectedConversation?.id, isConnected, getOrCreateSubscription]);
+
+  // Global user subscription for receiving messages from any conversation
+  const globalSubscriptionRef = useRef(null);
+  
+  // Subscription pool to manage multiple conversation subscriptions
+  const subscriptionPool = useRef(new Map());
+  const currentActiveSubscription = useRef(null);
+  
+  // Function to get or create subscription for a conversation
+  const getOrCreateSubscription = useCallback((conversationId) => {
+    const channelName = `conversation:${conversationId}`;
+    
+    // If subscription already exists in pool, return it
+    if (subscriptionPool.current.has(channelName)) {
+      console.log('🔔 Using existing subscription for:', channelName);
+      return subscriptionPool.current.get(channelName);
+    }
+    
+    // Create new subscription
+    console.log('🔔 Creating new subscription for:', channelName);
     const subscription = subscribe(channelName, {
       onMessage: (data, ctx) => {
         console.log('Received real-time message via Centrifugo:', data);
@@ -435,17 +456,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
               }
 
               if (data.isTyping) {
-                updated[conversationId][data.userId] = {
-                  name: data.userName,
-                  timestamp: Date.now()
-                };
+                updated[conversationId][data.userId] = Date.now();
               } else {
                 delete updated[conversationId][data.userId];
-                
-                // Remove conversation if no users typing
-                if (Object.keys(updated[conversationId]).length === 0) {
-                  delete updated[conversationId];
-                }
               }
 
               return updated;
@@ -455,39 +468,29 @@ export const EnhancedMessagingProvider = ({ children }) => {
       },
       onSubscribed: (ctx) => {
         console.log('Successfully subscribed to conversation channel');
-        conversationSubscriptionRef.current = subscription;
-        isSubscribingRef.current = false;
       },
       onError: (ctx) => {
         console.error('Error in conversation subscription:', ctx);
-        conversationSubscriptionRef.current = null;
-        currentChannelRef.current = null;
-        isSubscribingRef.current = false;
+        // Remove from pool on error
+        subscriptionPool.current.delete(channelName);
       }
     });
-
-    return () => {
-      clearAllSubscriptions();
-    };
-  }, [selectedConversation?.id, isConnected, subscribe, unsubscribe]);
-
-  // Global user subscription for receiving messages from any conversation
-  const globalSubscriptionRef = useRef(null);
-  
-  // Conversation subscription tracking
-  const conversationSubscriptionRef = useRef(null);
-  const currentChannelRef = useRef(null);
-  const isSubscribingRef = useRef(false);
+    
+    // Store in pool
+    subscriptionPool.current.set(channelName, subscription);
+    return subscription;
+  }, [subscribe, unsubscribe, currentUser?.uid, selectedConversation?.id]);
   
   // Function to clear all subscriptions
   const clearAllSubscriptions = useCallback(() => {
     console.log('🧹 Clearing all subscriptions');
-    if (conversationSubscriptionRef.current && currentChannelRef.current && unsubscribe) {
-      unsubscribe(currentChannelRef.current);
-    }
-    conversationSubscriptionRef.current = null;
-    currentChannelRef.current = null;
-    isSubscribingRef.current = false;
+    subscriptionPool.current.forEach((subscription, channelName) => {
+      if (unsubscribe) {
+        unsubscribe(channelName);
+      }
+    });
+    subscriptionPool.current.clear();
+    currentActiveSubscription.current = null;
   }, [unsubscribe]);
   
   useEffect(() => {
