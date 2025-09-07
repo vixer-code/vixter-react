@@ -3,9 +3,15 @@ import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useCentrifugo } from '../contexts/CentrifugoContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import UserSelector from '../components/messaging/UserSelector';
 import ChatInterface from '../components/messaging/ChatInterface';
+import { 
+  getConversationDisplayName, 
+  formatLastMessageTime, 
+  getLastMessagePreview,
+  debugLog 
+} from '../utils/conversation';
 import './EnhancedMessages.css';
 
 const EnhancedMessages = () => {
@@ -27,64 +33,65 @@ const EnhancedMessages = () => {
   const { currentUser } = useAuth();
   const { showInfo } = useNotification();
   const location = useLocation();
+  const { conversationId } = useParams();
+  
+  // Debug mode toggle (can be controlled by environment variable or localStorage)
+  const [debugMode] = useState(() => {
+    return localStorage.getItem('vixter-debug') === 'true' || process.env.NODE_ENV === 'development';
+  });
   
   const [showUserSelector, setShowUserSelector] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
 
   // Handle URL parameters for conversation selection
   useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const conversationIdFromUrl = searchParams.get('conversation');
-    
-    if (conversationIdFromUrl && conversations.length > 0) {
-      console.log('🔗 URL parameter conversation:', conversationIdFromUrl);
+    if (conversationId && conversations.length > 0) {
+      debugLog('URL parameter conversation', conversationId);
       
       // Find conversation in regular conversations
-      let targetConversation = conversations.find(conv => conv.id === conversationIdFromUrl);
+      let targetConversation = conversations.find(conv => conv.id === conversationId);
       
       // If not found, check service conversations
       if (!targetConversation && serviceConversations.length > 0) {
-        targetConversation = serviceConversations.find(conv => conv.id === conversationIdFromUrl);
+        targetConversation = serviceConversations.find(conv => conv.id === conversationId);
         if (targetConversation) {
           setActiveTab('services');
         }
       }
       
       if (targetConversation) {
-        console.log('✅ Found conversation from URL, selecting:', targetConversation.id);
+        debugLog('Found conversation from URL, selecting', targetConversation.id);
         setSelectedConversation(targetConversation);
         // Only show mobile chat on mobile devices
         if (window.innerWidth <= 768) {
           setShowMobileChat(true);
         }
-        
-        // Clear URL parameter after handling
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, '', newUrl);
       } else {
-        console.warn('⚠️ Conversation not found:', conversationIdFromUrl);
+        debugLog('Conversation not found', conversationId);
       }
     }
-  }, [conversations, serviceConversations, location.search, setSelectedConversation, setActiveTab]);
+  }, [conversationId, conversations, serviceConversations, setSelectedConversation, setActiveTab, debugMode]);
 
   // Debug effect to track selectedConversation changes
   useEffect(() => {
-    console.log('🔄 selectedConversation changed to:', selectedConversation?.id);
-  }, [selectedConversation]);
+    debugLog('selectedConversation changed', selectedConversation?.id);
+  }, [selectedConversation, debugMode]);
 
   // Handle user selection
   const handleUserSelected = (conversation) => {
-    console.log('📱 EnhancedMessages: User selected, conversation:', conversation);
-    console.log('📱 Previous selectedConversation:', selectedConversation?.id);
+    debugLog('User selected, conversation', conversation);
+    debugLog('Previous selectedConversation', selectedConversation?.id);
+    
+    if (!conversation || !conversation.id) {
+      debugLog('Invalid conversation object received', conversation);
+      showInfo('Erro: Conversa inválida', 'error');
+      return;
+    }
+    
     setSelectedConversation(conversation);
     setShowUserSelector(false);
     setShowMobileChat(true);
-    console.log('📱 EnhancedMessages: UI state updated, mobile chat should show');
-    
-    // Force a small delay to ensure state has updated
-    setTimeout(() => {
-      console.log('📱 Current selectedConversation after update:', selectedConversation?.id);
-    }, 100);
+    debugLog('UI state updated, mobile chat should show', conversation.id);
   };
 
   // Handle conversation selection
@@ -99,118 +106,11 @@ const EnhancedMessages = () => {
     setSelectedConversation(null);
   };
 
-  // Get conversation display name
-  const getConversationDisplayName = (conversation) => {
-    try {
-      if (!conversation) {
-        return 'Conversa sem nome';
-      }
-      
-      if (conversation.name) {
-        return conversation.name;
-      }
-      
-      if (!conversation.participants || typeof conversation.participants !== 'object') {
-        return 'Conversa sem nome';
-      }
-      
-      let participantIds;
-      try {
-        participantIds = Object.keys(conversation.participants);
-      } catch (keysError) {
-        console.warn('Error getting participant keys:', keysError, { conversation });
-        return 'Conversa sem nome';
-      }
-      
-      if (!participantIds || participantIds.length === 0) {
-        return 'Conversa sem nome';
-      }
-      
-      let otherUserId;
-      try {
-        otherUserId = participantIds.find(uid => uid !== currentUser?.uid);
-      } catch (findError) {
-        console.warn('Error finding other user ID:', findError, { participantIds, currentUser });
-        return 'Conversa sem nome';
-      }
-      
-      if (otherUserId) {
-        // Always return fallback first to prevent any errors
-        const fallbackName = `Usuário ${otherUserId.slice(0, 8)}`;
-        
-        // Try to get user data, but don't fail if users object is not available
-        try {
-          // Additional safety check for users object
-          if (users && typeof users === 'object' && !Array.isArray(users) && users.hasOwnProperty(otherUserId) && users[otherUserId]) {
-            const otherUser = users[otherUserId];
-            if (otherUser && typeof otherUser === 'object') {
-              return otherUser?.displayName || otherUser?.name || fallbackName;
-            }
-          } else {
-            // User data not available, trigger loading only if users object is valid
-            if (users && typeof users === 'object' && !Array.isArray(users)) {
-              console.log('User data not available, triggering load for:', otherUserId);
-              loadUserData(otherUserId);
-            } else {
-              console.warn('Users object is invalid, cannot load user data for:', otherUserId);
-            }
-          }
-        } catch (userAccessError) {
-          console.warn('Error accessing user data:', userAccessError, { otherUserId, users, usersType: typeof users });
-        }
-        
-        // Fallback to showing partial user ID if users data is not available
-        return fallbackName;
-      }
-      
-      return 'Conversa sem nome';
-    } catch (error) {
-      console.error('Error getting conversation display name:', error, { conversation, users, currentUser, usersType: typeof users });
-      return 'Conversa sem nome';
-    }
-  };
-
-  // Get conversation last message preview
-  const getLastMessagePreview = (conversation) => {
-    if (!conversation.lastMessage) {
-      return 'Nenhuma mensagem';
-    }
-    
-    const maxLength = 50;
-    if (conversation.lastMessage.length <= maxLength) {
-      return conversation.lastMessage;
-    }
-    
-    return conversation.lastMessage.substring(0, maxLength) + '...';
-  };
-
-  // Format last message time
-  const formatLastMessageTime = (timestamp) => {
-    if (!timestamp) return '';
-    
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInHours = (now - date) / (1000 * 60 * 60);
-    
-    if (diffInHours < 1) {
-      return 'Agora';
-    } else if (diffInHours < 24) {
-      return date.toLocaleTimeString('pt-BR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
-    } else if (diffInHours < 48) {
-      return 'Ontem';
-    } else {
-      return date.toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit'
-      });
-    }
-  };
+  // Helper functions now use utility functions from conversation.js
+  // These are imported at the top of the file
 
   // Debug logging
-  console.log('EnhancedMessages render:', {
+  debugLog('EnhancedMessages render', {
     loading,
     conversationsCount: conversations.length,
     serviceConversationsCount: serviceConversations.length,
@@ -405,7 +305,7 @@ const EnhancedMessages = () => {
                       );
                     }
                     
-                    const displayName = getConversationDisplayName(conversation);
+                    const displayName = getConversationDisplayName(conversation, users, currentUser?.uid);
                     return (
                       <div
                         key={conversation.id}

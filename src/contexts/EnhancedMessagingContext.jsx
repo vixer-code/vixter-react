@@ -24,6 +24,19 @@ import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import { useUser } from './UserContext';
 import { useCentrifugo } from './CentrifugoContext';
+import { 
+  saveConversation, 
+  getUserConversations, 
+  subscribeToUserConversations,
+  saveMessage,
+  subscribeToConversationMessages
+} from '../services/conversationService';
+import { 
+  createConversationObject, 
+  findExistingConversation, 
+  isValidConversation,
+  debugLog 
+} from '../utils/conversation';
 
 // Generate deterministic conversation ID from participants
 const generateConversationId = (userA, userB, serviceOrderId = null) => {
@@ -855,152 +868,72 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
   // Create or get conversation
   const createOrGetConversation = useCallback(async (otherUserId, serviceOrderId = null) => {
-    console.log('🔄 createOrGetConversation called with:', { otherUserId, serviceOrderId, currentUser: currentUser?.uid });
+    debugLog('createOrGetConversation called', { otherUserId, serviceOrderId, currentUser: currentUser?.uid });
     
     if (!currentUser?.uid || !otherUserId) {
-      console.log('❌ Missing required data:', { currentUser: currentUser?.uid, otherUserId });
+      debugLog('Missing required data', { currentUser: currentUser?.uid, otherUserId });
       return null;
     }
 
     try {
-      // Generate deterministic conversation ID
-      const conversationId = generateConversationId(currentUser.uid, otherUserId, serviceOrderId);
-      console.log('🎯 Generated deterministic conversation ID:', conversationId);
-
-      const conversationRef = ref(database, `conversations/${conversationId}`);
-      
       // First check if conversation already exists in local state
       const allConversations = [...conversations, ...serviceConversations];
-      let existingConversation = allConversations.find(conv => conv.id === conversationId);
+      const existingConversation = findExistingConversation(allConversations, currentUser.uid, otherUserId);
 
       if (existingConversation) {
-        console.log('✅ Found existing conversation in local state:', conversationId);
+        debugLog('Found existing conversation in local state', existingConversation.id);
         return existingConversation;
       }
 
-      // Check if conversation exists in Firebase
-      const snapshot = await new Promise((resolve, reject) => {
-        const timeoutId = setTimeout(() => {
-          reject(new Error('Firebase query timeout'));
-        }, 5000);
-        
-        onValue(conversationRef, (snapshot) => {
-          clearTimeout(timeoutId);
-          resolve(snapshot);
-        }, { onlyOnce: true });
+      // Create new conversation using utility function
+      const otherUser = { uid: otherUserId }; // Minimal user object for creation
+      const newConversation = createConversationObject(currentUser.uid, otherUser);
+      
+      // Add service order ID if provided
+      if (serviceOrderId) {
+        newConversation.serviceOrderId = serviceOrderId;
+        newConversation.type = 'service';
+      } else {
+        newConversation.type = 'regular';
+      }
+
+      debugLog('Creating new conversation', newConversation);
+
+      // Save to Firebase Realtime Database (keeping existing structure)
+      const conversationRef = ref(database, `conversations/${newConversation.id}`);
+      await set(conversationRef, {
+        participants: newConversation.participants,
+        createdAt: newConversation.createdAt,
+        lastMessage: newConversation.lastMessage,
+        lastMessageTime: newConversation.lastMessageTime,
+        lastSenderId: currentUser.uid,
+        type: newConversation.type,
+        ...(serviceOrderId && { serviceOrderId })
       });
 
-      if (snapshot.exists()) {
-        console.log('✅ Found existing conversation in Firebase:', conversationId);
-        const existingData = snapshot.val();
-        const conversation = {
-          id: conversationId,
-          ...existingData
-        };
-
-        // Add to local state
-        if (serviceOrderId) {
-          setServiceConversations(prev => [conversation, ...prev]);
-        } else {
-          setConversations(prev => [conversation, ...prev]);
-        }
-
-        return conversation;
+      // Also save to Firestore for persistent storage
+      try {
+        await saveConversation(newConversation);
+        debugLog('Conversation saved to Firestore', newConversation.id);
+      } catch (firestoreError) {
+        console.warn('Failed to save to Firestore, but Realtime DB save succeeded:', firestoreError);
       }
 
-      // Create new conversation with deterministic ID
-      console.log('🆕 Creating new conversation with ID:', conversationId);
-      const conversationData = {
-        participants: {
-          [currentUser.uid]: true,
-          [otherUserId]: true
-        },
-        createdAt: Date.now(),
-        lastMessage: '',
-        lastMessageTime: Date.now(),
-        lastSenderId: currentUser.uid
-      };
-
+      // Add to local state immediately
       if (serviceOrderId) {
-        conversationData.serviceOrderId = serviceOrderId;
-        conversationData.type = 'service';
-      } else {
-        conversationData.type = 'regular';
-      }
-
-      console.log('💾 Saving conversation to Firebase...');
-      await set(conversationRef, conversationData);
-      console.log('✅ Conversation saved to Firebase successfully');
-
-      const newConversation = {
-        id: conversationId,
-        ...conversationData
-      };
-      
-      console.log('✅ Created new conversation:', newConversation.id);
-      
-      // Add conversation to local state immediately (don't wait for Firebase listener)
-      if (conversationData.serviceOrderId) {
         setServiceConversations(prev => [newConversation, ...prev]);
       } else {
         setConversations(prev => [newConversation, ...prev]);
       }
-      console.log('📱 Added conversation to local state');
-      
+
+      debugLog('Created new conversation successfully', newConversation.id);
       return newConversation;
     } catch (error) {
-      console.error('❌ Error creating conversation:', error);
-      
-      // If the error is a timeout, try creating the conversation anyway
-      if (error.message === 'Firebase query timeout') {
-        console.log('⚠️ Firebase query timed out, creating conversation anyway...');
-        try {
-          const conversationsRef = ref(database, 'conversations');
-          const newConversationRef = push(conversationsRef);
-          const conversationData = {
-            participants: {
-              [currentUser.uid]: true,
-              [otherUserId]: true
-            },
-            createdAt: Date.now(),
-            lastMessage: '',
-            lastMessageTime: Date.now(),
-            lastSenderId: currentUser.uid,
-            type: serviceOrderId ? 'service' : 'regular'
-          };
-
-          if (serviceOrderId) {
-            conversationData.serviceOrderId = serviceOrderId;
-      }
-
-      await set(newConversationRef, conversationData);
-
-          const newConversation = {
-        id: newConversationRef.key,
-        ...conversationData
-      };
-          
-          console.log('✅ Fallback conversation created:', newConversation.id);
-          
-          // Add to local state
-          if (conversationData.serviceOrderId) {
-            setServiceConversations(prev => [newConversation, ...prev]);
-          } else {
-            setConversations(prev => [newConversation, ...prev]);
-          }
-          
-          return newConversation;
-        } catch (fallbackError) {
-          console.error('❌ Fallback creation also failed:', fallbackError);
-          showError('Erro ao criar conversa - problema de conexão');
-          return null;
-        }
-      }
-      
+      console.error('Error creating conversation:', error);
       showError('Erro ao criar conversa');
       return null;
     }
-  }, [currentUser, showError, conversations, serviceConversations, setConversations, setServiceConversations]);
+  }, [currentUser, conversations, serviceConversations, setConversations, setServiceConversations, showError]);
 
   // Create new conversation
   const createConversation = useCallback(async (conversationData) => {
