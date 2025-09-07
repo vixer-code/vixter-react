@@ -765,7 +765,6 @@ const [formData, setFormData] = useState({
   };
 
   const isOwner = !userId || currentUser?.uid === userId;
-  const isProvider = (profile?.accountType || '').toLowerCase() === 'provider';
 
   // Optimized tab switching to prevent INP issues
   const handleTabClick = useCallback((event) => {
@@ -1649,24 +1648,26 @@ const [formData, setFormData] = useState({
           <div className="packs-header">
             <h3>Packs</h3>
             {isOwner && (
-              {(isProvider || isBoth) && (
-                <button
-                  className="btn primary"
-                  onClick={() => {
-                    setEditingPack(null);
-                    setShowCreatePackModal(true);
-                  }}
-                >
-                  <i className="fa-solid fa-plus"></i> Criar Novo Pack
-                </button>
-              )}
-              
-              {isClient && (
-                <div className="account-restriction-notice">
-                  <i className="fas fa-info-circle"></i>
-                  <span>Apenas provedores podem criar packs. <a href="/register">Alterar tipo de conta</a></span>
-                </div>
-              )}
+              <>
+                {(isProvider || isBoth) && (
+                  <button
+                    className="btn primary"
+                    onClick={() => {
+                      setEditingPack(null);
+                      setShowCreatePackModal(true);
+                    }}
+                  >
+                    <i className="fa-solid fa-plus"></i> Criar Novo Pack
+                  </button>
+                )}
+                
+                {isClient && (
+                  <div className="account-restriction-notice">
+                    <i className="fas fa-info-circle"></i>
+                    <span>Apenas provedores podem criar packs. <a href="/register">Alterar tipo de conta</a></span>
+                  </div>
+                )}
+              </>
             )}
           </div>
           
