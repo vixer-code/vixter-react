@@ -106,7 +106,11 @@ export const createConversationObject = (currentUserId, otherUser) => {
     throw new Error('Invalid parameters for creating conversation');
   }
 
-  const conversationId = `${currentUserId}_${otherUser.uid}`;
+  // Use the same ID format as the existing system
+  const sorted = [currentUserId, otherUser.uid].sort();
+  const cleanUserA = sorted[0].replace(/[.#$[\]]/g, '_');
+  const cleanUserB = sorted[1].replace(/[.#$[\]]/g, '_');
+  const conversationId = `conv_${cleanUserA}_${cleanUserB}`;
   
   return {
     id: conversationId,
@@ -148,8 +152,10 @@ export const findExistingConversation = (conversations, currentUserId, otherUser
  */
 export const generateConversationId = (userId1, userId2) => {
   // Sort IDs to ensure consistent conversation ID regardless of order
-  const sortedIds = [userId1, userId2].sort();
-  return `${sortedIds[0]}_${sortedIds[1]}`;
+  const sorted = [userId1, userId2].sort();
+  const cleanUserA = sorted[0].replace(/[.#$[\]]/g, '_');
+  const cleanUserB = sorted[1].replace(/[.#$[\]]/g, '_');
+  return `conv_${cleanUserA}_${cleanUserB}`;
 };
 
 /**
