@@ -875,6 +875,24 @@ const Register = () => {
             />
             <label htmlFor="account-type-provider">Provedor de Serviços</label>
             <p className="option-description">Quero oferecer meus serviços na plataforma</p>
+            <div className="account-type-features">
+              <div className="feature-item">
+                <i className="fas fa-check"></i>
+                <span>Criar e vender serviços</span>
+              </div>
+              <div className="feature-item">
+                <i className="fas fa-check"></i>
+                <span>Criar e vender packs</span>
+              </div>
+              <div className="feature-item">
+                <i className="fas fa-check"></i>
+                <span>Receber VC por vendas</span>
+              </div>
+              <div className="feature-item">
+                <i className="fas fa-check"></i>
+                <span>Sacar VC para BRL</span>
+              </div>
+            </div>
           </div>
           <div className="radio-option">
             <input
@@ -888,6 +906,24 @@ const Register = () => {
             />
             <label htmlFor="account-type-client">Cliente</label>
             <p className="option-description">Quero contratar serviços de outros</p>
+            <div className="account-type-features">
+              <div className="feature-item">
+                <i className="fas fa-check"></i>
+                <span>Comprar VP para pagamentos</span>
+              </div>
+              <div className="feature-item">
+                <i className="fas fa-check"></i>
+                <span>Contratar serviços</span>
+              </div>
+              <div className="feature-item">
+                <i className="fas fa-check"></i>
+                <span>Comprar packs</span>
+              </div>
+              <div className="feature-item">
+                <i className="fas fa-check"></i>
+                <span>Ganhar VBP por atividades</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

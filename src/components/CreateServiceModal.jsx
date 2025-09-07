@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useUser } from '../contexts/UserContext';
 import { useServicesR2 as useServices } from '../contexts/ServicesContextR2';
 import { useNotification } from '../contexts/NotificationContext';
 import useR2Media from '../hooks/useR2Media';
@@ -7,9 +8,15 @@ import './CreateServiceModal.css';
 
 const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService = null }) => {
   const { currentUser } = useAuth();
+  const { userProfile } = useUser();
   const { createService, updateService } = useServices();
   const { showSuccess, showError } = useNotification();
   const { uploadServiceMedia, uploading, uploadProgress } = useR2Media();
+  
+  // Check account type
+  const accountType = userProfile?.accountType || 'client';
+  const isProvider = accountType === 'provider';
+  const isBoth = accountType === 'both';
   
   // Debug notification context
   console.log('Notification context functions:', { showSuccess: !!showSuccess, showError: !!showError });
@@ -604,6 +611,35 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   };
 
   if (!isOpen) return null;
+
+  // Check if user can create services
+  if (!isProvider && !isBoth) {
+    return (
+      <div className="create-service-modal-overlay">
+        <div className="create-service-modal">
+          <div className="modal-header">
+            <h2>Acesso Restrito</h2>
+            <button className="close-btn" onClick={onClose}>&times;</button>
+          </div>
+          <div className="modal-content">
+            <div className="access-restricted">
+              <i className="fas fa-lock"></i>
+              <h3>Apenas Provedores Podem Criar Serviços</h3>
+              <p>Você precisa ter uma conta de provedor para criar e vender serviços na plataforma.</p>
+              <div className="restriction-actions">
+                <button className="btn secondary" onClick={onClose}>
+                  Fechar
+                </button>
+                <a href="/register" className="btn primary">
+                  Alterar Tipo de Conta
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="create-service-modal-overlay">

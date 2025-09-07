@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { usePacksR2 as usePacks } from '../contexts/PacksContextR2';
 import useR2Media from '../hooks/useR2Media';
@@ -32,9 +33,15 @@ const packTypeOptions = [
 
 const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null }) => {
   const { currentUser } = useAuth();
+  const { userProfile } = useUser();
   const { createPack, updatePack } = usePacks();
   const { showSuccess, showError } = useNotification();
   const { uploadPackMedia, uploading, uploadProgress } = useR2Media();
+  
+  // Check account type
+  const accountType = userProfile?.accountType || 'client';
+  const isProvider = accountType === 'provider';
+  const isBoth = accountType === 'both';
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -446,6 +453,32 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   };
 
   if (!isOpen) return null;
+
+  // Check if user can create packs
+  if (!isProvider && !isBoth) {
+    return (
+      <div className="create-pack-modal-overlay">
+        <div className="create-pack-modal">
+          <div className="modal-header">
+            <h2>Acesso Restrito</h2>
+            <button className="close-btn" onClick={onClose}>&times;</button>
+          </div>
+          <div className="modal-content">
+            <div className="access-restricted">
+              <i className="fas fa-lock"></i>
+              <h3>Apenas Provedores Podem Criar Packs</h3>
+              <p>Você precisa ter uma conta de provedor para criar e vender packs na plataforma.</p>
+              <div className="restriction-actions">
+                <button className="btn-primary" onClick={onClose}>
+                  Entendi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const categoryLabel = (val) => packCategories.find(c => c.value === val)?.label || val;
   const subcategoryLabel = (cat, subVal) => {

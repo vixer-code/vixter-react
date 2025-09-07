@@ -632,6 +632,33 @@
   line-height: 1.3;
 }
 
+/* Account Type Features */
+.account-type-features {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(138, 43, 226, 0.1);
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #E0E0E0;
+}
+
+.feature-item i {
+  color: #00FFCA;
+  font-size: 0.8rem;
+  width: 16px;
+  text-align: center;
+}
+
+.feature-item:last-child {
+  margin-bottom: 0;
+}
+
 .checkbox-options {
   margin-top: 12px;
   display: grid;

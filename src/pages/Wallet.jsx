@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNotification } from '../contexts/NotificationContext';
 import { useWallet } from '../contexts/WalletContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useUser } from '../contexts/UserContext';
 import './Wallet.css';
 
 const Wallet = () => {
@@ -20,6 +22,8 @@ const Wallet = () => {
     vbpBalance,
     vcPendingBalance
   } = useWallet();
+  const { currentUser } = useAuth();
+  const { userProfile } = useUser();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const [activeTab, setActiveTab] = useState('transactions');
   const [currentPage, setCurrentPage] = useState(1);
@@ -46,6 +50,12 @@ const Wallet = () => {
   const [redeemCode, setRedeemCode] = useState('');
   
   const TRANSACTIONS_PER_PAGE = 10;
+
+  // Get account type from user profile
+  const accountType = userProfile?.accountType || 'client';
+  const isProvider = accountType === 'provider';
+  const isClient = accountType === 'client';
+  const isBoth = accountType === 'both'; // Legacy account type for management/testing
 
   useEffect(() => {
     applyFilters();
@@ -259,10 +269,25 @@ const Wallet = () => {
 
   return (
     <div className="wallet-container">
+      {/* Account Type Header */}
+      <div className="account-type-header">
+        <h2>
+          {isProvider && 'Carteira de Provedor'}
+          {isClient && 'Carteira de Cliente'}
+          {isBoth && 'Carteira Completa (Legacy)'}
+        </h2>
+        <p className="account-type-description">
+          {isProvider && 'Gerencie seus ganhos e vendas de serviços'}
+          {isClient && 'Gerencie seus VP para compras e VBP para atividades'}
+          {isBoth && 'Acesso completo a todas as funcionalidades'}
+        </p>
+      </div>
+
       {/* Balance Cards */}
       <section className="wallet-header">
-        {/* VP Balance Card */}
-        <div className="balance-card vp-card">
+        {/* VP Balance Card - Only for clients and both */}
+        {(isClient || isBoth) && (
+          <div className="balance-card vp-card">
           <div className="vp-token">
             <svg className="vp-token-large" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
               <defs>
@@ -354,8 +379,9 @@ const Wallet = () => {
             </button>
           </div>
         </div>
+        )}
 
-        {/* VBP Balance Card */}
+        {/* VBP Balance Card - Available for all account types */}
         <div className="balance-card vbp-card">
           <div className="vbp-token">
             <svg className="vbp-token-large" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
@@ -450,8 +476,9 @@ const Wallet = () => {
           </div>
         </div>
 
-        {/* VC Balance Card */}
-        <div className="balance-card vc-card">
+        {/* VC Balance Card - Only for providers and both */}
+        {(isProvider || isBoth) && (
+          <div className="balance-card vc-card">
           <div className="vc-token">
             <svg className="vc-token-large" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
               <defs>
@@ -544,9 +571,11 @@ const Wallet = () => {
             <small className="vc-info">1 VC = R$ 1,00 | Saque mínimo: 50 VC</small>
           </div>
         </div>
+        )}
 
-        {/* VC Pending Balance Card */}
-        <div className="balance-card vc-pending-card">
+        {/* VC Pending Balance Card - Only for providers and both */}
+        {(isProvider || isBoth) && (
+          <div className="balance-card vc-pending-card">
           <div className="vc-pending-token">
             <svg className="vc-pending-token-large" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
               <defs>
@@ -649,22 +678,38 @@ const Wallet = () => {
             <small className="vc-pending-info">Liberado após confirmação ou 24h</small>
           </div>
         </div>
+        )}
       </section>
 
       {/* Wallet Actions */}
       <section className="wallet-actions-section">
-        <button 
-          className="btn-secondary"
-          onClick={() => setShowSendModal(true)}
-        >
-          <i className="fas fa-paper-plane"></i> Enviar VP
-        </button>
-        <button 
-          className="btn-secondary"
-          onClick={() => setShowRedeemModal(true)}
-        >
-          <i className="fas fa-gift"></i> Resgatar Código
-        </button>
+        {/* VP Actions - Only for clients and both */}
+        {(isClient || isBoth) && (
+          <>
+            <button 
+              className="btn-secondary"
+              onClick={() => setShowSendModal(true)}
+            >
+              <i className="fas fa-paper-plane"></i> Enviar VP
+            </button>
+            <button 
+              className="btn-secondary"
+              onClick={() => setShowRedeemModal(true)}
+            >
+              <i className="fas fa-gift"></i> Resgatar Código
+            </button>
+          </>
+        )}
+        
+        {/* Provider Actions - Only for providers and both */}
+        {(isProvider || isBoth) && (
+          <button 
+            className="btn-secondary"
+            onClick={() => showInfo('Funcionalidade de saque será implementada em breve!', 'Em Breve')}
+          >
+            <i className="fas fa-money-bill-wave"></i> Sacar VC
+          </button>
+        )}
       </section>
 
       {/* Tabs */}
@@ -792,6 +837,7 @@ const Wallet = () => {
       {activeTab === 'earnings' && (
         <div className="tab-content active">
           <div className="earnings-grid">
+            {/* VBP Earning - Available for all account types */}
             <div className="earning-card vbp-earning">
               <div className="earning-icon vbp-icon-style">
                 <i className="fas fa-calendar-check"></i>
@@ -811,23 +857,47 @@ const Wallet = () => {
               </div>
             </div>
 
-            <div className="earning-card vp-earning">
-              <div className="earning-icon vp-icon-style">
-                <i className="fas fa-shopping-cart"></i>
+            {/* VP Purchase - Only for clients and both */}
+            {(isClient || isBoth) && (
+              <div className="earning-card vp-earning">
+                <div className="earning-icon vp-icon-style">
+                  <i className="fas fa-shopping-cart"></i>
+                </div>
+                <div className="earning-info">
+                  <h3>Compra de VP</h3>
+                  <p>Adquira VP para comprar serviços de criadores.</p>
+                  <div className="earning-amount">Diversos pacotes disponíveis</div>
+                  <div className="currency-tag">VP</div>
+                  <button 
+                    className="btn-primary"
+                    onClick={() => setShowBuyVPModal(true)}
+                  >
+                    Comprar VP
+                  </button>
+                </div>
               </div>
-              <div className="earning-info">
-                <h3>Compra de VP</h3>
-                <p>Adquira VP para comprar serviços de criadores.</p>
-                <div className="earning-amount">Diversos pacotes disponíveis</div>
-                <div className="currency-tag">VP</div>
-                <button 
-                  className="btn-primary"
-                  onClick={() => setShowBuyVPModal(true)}
-                >
-                  Comprar VP
-                </button>
+            )}
+
+            {/* Provider Earnings - Only for providers and both */}
+            {(isProvider || isBoth) && (
+              <div className="earning-card vc-earning">
+                <div className="earning-icon vc-icon-style">
+                  <i className="fas fa-hand-holding-usd"></i>
+                </div>
+                <div className="earning-info">
+                  <h3>Venda de Serviços</h3>
+                  <p>Crie e venda serviços para ganhar VC que pode ser sacado para BRL.</p>
+                  <div className="earning-amount">1 VC = R$ 1,00</div>
+                  <div className="currency-tag">VC</div>
+                  <button 
+                    className="btn-success"
+                    onClick={() => showInfo('Acesse seu perfil para criar serviços', 'Criar Serviços')}
+                  >
+                    Criar Serviços
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="earning-card vbp-earning" style={disabledCardStyle}>
               <div style={comingSoonOverlay}>Em Breve</div>
