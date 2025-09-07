@@ -392,7 +392,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       console.log('🔔 DEACTIVATING SUBSCRIPTION FOR:', selectedConversation.id);
       currentActiveSubscription.current = null;
     };
-  }, [selectedConversation?.id, isConnected, getOrCreateSubscription]);
+  }, [selectedConversation?.id, isConnected, subscribe, unsubscribe, currentUser?.uid]);
 
   // Global user subscription for receiving messages from any conversation
   const globalSubscriptionRef = useRef(null);
@@ -631,9 +631,16 @@ export const EnhancedMessagingProvider = ({ children }) => {
   // Cleanup conversation subscription on unmount
   useEffect(() => {
     return () => {
-      clearAllSubscriptions();
+      console.log('🧹 Clearing all subscriptions on unmount');
+      subscriptionPool.current.forEach((subscription, channelName) => {
+        if (unsubscribe) {
+          unsubscribe(channelName);
+        }
+      });
+      subscriptionPool.current.clear();
+      currentActiveSubscription.current = null;
     };
-  }, [clearAllSubscriptions]);
+  }, [unsubscribe]);
 
   // Typing indicators functions
   const sendTypingIndicator = useCallback(async (isTyping) => {
@@ -658,7 +665,18 @@ export const EnhancedMessagingProvider = ({ children }) => {
     if (isTyping) return; // Already typing
     
     setIsTyping(true);
-    sendTypingIndicator(true);
+    
+    // Send typing indicator directly
+    if (selectedConversation?.id && currentUser?.uid && isConnected && publish) {
+      const channelName = `conversation:${selectedConversation.id}`;
+      publish(channelName, {
+        type: 'typing',
+        userId: currentUser.uid,
+        userName: currentUser.displayName || 'User',
+        isTyping: true,
+        timestamp: Date.now()
+      }).catch(error => console.error('Error sending typing indicator:', error));
+    }
 
     // Clear existing timeout
     if (typingTimeoutRef.current) {
@@ -669,33 +687,102 @@ export const EnhancedMessagingProvider = ({ children }) => {
     typingTimeoutRef.current = setTimeout(() => {
       stopTyping();
     }, 3000);
-  }, [isTyping, sendTypingIndicator]);
+  }, [isTyping, selectedConversation?.id, currentUser, isConnected, publish]);
 
   const stopTyping = useCallback(() => {
     if (!isTyping) return; // Not typing
 
     setIsTyping(false);
-    sendTypingIndicator(false);
+    
+    // Send typing indicator directly
+    if (selectedConversation?.id && currentUser?.uid && isConnected && publish) {
+      const channelName = `conversation:${selectedConversation.id}`;
+      publish(channelName, {
+        type: 'typing',
+        userId: currentUser.uid,
+        userName: currentUser.displayName || 'User',
+        isTyping: false,
+        timestamp: Date.now()
+      }).catch(error => console.error('Error sending typing indicator:', error));
+    }
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = null;
     }
-  }, [isTyping, sendTypingIndicator]);
+  }, [isTyping, selectedConversation?.id, currentUser, isConnected, publish]);
 
   const handleTypingChange = useCallback((typing) => {
     if (typing) {
-      startTyping();
+      if (isTyping) return; // Already typing
+      
+      setIsTyping(true);
+      
+      // Send typing indicator directly
+      if (selectedConversation?.id && currentUser?.uid && isConnected && publish) {
+        const channelName = `conversation:${selectedConversation.id}`;
+        publish(channelName, {
+          type: 'typing',
+          userId: currentUser.uid,
+          userName: currentUser.displayName || 'User',
+          isTyping: true,
+          timestamp: Date.now()
+        }).catch(error => console.error('Error sending typing indicator:', error));
+      }
+
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Set timeout to stop typing after 3 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsTyping(false);
+        
+        // Send typing indicator directly
+        if (selectedConversation?.id && currentUser?.uid && isConnected && publish) {
+          const channelName = `conversation:${selectedConversation.id}`;
+          publish(channelName, {
+            type: 'typing',
+            userId: currentUser.uid,
+            userName: currentUser.displayName || 'User',
+            isTyping: false,
+            timestamp: Date.now()
+          }).catch(error => console.error('Error sending typing indicator:', error));
+        }
+
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = null;
+        }
+      }, 3000);
     } else {
       // Reset timeout when user continues typing
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = setTimeout(() => {
-          stopTyping();
+          setIsTyping(false);
+          
+          // Send typing indicator directly
+          if (selectedConversation?.id && currentUser?.uid && isConnected && publish) {
+            const channelName = `conversation:${selectedConversation.id}`;
+            publish(channelName, {
+              type: 'typing',
+              userId: currentUser.uid,
+              userName: currentUser.displayName || 'User',
+              isTyping: false,
+              timestamp: Date.now()
+            }).catch(error => console.error('Error sending typing indicator:', error));
+          }
+
+          if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = null;
+          }
         }, 3000);
       }
     }
-  }, [startTyping, stopTyping]);
+  }, [isTyping, selectedConversation?.id, currentUser, isConnected, publish]);
 
   // Clean up typing indicators older than 5 seconds
   useEffect(() => {
