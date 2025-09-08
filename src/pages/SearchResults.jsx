@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
-import { database } from '../../config/firebase';
+import { database, db } from '../../config/firebase';
 import { ref, query, orderByChild, startAt, endAt, get } from 'firebase/database';
+import { collection, query as firestoreQuery, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 import './SearchResults.css';
 
@@ -29,45 +30,43 @@ const SearchResults = () => {
 
   const searchUsers = async (term) => {
     try {
-      const usersRef = ref(database, 'users');
+      const usersRef = collection(db, 'users');
       
       // Search by username
-      const usernameQuery = query(
+      const usernameQuery = firestoreQuery(
         usersRef,
-        orderByChild('username'),
-        startAt(term.toLowerCase()),
-        endAt(term.toLowerCase() + '\uf8ff')
+        where('username', '>=', term.toLowerCase()),
+        where('username', '<=', term.toLowerCase() + '\uf8ff')
       );
       
-      const usernameSnapshot = await get(usernameQuery);
+      const usernameSnapshot = await getDocs(usernameQuery);
       const users = [];
       
-      usernameSnapshot.forEach((child) => {
-        const userData = child.val();
+      usernameSnapshot.forEach((doc) => {
+        const userData = doc.data();
         if (userData.username && userData.username.toLowerCase().includes(term.toLowerCase())) {
           users.push({
-            id: child.key,
+            id: doc.id,
             ...userData
           });
         }
       });
 
       // Search by displayName
-      const displayNameQuery = query(
+      const displayNameQuery = firestoreQuery(
         usersRef,
-        orderByChild('displayName'),
-        startAt(term),
-        endAt(term + '\uf8ff')
+        where('displayName', '>=', term),
+        where('displayName', '<=', term + '\uf8ff')
       );
       
-      const displaySnapshot = await get(displayNameQuery);
-      displaySnapshot.forEach((child) => {
-        const userData = child.val();
+      const displaySnapshot = await getDocs(displayNameQuery);
+      displaySnapshot.forEach((doc) => {
+        const userData = doc.data();
         if (userData.displayName && userData.displayName.toLowerCase().includes(term.toLowerCase())) {
-          const existingUser = users.find(u => u.id === child.key);
+          const existingUser = users.find(u => u.id === doc.id);
           if (!existingUser) {
             users.push({
-              id: child.key,
+              id: doc.id,
               ...userData
             });
           }
@@ -87,22 +86,21 @@ const SearchResults = () => {
     }
 
     try {
-      const servicesRef = ref(database, 'services');
-      const searchQuery = query(
+      const servicesRef = collection(db, 'services');
+      const searchQuery = firestoreQuery(
         servicesRef,
-        orderByChild('title'),
-        startAt(term),
-        endAt(term + '\uf8ff')
+        where('title', '>=', term),
+        where('title', '<=', term + '\uf8ff')
       );
       
-      const snapshot = await get(searchQuery);
+      const snapshot = await getDocs(searchQuery);
       const services = [];
       
-      snapshot.forEach((child) => {
-        const serviceData = child.val();
+      snapshot.forEach((doc) => {
+        const serviceData = doc.data();
         if (serviceData.title && serviceData.title.toLowerCase().includes(term.toLowerCase())) {
           services.push({
-            id: child.key,
+            id: doc.id,
             ...serviceData
           });
         }
@@ -121,22 +119,21 @@ const SearchResults = () => {
     }
 
     try {
-      const packsRef = ref(database, 'packs');
-      const searchQuery = query(
+      const packsRef = collection(db, 'packs');
+      const searchQuery = firestoreQuery(
         packsRef,
-        orderByChild('title'),
-        startAt(term),
-        endAt(term + '\uf8ff')
+        where('title', '>=', term),
+        where('title', '<=', term + '\uf8ff')
       );
       
-      const snapshot = await get(searchQuery);
+      const snapshot = await getDocs(searchQuery);
       const packs = [];
       
-      snapshot.forEach((child) => {
-        const packData = child.val();
+      snapshot.forEach((doc) => {
+        const packData = doc.data();
         if (packData.title && packData.title.toLowerCase().includes(term.toLowerCase())) {
           packs.push({
-            id: child.key,
+            id: doc.id,
             ...packData
           });
         }

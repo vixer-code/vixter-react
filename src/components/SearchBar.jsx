@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
-import { database } from '../../config/firebase';
+import { database, db } from '../../config/firebase';
 import { ref, query, orderByChild, startAt, endAt, get, limitToFirst } from 'firebase/database';
+import { collection, query as firestoreQuery, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 import './SearchBar.css';
 
@@ -39,126 +40,125 @@ const SearchBar = () => {
       return;
     }
 
-    const searchUsers = async () => {
-      try {
-        const usersRef = ref(database, 'users');
-        const searchQuery = query(
-          usersRef,
-          orderByChild('username'),
-          startAt(searchTerm.toLowerCase()),
-          endAt(searchTerm.toLowerCase() + '\uf8ff'),
-          limitToFirst(10)
-        );
-        
-        const snapshot = await get(searchQuery);
-        const users = [];
-        snapshot.forEach((child) => {
-          const userData = child.val();
-          if (userData.username && userData.username.toLowerCase().includes(searchTerm.toLowerCase())) {
+  const searchUsers = async () => {
+    try {
+      const usersRef = collection(db, 'users');
+      
+      // Search by username
+      const usernameQuery = firestoreQuery(
+        usersRef,
+        where('username', '>=', searchTerm.toLowerCase()),
+        where('username', '<=', searchTerm.toLowerCase() + '\uf8ff'),
+        limit(10)
+      );
+      
+      const usernameSnapshot = await getDocs(usernameQuery);
+      const users = [];
+      
+      usernameSnapshot.forEach((doc) => {
+        const userData = doc.data();
+        if (userData.username && userData.username.toLowerCase().includes(searchTerm.toLowerCase())) {
+          users.push({
+            id: doc.id,
+            ...userData
+          });
+        }
+      });
+
+      // Also search by displayName
+      const displayNameQuery = firestoreQuery(
+        usersRef,
+        where('displayName', '>=', searchTerm),
+        where('displayName', '<=', searchTerm + '\uf8ff'),
+        limit(10)
+      );
+      
+      const displaySnapshot = await getDocs(displayNameQuery);
+      displaySnapshot.forEach((doc) => {
+        const userData = doc.data();
+        if (userData.displayName && userData.displayName.toLowerCase().includes(searchTerm.toLowerCase())) {
+          const existingUser = users.find(u => u.id === doc.id);
+          if (!existingUser) {
             users.push({
-              id: child.key,
+              id: doc.id,
               ...userData
             });
           }
-        });
+        }
+      });
 
-        // Also search by displayName
-        const displayNameQuery = query(
-          usersRef,
-          orderByChild('displayName'),
-          startAt(searchTerm),
-          endAt(searchTerm + '\uf8ff'),
-          limitToFirst(10)
-        );
-        
-        const displaySnapshot = await get(displayNameQuery);
-        displaySnapshot.forEach((child) => {
-          const userData = child.val();
-          if (userData.displayName && userData.displayName.toLowerCase().includes(searchTerm.toLowerCase())) {
-            const existingUser = users.find(u => u.id === child.key);
-            if (!existingUser) {
-              users.push({
-                id: child.key,
-                ...userData
-              });
-            }
-          }
-        });
+      return users.slice(0, 3); // Top 3 users
+    } catch (error) {
+      console.error('Error searching users:', error);
+      return [];
+    }
+  };
 
-        return users.slice(0, 3); // Top 3 users
-      } catch (error) {
-        console.error('Error searching users:', error);
-        return [];
-      }
-    };
+  const searchServices = async () => {
+    if (!userProfile || userProfile.idVerified !== true) {
+      return [];
+    }
 
-    const searchServices = async () => {
-      if (!userProfile || userProfile.idVerified !== true) {
-        return [];
-      }
+    try {
+      const servicesRef = collection(db, 'services');
+      const searchQuery = firestoreQuery(
+        servicesRef,
+        where('title', '>=', searchTerm),
+        where('title', '<=', searchTerm + '\uf8ff'),
+        limit(3)
+      );
+      
+      const snapshot = await getDocs(searchQuery);
+      const services = [];
+      snapshot.forEach((doc) => {
+        const serviceData = doc.data();
+        if (serviceData.title && serviceData.title.toLowerCase().includes(searchTerm.toLowerCase())) {
+          services.push({
+            id: doc.id,
+            ...serviceData
+          });
+        }
+      });
 
-      try {
-        const servicesRef = ref(database, 'services');
-        const searchQuery = query(
-          servicesRef,
-          orderByChild('title'),
-          startAt(searchTerm),
-          endAt(searchTerm + '\uf8ff'),
-          limitToFirst(3)
-        );
-        
-        const snapshot = await get(searchQuery);
-        const services = [];
-        snapshot.forEach((child) => {
-          const serviceData = child.val();
-          if (serviceData.title && serviceData.title.toLowerCase().includes(searchTerm.toLowerCase())) {
-            services.push({
-              id: child.key,
-              ...serviceData
-            });
-          }
-        });
+      return services;
+    } catch (error) {
+      console.error('Error searching services:', error);
+      return [];
+    }
+  };
 
-        return services;
-      } catch (error) {
-        console.error('Error searching services:', error);
-        return [];
-      }
-    };
+  const searchPacks = async () => {
+    if (!userProfile || userProfile.idVerified !== true) {
+      return [];
+    }
 
-    const searchPacks = async () => {
-      if (!userProfile || userProfile.idVerified !== true) {
-        return [];
-      }
+    try {
+      const packsRef = collection(db, 'packs');
+      const searchQuery = firestoreQuery(
+        packsRef,
+        where('title', '>=', searchTerm),
+        where('title', '<=', searchTerm + '\uf8ff'),
+        limit(3)
+      );
+      
+      const snapshot = await getDocs(searchQuery);
+      const packs = [];
+      snapshot.forEach((doc) => {
+        const packData = doc.data();
+        if (packData.title && packData.title.toLowerCase().includes(searchTerm.toLowerCase())) {
+          packs.push({
+            id: doc.id,
+            ...packData
+          });
+        }
+      });
 
-      try {
-        const packsRef = ref(database, 'packs');
-        const searchQuery = query(
-          packsRef,
-          orderByChild('title'),
-          startAt(searchTerm),
-          endAt(searchTerm + '\uf8ff'),
-          limitToFirst(3)
-        );
-        
-        const snapshot = await get(searchQuery);
-        const packs = [];
-        snapshot.forEach((child) => {
-          const packData = child.val();
-          if (packData.title && packData.title.toLowerCase().includes(searchTerm.toLowerCase())) {
-            packs.push({
-              id: child.key,
-              ...packData
-            });
-          }
-        });
-
-        return packs;
-      } catch (error) {
-        console.error('Error searching packs:', error);
-        return [];
-      }
-    };
+      return packs;
+    } catch (error) {
+      console.error('Error searching packs:', error);
+      return [];
+    }
+  };
 
     const performSearch = async () => {
       setLoading(true);
