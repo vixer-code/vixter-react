@@ -190,6 +190,9 @@
         "category": {
           ".validate": "newData.isString() && (newData.val() == 'all' || newData.val() == 'gaming' || newData.val() == 'art' || newData.val() == 'music' || newData.val() == 'tech' || newData.val() == 'lifestyle' || newData.val() == 'other')"
         },
+        "media": {
+          ".validate": "newData.hasChildren() || newData.val() == null"
+        },
         "mediaUrl": {
           ".validate": "newData.isString()"
         },

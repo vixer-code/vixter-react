@@ -123,16 +123,17 @@ const Vixies = () => {
       showWarning('Links não são permitidos no post.');
       return;
     }
-    if (!mediaFile) {
-      showWarning('Selecione uma mídia (imagem, vídeo ou áudio).');
-      return;
-    }
     try {
-      // upload media
-      const path = `vixies/${currentUser.uid}/${Date.now()}_${mediaFile.name}`;
-      const sref = storageRef(storage, path);
-      const snap = await uploadBytes(sref, mediaFile);
-      const url = await getDownloadURL(snap.ref);
+      let mediaData = null;
+      
+      // Upload media only if provided
+      if (mediaFile) {
+        const path = `vixies/${currentUser.uid}/${Date.now()}_${mediaFile.name}`;
+        const sref = storageRef(storage, path);
+        const snap = await uploadBytes(sref, mediaFile);
+        const url = await getDownloadURL(snap.ref);
+        mediaData = [{ type: mediaType, url }];
+      }
 
       const postData = {
         content: text,
@@ -141,7 +142,7 @@ const Vixies = () => {
         authorPhotoURL: currentUser.photoURL || '/images/defpfp1.png',
         category: selectedCategory,
         timestamp: Date.now(),
-        media: [{ type: mediaType, url }],
+        media: mediaData,
         attachment: attachment || null
       };
 
@@ -340,14 +341,25 @@ const Vixies = () => {
                 <div className="create-post-options">
                   <div className="media-picker">
                     <label>
-                      <span>Tipo de mídia:</span>
+                      <span>Tipo de mídia (opcional):</span>
                       <select value={mediaType} onChange={(e) => setMediaType(e.target.value)}>
                         <option value="image">Imagem</option>
                         <option value="video">Vídeo</option>
                         <option value="audio">Áudio</option>
                       </select>
                     </label>
-                    <input type="file" accept={mediaType+"/*"} onChange={(e) => setMediaFile(e.target.files?.[0] || null)} />
+                    <input 
+                      type="file" 
+                      accept={mediaType+"/*"} 
+                      onChange={(e) => setMediaFile(e.target.files?.[0] || null)}
+                      placeholder="Escolha um arquivo (opcional)"
+                    />
+                    {mediaFile && (
+                      <div className="selected-file">
+                        <span>Arquivo selecionado: {mediaFile.name}</span>
+                        <button type="button" onClick={() => setMediaFile(null)}>Remover</button>
+                      </div>
+                    )}
                   </div>
                   <select
                     value={selectedCategory}
