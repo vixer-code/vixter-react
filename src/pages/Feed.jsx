@@ -107,7 +107,7 @@ const Feed = () => {
     const [likesSnap, commentsSnap, repostsSnap] = await Promise.all([
       get(likesRoot).catch(() => null),
       get(commentsRoot).catch(() => null),
-      get(repostsSnap = repostsRoot, get(repostsRoot)).catch(() => null)
+      get(repostsRoot).catch(() => null)
     ]).then(([ls, cs, rs]) => [ls, cs, rs]).catch(() => [null, null, null]);
     const likesObj = likesSnap?.exists() ? likesSnap.val() : {};
     const commentsObj = commentsSnap?.exists() ? commentsSnap.val() : {};
