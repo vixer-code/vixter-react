@@ -27,6 +27,9 @@ const Wallet = lazy(() => import('./pages/Wallet'));
 const Messages = lazy(() => import('./pages/EnhancedMessages'));
 const MessagingTestPage = lazy(() => import('./pages/MessagingTestPage'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const Vixies = lazy(() => import('./pages/Vixies'));
+const Vixink = lazy(() => import('./pages/Vixink'));
+const SearchResults = lazy(() => import('./pages/SearchResults'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -72,9 +75,9 @@ function App() {
                                 <Route path="/messages" element={<Messages />} />
                                 <Route path="/messaging-test" element={<MessagingTestPage />} />
                                 <Route path="/verify-email" element={<VerifyEmail />} />
-                                {/* Placeholder routes for other pages */}
-                                <Route path="/vixies" element={<div>Vixies Page - Coming Soon</div>} />
-                                <Route path="/vixink" element={<div>Vixink Page - Coming Soon</div>} />
+                                <Route path="/vixies" element={<Vixies />} />
+                                <Route path="/vixink" element={<Vixink />} />
+                                <Route path="/search" element={<SearchResults />} />
                                 <Route path="/settings" element={<div>Settings Page - Coming Soon</div>} />
                                 <Route path="/my-services" element={<div>My Services Page - Coming Soon</div>} />
                                 <Route path="/services" element={<div>Services Page - Coming Soon</div>} />

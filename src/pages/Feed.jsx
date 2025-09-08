@@ -162,7 +162,16 @@ const Feed = () => {
       return;
     }
     const content = postText.trim();
-    if (!content && !postFile) return;
+    // Enforce: image required, no links allowed in text
+    const hasUrl = /(https?:\/\/|www\.)/i.test(content);
+    if (hasUrl) {
+      alert('Links não são permitidos em posts.');
+      return;
+    }
+    if (!postFile) {
+      alert('Posts devem conter uma imagem.');
+      return;
+    }
     
     try {
       setIsPublishing(true);
@@ -207,11 +216,27 @@ const Feed = () => {
   }
 
   async function handleRepost(post) {
-    if (!currentUser || !post || post.userId === currentUser.uid) return;
+    if (!currentUser || !post) return;
+    const isSelf = post.userId === currentUser.uid;
     const repostRef = ref(database, `reposts/${post.id}/${currentUser.uid}`);
     const userRepostsRef = ref(database, `userReposts/${currentUser.uid}/${post.id}`);
-    await set(repostRef, Date.now());
-    await set(userRepostsRef, Date.now());
+
+    if (isSelf) {
+      // Allow up to 3 self-reposts per post
+      const snap = await get(userRepostsRef).catch(() => null);
+      const prev = snap && snap.exists() ? snap.val() : null;
+      const prevCount = typeof prev === 'object' && prev !== null ? Number(prev.count || 0) : (prev ? 1 : 0);
+      if (prevCount >= 3) return;
+      const next = { count: prevCount + 1, lastAt: Date.now() };
+      await set(userRepostsRef, next);
+      await set(repostRef, next.lastAt);
+    } else {
+      // Repost to others only once per post
+      const snap = await get(repostRef).catch(() => null);
+      if (snap && snap.exists()) return;
+      await set(repostRef, Date.now());
+      await set(userRepostsRef, Date.now());
+    }
     await loadPosts();
     await filterAndDecorate(currentTab);
   }

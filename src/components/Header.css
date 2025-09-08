@@ -62,6 +62,18 @@ nav {
   align-items: center;
 }
 
+.search-container-nav {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+  margin: 0 20px;
+}
+
+.mobile-search-container {
+  padding: 16px;
+  border-bottom: 1px solid #333;
+}
+
 .nav-links li {
   position: relative;
 }

@@ -6,6 +6,7 @@ import { useUser } from '../contexts/UserContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import CachedImage from './CachedImage';
 import NotificationIcon from './NotificationIcon';
+import SearchBar from './SearchBar';
 import './Header.css';
 
 const Header = () => {
@@ -100,6 +101,11 @@ const Header = () => {
             <li><Link to="/vixies" className={isActive('/vixies') ? 'active' : ''}>Vixies</Link></li>
             <li><Link to="/vixink" className={isActive('/vixink') ? 'active' : ''}>Vixink</Link></li>
             <li><Link to="/feed" className={isActive('/feed') ? 'active' : ''}>Feed</Link></li>
+            
+            {/* Search Bar */}
+            <li className="search-container-nav">
+              <SearchBar />
+            </li>
             
             {!currentUser ? (
               <>
@@ -322,6 +328,11 @@ const Header = () => {
           <li><Link to="/feed" className={isActive('/feed') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
             <i className="fas fa-comments"></i>Feed
           </Link></li>
+          
+          {/* Mobile Search */}
+          <li className="mobile-search-container">
+            <SearchBar />
+          </li>
           
           
           {!currentUser ? (
