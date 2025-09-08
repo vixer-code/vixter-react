@@ -138,6 +138,10 @@ const Profile = () => {
     };
 
     loadProfileData();
+    // Load followers whenever the viewed profile changes
+    if (targetUserId) {
+      loadFollowers(targetUserId);
+    }
   }, [userId, currentUser, userProfile, getUserById, showError, navigate]);
 
   // Initialize form data when profile changes
@@ -610,22 +614,29 @@ const [formData, setFormData] = useState({
     if (!currentUser) return;
 
     try {
-      const { doc, setDoc, deleteDoc } = await import('firebase/firestore');
+      const { doc, setDoc, deleteDoc, writeBatch, increment } = await import('firebase/firestore');
       const { firestore } = await import('../../config/firebase');
       
       const targetUserId = userId || currentUser.uid;
-      const followRef = doc(firestore, 'users', targetUserId, 'followers', currentUser.uid);
+      const followerRef = doc(firestore, 'users', targetUserId, 'followers', currentUser.uid);
+      const followingRef = doc(firestore, 'users', currentUser.uid, 'following', targetUserId);
+      const targetUserDoc = doc(firestore, 'users', targetUserId);
+      const currentUserDoc = doc(firestore, 'users', currentUser.uid);
       
+      const batch = writeBatch(firestore);
       if (isFollowing) {
-        await deleteDoc(followRef);
-        setIsFollowing(false);
+        batch.delete(followerRef);
+        batch.delete(followingRef);
+        batch.update(targetUserDoc, { followersCount: increment(-1), updatedAt: new Date() });
+        batch.update(currentUserDoc, { followingCount: increment(-1), updatedAt: new Date() });
       } else {
-        await setDoc(followRef, {
-          followedAt: Date.now(),
-          followerId: currentUser.uid
-        });
-        setIsFollowing(true);
+        batch.set(followerRef, { followedAt: Date.now(), followerId: currentUser.uid });
+        batch.set(followingRef, { followedAt: Date.now(), followingId: targetUserId });
+        batch.update(targetUserDoc, { followersCount: increment(1), updatedAt: new Date() });
+        batch.update(currentUserDoc, { followingCount: increment(1), updatedAt: new Date() });
       }
+      await batch.commit();
+      setIsFollowing(!isFollowing);
       
       await loadFollowers(targetUserId);
     } catch (error) {

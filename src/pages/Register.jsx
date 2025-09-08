@@ -4,7 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User, MapPin, FileText, Globe, Calendar, AtSign } from 'lucide-react';
 import { ref, set, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { database, storage } from '../../config/firebase';
+import { database, storage, db } from '../../config/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import './Auth.css';
 
 const Register = () => {
@@ -340,6 +341,13 @@ const Register = () => {
         return;
       }
 
+      // Validate username format (pattern doesn't trigger without native submit)
+      const usernamePattern = /^[a-zA-Z0-9_]{3,20}$/;
+      if (!usernamePattern.test(formData.username)) {
+        setError('O nome de usuário deve ter 3-20 caracteres (letras, números ou _).');
+        return;
+      }
+
       // Validate password meets requirements
       const passwordValidation = validatePassword(formData.password);
       if (!passwordValidation.isValid) {
@@ -354,6 +362,15 @@ const Register = () => {
       }
 
       // Clear any previous errors
+      setError('');
+    }
+
+    // Validate step 3 selections before proceeding
+    if (currentStep === 3) {
+      if (!formData.accountType) {
+        setError('Selecione um tipo de conta para continuar.');
+        return;
+      }
       setError('');
     }
 
@@ -532,6 +549,33 @@ const Register = () => {
       const withVerification = cpfVerificationState.isVerified;
       await createUserProfile(user.uid, withVerification);
       
+      // Also create/update Firestore user document (primary source for userProfile)
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        // Normalize username to lowercase for uniqueness and searchability
+        const normalizedUsername = (formData.username || '').toLowerCase();
+        await setDoc(userDocRef, {
+          uid: user.uid,
+          email: user.email || formData.email || '',
+          displayName: formData.displayName || user.displayName || '',
+          username: normalizedUsername || '',
+          accountType: formData.accountType || '',
+          followersCount: 0,
+          followingCount: 0,
+          profilePictureURL: user.photoURL || null,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          stats: { totalPosts: 0, totalServices: 0, totalPacks: 0, totalSales: 0 },
+          searchTerms: [
+            (formData.displayName || user.displayName || '').toLowerCase(),
+            normalizedUsername
+          ].filter(Boolean)
+        }, { merge: true });
+      } catch (firestoreError) {
+        console.error('[handleSubmit] Error writing Firestore user doc:', firestoreError);
+        // Non-fatal: proceed, UserContext will create minimal doc if needed
+      }
+
       // Upload profile picture if custom avatar selected
       if (formData.customAvatar) {
         const profilePictureURL = await uploadProfilePicture(user.uid);

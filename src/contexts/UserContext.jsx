@@ -15,6 +15,8 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import { ref as rtdbRef, get as rtdbGet } from 'firebase/database';
+import { database as rtdb, } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 
@@ -58,10 +60,23 @@ export const UserProvider = ({ children }) => {
       const userRef = doc(db, 'users', currentUser.uid);
       
       // Set up real-time listener
-      const unsubscribe = onSnapshot(userRef, (doc) => {
+      const unsubscribe = onSnapshot(userRef, async (doc) => {
         if (doc.exists()) {
           const userData = doc.data();
           setUserProfile(userData);
+
+          // Backfill username once from RTDB if missing in Firestore
+          if ((!userData.username || userData.username === '') && rtdb) {
+            try {
+              const usernameSnap = await rtdbGet(rtdbRef(rtdb, `users/${currentUser.uid}/username`));
+              const usernameVal = usernameSnap.exists() ? usernameSnap.val() : '';
+              if (usernameVal) {
+                await updateDoc(userRef, { username: usernameVal, updatedAt: Timestamp.now() });
+              }
+            } catch (e) {
+              // ignore backfill errors
+            }
+          }
         } else {
           // User doesn't exist: create minimal profile document
           setDoc(userRef, {
@@ -71,6 +86,8 @@ export const UserProvider = ({ children }) => {
             profilePictureURL: currentUser.photoURL || null,
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
+            followersCount: 0,
+            followingCount: 0,
             stats: { totalPosts: 0, totalServices: 0, totalPacks: 0, totalSales: 0 },
             searchTerms: [(currentUser.displayName || '').toLowerCase(), (currentUser.email || '').toLowerCase()].filter(Boolean)
           });
