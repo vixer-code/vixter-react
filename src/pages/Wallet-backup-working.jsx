@@ -25,6 +25,7 @@ const Wallet = () => {
     vcPendingBalance
   } = useWallet();
   const { currentUser } = useAuth();
+  const { userProfile } = useUser();
   const { userProfile, getUserById } = useUser();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const [activeTab, setActiveTab] = useState('transactions');

@@ -49,14 +49,14 @@ const Wallet = () => {
   // Client purchases
   const [clientPurchases, setClientPurchases] = useState([]); // {id,type,title,amount,coin,timestamp,sellerUsername,complements}
   const [clientPurchasesLoading, setClientPurchasesLoading] = useState(false);
-
+  
   // Modal states
   const [showBuyVPModal, setShowBuyVPModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [showRedeemModal, setShowRedeemModal] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('credit-card');
-
+  
   // Form states
   const [sendForm, setSendForm] = useState({
     username: '',
@@ -64,7 +64,7 @@ const Wallet = () => {
     message: ''
   });
   const [redeemCode, setRedeemCode] = useState('');
-
+  
   const TRANSACTIONS_PER_PAGE = 10;
 
   // Get account type from user profile
@@ -394,11 +394,11 @@ const Wallet = () => {
 
   const getTransactionAmountDisplay = (transaction) => {
     if (!transaction.amounts) return { amount: 0, currency: 'VP' };
-
+    
     // Get the first currency and amount from transaction.amounts
     const entries = Object.entries(transaction.amounts);
     if (entries.length === 0) return { amount: 0, currency: 'VP' };
-
+    
     const [currency, amount] = entries[0];
     return { 
       amount: Math.abs(amount), 
@@ -410,10 +410,10 @@ const Wallet = () => {
   const getTransactionIcon = (transaction) => {
     // Determine transaction type (matching new transaction structure)
     let typeClass = '';
-
+    
     // Get the primary amount from transaction.amounts
     const amount = transaction.amounts ? Object.values(transaction.amounts)[0] : 0;
-
+    
     if (amount > 0 && !['BONUS', 'BUY_VP'].includes(transaction.type)) {
       typeClass = 'incoming';
     } else if (amount < 0) {
@@ -425,7 +425,7 @@ const Wallet = () => {
     } else {
       typeClass = 'purchase';
     }
-
+    
     // Determine icon (matching vanilla JS logic)
     switch (typeClass) {
       case 'outgoing':
@@ -443,7 +443,7 @@ const Wallet = () => {
   const getTransactionColor = (transaction) => {
     // Get transaction amount and currency
     const { amount, currency, isPositive } = getTransactionAmountDisplay(transaction);
-
+    
     // Determine transaction type
     let typeClass = '';
     if (isPositive && !['BONUS', 'BUY_VP'].includes(transaction.type)) {
@@ -457,7 +457,7 @@ const Wallet = () => {
     } else {
       typeClass = 'purchase';
     }
-
+    
     // Set transaction colors based on currency (matching vanilla JS logic)
     if (currency === 'VBP') {
       if (typeClass === 'incoming' || typeClass === 'earned') {
@@ -573,44 +573,44 @@ const Wallet = () => {
                   <feGaussianBlur stdDeviation="4" result="blur" />
                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
-
+                
                 <linearGradient id="hexGradient-large" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#0F0F1A" />
                   <stop offset="100%" stopColor="#1A1A2E" />
                 </linearGradient>
-
+                
                 <radialGradient id="glowGradient-large" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                   <stop offset="0%" stopColor="#8A2BE2" stopOpacity="0.7" />
                   <stop offset="100%" stopColor="#8A2BE2" stopOpacity="0" />
                 </radialGradient>
-
+                
                 <linearGradient id="textGradient-large" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#00FFCA" />
                   <stop offset="100%" stopColor="#00D4AA" />
                 </linearGradient>
               </defs>
-
+              
               <circle cx="64" cy="64" r="60" fill="url(#glowGradient-large)" />
-
+              
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="url(#hexGradient-large)" 
                     stroke="#8A2BE2" 
                     strokeWidth="2" 
                     filter="url(#glow-large)" />
-
+              
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="none" 
                     stroke="#00FFCA" 
                     strokeWidth="1.5" 
                     strokeDasharray="4,4"
                     opacity="0.8" />
-
+                    
               <path d="M64 32 L92 48 L92 80 L64 96 L36 80 L36 48 Z" 
                     fill="none" 
                     stroke="#FF2E63" 
                     strokeWidth="1.5" 
                     opacity="0.8" />
-
+              
               <g filter="url(#glow-large)">
                 <text x="64" y="72" 
                       fontFamily="'Press Start 2P', monospace" 
@@ -619,19 +619,19 @@ const Wallet = () => {
                       textAnchor="middle"
                       fontWeight="bold">VP</text>
               </g>
-
+              
               <path d="M40 60 H28 V70 H36" fill="none" stroke="#00FFCA" strokeWidth="1" />
               <path d="M88 60 H100 V70 H92" fill="none" stroke="#00FFCA" strokeWidth="1" />
               <path d="M64 32 V24" fill="none" stroke="#00FFCA" strokeWidth="1" />
               <path d="M64 96 V104" fill="none" stroke="#00FFCA" strokeWidth="1" />
-
+              
               <circle cx="28" cy="60" r="2" fill="#00FFCA" />
               <circle cx="36" cy="70" r="2" fill="#00FFCA" />
               <circle cx="100" cy="60" r="2" fill="#00FFCA" />
               <circle cx="92" cy="70" r="2" fill="#00FFCA" />
               <circle cx="64" cy="24" r="2" fill="#00FFCA" />
               <circle cx="64" cy="104" r="2" fill="#00FFCA" />
-
+              
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="none" 
                     stroke="#B14AFF" 
@@ -668,44 +668,44 @@ const Wallet = () => {
                   <feGaussianBlur stdDeviation="4" result="blur" />
                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
-
+                
                 <linearGradient id="hexGradient-large-vbp" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#1A0F0F" />
                   <stop offset="100%" stopColor="#2E1A1A" />
                 </linearGradient>
-
+                
                 <radialGradient id="glowGradient-large-vbp" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                   <stop offset="0%" stopColor="#FFD700" stopOpacity="0.7" />
                   <stop offset="100%" stopColor="#FFD700" stopOpacity="0" />
                 </radialGradient>
-
+                
                 <linearGradient id="textGradient-large-vbp" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#FFD700" />
                   <stop offset="100%" stopColor="#FFA500" />
                 </linearGradient>
               </defs>
-
+              
               <circle cx="64" cy="64" r="60" fill="url(#glowGradient-large-vbp)" />
-
+              
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="url(#hexGradient-large-vbp)" 
                     stroke="#FFD700" 
                     strokeWidth="2" 
                     filter="url(#glow-large-vbp)" />
-
+              
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="none" 
                     stroke="#FFA500" 
                     strokeWidth="1.5" 
                     strokeDasharray="4,4"
                     opacity="0.8" />
-
+                    
               <path d="M64 32 L92 48 L92 80 L64 96 L36 80 L36 48 Z" 
                     fill="none" 
                     stroke="#FF6347" 
                     strokeWidth="1.5" 
                     opacity="0.8" />
-
+              
               <g filter="url(#glow-large-vbp)">
                 <text x="64" y="72" 
                       fontFamily="'Press Start 2P', monospace" 
@@ -714,19 +714,19 @@ const Wallet = () => {
                       textAnchor="middle"
                       fontWeight="bold">VBP</text>
               </g>
-
+              
               <path d="M40 60 H28 V70 H36" fill="none" stroke="#FFA500" strokeWidth="1" />
               <path d="M88 60 H100 V70 H92" fill="none" stroke="#FFA500" strokeWidth="1" />
               <path d="M64 32 V24" fill="none" stroke="#FFA500" strokeWidth="1" />
               <path d="M64 96 V104" fill="none" stroke="#FFA500" strokeWidth="1" />
-
+              
               <circle cx="28" cy="60" r="2" fill="#FFA500" />
               <circle cx="36" cy="70" r="2" fill="#FFA500" />
               <circle cx="100" cy="60" r="2" fill="#FFA500" />
               <circle cx="92" cy="70" r="2" fill="#FFA500" />
               <circle cx="64" cy="24" r="2" fill="#FFA500" />
               <circle cx="64" cy="104" r="2" fill="#FFA500" />
-
+              
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="none" 
                     stroke="#FFFF00" 
@@ -764,44 +764,44 @@ const Wallet = () => {
                   <feGaussianBlur stdDeviation="4" result="blur" />
                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
-
+                
                 <linearGradient id="hexGradient-large-vc" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#0A1F0A" />
                   <stop offset="100%" stopColor="#1A2E1A" />
                 </linearGradient>
-
+                
                 <radialGradient id="glowGradient-large-vc" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                   <stop offset="0%" stopColor="#00C853" stopOpacity="0.7" />
                   <stop offset="100%" stopColor="#00C853" stopOpacity="0" />
                 </radialGradient>
-
+                
                 <linearGradient id="textGradient-large-vc" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#00C853" />
                   <stop offset="100%" stopColor="#4CAF50" />
                 </linearGradient>
               </defs>
-
+              
               <circle cx="64" cy="64" r="60" fill="url(#glowGradient-large-vc)" />
-
+              
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="url(#hexGradient-large-vc)" 
                     stroke="#00C853" 
                     strokeWidth="2" 
                     filter="url(#glow-large-vc)" />
-
+              
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="none" 
                     stroke="#4CAF50" 
                     strokeWidth="1.5" 
                     strokeDasharray="4,4"
                     opacity="0.8" />
-
+                    
               <path d="M64 32 L92 48 L92 80 L64 96 L36 80 L36 48 Z" 
                     fill="none" 
                     stroke="#81C784" 
                     strokeWidth="1.5" 
                     opacity="0.8" />
-
+              
               <g filter="url(#glow-large-vc)">
                 <text x="64" y="72" 
                       fontFamily="'Press Start 2P', monospace" 
@@ -810,19 +810,19 @@ const Wallet = () => {
                       textAnchor="middle"
                       fontWeight="bold">VC</text>
               </g>
-
+              
               <path d="M40 60 H28 V70 H36" fill="none" stroke="#4CAF50" strokeWidth="1" />
               <path d="M88 60 H100 V70 H92" fill="none" stroke="#4CAF50" strokeWidth="1" />
               <path d="M64 32 V24" fill="none" stroke="#4CAF50" strokeWidth="1" />
               <path d="M64 96 V104" fill="none" stroke="#4CAF50" strokeWidth="1" />
-
+              
               <circle cx="28" cy="60" r="2" fill="#4CAF50" />
               <circle cx="36" cy="70" r="2" fill="#4CAF50" />
               <circle cx="100" cy="60" r="2" fill="#4CAF50" />
               <circle cx="92" cy="70" r="2" fill="#4CAF50" />
               <circle cx="64" cy="24" r="2" fill="#4CAF50" />
               <circle cx="64" cy="104" r="2" fill="#4CAF50" />
-
+              
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="none" 
                     stroke="#A5D6A7" 
@@ -861,44 +861,44 @@ const Wallet = () => {
                   <feGaussianBlur stdDeviation="4" result="blur" />
                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
-
+                
                 <linearGradient id="hexGradient-large-vc-pending" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#1F1A0A" />
                   <stop offset="100%" stopColor="#2E2A1A" />
                 </linearGradient>
-
+                
                 <radialGradient id="glowGradient-large-vc-pending" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                   <stop offset="0%" stopColor="#FF9800" stopOpacity="0.7" />
                   <stop offset="100%" stopColor="#FF9800" stopOpacity="0" />
                 </radialGradient>
-
+                
                 <linearGradient id="textGradient-large-vc-pending" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#FF9800" />
                   <stop offset="100%" stopColor="#FF5722" />
                 </linearGradient>
               </defs>
-
+              
               <circle cx="64" cy="64" r="60" fill="url(#glowGradient-large-vc-pending)" />
-
+              
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="url(#hexGradient-large-vc-pending)" 
                     stroke="#FF9800" 
                     strokeWidth="2" 
                     filter="url(#glow-large-vc-pending)" />
-
+              
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="none" 
                     stroke="#FFB74D" 
                     strokeWidth="1.5" 
                     strokeDasharray="4,4"
                     opacity="0.8" />
-
+                    
               <path d="M64 32 L92 48 L92 80 L64 96 L36 80 L36 48 Z" 
                     fill="none" 
                     stroke="#FFCC02" 
                     strokeWidth="1.5" 
                     opacity="0.8" />
-
+              
               <g filter="url(#glow-large-vc-pending)">
                 <text x="64" y="68" 
                       fontFamily="'Press Start 2P', monospace" 
@@ -913,19 +913,19 @@ const Wallet = () => {
                       textAnchor="middle"
                       fontWeight="bold">PEND</text>
               </g>
-
+              
               <path d="M40 60 H28 V70 H36" fill="none" stroke="#FFB74D" strokeWidth="1" />
               <path d="M88 60 H100 V70 H92" fill="none" stroke="#FFB74D" strokeWidth="1" />
               <path d="M64 32 V24" fill="none" stroke="#FFB74D" strokeWidth="1" />
               <path d="M64 96 V104" fill="none" stroke="#FFB74D" strokeWidth="1" />
-
+              
               <circle cx="28" cy="60" r="2" fill="#FFB74D" />
               <circle cx="36" cy="70" r="2" fill="#FFB74D" />
               <circle cx="100" cy="60" r="2" fill="#FFB74D" />
               <circle cx="92" cy="70" r="2" fill="#FFB74D" />
               <circle cx="64" cy="24" r="2" fill="#FFB74D" />
               <circle cx="64" cy="104" r="2" fill="#FFB74D" />
-
+              
               <path d="M64 14 L110 40 L110 88 L64 114 L18 88 L18 40 Z" 
                     fill="none" 
                     stroke="#FFC107" 
@@ -934,7 +934,7 @@ const Wallet = () => {
                 <animate attributeName="opacity" values="0.1;0.5;0.1" dur="3s" repeatCount="indefinite" />
                 <animate attributeName="stroke-width" values="1;3;1" dur="3s" repeatCount="indefinite" />
               </path>
-
+              
               {/* Ícone de relógio para indicar pendência */}
               <circle cx="90" cy="38" r="8" fill="#FF5722" opacity="0.9" />
               <path d="M90 34 L90 38 L93 41" stroke="white" strokeWidth="1.5" strokeLinecap="round" fill="none" />
@@ -978,7 +978,7 @@ const Wallet = () => {
             </button>
           </>
         )}
-
+        
         {/* Provider Actions - Only for providers and both */}
         {(isProvider || isBoth) && (
           <button 
@@ -1007,8 +1007,7 @@ const Wallet = () => {
       </div>
 
       {/* Transactions Tab */}
-      {activeTab === 'transactions' && (
-        <div className="tab-content active">
+      <div className={`tab-content ${activeTab === 'transactions' ? 'active' : ''}`}>
           {isClient && (
             <div className="client-purchases-section">
               <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1304,12 +1303,12 @@ const Wallet = () => {
               </button>
             </div>
           )}
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Earnings Tab */}
-      {activeTab === 'earnings' && (
-        <div className="tab-content active">
+        {/* Earnings Tab */}
+      <div className={`tab-content ${activeTab === 'earnings' ? 'active' : ''}`}>
           <div className="earnings-grid">
             {/* VBP Earning - Available for all account types */}
             <div className="earning-card vbp-earning">
@@ -1416,7 +1415,7 @@ const Wallet = () => {
             </div>
           </div>
         </div>
-      )}
+      )
 
       {/* Send VP Modal */}
       {showSendModal && (
@@ -1502,14 +1501,14 @@ const Wallet = () => {
                   onChange={(e) => {
                     let value = e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
                     let formattedValue = '';
-
+                    
                     for (let i = 0; i < value.length; i++) {
                       if (i > 0 && i % 4 === 0) {
                         formattedValue += '-';
                       }
                       formattedValue += value[i];
                     }
-
+                    
                     setRedeemCode(formattedValue.substring(0, 19));
                   }}
                   placeholder="XXXX-XXXX-XXXX-XXXX"
@@ -1588,7 +1587,7 @@ const Wallet = () => {
                   </div>
                 ))}
               </div>
-
+              
               <div className="payment-methods">
                 <h3>Métodos de Pagamento</h3>
                 <div className="payment-options">
@@ -1605,7 +1604,7 @@ const Wallet = () => {
                       <span>Cartão de Crédito</span>
                     </div>
                   </label>
-
+                  
                   <label className="payment-option">
                     <input 
                       type="radio" 
@@ -1643,7 +1642,7 @@ const Wallet = () => {
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
