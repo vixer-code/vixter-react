@@ -11,7 +11,7 @@ import './Vixies.css';
 const Vixies = () => {
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
-  const { showNotification } = useNotification();
+  const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const [posts, setPosts] = useState([]);
   const [users, setUsers] = useState({});
   const [following, setFollowing] = useState([]);
@@ -114,17 +114,17 @@ const Vixies = () => {
   const createPost = async () => {
     if (!currentUser) return;
     if (!userProfile || userProfile.accountType !== 'provider') {
-      showNotification('Apenas provedores podem postar em Vixies.', 'warning');
+      showWarning('Apenas provedores podem postar em Vixies.');
       return;
     }
     const text = newPost.trim();
     const hasUrl = /(https?:\/\/|www\.)/i.test(text);
     if (hasUrl) {
-      showNotification('Links não são permitidos no post.', 'warning');
+      showWarning('Links não são permitidos no post.');
       return;
     }
     if (!mediaFile) {
-      showNotification('Selecione uma mídia (imagem, vídeo ou áudio).', 'warning');
+      showWarning('Selecione uma mídia (imagem, vídeo ou áudio).');
       return;
     }
     try {
@@ -151,10 +151,10 @@ const Vixies = () => {
       setNewPost('');
       setMediaFile(null);
       setAttachment(null);
-      showNotification('Post criado com sucesso!', 'success');
+      showSuccess('Post criado com sucesso!');
     } catch (error) {
       console.error('Error creating post:', error);
-      showNotification('Erro ao criar post', 'error');
+      showError('Erro ao criar post');
     }
   };
 
@@ -170,7 +170,7 @@ const Vixies = () => {
       await set(postRef, { ...posts.find(p => p.id === postId), likes: newLikes, likedBy: newLikedBy });
     } catch (error) {
       console.error('Error liking post:', error);
-      showNotification('Erro ao curtir post', 'error');
+      showError('Erro ao curtir post');
     }
   };
 
@@ -183,13 +183,13 @@ const Vixies = () => {
       const snap = await get(userRepostsRef).catch(() => null);
       const prev = snap && snap.exists() ? snap.val() : null;
       const prevCount = typeof prev === 'object' && prev ? Number(prev.count || 0) : (prev ? 1 : 0);
-      if (prevCount >= 3) { showNotification('Limite de 3 reposts atingido.', 'info'); return; }
+      if (prevCount >= 3) { showInfo('Limite de 3 reposts atingido.'); return; }
       const next = { count: prevCount + 1, lastAt: Date.now() };
       await set(userRepostsRef, next);
       await set(postRepostsRef, next.lastAt);
     } else {
       const snap = await get(postRepostsRef).catch(() => null);
-      if (snap && snap.exists()) { showNotification('Você já repostou este conteúdo.', 'info'); return; }
+      if (snap && snap.exists()) { showInfo('Você já repostou este conteúdo.'); return; }
       await set(postRepostsRef, Date.now());
       await set(userRepostsRef, Date.now());
     }
@@ -198,11 +198,11 @@ const Vixies = () => {
   const tipPost = async (post) => {
     if (!currentUser) return;
     if (!userProfile || userProfile.accountType !== 'client') {
-      showNotification('Somente contas de cliente podem dar gorjeta.', 'warning');
+      showWarning('Somente contas de cliente podem dar gorjeta.');
       return;
     }
     // Placeholder integration point to VC credit (1.5 VP = 1 VC)
-    showNotification('Funcionalidade de gorjeta será integrada em breve.', 'info');
+    showInfo('Funcionalidade de gorjeta será integrada em breve.');
   };
 
   const formatTime = (timestamp) => {
@@ -363,7 +363,7 @@ const Vixies = () => {
                   <button
                     type="button"
                     className="attach-btn"
-                    onClick={() => showNotification('Seletor de serviços/packs será implementado em breve.', 'info')}
+                    onClick={() => showInfo('Seletor de serviços/packs será implementado em breve.')}
                   >
                     Anexar Serviço/Pack
                   </button>

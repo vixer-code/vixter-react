@@ -279,6 +279,67 @@ service cloud.firestore {
     }
     
     // =====================================================
+    // PACK ORDERS COLLECTION RULES
+    // =====================================================
+    
+    match /packOrders/{orderId} {
+      // Buyers and sellers can read their orders
+      allow read: if isAuthenticated() && 
+                    (isOwner(resource.data.buyerId) || 
+                     isOwner(resource.data.sellerId));
+      
+      // Pack order creation via Cloud Functions only (but allow client reads)
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.buyerId) &&
+                      isValidPackOrder(request.resource.data);
+      
+      // Allow status updates for order workflow
+      allow update: if isAuthenticated() && 
+                      (isOwner(resource.data.buyerId) || 
+                       isOwner(resource.data.sellerId)) &&
+                      isValidPackStatusUpdate(resource.data, request.resource.data);
+      
+      allow delete: if false;
+      
+      // Admin access
+      allow read, write: if isAdmin();
+    }
+    
+    // Helper function for pack order validation
+    function isValidPackOrder(data) {
+      return data.keys().hasAll(['packId', 'buyerId', 'sellerId', 'vpAmount', 'status']) &&
+             data.status == 'PENDING_ACCEPTANCE' &&
+             data.vpAmount > 0;
+    }
+    
+    // Helper function for pack status update validation
+    function isValidPackStatusUpdate(currentData, newData) {
+      let currentStatus = currentData.status;
+      let newStatus = newData.status;
+      
+      return (
+        // Seller can accept or decline pending orders
+        (request.auth.uid == currentData.sellerId && 
+         currentStatus == 'PENDING_ACCEPTANCE' && 
+         (newStatus == 'ACCEPTED' || newStatus == 'CANCELLED')) ||
+        
+        // Seller can mark accepted orders as delivered
+        (request.auth.uid == currentData.sellerId && 
+         currentStatus == 'ACCEPTED' && 
+         newStatus == 'DELIVERED') ||
+        
+        // Buyer can confirm delivered orders
+        (request.auth.uid == currentData.buyerId && 
+         currentStatus == 'DELIVERED' && 
+         newStatus == 'CONFIRMED') ||
+         
+        // System can auto-release
+        (currentStatus == 'DELIVERED' && 
+         newStatus == 'AUTO_RELEASED')
+      );
+    }
+    
+    // =====================================================
     // DEFAULT DENY RULE
     // =====================================================
     

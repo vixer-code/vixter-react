@@ -126,6 +126,113 @@
           ".validate": "newData.isNumber() || newData.val() == '.sv' && newData.child('.sv').val() == 'timestamp'"
         }
       }
+    },
+    "vixink_posts": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$postId": {
+        ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp', 'category']) && newData.child('authorId').val() == auth.uid",
+        "authorId": {
+          ".validate": "newData.isString() && newData.val() == auth.uid"
+        },
+        "content": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000"
+        },
+        "timestamp": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 300000"
+        },
+        "category": {
+          ".validate": "newData.isString() && (newData.val() == 'all' || newData.val() == 'news' || newData.val() == 'tutorial' || newData.val() == 'review' || newData.val() == 'guide' || newData.val() == 'other')"
+        },
+        "mediaUrl": {
+          ".validate": "newData.isString()"
+        },
+        "mediaType": {
+          ".validate": "newData.isString() && (newData.val() == 'image' || newData.val() == 'video' || newData.val() == 'audio')"
+        },
+        "likes": {
+          ".validate": "newData.hasChildren()",
+          "$userId": {
+            ".validate": "newData.isBoolean()"
+          }
+        },
+        "comments": {
+          ".validate": "newData.hasChildren()",
+          "$commentId": {
+            ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp']) && newData.child('authorId').val() == auth.uid",
+            "authorId": {
+              ".validate": "newData.isString() && newData.val() == auth.uid"
+            },
+            "content": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500"
+            },
+            "timestamp": {
+              ".validate": "newData.isNumber() && newData.val() <= now + 300000"
+            }
+          }
+        }
+      }
+    },
+    "vixies_posts": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$postId": {
+        ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp', 'category']) && newData.child('authorId').val() == auth.uid",
+        "authorId": {
+          ".validate": "newData.isString() && newData.val() == auth.uid"
+        },
+        "content": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000"
+        },
+        "timestamp": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 300000"
+        },
+        "category": {
+          ".validate": "newData.isString() && (newData.val() == 'all' || newData.val() == 'gaming' || newData.val() == 'art' || newData.val() == 'music' || newData.val() == 'tech' || newData.val() == 'lifestyle' || newData.val() == 'other')"
+        },
+        "mediaUrl": {
+          ".validate": "newData.isString()"
+        },
+        "mediaType": {
+          ".validate": "newData.isString() && (newData.val() == 'image' || newData.val() == 'video' || newData.val() == 'audio')"
+        },
+        "attachment": {
+          ".validate": "newData.hasChildren(['kind', 'id', 'title'])",
+          "kind": {
+            ".validate": "newData.isString() && (newData.val() == 'service' || newData.val() == 'pack')"
+          },
+          "id": {
+            ".validate": "newData.isString()"
+          },
+          "title": {
+            ".validate": "newData.isString()"
+          },
+          "coverUrl": {
+            ".validate": "newData.isString()"
+          }
+        },
+        "likes": {
+          ".validate": "newData.hasChildren()",
+          "$userId": {
+            ".validate": "newData.isBoolean()"
+          }
+        },
+        "comments": {
+          ".validate": "newData.hasChildren()",
+          "$commentId": {
+            ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp']) && newData.child('authorId').val() == auth.uid",
+            "authorId": {
+              ".validate": "newData.isString() && newData.val() == auth.uid"
+            },
+            "content": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500"
+            },
+            "timestamp": {
+              ".validate": "newData.isNumber() && newData.val() <= now + 300000"
+            }
+          }
+        }
+      }
     }
   }
 }
