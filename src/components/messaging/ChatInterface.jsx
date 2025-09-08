@@ -152,8 +152,10 @@ const ChatInterface = ({ conversation, onClose }) => {
     );
   }
 
+  const isServiceCompleted = conversation?.type === 'service' && conversation?.isCompleted;
+
   return (
-    <div className="chat-interface">
+    <div className={`chat-interface ${isServiceCompleted ? 'completed-service' : ''}`}>
       {/* Chat Header */}
       <div className="chat-header">
         <div className="chat-user-info">
@@ -171,10 +173,16 @@ const ChatInterface = ({ conversation, onClose }) => {
               {otherUser.displayName || otherUser.name || 'Usuário sem nome'}
             </div>
             <div className="user-status">
-              {users[otherUser.uid]?.status === 'online' ? 'Online' : 
+              {isServiceCompleted ? 'Serviço Concluído' : 
+               users[otherUser.uid]?.status === 'online' ? 'Online' : 
                users[otherUser.uid]?.status === 'ausente' ? 'Ausente' : 
                users[otherUser.uid]?.status === 'invisivel' ? 'Invisível' : 'Offline'}
             </div>
+            {conversation?.type === 'service' && (
+              <div className="service-name">
+                {conversation.serviceName || 'Serviço'}
+              </div>
+            )}
           </div>
         </div>
         <div className="chat-actions">
@@ -275,8 +283,9 @@ const ChatInterface = ({ conversation, onClose }) => {
       </div>
 
       {/* Message Input */}
-      <div className="message-input-container">
-        <form onSubmit={handleSendMessage} className="message-input-form">
+      {!isServiceCompleted && (
+        <div className="message-input-container">
+          <form onSubmit={handleSendMessage} className="message-input-form">
           <div className="input-actions">
             <button
               type="button"
@@ -373,6 +382,17 @@ const ChatInterface = ({ conversation, onClose }) => {
           style={{ display: 'none' }}
         />
       </div>
+      )}
+
+      {/* Completed Service Notice */}
+      {isServiceCompleted && (
+        <div className="completed-service-notice">
+          <div className="notice-content">
+            <i className="fas fa-check-circle"></i>
+            <span>Este serviço foi concluído. A conversa está arquivada e não permite mais interações.</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

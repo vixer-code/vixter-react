@@ -557,3 +557,59 @@
     grid-template-columns: repeat(5, 1fr);
   }
 }
+
+/* Completed Service Styles */
+.chat-interface.completed-service {
+  opacity: 0.7;
+}
+
+.chat-interface.completed-service .chat-header {
+  background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+  border-bottom: 2px solid #666;
+}
+
+.chat-interface.completed-service .user-status {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.service-name {
+  font-size: 0.8rem;
+  color: var(--vixter-accent-primary);
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.completed-service-notice {
+  background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+  border-top: 2px solid #666;
+  padding: 16px;
+  text-align: center;
+}
+
+.notice-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #888;
+  font-size: 14px;
+}
+
+.notice-content i {
+  color: #28a745;
+  font-size: 18px;
+}
+
+.chat-interface.completed-service .messages-container {
+  background: linear-gradient(135deg, #1a1a1a 0%, #0f0f1a 100%);
+}
+
+.chat-interface.completed-service .message {
+  opacity: 0.8;
+}
+
+.chat-interface.completed-service .message-content {
+  background: rgba(42, 42, 42, 0.8);
+  border: 1px solid #444;
+}

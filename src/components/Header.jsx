@@ -266,16 +266,7 @@ const Header = () => {
                     <Link to="/messages">
                       <i className="fas fa-envelope"></i> Mensagens
                     </Link>
-                    <Link 
-                      to="/profile#services" 
-                      onClick={(e) => {
-                        // If already on profile page, force hash change
-                        if (window.location.pathname === '/profile') {
-                          e.preventDefault();
-                          window.location.hash = '#services';
-                        }
-                      }}
-                    >
+                    <Link to="/my-services">
                       <i className="fas fa-briefcase"></i> Meus Serviços
                     </Link>
                     <Link to="/wallet"><i className="fas fa-wallet"></i> Carteira</Link>
@@ -366,17 +357,7 @@ const Header = () => {
               <li><Link to="/messages" className={isActive('/messages') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
                 <i className="fas fa-envelope"></i>Mensagens
               </Link></li>
-              <li><Link 
-                to="/profile#services" 
-                onClick={(e) => {
-                  // If already on profile page, force hash change
-                  if (window.location.pathname === '/profile') {
-                    e.preventDefault();
-                    window.location.hash = '#services';
-                  }
-                  setTimeout(closeMobileMenu, 100);
-                }}
-              >
+              <li><Link to="/my-services" onClick={() => setTimeout(closeMobileMenu, 100)}>
                 <i className="fas fa-briefcase"></i>Meus Serviços
               </Link></li>
               <li><Link to="/wallet" onClick={() => setTimeout(closeMobileMenu, 100)}>

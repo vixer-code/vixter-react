@@ -30,7 +30,7 @@ export const useServiceOrder = () => {
 export const ServiceOrderProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showInfo } = useNotification();
-  const { sendServiceNotification } = useMessaging();
+  const { sendServiceNotification, createServiceConversation, markServiceConversationCompleted } = useMessaging();
   
   // State
   const [serviceOrders, setServiceOrders] = useState([]);
@@ -156,7 +156,11 @@ export const ServiceOrderProvider = ({ children }) => {
           sellerId: serviceData.providerId,
           vpAmount: serviceData.price,
           status: ORDER_STATUS.PENDING_ACCEPTANCE,
-          additionalFeatures: additionalFeatures
+          additionalFeatures: additionalFeatures,
+          metadata: {
+            serviceName: serviceData.title,
+            serviceDescription: serviceData.description
+          }
         });
 
         showSuccess('Pedido de serviço enviado com sucesso!');
@@ -189,13 +193,16 @@ export const ServiceOrderProvider = ({ children }) => {
       if (result.data.success) {
         showSuccess('Pedido aceito com sucesso!');
         
-        // Update the order in messaging
+        // Update the order in messaging and create conversation
         const order = serviceOrders.find(o => o.id === orderId);
         if (order) {
           await sendServiceNotification({
             ...order,
             status: ORDER_STATUS.ACCEPTED
           });
+          
+          // Create service conversation
+          await createServiceConversation(order);
         }
         
         return true;
@@ -313,6 +320,9 @@ export const ServiceOrderProvider = ({ children }) => {
             status: ORDER_STATUS.CONFIRMED,
             buyerFeedback: feedback
           });
+          
+          // Mark service conversation as completed
+          await markServiceConversationCompleted(orderId);
         }
         
         return true;
@@ -456,7 +466,10 @@ export const ServiceOrderProvider = ({ children }) => {
     calculateOrderTotal,
     getOrderStatusInfo,
     filterOrdersByStatus,
-    getPendingOrdersCount
+    getPendingOrdersCount,
+    sendServiceNotification,
+    createServiceConversation,
+    markServiceConversationCompleted
   ]);
 
   return (

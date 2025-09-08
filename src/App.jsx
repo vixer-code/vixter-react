@@ -30,6 +30,8 @@ const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const Vixies = lazy(() => import('./pages/Vixies'));
 const Vixink = lazy(() => import('./pages/Vixink'));
 const SearchResults = lazy(() => import('./pages/SearchResults'));
+const MyServices = lazy(() => import('./pages/MyServices'));
+const ServiceDetail = lazy(() => import('./pages/ServiceDetail'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -78,8 +80,9 @@ function App() {
                                 <Route path="/vixies" element={<Vixies />} />
                                 <Route path="/vixink" element={<Vixink />} />
                                 <Route path="/search" element={<SearchResults />} />
+                                <Route path="/my-services" element={<MyServices />} />
+                                <Route path="/service/:serviceId" element={<ServiceDetail />} />
                                 <Route path="/settings" element={<div>Settings Page - Coming Soon</div>} />
-                                <Route path="/my-services" element={<div>My Services Page - Coming Soon</div>} />
                                 <Route path="/services" element={<div>Services Page - Coming Soon</div>} />
                                 
                                 {/* Catch-all route - must be last */}

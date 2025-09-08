@@ -17,6 +17,7 @@ import SmartMediaViewer from '../components/SmartMediaViewer';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import DeleteServiceModal from '../components/DeleteServiceModal';
 import DeletePackModal from '../components/DeletePackModal';
+import PackBuyersModal from '../components/PackBuyersModal';
 import './Profile.css';
 
 const Profile = () => {
@@ -91,6 +92,56 @@ const Profile = () => {
   const [packSales, setPackSales] = useState([]);
   const [packSalesLoading, setPackSalesLoading] = useState(false);
   const [packTotalVCEarned, setPackTotalVCEarned] = useState(0);
+
+  // Client purchased packs
+  const [purchasedPacks, setPurchasedPacks] = useState([]);
+  const [purchasedPacksLoading, setPurchasedPacksLoading] = useState(false);
+
+  // Pack buyers modal
+  const [showPackBuyersModal, setShowPackBuyersModal] = useState(false);
+  const [selectedPack, setSelectedPack] = useState(null);
+
+  // Open pack buyers modal
+  const openPackBuyers = (pack) => {
+    setSelectedPack(pack);
+    setShowPackBuyersModal(true);
+  };
+
+  // Load purchased packs for clients
+  const loadPurchasedPacks = useCallback(async () => {
+    if (!currentUser || !isClient) return;
+    
+    setPurchasedPacksLoading(true);
+    try {
+      const packOrdersRef = ref(database, 'packOrders');
+      const queryRef = query(packOrdersRef, orderByChild('buyerId'), equalTo(currentUser.uid));
+      const snapshot = await get(queryRef);
+      
+      if (snapshot.exists()) {
+        const orders = [];
+        snapshot.forEach((childSnapshot) => {
+          const orderData = childSnapshot.val();
+          if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
+            orders.push({
+              id: childSnapshot.key,
+              ...orderData
+            });
+          }
+        });
+        
+        // Sort by purchase date (newest first)
+        orders.sort((a, b) => (b.timestamps?.createdAt || 0) - (a.timestamps?.createdAt || 0));
+        setPurchasedPacks(orders);
+      } else {
+        setPurchasedPacks([]);
+      }
+    } catch (error) {
+      console.error('Error loading purchased packs:', error);
+      showError('Erro ao carregar packs comprados');
+    } finally {
+      setPurchasedPacksLoading(false);
+    }
+  }, [currentUser, isClient, showError]);
 
   // Toggle animation state
   const [switchingServiceId, setSwitchingServiceId] = useState(null);
@@ -188,10 +239,17 @@ const [formData, setFormData] = useState({
     }
   }, [userId, currentUser, loadUserPacks]);
 
+  // Load purchased packs for clients
+  useEffect(() => {
+    if (isClient && currentUser) {
+      loadPurchasedPacks();
+    }
+  }, [isClient, currentUser, loadPurchasedPacks]);
+
   // Handle URL hash navigation
   useEffect(() => {
     const hash = location.hash.replace('#', '');
-    const validTabs = ['perfil', 'about', 'services', 'packs', 'sales', 'subscriptions', 'reviews'];
+    const validTabs = ['perfil', 'about', 'services', 'packs', 'my-packs', 'sales', 'subscriptions', 'reviews'];
     
     if (hash && validTabs.includes(hash)) {
       setActiveTab(hash);
@@ -1124,6 +1182,15 @@ const [formData, setFormData] = useState({
           >
             Packs
           </button>
+          {isClient && (
+            <button 
+              className={`profile-tab ${activeTab === 'my-packs' ? 'active' : ''}`}
+              onClick={handleTabClick}
+              data-tab="my-packs"
+            >
+              Meus Packs
+            </button>
+          )}
           {isOwner && isProvider && (
             <button 
               className={`profile-tab ${activeTab === 'sales' ? 'active' : ''}`}
@@ -1786,6 +1853,14 @@ const [formData, setFormData] = useState({
                       >
                         <i className="fa-solid fa-receipt"></i>
                       </button>
+                      {/* Pack buyers button */}
+                      <button
+                        className="action-btn buyers-btn"
+                        onClick={() => openPackBuyers(pack)}
+                        title="Ver Compradores"
+                      >
+                        <i className="fa-solid fa-users"></i>
+                      </button>
                       {/* Animated status switch */}
                       <button 
                         className={`action-btn status-btn ${switchingPackId === pack.id ? 'switching' : ''}`}
@@ -1819,6 +1894,78 @@ const [formData, setFormData] = useState({
           </div>
         </div>
       </div>
+      
+      {/* Meus Packs Tab (Client Only) */}
+      {isClient && (
+        <div className={`tab-content ${activeTab === 'my-packs' ? 'active' : ''}`}>
+          <div className="my-packs-tab-content">
+            <div className="my-packs-header">
+              <h3>Meus Packs</h3>
+              <p>Packs que você comprou</p>
+            </div>
+            
+            <div className="my-packs-grid">
+              {purchasedPacksLoading ? (
+                <div className="loading-state">
+                  <i className="fa-solid fa-spinner fa-spin"></i>
+                  <p>Carregando seus packs...</p>
+                </div>
+              ) : purchasedPacks.length > 0 ? (
+                purchasedPacks.map((order) => (
+                  <div key={order.id} className="purchased-pack-card">
+                    <div className="pack-cover">
+                      <SmartMediaViewer 
+                        mediaData={order.packData?.coverImage}
+                        type="pack"
+                        watermarked={false}
+                        fallbackSrc="/images/default-pack.jpg"
+                        alt={order.packData?.title || 'Pack'}
+                        sizes={packCoverSizes}
+                      />
+                      <div className="purchase-status">
+                        <span className={`status-badge ${order.status?.toLowerCase()}`}>
+                          {order.status === 'COMPLETED' ? 'Comprado' : 
+                           order.status === 'PENDING' ? 'Pendente' : 
+                           order.status === 'BANNED' ? 'Banido' : order.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="pack-info">
+                      <h3 className="pack-title">{order.packData?.title || 'Pack'}</h3>
+                      <p className="pack-seller">por {order.sellerName || 'Provedor'}</p>
+                      <p className="pack-price">
+                        Pago: {order.vpAmount} VP
+                        {order.paymentMethod === 'VC' && <span className="vc-badge">VC</span>}
+                      </p>
+                      <p className="purchase-date">
+                        Comprado em: {order.timestamps?.createdAt ? 
+                          new Date(order.timestamps.createdAt).toLocaleDateString('pt-BR') : 
+                          'Data não disponível'
+                        }
+                      </p>
+                    </div>
+                    <div className="pack-actions">
+                      <button 
+                        className="btn secondary"
+                        onClick={() => window.open(`/pack/${order.packId}`, '_blank')}
+                      >
+                        <i className="fa-solid fa-external-link-alt"></i>
+                        Ver Pack
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">
+                  <i className="fa-solid fa-box-open"></i>
+                  <p>Você ainda não comprou nenhum pack.</p>
+                  <p>Explore os packs disponíveis na aba "Packs".</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Subscriptions Tab */}
       <div className={`tab-content ${activeTab === 'subscriptions' ? 'active' : ''}`}>
@@ -2291,6 +2438,13 @@ const [formData, setFormData] = useState({
           </div>
         </div>
       )}
+
+      {/* Pack Buyers Modal */}
+      <PackBuyersModal
+        isOpen={showPackBuyersModal}
+        onClose={() => setShowPackBuyersModal(false)}
+        pack={selectedPack}
+      />
     </div>
   );
 };

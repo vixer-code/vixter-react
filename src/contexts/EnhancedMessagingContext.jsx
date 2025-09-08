@@ -1477,6 +1477,102 @@ export const EnhancedMessagingProvider = ({ children }) => {
     });
   }, [selectedConversation?.id, typingUsers, users]);
 
+  // Send service notification
+  const sendServiceNotification = useCallback(async (serviceData) => {
+    if (!currentUser?.uid) return;
+
+    try {
+      const notificationData = {
+        id: `service_${serviceData.id}_${Date.now()}`,
+        type: serviceData.status === 'PENDING_ACCEPTANCE' ? 'service_requested' : 
+              serviceData.status === 'ACCEPTED' ? 'service_accepted' :
+              serviceData.status === 'DELIVERED' ? 'service_delivered' :
+              serviceData.status === 'CONFIRMED' ? 'service_completed' :
+              serviceData.status === 'CANCELLED' ? 'service_declined' : 'service_update',
+        orderId: serviceData.id,
+        serviceName: serviceData.metadata?.serviceName || serviceData.serviceName || 'Serviço',
+        vpAmount: serviceData.vpAmount,
+        status: serviceData.status,
+        description: serviceData.status === 'PENDING_ACCEPTANCE' ? 
+          'Você recebeu um novo pedido de serviço' :
+          serviceData.status === 'ACCEPTED' ? 
+          'Seu pedido foi aceito pelo provedor' :
+          serviceData.status === 'DELIVERED' ? 
+          'O serviço foi entregue' :
+          serviceData.status === 'CONFIRMED' ? 
+          'O serviço foi concluído' :
+          serviceData.status === 'CANCELLED' ? 
+          'O pedido foi recusado' : 'Status do serviço atualizado',
+        timestamp: serverTimestamp(),
+        read: false,
+        recipientId: serviceData.status === 'PENDING_ACCEPTANCE' ? serviceData.sellerId : serviceData.buyerId
+      };
+
+      // Save notification to RTDB
+      const notificationRef = ref(database, `notifications/${notificationData.recipientId}/${notificationData.id}`);
+      await set(notificationRef, notificationData);
+
+      return notificationData;
+    } catch (error) {
+      console.error('Error sending service notification:', error);
+    }
+  }, [currentUser]);
+
+  // Create service conversation when order is accepted
+  const createServiceConversation = useCallback(async (serviceOrder) => {
+    if (!currentUser?.uid) return null;
+
+    try {
+      const conversationId = generateConversationId(
+        serviceOrder.buyerId, 
+        serviceOrder.sellerId, 
+        serviceOrder.id
+      );
+
+      const conversationData = {
+        id: conversationId,
+        type: 'service',
+        participants: [serviceOrder.buyerId, serviceOrder.sellerId],
+        serviceOrderId: serviceOrder.id,
+        serviceName: serviceOrder.metadata?.serviceName || 'Serviço',
+        createdAt: serverTimestamp(),
+        lastMessageAt: serverTimestamp(),
+        lastMessage: 'Conversa iniciada para o serviço',
+        unreadCount: { [serviceOrder.buyerId]: 0, [serviceOrder.sellerId]: 0 },
+        isCompleted: false
+      };
+
+      // Save to RTDB
+      const conversationRef = ref(database, `conversations/${conversationId}`);
+      await set(conversationRef, conversationData);
+
+      return conversationData;
+    } catch (error) {
+      console.error('Error creating service conversation:', error);
+      return null;
+    }
+  }, [currentUser]);
+
+  // Mark service conversation as completed
+  const markServiceConversationCompleted = useCallback(async (serviceOrderId) => {
+    if (!currentUser?.uid) return;
+
+    try {
+      // Find the conversation by service order ID
+      const conversation = serviceConversations.find(conv => conv.serviceOrderId === serviceOrderId);
+      if (!conversation) return;
+
+      const conversationRef = ref(database, `conversations/${conversation.id}`);
+      await update(conversationRef, {
+        isCompleted: true,
+        completedAt: serverTimestamp(),
+        lastMessage: 'Serviço concluído - conversa arquivada'
+      });
+    } catch (error) {
+      console.error('Error marking service conversation as completed:', error);
+    }
+  }, [currentUser, serviceConversations]);
+
   const value = useMemo(() => ({
     // State
     conversations,
@@ -1507,6 +1603,11 @@ export const EnhancedMessagingProvider = ({ children }) => {
     createConversation,
     createOrGetConversation,
     deleteMessage,
+    
+    // Service functions
+    sendServiceNotification,
+    createServiceConversation,
+    markServiceConversationCompleted,
     
     // Typing functions
     handleTypingChange,
@@ -1541,6 +1642,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
     createConversation,
     createOrGetConversation,
     deleteMessage,
+    sendServiceNotification,
+    createServiceConversation,
+    markServiceConversationCompleted,
     getOtherParticipant,
     loadUserData,
     formatTime
