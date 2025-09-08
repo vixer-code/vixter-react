@@ -8,6 +8,7 @@ import { useUser } from '../contexts/UserContext';
 import { usePacksR2 as usePacks } from '../contexts/PacksContextR2';
 import { useServicesR2 as useServices } from '../contexts/ServicesContextR2';
 import { useNotification } from '../contexts/NotificationContext';
+import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import { useEmailVerification } from '../hooks/useEmailVerification';
 const CreateServiceModal = lazy(() => import('../components/CreateServiceModal'));
@@ -36,6 +37,7 @@ const Profile = () => {
   const { services: firestoreServices, loading: servicesLoading, loadUserServices, updateServiceStatus, deleteService } = useServices();
   const { isVerified, isChecking } = useEmailVerification();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
+  const { createOrGetConversation } = useEnhancedMessaging();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -105,6 +107,28 @@ const Profile = () => {
   const openPackBuyers = (pack) => {
     setSelectedPack(pack);
     setShowPackBuyersModal(true);
+  };
+
+  // Handle message button click
+  const handleMessageClick = async () => {
+    if (!currentUser || !profile) return;
+    
+    if (currentUser.uid === profile.uid) {
+      showWarning('Você não pode enviar mensagem para si mesmo');
+      return;
+    }
+
+    try {
+      const conversation = await createOrGetConversation(profile.uid);
+      if (conversation) {
+        navigate('/messages');
+      } else {
+        showError('Erro ao criar conversa');
+      }
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      showError('Erro ao criar conversa');
+    }
   };
 
   // Load purchased packs for clients
@@ -249,7 +273,7 @@ const [formData, setFormData] = useState({
   // Handle URL hash navigation
   useEffect(() => {
     const hash = location.hash.replace('#', '');
-    const validTabs = ['perfil', 'about', 'services', 'packs', 'my-packs', 'sales', 'subscriptions', 'reviews'];
+    const validTabs = ['perfil', 'about', 'services', 'packs', 'my-packs', 'subscriptions', 'reviews'];
     
     if (hash && validTabs.includes(hash)) {
       setActiveTab(hash);
@@ -1144,7 +1168,7 @@ const [formData, setFormData] = useState({
                     <i className={`fa-solid ${isFollowing ? 'fa-user-check' : 'fa-user-plus'}`}></i>
                     {isFollowing ? 'Seguindo' : 'Seguir'}
                   </button>
-                  <button className="message-btn">
+                  <button className="message-btn" onClick={handleMessageClick}>
                     <i className="fa-solid fa-envelope"></i> Mensagem
                   </button>
                 </div>
@@ -1189,15 +1213,6 @@ const [formData, setFormData] = useState({
               data-tab="my-packs"
             >
               Meus Packs
-            </button>
-          )}
-          {isOwner && isProvider && (
-            <button 
-              className={`profile-tab ${activeTab === 'sales' ? 'active' : ''}`}
-              onClick={handleTabClick}
-              data-tab="sales"
-            >
-              Minhas Vendas
             </button>
           )}
           <button 
@@ -2037,92 +2052,6 @@ const [formData, setFormData] = useState({
         </div>
       </div>
 
-      {/* Sales Tab (Provider Only) */}
-      {isOwner && isProvider && (
-        <div className={`tab-content ${activeTab === 'sales' ? 'active' : ''}`}>
-          <div className="services-tab-content">
-            <div className="services-header">
-              <h3>Minhas Vendas</h3>
-            </div>
-            {salesLoading ? (
-              <div className="loading-state"><i className="fa-solid fa-spinner fa-spin"></i> Carregando vendas...</div>
-            ) : salesError ? (
-              <div className="empty-state">{salesError}</div>
-            ) : (
-              <>
-                <div className="sales-summary-cards">
-                  <div className="summary-card"><div className="label">Total em VC</div><div className="value">{totalVCEarned.toFixed(2)} VC</div></div>
-                  <div className="summary-card"><div className="label">Vendas</div><div className="value">{totalSalesCount}</div></div>
-                  <div className="summary-card"><div className="label">Saldo Atual</div><div className="value">{(profile?.vcBalance || 0).toFixed(2)} VC</div></div>
-                </div>
-
-                <div className="withdraw-section">
-                  <div className="section-title">Solicitar Saque</div>
-                  <div className="withdraw-form">
-                    <input type="number" min="1" step="0.01" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="Valor em VC" />
-                    <button className="btn primary" onClick={handleWithdraw}><i className="fa-solid fa-arrow-up-right-from-square"></i> Solicitar</button>
-                  </div>
-                  <small>Saques são processados conforme as configurações da sua conta de pagamento.</small>
-                </div>
-
-                <div className="best-sellers">
-                  <div className="section-title">Mais Vendidos</div>
-                  {bestSellers.length === 0 ? (
-                    <div className="empty-state">Sem vendas ainda.</div>
-                  ) : (
-                    <ul className="ranked-list">
-                      {bestSellers.map((item) => (
-                        <li key={`${item.type}:${item.id}`}>
-                          <span className="title">{item.title || (item.type === 'service' ? 'Serviço' : 'Pack')}</span>
-                          <span className="meta">{item.count} vendas · {item.totalVC.toFixed(2)} VC</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                <div className="top-buyers">
-                  <div className="section-title">Compradores Frequentes</div>
-                  {topBuyers.length === 0 ? (
-                    <div className="empty-state">Sem compradores recorrentes.</div>
-                  ) : (
-                    <ul className="ranked-list">
-                      {topBuyers.map((b) => (
-                        <li key={b.buyerId}>
-                          <span className="title">@{b.username || b.buyerId}</span>
-                          <span className="meta">{b.count} compras · {b.totalVC.toFixed(2)} VC</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                <div className="recent-sales">
-                  <div className="section-title">Vendas Recentes</div>
-                  {recentSales.length === 0 ? (
-                    <div className="empty-state">Nenhuma venda recente.</div>
-                  ) : (
-                    <ul className="sales-list compact">
-                      {recentSales.map((s) => (
-                        <li key={`${s.type}:${s.id}`} className="sale-item">
-                          <div className="sale-left">
-                            <span className="badge">{s.type === 'service' ? 'Serviço' : 'Pack'}</span>
-                            <span className="title">{s.title || (s.type === 'service' ? 'Serviço' : 'Pack')}</span>
-                          </div>
-                          <div className="sale-right">
-                            <span className="amount">{s.priceVC.toFixed(2)} VC</span>
-                            <span className="date">{new Date(s.timestamp).toLocaleString('pt-BR')}</span>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Followers Modal */}
       {showFollowersModal && (

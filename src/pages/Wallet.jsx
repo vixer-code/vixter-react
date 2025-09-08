@@ -1007,8 +1007,7 @@ const Wallet = () => {
       </div>
 
       {/* Transactions Tab */}
-      {activeTab === 'transactions' && (
-        <div className="tab-content active">
+      <div className={`tab-content ${activeTab === 'transactions' ? 'active' : ''}`}>
           {isClient && (
             <div className="client-purchases-section">
               <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1305,11 +1304,10 @@ const Wallet = () => {
             </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* Earnings Tab */}
-      {activeTab === 'earnings' && (
-        <div className="tab-content active">
+      <div className={`tab-content ${activeTab === 'earnings' ? 'active' : ''}`}>
           <div className="earnings-grid">
             {/* VBP Earning - Available for all account types */}
             <div className="earning-card vbp-earning">
@@ -1643,7 +1641,7 @@ const Wallet = () => {
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

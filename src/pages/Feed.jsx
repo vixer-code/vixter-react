@@ -95,7 +95,8 @@ const Feed = () => {
     const list = [];
     snapshot.forEach(child => {
       const val = child.val();
-      if (Array.isArray(val.images) && val.images.length > 0) {
+      // Include posts with images OR text content
+      if ((Array.isArray(val.images) && val.images.length > 0) || (val.content && val.content.trim())) {
         list.push({ id: child.key, ...val });
       }
     });
@@ -162,14 +163,15 @@ const Feed = () => {
       return;
     }
     const content = postText.trim();
-    // Enforce: image required, no links allowed in text
+    // Enforce: no links allowed in text
     const hasUrl = /(https?:\/\/|www\.)/i.test(content);
     if (hasUrl) {
       alert('Links não são permitidos em posts.');
       return;
     }
-    if (!postFile) {
-      alert('Posts devem conter uma imagem.');
+    // Allow text-only posts - image is optional
+    if (!content.trim() && !postFile) {
+      alert('Posts devem conter texto ou uma imagem.');
       return;
     }
     
