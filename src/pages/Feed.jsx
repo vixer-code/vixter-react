@@ -7,7 +7,8 @@ import {
   push
 } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { database, storage } from '../../config/firebase';
+import { database, storage, firestore } from '../../config/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import CachedImage from '../components/CachedImage';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
@@ -49,6 +50,8 @@ const Feed = () => {
   const [trending, setTrending] = useState([]);
   const [stars, setStars] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [followingIds, setFollowingIds] = useState([]);
+  const [commentDrafts, setCommentDrafts] = useState({}); // {postId: text}
 
   // Create post modal state
   const [isCreating, setIsCreating] = useState(false);
@@ -82,27 +85,74 @@ const Feed = () => {
   }
 
   async function loadPosts() {
-    // TODO: Load posts from Firestore instead of RTDB
-    console.log('🚧 Posts will be loaded from Firestore in the next update');
-    setAllPosts([]);
+    // Load posts from RTDB
+    const postsRootRef = ref(database, 'posts');
+    const snapshot = await get(postsRootRef);
+    if (!snapshot.exists()) {
+      setAllPosts([]);
+      return;
+    }
+    const list = [];
+    snapshot.forEach(child => {
+      const val = child.val();
+      if (Array.isArray(val.images) && val.images.length > 0) {
+        list.push({ id: child.key, ...val });
+      }
+    });
+    // Attach counts for likes, comments, reposts
+    const likesRoot = ref(database, 'likes');
+    const commentsRoot = ref(database, 'comments');
+    const repostsRoot = ref(database, 'reposts');
+    const [likesSnap, commentsSnap, repostsSnap] = await Promise.all([
+      get(likesRoot).catch(() => null),
+      get(commentsRoot).catch(() => null),
+      get(repostsSnap = repostsRoot, get(repostsRoot)).catch(() => null)
+    ]).then(([ls, cs, rs]) => [ls, cs, rs]).catch(() => [null, null, null]);
+    const likesObj = likesSnap?.exists() ? likesSnap.val() : {};
+    const commentsObj = commentsSnap?.exists() ? commentsSnap.val() : {};
+    const repostsObj = repostsSnap?.exists() ? repostsSnap.val() : {};
+    const withCounts = list.map(p => {
+      const likes = likesObj[p.id] ? Object.keys(likesObj[p.id]).length : 0;
+      const comments = commentsObj[p.id] ? Object.keys(commentsObj[p.id]).length : 0;
+      const reposts = repostsObj[p.id] ? Object.keys(repostsObj[p.id]).length : 0;
+      return { ...p, likeCount: likes, commentCount: comments, repostCount: reposts };
+    });
+    setAllPosts(withCounts);
   }
 
   async function ensureUsersLoaded(userIds) {
-    // TODO: Load users from Firestore UserContext
-    console.log('🚧 User data will be loaded from UserContext/Firestore');
-    setUsers({});
+    // Minimal: no-op (UserContext already caches). Could be enhanced to fetch profiles.
+    return;
   }
 
   async function filterAndDecorate(tab) {
-    // TODO: Implement filtering with Firestore posts and Firestore followers
-    console.log('🚧 Post filtering will be implemented with Firestore data');
-    setFilteredPosts([]);
-    setTrending([]);
+    let posts = [...allPosts];
+    // Build trending hashtags
+    const tags = new Map();
+    posts.forEach(p => (p.hashtags || []).forEach(tag => tags.set(tag, (tags.get(tag) || 0) + 1)));
+    setTrending(Array.from(tags.entries()).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([t])=>t));
+
+    if (tab === 'following') {
+      // Only posts by followed users or reposted by followed users
+      const followedSet = new Set(followingIds);
+      posts = posts.filter(p => followedSet.has(p.userId) || (Array.isArray(p.reposters) ? p.reposters.some(uid => followedSet.has(uid)) : false));
+      posts.sort((a,b) => (b.timestamp || b.createdAt || 0) - (a.timestamp || a.createdAt || 0));
+    } else {
+      // Recent/relevant: sort by weighted score
+      const now = Date.now();
+      posts.forEach(p => {
+        const ageHrs = Math.max(1, (now - (p.timestamp || p.createdAt || 0)) / (1000*60*60));
+        const recencyScore = 1 / ageHrs; // newer => higher
+        const engagement = (p.likeCount || 0) * 2 + (p.repostCount || 0) * 3 + (p.commentCount || 0);
+        p._score = recencyScore * 10 + engagement;
+      });
+      posts.sort((a,b) => (b._score || 0) - (a._score || 0));
+    }
+    setFilteredPosts(posts);
   }
 
   async function buildCommunityStars() {
-    // TODO: Build community stars from Firestore followers analytics
-    console.log('🚧 Community stars will be built from Firestore analytics');
+    // Placeholder: empty for now
     setStars([]);
   }
 
@@ -114,17 +164,71 @@ const Feed = () => {
     const content = postText.trim();
     if (!content && !postFile) return;
     
-    // TODO: Implement via Cloud Function createPost
-    alert('🚧 Criação de posts será implementada via Cloud Functions em breve!');
-    setIsCreating(false);
-    setPostText('');
-    setPostFile(null);
+    try {
+      setIsPublishing(true);
+      let imageUrl = null;
+      if (postFile) {
+        const filePath = `posts/${currentUser.uid}/${Date.now()}_${postFile.name}`;
+        const sref = storageRef(storage, filePath);
+        const snap = await uploadBytes(sref, postFile);
+        imageUrl = await getDownloadURL(snap.ref);
+      }
+      const hashtags = extractHashTags(content);
+      const newPost = {
+        userId: currentUser.uid,
+        content,
+        images: imageUrl ? [imageUrl] : [],
+        hashtags,
+        createdAt: Date.now(),
+        timestamp: Date.now()
+      };
+      const postsRootRef = ref(database, 'posts');
+      await push(postsRootRef, newPost);
+      setIsCreating(false);
+      setPostText('');
+      setPostFile(null);
+      await loadPosts();
+      await filterAndDecorate(currentTab);
+    } finally {
+      setIsPublishing(false);
+    }
   }
 
   async function toggleLike(postId, liked) {
     if (!currentUser) return;
-    // TODO: Implement via Cloud Function togglePostLike
-    alert('🚧 Likes serão implementados via Cloud Functions em breve!');
+    const likeRef = ref(database, `likes/${postId}/${currentUser.uid}`);
+    if (liked) {
+      await remove(likeRef);
+    } else {
+      await set(likeRef, true);
+    }
+    await loadPosts();
+    await filterAndDecorate(currentTab);
+  }
+
+  async function handleRepost(post) {
+    if (!currentUser || !post || post.userId === currentUser.uid) return;
+    const repostRef = ref(database, `reposts/${post.id}/${currentUser.uid}`);
+    const userRepostsRef = ref(database, `userReposts/${currentUser.uid}/${post.id}`);
+    await set(repostRef, Date.now());
+    await set(userRepostsRef, Date.now());
+    await loadPosts();
+    await filterAndDecorate(currentTab);
+  }
+
+  async function submitComment(postId) {
+    if (!currentUser) return;
+    const text = (commentDrafts[postId] || '').trim();
+    if (!text) return;
+    const commentsRef = ref(database, `comments/${postId}`);
+    await push(commentsRef, {
+      userId: currentUser.uid,
+      text,
+      timestamp: Date.now()
+    });
+    setCommentDrafts(prev => ({ ...prev, [postId]: '' }));
+    await loadPosts();
+    await filterAndDecorate(currentTab);
   }
 
   async function deletePost(postId) {
@@ -172,6 +276,22 @@ const Feed = () => {
     }));
   }, [filteredPosts, users]);
 
+  // Load following ids from Firestore for following tab filtering
+  useEffect(() => {
+    const loadFollowing = async () => {
+      if (!currentUser) { setFollowingIds([]); return; }
+      try {
+        const followingRef = collection(firestore, 'users', currentUser.uid, 'following');
+        const snap = await getDocs(followingRef);
+        const ids = snap.docs.map(d => d.id);
+        setFollowingIds(ids);
+      } catch (e) {
+        setFollowingIds([]);
+      }
+    };
+    loadFollowing();
+  }, [currentUser]);
+
   if (loading) {
     return (
       <div className="feed-container">
@@ -183,8 +303,8 @@ const Feed = () => {
   return (
     <div className="feed-container">
       <div className="feed-header">
-        <h1>Comunidade Vixter</h1>
-        <p>Publicações da comunidade, contas oficiais e pessoas que você segue</p>
+        <h1>Feed</h1>
+        <p>Posts recentes e relevantes da comunidade e de quem você segue</p>
       </div>
 
       <div className="feed-tabs">
@@ -240,8 +360,8 @@ const Feed = () => {
 
             {postsWithAuthors.map(post => {
               const likesObj = post.likes || {};
-              const likeCount = Object.keys(likesObj).length;
-              const liked = currentUser ? !!likesObj[currentUser.uid] : false;
+              const likeCount = typeof post.likeCount === 'number' ? post.likeCount : Object.keys(likesObj).length;
+              const liked = currentUser ? !!likesObj[currentUser?.uid] : false;
               const author = post.author || {};
               const ts = post.timestamp || post.createdAt;
               return (
@@ -305,12 +425,29 @@ const Feed = () => {
                     >
                       <i className={`${liked ? 'fas' : 'far'} fa-heart`} /> {likeCount}
                     </button>
-                    <button className="action-button" style={{ background: 'transparent', border: 'none', color: '#fff', opacity: 0.8 }}>
-                      <i className="far fa-comment" /> {typeof post.comments === 'object' ? Object.keys(post.comments).length : (post.comments || 0)}
-                    </button>
-                    <button className="action-button" style={{ background: 'transparent', border: 'none', color: '#fff', opacity: 0.8 }}>
-                      <i className="far fa-share-square" />
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button className="action-button" style={{ background: 'transparent', border: 'none', color: '#fff', opacity: 0.8 }} onClick={() => {
+                        const el = document.getElementById(`cbox-${post.id}`);
+                        if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+                      }}>
+                        <i className="far fa-comment" /> {typeof post.commentCount === 'number' ? post.commentCount : (typeof post.comments === 'object' ? Object.keys(post.comments).length : (post.comments || 0))}
+                      </button>
+                      <button className="action-button" style={{ background: 'transparent', border: 'none', color: '#fff', opacity: 0.8 }} onClick={() => handleRepost(post)} disabled={currentUser && currentUser.uid === post.userId} title={currentUser && currentUser.uid === post.userId ? 'Você não pode repostar seu próprio post' : 'Repostar'}>
+                        <i className="far fa-share-square" /> {post.repostCount || 0}
+                      </button>
+                    </div>
+                  </div>
+                  <div id={`cbox-${post.id}`} style={{ display: 'none', marginTop: 10 }}>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        type="text"
+                        placeholder="Escreva um comentário..."
+                        value={commentDrafts[post.id] || ''}
+                        onChange={(e) => setCommentDrafts(prev => ({ ...prev, [post.id]: e.target.value }))}
+                        style={{ flex: 1, padding: 8, borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.06)', color: '#fff' }}
+                      />
+                      <button className="search-btn" onClick={() => submitComment(post.id)}>Enviar</button>
+                    </div>
                   </div>
                 </div>
               );

@@ -241,19 +241,58 @@ const [formData, setFormData] = useState({
 
   const loadPosts = async (targetUserId) => {
     try {
+      // Load user's own posts
       const postsRootRef = ref(database, 'posts');
       const postsByUserQuery = query(postsRootRef, orderByChild('userId'), equalTo(targetUserId));
       const snapshot = await get(postsByUserQuery);
+      const postsList = [];
       if (snapshot.exists()) {
-        const postsList = [];
         snapshot.forEach(child => {
-          postsList.push({ id: child.key, ...child.val() });
+          postsList.push({ id: child.key, ...child.val(), _displayTimestamp: child.val()?.createdAt || child.val()?.timestamp || 0 });
         });
-        postsList.sort((a, b) => (b.createdAt || b.timestamp || 0) - (a.createdAt || a.timestamp || 0));
-        setPosts(postsList);
-      } else {
-        setPosts([]);
       }
+
+      // Load reposts made by this user
+      const userRepostsRef = ref(database, `userReposts/${targetUserId}`);
+      const repostsSnap = await get(userRepostsRef);
+      if (repostsSnap.exists()) {
+        const repostEntries = Object.entries(repostsSnap.val()); // [postId, timestamp]
+        // Fetch each original post
+        const fetches = repostEntries.map(async ([postId, repostedAt]) => {
+          const postRef = ref(database, `posts/${postId}`);
+          const postSnap = await get(postRef);
+          if (postSnap.exists()) {
+            const val = postSnap.val();
+            return {
+              id: postId,
+              ...val,
+              repostedBy: targetUserId,
+              repostedAt: Number(repostedAt) || Date.now(),
+              _displayTimestamp: Number(repostedAt) || val.createdAt || val.timestamp || 0,
+              _isRepost: true,
+              _originalAuthorId: val.userId
+            };
+          }
+          return null;
+        });
+        const reposts = (await Promise.all(fetches)).filter(Boolean);
+        // Resolve original author usernames for reposts
+        try {
+          const uniqueAuthorIds = Array.from(new Set(reposts.map(r => r._originalAuthorId).filter(Boolean)));
+          const authorProfiles = await Promise.all(uniqueAuthorIds.map(async (uid) => ({ uid, profile: await getUserById(uid) })));
+          const mapUsername = new Map(authorProfiles.map(({ uid, profile }) => [uid, profile?.username || '']));
+          reposts.forEach(r => {
+            r.originalAuthorUsername = mapUsername.get(r._originalAuthorId) || '';
+          });
+        } catch (e) {
+          // ignore lookup errors
+        }
+        postsList.push(...reposts);
+      }
+
+      // Sort combined list by display timestamp desc
+      postsList.sort((a, b) => (b._displayTimestamp || b.createdAt || b.timestamp || 0) - (a._displayTimestamp || a.createdAt || a.timestamp || 0));
+      setPosts(postsList);
     } catch (error) {
       console.error('Error loading posts:', error);
     }
@@ -1259,6 +1298,15 @@ const [formData, setFormData] = useState({
                       )}
                     </div>
                     <div className="post-content">
+                      {post._isRepost && (
+                        <div className="repost-banner" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#777', fontSize: 12, marginBottom: 6 }}>
+                          <i className="fas fa-retweet" aria-hidden="true"></i>
+                          <span>Repostado de <strong>@{post.originalAuthorUsername || 'usuario'}</strong></span>
+                          {post.repostedAt && (
+                            <span>· {new Date(post.repostedAt).toLocaleString('pt-BR')}</span>
+                          )}
+                        </div>
+                      )}
                       <p>{post.content}</p>
                           {post.images && post.images.length > 0 && (
                         <div className="post-image-container">

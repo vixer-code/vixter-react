@@ -99,10 +99,7 @@ const Header = () => {
           <ul className="nav-links">
             <li><Link to="/vixies" className={isActive('/vixies') ? 'active' : ''}>Vixies</Link></li>
             <li><Link to="/vixink" className={isActive('/vixink') ? 'active' : ''}>Vixink</Link></li>
-            <li><Link to="/feed" className={isActive('/feed') ? 'active' : ''}>Comunidade</Link></li>
-            {currentUser && (
-              <li><Link to="/messages" className={isActive('/messages') ? 'active' : ''}>Mensagens</Link></li>
-            )}
+            <li><Link to="/feed" className={isActive('/feed') ? 'active' : ''}>Feed</Link></li>
             
             {!currentUser ? (
               <>
@@ -260,6 +257,9 @@ const Header = () => {
                     >
                       <i className="fas fa-user"></i> Minha conta
                     </Link>
+                    <Link to="/messages">
+                      <i className="fas fa-envelope"></i> Mensagens
+                    </Link>
                     <Link 
                       to="/profile#services" 
                       onClick={(e) => {
@@ -320,13 +320,9 @@ const Header = () => {
             <i className="fas fa-link"></i>Vixink
           </Link></li>
           <li><Link to="/feed" className={isActive('/feed') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
-            <i className="fas fa-comments"></i>Comunidade
+            <i className="fas fa-comments"></i>Feed
           </Link></li>
-          {currentUser && (
-            <li><Link to="/messages" className={isActive('/messages') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
-              <i className="fas fa-envelope"></i>Mensagens
-            </Link></li>
-          )}
+          
           
           {!currentUser ? (
             <>
@@ -355,6 +351,9 @@ const Header = () => {
                 }}
               >
                 <i className="fas fa-user"></i>Minha conta
+              </Link></li>
+              <li><Link to="/messages" className={isActive('/messages') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
+                <i className="fas fa-envelope"></i>Mensagens
               </Link></li>
               <li><Link 
                 to="/profile#services" 
