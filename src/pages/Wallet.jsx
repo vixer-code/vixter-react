@@ -1303,6 +1303,7 @@ const Wallet = () => {
               </button>
             </div>
           )}
+          )}
         </div>
       </div>
 
