@@ -525,53 +525,33 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
         currency: 'VC' // Indicates prices are in VC
       };
 
-      // Create or update service via Cloud Functions (Firestore)
+      // Prepare service data with file references for R2 upload
+      const serviceDataWithFiles = {
+        ...baseServiceData,
+        createdAt: Date.now(),
+        // Pass files for R2 upload
+        coverImageFile: coverImageFile,
+        sampleImageFiles: showcasePhotoFiles,
+        sampleVideoFiles: showcaseVideoFiles,
+        // Keep existing URLs for editing
+        existingCoverImage: formData.coverImage,
+        existingShowcasePhotos: formData.showcasePhotos,
+        existingShowcaseVideos: formData.showcaseVideos
+      };
+
+      // Create or update service via Cloud Functions (Firestore) with R2 upload
       let serviceId = editingService?.id;
       if (editingService) {
         // Update basic fields first
         await updateService(serviceId, baseServiceData);
       } else {
-        const result = await createService({ ...baseServiceData, createdAt: Date.now() });
+        const result = await createService(serviceDataWithFiles);
         if (!result || !result.success || !result.serviceId) {
           throw new Error('Falha ao criar serviço');
         }
         serviceId = result.serviceId;
       }
       console.log(`🔑 ServiceID: ${serviceId}`);
-
-      // Upload cover image to R2
-      if (coverImageFile) {
-        console.log('📷 Uploading cover image to R2...');
-        const coverResult = await uploadServiceMedia(coverImageFile, serviceId);
-        baseServiceData.coverImageURL = coverResult.publicUrl;
-        console.log('✅ Cover image uploaded:', baseServiceData.coverImageURL);
-      } else if (formData.coverImage) {
-        baseServiceData.coverImageURL = formData.coverImage;
-        console.log('📷 Reusing existing cover image:', baseServiceData.coverImageURL);
-      }
-
-      // Upload showcase photos to R2
-      const photoUrls = [...formData.showcasePhotos];
-      for (let i = 0; i < showcasePhotoFiles.length; i++) {
-        console.log(`📸 Uploading showcase photo ${i + 1} to R2...`);
-        const photoResult = await uploadServiceMedia(showcasePhotoFiles[i], serviceId);
-        photoUrls.push(photoResult.publicUrl);
-        console.log(`✅ Showcase photo ${i + 1} uploaded:`, photoResult.publicUrl);
-      }
-      baseServiceData.showcasePhotosURLs = photoUrls;
-
-      // Upload showcase videos to R2
-      const videoUrls = [...formData.showcaseVideos];
-      for (let i = 0; i < showcaseVideoFiles.length; i++) {
-        console.log(`🎥 Uploading showcase video ${i + 1} to R2...`);
-        const videoResult = await uploadServiceMedia(showcaseVideoFiles[i], serviceId);
-        videoUrls.push(videoResult.publicUrl);
-        console.log(`✅ Showcase video ${i + 1} uploaded:`, videoResult.publicUrl);
-      }
-      baseServiceData.showcaseVideosURLs = videoUrls;
-
-      // Update service with final data including media URLs
-      await updateService(serviceId, baseServiceData);
       showSuccess(editingService ? 'Serviço atualizado com sucesso!' : 'Serviço criado com sucesso!');
 
       // Clear draft after successful creation/update

@@ -95,7 +95,7 @@ class MediaService {
   /**
    * Generate download URL for media
    */
-  async generateDownloadUrl(key, watermarked = false) {
+  async generateDownloadUrl(key, watermarked = false, userId = null, packId = null) {
     try {
       const token = await this.getAuthToken();
       
@@ -108,6 +108,8 @@ class MediaService {
         body: JSON.stringify({
           key,
           watermarked,
+          userId,
+          packId,
           expiresIn: 3600, // 1 hour
         }),
       });
@@ -123,6 +125,49 @@ class MediaService {
       console.error('Error generating download URL:', error);
       throw error;
     }
+  }
+
+  /**
+   * Generate secure pack content URL with user-specific watermark
+   */
+  async generatePackContentUrl(key, userId, packId, orderId = null) {
+    try {
+      const token = await this.getAuthToken();
+      
+      const response = await fetch(`${this.backendUrl}/api/media/pack-content`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          key,
+          userId,
+          packId,
+          orderId,
+          expiresIn: 7200, // 2 hours
+          singleUse: true, // URL expires after first use
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate pack content URL');
+      }
+
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('Error generating pack content URL:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate service media URL (fixed, no watermark)
+   */
+  async generateServiceMediaUrl(key) {
+    return await this.generateDownloadUrl(key, false);
   }
 
   /**
@@ -169,7 +214,7 @@ class MediaService {
   }
 
   /**
-   * Get watermarked download URL for pack content
+   * Get watermarked download URL for pack content (legacy - use generatePackContentUrl for new implementation)
    */
   async getPackContentUrl(key) {
     return await this.generateDownloadUrl(key, true);
@@ -179,7 +224,7 @@ class MediaService {
    * Get regular download URL for service media
    */
   async getServiceMediaUrl(key) {
-    return await this.generateDownloadUrl(key, false);
+    return await this.generateServiceMediaUrl(key);
   }
 }
 

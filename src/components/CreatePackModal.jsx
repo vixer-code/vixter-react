@@ -342,74 +342,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     setUploadingFiles(true);
 
     try {
-      // Create or update pack via Cloud Functions (Firestore)
-      let packId = editingPack?.id;
-      if (editingPack) {
-        await updatePack(packId, {}); // ensure pack exists; fields will be updated below
-      } else {
-        const result = await createPack({
-          title: formData.title.trim(),
-          description: formData.description.trim(),
-          category: formData.category,
-          subcategory: formData.subcategory || '',
-          packType: formData.packType,
-          price: parseFloat(formData.price),
-          discount: parseInt(formData.discount || 0, 10) || 0,
-          features: formData.features,
-          tags: formData.tags,
-          createdAt: Date.now(),
-          isActive: true
-        });
-        if (!result || !result.success || !result.packId) throw new Error('Falha ao criar pack');
-        packId = result.packId;
-      }
-
-      // Upload cover image to R2
-      let coverImageURL = formData.coverImage || '';
-      if (coverImageFile) {
-        console.log('📷 Uploading cover image to R2...');
-        const coverResult = await uploadPackMedia(coverImageFile, packId);
-        coverImageURL = coverResult.publicUrl;
-        console.log('✅ Cover image uploaded:', coverImageURL);
-      }
-
-      // Upload sample images to R2
-      const sampleImages = [...formData.sampleImages];
-      for (let i = 0; i < sampleImageFiles.length; i++) {
-        console.log(`📸 Uploading sample image ${i + 1} to R2...`);
-        const imageResult = await uploadPackMedia(sampleImageFiles[i], packId);
-        sampleImages.push(imageResult.publicUrl);
-        console.log(`✅ Sample image ${i + 1} uploaded:`, imageResult.publicUrl);
-      }
-
-      // Upload sample videos to R2
-      const sampleVideos = [...formData.sampleVideos];
-      for (let i = 0; i < sampleVideoFiles.length; i++) {
-        console.log(`🎥 Uploading sample video ${i + 1} to R2...`);
-        const videoResult = await uploadPackMedia(sampleVideoFiles[i], packId);
-        sampleVideos.push(videoResult.publicUrl);
-        console.log(`✅ Sample video ${i + 1} uploaded:`, videoResult.publicUrl);
-      }
-
-      // Pack files (downloadable content) - TODO: Implement signed URLs for paid content
-      let packContentURLs = [...(formData.packContent || [])];
-      // For now, we'll just store the file names/info, not actual data URLs
-      // Pack content will be handled separately with signed URLs for buyers
-      for (let i = 0; i < packFiles.length; i++) {
-        const f = packFiles[i];
-        packContentURLs.push({
-          name: f.name,
-          size: f.size,
-          type: f.type,
-          // TODO: Store file in secure location and provide signed URLs to buyers
-          placeholder: `pack-file-${i}-${f.name}`
-        });
-        console.log(`📦 Pack file ${i + 1} prepared: ${f.name}`);
-      }
-
-      // Prepare data to save (mirror create-pack.js fields)
-      const packData = {
-        id: packId,
+      // Prepare pack data with file references for R2 upload
+      const packDataWithFiles = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         category: formData.category,
@@ -419,28 +353,34 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         discount: parseInt(formData.discount || 0, 10) || 0,
         features: formData.features,
         tags: formData.tags,
-        licenseOptions:
-          formData.packType === 'nao-download' ? formData.licenseOptions : [],
-        coverImage: coverImageURL,
-        sampleImages,
-        sampleVideos,
-        packContent: packContentURLs,
-        createdAt: editingPack ? (editingPack.createdAt || Date.now()) : Date.now(),
-        updatedAt: Date.now(),
-        status: 'active'
+        createdAt: Date.now(),
+        isActive: true,
+        // Pass files for R2 upload
+        coverImageFile: coverImageFile,
+        sampleImageFiles: sampleImageFiles,
+        sampleVideoFiles: sampleVideoFiles,
+        packFiles: packFiles,
+        // Keep existing URLs for editing
+        existingCoverImage: formData.coverImage,
+        existingSampleImages: formData.sampleImages,
+        existingSampleVideos: formData.sampleVideos,
+        existingPackContent: formData.packContent
       };
 
-      // Add processing status
-      packData.mediaProcessing = {
-        status: 'processing',
-        lastUpdate: Date.now()
-      };
+      // Create or update pack via Cloud Functions (Firestore) with R2 upload
+      let packId = editingPack?.id;
+      if (editingPack) {
+        await updatePack(packId, {}); // ensure pack exists; fields will be updated below
+      } else {
+        const result = await createPack(packDataWithFiles);
+        if (!result || !result.success || !result.packId) throw new Error('Falha ao criar pack');
+        packId = result.packId;
+      }
 
-      // Persist fields via Cloud Function update
-      await updatePack(packId, packData);
+      // Pack creation/update is handled by the context with R2 upload
       showSuccess(editingPack ? 'Pack atualizado com sucesso! As mídias estão sendo processadas em segundo plano.' : 'Pack criado com sucesso! As mídias estão sendo processadas em segundo plano.');
 
-      onPackCreated && onPackCreated(packData);
+      onPackCreated && onPackCreated({ id: packId, ...packDataWithFiles });
       clearForm();
       onClose && onClose();
     } catch (err) {

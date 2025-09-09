@@ -7,6 +7,8 @@ import { ref, get, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { Link, useNavigate } from 'react-router-dom';
 import SmartMediaViewer from '../components/SmartMediaViewer';
+import PackContentViewer from '../components/PackContentViewer';
+import ServiceMediaViewer from '../components/ServiceMediaViewer';
 import CachedImage from '../components/CachedImage';
 import './MyPurchases.css';
 
@@ -21,6 +23,8 @@ const MyPurchases = () => {
   const [purchasedServices, setPurchasedServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [viewingPack, setViewingPack] = useState(null);
+  const [viewingService, setViewingService] = useState(null);
 
   // Redirect if not a client
   useEffect(() => {
@@ -130,6 +134,22 @@ const MyPurchases = () => {
       console.error('Error accessing conversation:', error);
       showError('Erro ao acessar conversa');
     }
+  };
+
+  const handleViewPackContent = (pack) => {
+    setViewingPack(pack);
+  };
+
+  const handleViewServiceMedia = (service) => {
+    setViewingService(service);
+  };
+
+  const handleClosePackViewer = () => {
+    setViewingPack(null);
+  };
+
+  const handleCloseServiceViewer = () => {
+    setViewingService(null);
   };
 
   const getFilteredPurchases = () => {
@@ -343,22 +363,31 @@ const MyPurchases = () => {
 
                 <div className="purchase-actions">
                   {isService && (
-                    <button 
-                      className="btn-primary"
-                      onClick={() => handleViewService(purchase)}
-                    >
-                      <i className="fas fa-comments"></i>
-                      Ver Serviço
-                    </button>
+                    <>
+                      <button 
+                        className="btn-primary"
+                        onClick={() => handleViewService(purchase)}
+                      >
+                        <i className="fas fa-comments"></i>
+                        Ver Serviço
+                      </button>
+                      <button 
+                        className="btn-secondary"
+                        onClick={() => handleViewServiceMedia(purchase.service)}
+                      >
+                        <i className="fas fa-images"></i>
+                        Ver Mídias
+                      </button>
+                    </>
                   )}
                   
                   {isPack && (
                     <button 
                       className="btn-secondary"
-                      onClick={() => window.open(`/pack/${purchase.packId}`, '_blank')}
+                      onClick={() => handleViewPackContent(purchase.pack)}
                     >
-                      <i className="fas fa-external-link-alt"></i>
-                      Ver Pack
+                      <i className="fas fa-eye"></i>
+                      Ver Conteúdo
                     </button>
                   )}
 
@@ -381,6 +410,23 @@ const MyPurchases = () => {
           })
         )}
       </div>
+
+      {/* Pack Content Viewer */}
+      {viewingPack && (
+        <PackContentViewer
+          pack={viewingPack}
+          orderId={viewingPack.orderId}
+          onClose={handleClosePackViewer}
+        />
+      )}
+
+      {/* Service Media Viewer */}
+      {viewingService && (
+        <ServiceMediaViewer
+          service={viewingService}
+          onClose={handleCloseServiceViewer}
+        />
+      )}
     </div>
   );
 };

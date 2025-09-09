@@ -62,11 +62,23 @@ export const useR2Media = () => {
   /**
    * Gerar URL de download (com ou sem watermark)
    */
-  const getDownloadUrl = useCallback(async (key, watermarked = false) => {
+  const getDownloadUrl = useCallback(async (key, watermarked = false, userId = null, packId = null) => {
     try {
-      return await mediaService.generateDownloadUrl(key, watermarked);
+      return await mediaService.generateDownloadUrl(key, watermarked, userId, packId);
     } catch (error) {
       console.error('Error generating download URL:', error);
+      throw error;
+    }
+  }, []);
+
+  /**
+   * Gerar URL segura de conteúdo de pack com watermark específico do usuário
+   */
+  const generateSecurePackContentUrl = useCallback(async (key, userId, packId, orderId = null) => {
+    try {
+      return await mediaService.generatePackContentUrl(key, userId, packId, orderId);
+    } catch (error) {
+      console.error('Error generating secure pack content URL:', error);
       throw error;
     }
   }, []);
@@ -117,6 +129,7 @@ export const useR2Media = () => {
     uploadFile,
     uploadMultipleFiles,
     getDownloadUrl,
+    generateSecurePackContentUrl,
     deleteMedia,
     uploadPackMedia,
     uploadServiceMedia,
