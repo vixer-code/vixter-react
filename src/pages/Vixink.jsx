@@ -29,24 +29,6 @@ const Vixink = () => {
     { value: 'other', label: 'Outros' }
   ];
 
-  useEffect(() => {
-    let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
-
-    const initializeData = async () => {
-      postsUnsubscribe = loadPosts();
-      usersUnsubscribe = loadUsers();
-      followingUnsubscribe = loadFollowing();
-    };
-
-    initializeData();
-
-    return () => {
-      if (postsUnsubscribe) postsUnsubscribe();
-      if (usersUnsubscribe) usersUnsubscribe();
-      if (followingUnsubscribe) followingUnsubscribe();
-    };
-  }, [currentUser, loadPosts, loadUsers, loadFollowing]);
-
   const loadPosts = useCallback(() => {
     const postsRef = ref(database, 'vixink_posts');
     const postsQuery = query(postsRef, orderByChild('timestamp'));
@@ -96,6 +78,24 @@ const Vixink = () => {
 
     return unsubscribe;
   }, [currentUser]);
+
+  useEffect(() => {
+    let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
+
+    const initializeData = async () => {
+      postsUnsubscribe = loadPosts();
+      usersUnsubscribe = loadUsers();
+      followingUnsubscribe = loadFollowing();
+    };
+
+    initializeData();
+
+    return () => {
+      if (postsUnsubscribe) postsUnsubscribe();
+      if (usersUnsubscribe) usersUnsubscribe();
+      if (followingUnsubscribe) followingUnsubscribe();
+    };
+  }, [currentUser, loadPosts, loadUsers, loadFollowing]);
 
   const handlePostCreated = useCallback(() => {
     // Refresh posts or perform any other action after post creation
