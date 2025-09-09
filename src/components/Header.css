@@ -22,6 +22,13 @@ nav {
   margin: 0 auto;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
 .logo {
   font-size: 1.8rem;
   font-weight: 800;
@@ -67,6 +74,12 @@ nav {
   flex: 1;
   max-width: 400px;
   margin: 0 20px;
+}
+
+.mobile-search-bar {
+  display: none;
+  flex: 1;
+  max-width: 200px;
 }
 
 .mobile-search-container {
@@ -758,6 +771,10 @@ header .vp-balance .vp-icon svg,
     display: none;
   }
   
+  .mobile-search-bar {
+    display: flex !important;
+  }
+  
   .mobile-menu-btn {
     display: flex !important;
     font-size: 1.2rem;
@@ -808,6 +825,10 @@ header .vp-balance .vp-icon svg,
   .logo-icon {
     width: 24px;
     height: 24px;
+  }
+  
+  .mobile-search-bar {
+    max-width: 150px;
   }
   
   .mobile-menu-btn {

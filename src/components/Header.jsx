@@ -92,10 +92,17 @@ const Header = () => {
     <>
       <header>
         <nav>
-          <Link to="/" className="logo">
-            <img src="/images/Flor-Colorida.png" alt="Vixter logo" className="logo-icon" fetchpriority="high" />
-            <span>Vixter</span>
-          </Link>
+          <div className="header-left">
+            <Link to="/" className="logo">
+              <img src="/images/Flor-Colorida.png" alt="Vixter logo" className="logo-icon" fetchpriority="high" />
+              <span>Vixter</span>
+            </Link>
+            
+            {/* Mobile Search Bar - Only visible on mobile */}
+            <div className="mobile-search-bar">
+              <SearchBar />
+            </div>
+          </div>
 
           <ul className="nav-links">
             <li><Link to="/vixies" className={isActive('/vixies') ? 'active' : ''}>Vixies</Link></li>
@@ -322,11 +329,6 @@ const Header = () => {
           <li><Link to="/feed" className={isActive('/feed') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
             <i className="fas fa-comments"></i>Feed
           </Link></li>
-          
-          {/* Mobile Search */}
-          <li className="mobile-search-container">
-            <SearchBar />
-          </li>
           
           
           {!currentUser ? (
