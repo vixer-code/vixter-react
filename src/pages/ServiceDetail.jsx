@@ -52,9 +52,10 @@ const ServiceDetail = () => {
 
   const handleFeatureToggle = (feature) => {
     setSelectedFeatures(prev => {
-      const isSelected = prev.find(f => f.id === feature.id);
+      const featureId = feature.id || feature.title || feature.name;
+      const isSelected = prev.find(f => (f.id || f.title || f.name) === featureId);
       if (isSelected) {
-        return prev.filter(f => f.id !== feature.id);
+        return prev.filter(f => (f.id || f.title || f.name) !== featureId);
       } else {
         return [...prev, feature];
       }
@@ -63,8 +64,12 @@ const ServiceDetail = () => {
 
   const calculateTotal = () => {
     if (!service) return 0;
-    const featuresTotal = selectedFeatures.reduce((total, feature) => total + feature.price, 0);
-    return service.price + featuresTotal;
+    const featuresTotal = selectedFeatures.reduce((total, feature) => {
+      const price = feature.price || feature.vpAmount || 0;
+      return total + (isNaN(price) ? 0 : price);
+    }, 0);
+    const basePrice = isNaN(service.price) ? 0 : service.price;
+    return basePrice + featuresTotal;
   };
 
   const handlePurchase = async () => {
@@ -103,12 +108,11 @@ const ServiceDetail = () => {
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 0
-    }).format(amount);
+  const formatVP = (amount) => {
+    if (isNaN(amount) || amount === null || amount === undefined) {
+      return '0 VP';
+    }
+    return `${amount} VP`;
   };
 
   if (loading) {
@@ -153,13 +157,40 @@ const ServiceDetail = () => {
               </div>
             </div>
             <div className="service-price">
-              <span className="price-amount">{formatCurrency(service.price)}</span>
-              <span className="price-currency">VP</span>
+              <span className="price-amount">{formatVP(service.price)}</span>
             </div>
           </div>
 
           <div className="service-images">
-            {service.images && service.images.length > 0 ? (
+            {/* Cover Image */}
+            {service.coverImage?.publicUrl && (
+              <div className="image-gallery">
+                <CachedImage
+                  src={service.coverImage.publicUrl}
+                  alt={`${service.title} - Imagem principal`}
+                  className="service-image"
+                  showLoading={true}
+                />
+              </div>
+            )}
+            
+            {/* Sample Images */}
+            {service.sampleImages && service.sampleImages.length > 0 && (
+              <div className="image-gallery">
+                {service.sampleImages.map((image, index) => (
+                  <CachedImage
+                    key={index}
+                    src={image.publicUrl}
+                    alt={`${service.title} - Imagem ${index + 1}`}
+                    className="service-image"
+                    showLoading={true}
+                  />
+                ))}
+              </div>
+            )}
+            
+            {/* Fallback for old structure */}
+            {service.images && service.images.length > 0 && !service.coverImage && !service.sampleImages && (
               <div className="image-gallery">
                 {service.images.map((image, index) => (
                   <CachedImage
@@ -171,7 +202,10 @@ const ServiceDetail = () => {
                   />
                 ))}
               </div>
-            ) : (
+            )}
+            
+            {/* No images fallback */}
+            {!service.coverImage && !service.sampleImages && (!service.images || service.images.length === 0) && (
               <div className="no-image">
                 <i className="fas fa-image"></i>
                 <span>Nenhuma imagem disponível</span>
@@ -184,52 +218,56 @@ const ServiceDetail = () => {
             <p>{service.description}</p>
           </div>
 
-          {service.features && service.features.length > 0 && (
+          {service.additionalFeatures && service.additionalFeatures.length > 0 && (
             <div className="service-features">
-              <h3>Recursos Disponíveis</h3>
+              <h3>Recursos Complementares</h3>
               <div className="features-list">
-                {service.features.map((feature, index) => (
-                  <div 
-                    key={index}
-                    className={`feature-item ${selectedFeatures.find(f => f.id === feature.id) ? 'selected' : ''}`}
-                    onClick={() => handleFeatureToggle(feature)}
-                  >
-                    <div className="feature-info">
-                      <h4>{feature.name}</h4>
-                      <p>{feature.description}</p>
+                {service.additionalFeatures.map((feature, index) => {
+                  const featureId = feature.id || feature.title || feature.name;
+                  const isSelected = selectedFeatures.find(f => (f.id || f.title || f.name) === featureId);
+                  return (
+                    <div 
+                      key={featureId || index}
+                      className={`feature-item ${isSelected ? 'selected' : ''}`}
+                      onClick={() => handleFeatureToggle(feature)}
+                    >
+                      <div className="feature-info">
+                        <h4>{feature.name || feature.title}</h4>
+                        <p>{feature.description || feature.desc}</p>
+                      </div>
+                      <div className="feature-price">
+                        +{formatVP(feature.price || feature.vpAmount || 0)}
+                      </div>
+                      <div className="feature-checkbox">
+                        <i className={`fas fa-${isSelected ? 'check' : 'plus'}`}></i>
+                      </div>
                     </div>
-                    <div className="feature-price">
-                      +{formatCurrency(feature.price)} VP
-                    </div>
-                    <div className="feature-checkbox">
-                      <i className={`fas fa-${selectedFeatures.find(f => f.id === feature.id) ? 'check' : 'plus'}`}></i>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
 
           <div className="service-provider">
-            <h3>Provedor</h3>
+            <h3>Vendedor(a)</h3>
             <div className="provider-info">
               <CachedImage
-                src={service.providerAvatar}
-                alt={service.providerName}
+                src={service.providerAvatar || service.providerPhotoURL}
+                alt={service.providerName || service.sellerName}
                 className="provider-avatar"
                 showLoading={false}
               />
               <div className="provider-details">
-                <h4>{service.providerName}</h4>
-                <p>@{service.providerUsername}</p>
+                <h4>{service.providerName || service.sellerName}</h4>
+                <p>@{service.providerUsername || service.sellerUsername || 'usuário'}</p>
                 <div className="provider-stats">
                   <span>
                     <i className="fas fa-star"></i>
-                    {service.providerRating || 'N/A'}
+                    {service.providerRating || service.sellerRating || 'N/A'}
                   </span>
                   <span>
                     <i className="fas fa-check-circle"></i>
-                    {service.providerCompletedOrders || 0} serviços concluídos
+                    {service.providerCompletedOrders || service.sellerCompletedOrders || 0} serviços concluídos
                   </span>
                 </div>
               </div>
@@ -244,17 +282,17 @@ const ServiceDetail = () => {
               <div className="price-breakdown">
                 <div className="price-item">
                   <span>Preço base</span>
-                  <span>{formatCurrency(service.price)} VP</span>
+                  <span>{formatVP(service.price)}</span>
                 </div>
                 {selectedFeatures.map((feature, index) => (
                   <div key={index} className="price-item feature-price-item">
-                    <span>{feature.name}</span>
-                    <span>+{formatCurrency(feature.price)} VP</span>
+                    <span>{feature.name || feature.title}</span>
+                    <span>+{formatVP(feature.price || feature.vpAmount || 0)}</span>
                   </div>
                 ))}
                 <div className="price-total">
                   <span>Total</span>
-                  <span>{formatCurrency(calculateTotal())} VP</span>
+                  <span>{formatVP(calculateTotal())}</span>
                 </div>
               </div>
             </div>
@@ -311,17 +349,17 @@ const ServiceDetail = () => {
               <div className="price-breakdown">
                 <div className="price-item">
                   <span>Preço base</span>
-                  <span>{formatCurrency(service.price)} VP</span>
+                  <span>{formatVP(service.price)}</span>
                 </div>
                 {selectedFeatures.map((feature, index) => (
                   <div key={index} className="price-item">
-                    <span>{feature.name}</span>
-                    <span>+{formatCurrency(feature.price)} VP</span>
+                    <span>{feature.name || feature.title}</span>
+                    <span>+{formatVP(feature.price || feature.vpAmount || 0)}</span>
                   </div>
                 ))}
                 <div className="price-total">
                   <span>Total a pagar</span>
-                  <span>{formatCurrency(calculateTotal())} VP</span>
+                  <span>{formatVP(calculateTotal())}</span>
                 </div>
               </div>
 
