@@ -18,6 +18,7 @@ const Vixink = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('main'); // main | following
+  const [dismissedClientRestriction, setDismissedClientRestriction] = useState(false);
 
   const categories = [
     { value: 'all', label: 'Todos' },
@@ -252,13 +253,23 @@ const Vixink = () => {
         <div className="vixink-sidebar">
           <div className="create-post-section">
             {currentUser ? (
-              userProfile?.accountType === 'client' ? (
-                <div className="client-restriction">
-                  <h3>Visualização apenas</h3>
-                  <p>Contas de cliente podem apenas visualizar o feed. Para criar conteúdo, faça upgrade para uma conta de criador.</p>
-                  <Link to="/profile" className="upgrade-btn">
-                    Ver Perfil
-                  </Link>
+              userProfile?.accountType === 'client' && !dismissedClientRestriction ? (
+                <div className="client-restriction subtle">
+                  <div className="restriction-content">
+                    <div className="restriction-icon">
+                      <i className="fas fa-eye"></i>
+                    </div>
+                    <div className="restriction-text">
+                      <p>Modo visualização - Apenas visualizar conteúdo</p>
+                    </div>
+                    <button 
+                      className="dismiss-btn"
+                      onClick={() => setDismissedClientRestriction(true)}
+                      title="Fechar"
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <PostCreator
