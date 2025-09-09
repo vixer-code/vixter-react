@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -44,21 +44,25 @@ const Vixies = () => {
       setLoading(false);
       return;
     }
-    loadPosts();
-    loadUsers();
-    loadFollowing();
+
+    let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
+
+    const initializeData = async () => {
+      postsUnsubscribe = loadPosts();
+      usersUnsubscribe = loadUsers();
+      followingUnsubscribe = loadFollowing();
+    };
+
+    initializeData();
 
     return () => {
-      const postsRef = ref(database, 'vixiesPosts');
-      const usersRef = ref(database, 'users');
-      const followingRef = ref(database, `users/${currentUser?.uid}/following`);
-      off(postsRef);
-      off(usersRef);
-      off(followingRef);
+      if (postsUnsubscribe) postsUnsubscribe();
+      if (usersUnsubscribe) usersUnsubscribe();
+      if (followingUnsubscribe) followingUnsubscribe();
     };
-  }, [userProfile, currentUser]);
+  }, [userProfile, currentUser, loadPosts, loadUsers, loadFollowing]);
 
-  const loadPosts = () => {
+  const loadPosts = useCallback(() => {
     const postsRef = ref(database, 'vixiesPosts');
     const postsQuery = query(postsRef, orderByChild('timestamp'));
 
@@ -79,9 +83,9 @@ const Vixies = () => {
     });
 
     return unsubscribe;
-  };
+  }, []);
 
-  const loadUsers = () => {
+  const loadUsers = useCallback(() => {
     const usersRef = ref(database, 'users');
     const unsubscribe = onValue(usersRef, (snapshot) => {
       const usersData = {};
@@ -92,9 +96,9 @@ const Vixies = () => {
     });
 
     return unsubscribe;
-  };
+  }, []);
 
-  const loadFollowing = () => {
+  const loadFollowing = useCallback(() => {
     if (!currentUser) return;
     const followingRef = ref(database, `users/${currentUser.uid}/following`);
     const unsubscribe = onValue(followingRef, (snapshot) => {
@@ -106,12 +110,12 @@ const Vixies = () => {
     });
 
     return unsubscribe;
-  };
+  }, [currentUser]);
 
-  const handlePostCreated = () => {
+  const handlePostCreated = useCallback(() => {
     // Refresh posts or perform any other action after post creation
     loadPosts();
-  };
+  }, [loadPosts]);
 
   const likePost = async (postId, currentLikes, likedBy) => {
     if (!currentUser) return;
@@ -271,24 +275,38 @@ const Vixies = () => {
         <div className="vixies-sidebar">
           <div className="create-post-section">
             {currentUser ? (
-              userProfile?.accountType === 'client' && !dismissedClientRestriction ? (
-                <div className="client-restriction subtle">
-                  <div className="restriction-content">
-                    <div className="restriction-icon">
-                      <i className="fas fa-eye"></i>
+              userProfile?.accountType === 'client' ? (
+                !dismissedClientRestriction ? (
+                  <div className="client-restriction subtle">
+                    <div className="restriction-content">
+                      <div className="restriction-icon">
+                        <i className="fas fa-eye"></i>
+                      </div>
+                      <div className="restriction-text">
+                        <p>Modo visualização - Apenas visualizar conteúdo</p>
+                      </div>
+                      <button 
+                        className="dismiss-btn"
+                        onClick={() => setDismissedClientRestriction(true)}
+                        title="Fechar"
+                      >
+                        <i className="fas fa-times"></i>
+                      </button>
                     </div>
-                    <div className="restriction-text">
-                      <p>Modo visualização - Apenas visualizar conteúdo</p>
-                    </div>
-                    <button 
-                      className="dismiss-btn"
-                      onClick={() => setDismissedClientRestriction(true)}
-                      title="Fechar"
-                    >
-                      <i className="fas fa-times"></i>
-                    </button>
                   </div>
-                </div>
+                ) : (
+                  <div className="client-feed-only">
+                    <div className="feed-only-content">
+                      <div className="feed-only-icon">
+                        <i className="fas fa-eye"></i>
+                      </div>
+                      <div className="feed-only-text">
+                        <p>Modo visualização ativo</p>
+                        <small>Explore o conteúdo da comunidade</small>
+                      </div>
+                    </div>
+                  </div>
+                )
               ) : (
                 <PostCreator
                   mode="vixies"

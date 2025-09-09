@@ -292,6 +292,52 @@
   opacity: 1;
 }
 
+.client-feed-only {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.feed-only-content {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--accent-color), #00ffca);
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+  border-radius: 12px;
+  color: white;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.feed-only-icon {
+  color: white;
+  font-size: 18px;
+  opacity: 0.9;
+}
+
+.feed-only-text p {
+  color: white;
+  font-size: 14px;
+  margin: 0 0 4px 0;
+  font-weight: 600;
+}
+
+.feed-only-text small {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  margin: 0;
+}
+
 .filters-section {
   background: var(--bg-primary);
   border-radius: 16px;
