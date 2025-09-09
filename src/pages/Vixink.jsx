@@ -29,11 +29,13 @@ const Vixink = () => {
     { value: 'other', label: 'Outros' }
   ];
 
-  const loadPosts = useCallback(() => {
+  useEffect(() => {
+    let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
+
+    // Load posts
     const postsRef = ref(database, 'vixink_posts');
     const postsQuery = query(postsRef, orderByChild('timestamp'));
-
-    const unsubscribe = onValue(postsQuery, (snapshot) => {
+    postsUnsubscribe = onValue(postsQuery, (snapshot) => {
       const postsData = [];
       snapshot.forEach((childSnapshot) => {
         const post = {
@@ -49,12 +51,9 @@ const Vixink = () => {
       setLoading(false);
     });
 
-    return unsubscribe;
-  }, []);
-
-  const loadUsers = useCallback(() => {
+    // Load users
     const usersRef = ref(database, 'users');
-    const unsubscribe = onValue(usersRef, (snapshot) => {
+    usersUnsubscribe = onValue(usersRef, (snapshot) => {
       const usersData = {};
       snapshot.forEach((childSnapshot) => {
         usersData[childSnapshot.key] = childSnapshot.val();
@@ -62,45 +61,29 @@ const Vixink = () => {
       setUsers(usersData);
     });
 
-    return unsubscribe;
-  }, []);
-
-  const loadFollowing = useCallback(() => {
-    if (!currentUser) return;
-    const followingRef = ref(database, `users/${currentUser.uid}/following`);
-    const unsubscribe = onValue(followingRef, (snapshot) => {
-      const followingData = [];
-      snapshot.forEach((childSnapshot) => {
-        followingData.push(childSnapshot.key);
+    // Load following
+    if (currentUser) {
+      const followingRef = ref(database, `users/${currentUser.uid}/following`);
+      followingUnsubscribe = onValue(followingRef, (snapshot) => {
+        const followingData = [];
+        snapshot.forEach((childSnapshot) => {
+          followingData.push(childSnapshot.key);
+        });
+        setFollowing(followingData);
       });
-      setFollowing(followingData);
-    });
-
-    return unsubscribe;
-  }, [currentUser]);
-
-  useEffect(() => {
-    let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
-
-    const initializeData = async () => {
-      postsUnsubscribe = loadPosts();
-      usersUnsubscribe = loadUsers();
-      followingUnsubscribe = loadFollowing();
-    };
-
-    initializeData();
+    }
 
     return () => {
       if (postsUnsubscribe) postsUnsubscribe();
       if (usersUnsubscribe) usersUnsubscribe();
       if (followingUnsubscribe) followingUnsubscribe();
     };
-  }, [currentUser, loadPosts, loadUsers, loadFollowing]);
+  }, [currentUser]);
 
   const handlePostCreated = useCallback(() => {
     // Refresh posts or perform any other action after post creation
-    loadPosts();
-  }, [loadPosts]);
+    // The posts will be automatically updated via the real-time listener
+  }, []);
 
   const likePost = async (postId, currentLikes, likedBy) => {
     if (!currentUser) return;
