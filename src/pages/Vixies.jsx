@@ -223,7 +223,7 @@ const Vixies = () => {
 
   const calculateEngagementScore = (post) => {
     const likes = post.likes || 0;
-    const reposts = post.reposts || 0;
+    const reposts = post.repostCount || 0;
     const age = Date.now() - post.timestamp;
     const ageInHours = age / (1000 * 60 * 60);
     
