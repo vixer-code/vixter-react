@@ -128,6 +128,7 @@
       }
     },
     "vixink_posts": {
+      ".indexOn": ["timestamp", "userId"],
       ".read": "auth != null",
       ".write": "auth != null",
       "$postId": {
@@ -174,6 +175,7 @@
       }
     },
     "vixies_posts": {
+      ".indexOn": ["timestamp", "userId"],
       ".read": "auth != null",
       ".write": "auth != null",
       "$postId": {
@@ -223,6 +225,7 @@
       }
     },
     "packOrders": {
+      ".indexOn": ["buyerId"],
       ".read": "auth != null",
       ".write": "auth != null",
       "$orderId": {
@@ -253,7 +256,21 @@
         }
       }
     },
+    "posts": {
+      ".indexOn": ["userId", "timestamp"],
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "vixiesReposts": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "userReposts": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
     "serviceOrders": {
+      ".indexOn": ["buyerId"],
       ".read": "auth != null",
       ".write": "auth != null",
       "$orderId": {

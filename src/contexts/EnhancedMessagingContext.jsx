@@ -1188,7 +1188,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       try {
         // Get the service order status from Firestore
         const { doc, getDoc } = await import('firebase/firestore');
-        const { firestore } = await import('../config/firebase');
+        const { firestore } = await import('../../config/firebase');
         
         const serviceOrderRef = doc(firestore, 'serviceOrders', selectedConversation.serviceOrderId);
         const serviceOrderSnap = await getDoc(serviceOrderRef);

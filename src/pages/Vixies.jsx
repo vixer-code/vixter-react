@@ -43,7 +43,7 @@ const Vixies = () => {
     let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
 
     // Load posts
-    const postsRef = ref(database, 'vixiesPosts');
+    const postsRef = ref(database, 'vixies_posts');
     const postsQuery = query(postsRef, orderByChild('timestamp'));
     postsUnsubscribe = onValue(postsQuery, (snapshot) => {
       const postsData = [];
@@ -103,7 +103,7 @@ const Vixies = () => {
         ? (likedBy || []).filter(id => id !== currentUser.uid)
         : [...(likedBy || []), currentUser.uid];
       const newLikes = isLiked ? (currentLikes || 0) - 1 : (currentLikes || 0) + 1;
-      const postRef = ref(database, `vixiesPosts/${postId}`);
+      const postRef = ref(database, `vixies_posts/${postId}`);
       await set(postRef, { ...posts.find(p => p.id === postId), likes: newLikes, likedBy: newLikedBy });
     } catch (error) {
       console.error('Error liking post:', error);
