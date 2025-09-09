@@ -7,7 +7,7 @@ import { database } from '../../config/firebase';
 import { ref, onValue, off, query, orderByChild, set, update, push, get } from 'firebase/database';
 import { Link } from 'react-router-dom';
 import PostCreator from '../components/PostCreator';
-import './Vixink.css';
+import './Vixies.css';
 
 const Vixink = () => {
   const { currentUser } = useAuth();
@@ -17,18 +17,8 @@ const Vixink = () => {
   const [users, setUsers] = useState({});
   const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('main'); // main | following
   const [dismissedClientRestriction, setDismissedClientRestriction] = useState(false);
-
-  const categories = [
-    { value: 'all', label: 'Todos' },
-    { value: 'news', label: 'Notícias' },
-    { value: 'tutorial', label: 'Tutoriais' },
-    { value: 'review', label: 'Reviews' },
-    { value: 'guide', label: 'Guias' },
-    { value: 'other', label: 'Outros' }
-  ];
 
   useEffect(() => {
     let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
@@ -121,7 +111,6 @@ const Vixink = () => {
         authorUsername: userProfile?.username || '',
         content: post.content,
         timestamp: Date.now(),
-        category: post.category,
         media: post.media || null,
         mediaUrl: post.mediaUrl || null,
         mediaType: post.mediaType || null,
@@ -183,27 +172,6 @@ const Vixink = () => {
     return date.toLocaleDateString('pt-BR');
   };
 
-  const getCategoryIcon = (category) => {
-    const icons = {
-      news: 'fas fa-newspaper',
-      tutorial: 'fas fa-graduation-cap',
-      review: 'fas fa-star',
-      guide: 'fas fa-map',
-      other: 'fas fa-link'
-    };
-    return icons[category] || 'fas fa-link';
-  };
-
-  const getCategoryColor = (category) => {
-    const colors = {
-      news: '#ff6b6b',
-      tutorial: '#4ecdc4',
-      review: '#feca57',
-      guide: '#54a0ff',
-      other: '#5f27cd'
-    };
-    return colors[category] || '#5f27cd';
-  };
 
   const calculateEngagementScore = (post) => {
     const likes = post.likes || 0;
@@ -218,11 +186,6 @@ const Vixink = () => {
   };
 
   const filteredPosts = posts.filter(post => {
-    // Category filter
-    if (selectedCategory !== 'all' && post.category !== selectedCategory) {
-      return false;
-    }
-    
     // Following filter
     if (activeTab === 'following') {
       return following.includes(post.authorId);
@@ -243,23 +206,22 @@ const Vixink = () => {
 
   if (loading) {
     return (
-      <div className="vixink-container">
+      <div className="vixies-container">
         <div className="loading-spinner">Carregando posts...</div>
       </div>
     );
   }
 
   return (
-    <div className="vixink-container">
-      <div className="vixink-header">
-        <div className="vixink-title">
+    <div className="vixies-container">
+      <div className="vixies-header">
+        <div className="vixies-title">
           <h1>Vixink</h1>
-          <p>Compartilhe links, notícias e conteúdo interessante</p>
         </div>
       </div>
 
-      <div className="vixink-content">
-        <div className="vixink-tabs">
+      <div className="vixies-content">
+        <div className="vixies-tabs">
           <button 
             className={`tab-btn ${activeTab === 'main' ? 'active' : ''}`}
             onClick={() => setActiveTab('main')}
@@ -274,7 +236,7 @@ const Vixink = () => {
           </button>
         </div>
 
-        <div className="vixink-sidebar">
+        <div className="vixies-sidebar">
           <div className="create-post-section">
             {currentUser ? (
               userProfile?.accountType === 'client' ? (
@@ -310,13 +272,46 @@ const Vixink = () => {
                   </div>
                 )
               ) : (
-                <PostCreator
-                  mode="vixink"
-                  onPostCreated={handlePostCreated}
-                  placeholder="Descreva seu conteúdo (sem links)"
-                  showAttachment={true}
-                  categories={categories}
-                />
+                <div className="create-post-card">
+                  <div className="create-post-avatar">
+                    <img
+                      src={userProfile?.profilePictureURL || '/images/defpfp1.png'}
+                      alt="Avatar"
+                      onError={(e) => {
+                        e.target.src = '/images/defpfp1.png';
+                      }}
+                    />
+                  </div>
+                  <div className="create-post-body">
+                    <textarea
+                      placeholder="O que você está pensando?"
+                      maxLength={1000}
+                      rows={3}
+                    />
+                    <div className="create-post-actions">
+                      <label className="action-btn">
+                        <i className="fa-solid fa-image"></i> Imagem
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                      <label className="action-btn">
+                        <i className="fa-solid fa-link"></i> Anexar Serviço
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                      <button className="btn primary">
+                        Publicar
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )
             ) : (
               <div className="login-prompt">
@@ -329,33 +324,16 @@ const Vixink = () => {
             )}
           </div>
 
-          <div className="filters-section">
-            <h3>Filtros</h3>
-            <div className="filter-group">
-              <label>Categoria:</label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="category-filter"
-              >
-                {categories.map(category => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
         </div>
 
-        <div className="vixink-feed">
+        <div className="vixies-feed">
           {filteredPosts.length === 0 ? (
             <div className="no-posts">
               <i className="fas fa-link"></i>
               <h3>Nenhum post encontrado</h3>
               <p>
-                {selectedCategory !== 'all' 
-                  ? 'Não há posts nesta categoria ainda'
+                {activeTab === 'following'
+                  ? 'Você não está seguindo ninguém ainda'
                   : 'Seja o primeiro a compartilhar algo!'
                 }
               </p>
@@ -385,12 +363,6 @@ const Vixink = () => {
                       </div>
                     </div>
                     
-                    <div 
-                      className="post-category"
-                      style={{ backgroundColor: getCategoryColor(post.category) }}
-                    >
-                      <i className={getCategoryIcon(post.category)}></i>
-                    </div>
                   </div>
 
                   {/* Repost indicator */}
@@ -422,7 +394,6 @@ const Vixink = () => {
                       <div className="attached-item">
                         <div className="attached-cover" style={{ backgroundImage: `url(${post.attachment.coverUrl || '/images/default-service.jpg'})` }}></div>
                         <div className="attached-info">
-                          <div className="attached-title">{post.attachment.title}</div>
                           <Link to={`/${post.attachment.kind === 'service' ? 'service' : 'pack'}/${post.attachment.id}`} className="view-more">Ver mais</Link>
                         </div>
                       </div>
