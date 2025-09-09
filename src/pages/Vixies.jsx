@@ -59,6 +59,9 @@ const Vixies = () => {
       postsData.sort((a, b) => b.timestamp - a.timestamp);
       setPosts(postsData);
       setLoading(false);
+    }, (error) => {
+      console.error('Vixies: Error loading posts', error);
+      setLoading(false);
     });
 
     // Load users
@@ -217,7 +220,7 @@ const Vixies = () => {
     }
   });
 
-  if (loading || !userProfile) {
+  if (loading) {
     return (
       <div className="vixies-container">
         <div className="loading-spinner">Carregando posts...</div>
@@ -253,7 +256,7 @@ const Vixies = () => {
         <div className="vixies-sidebar">
           <div className="create-post-section">
             {currentUser ? (
-              userProfile?.accountType === 'client' ? (
+              userProfile && userProfile.accountType === 'client' ? (
                 !dismissedClientRestriction ? (
                   <div className="client-restriction subtle">
                     <div className="restriction-content">
