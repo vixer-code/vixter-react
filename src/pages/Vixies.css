@@ -220,22 +220,23 @@
 .category-select {
   flex: 1;
   padding: 12px 16px;
-  border: 2px solid var(--border-color);
+  border: 2px solid #00ffca;
   border-radius: 8px;
   background: var(--bg-secondary);
-  color: var(--text-primary);
+  color: #00ffca;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   opacity: 1;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 255, 202, 0.2);
 }
 
 .category-select:focus {
   outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.1);
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 
 .create-post-btn {
@@ -445,12 +446,12 @@
 }
 
 .filters-section h3 {
-  font-size: 1.3rem;
-  color: var(--text-primary);
+  font-size: 1.4rem;
+  color: #00ffca;
   margin: 0 0 20px 0;
   font-weight: 800;
   opacity: 1;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 2px 4px rgba(0, 255, 202, 0.3);
 }
 
 .filter-group {
@@ -460,32 +461,33 @@
 }
 
 .filter-group label {
-  font-size: 14px;
-  color: var(--text-primary);
+  font-size: 15px;
+  color: #00ffca;
   font-weight: 700;
   opacity: 1;
   margin-bottom: 6px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 1px 3px rgba(0, 255, 202, 0.4);
 }
 
 .sort-select {
   padding: 12px 16px;
-  border: 2px solid var(--border-color);
+  border: 2px solid #00ffca;
   border-radius: 8px;
   background: var(--bg-secondary);
-  color: var(--text-primary);
+  color: #00ffca;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   opacity: 1;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 255, 202, 0.2);
 }
 
 .sort-select:focus {
   outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.1);
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 
 /* ===== Posts ===== */
@@ -530,11 +532,12 @@
 .post-content {
   font-size: 16px;
   line-height: 1.6;
-  color: var(--text-primary);
+  color: #ffffff;
   white-space: pre-wrap;
   opacity: 1;
-  font-weight: 400;
+  font-weight: 500;
   margin: 8px 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .post-content img {
@@ -555,19 +558,23 @@
 .action-btn {
   background: transparent;
   border: none;
-  color: var(--text-primary);
+  color: #00ffca;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 14px;
+  font-weight: 600;
   transition: all 0.2s ease;
-  opacity: 0.8;
+  opacity: 1;
+  text-shadow: 0 1px 2px rgba(0, 255, 202, 0.3);
 }
 
 .action-btn:hover {
-  color: var(--accent-color);
+  color: #ffffff;
   opacity: 1;
+  text-shadow: 0 2px 4px rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
 }
 
 /* ===== Repost Indicator ===== */
