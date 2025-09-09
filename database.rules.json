@@ -156,7 +156,7 @@
           "$userId": {
             ".validate": "newData.isBoolean()"
           }
-        },
+        }
       }
     },
     "vixies_posts": {
@@ -203,7 +203,7 @@
         },
         "likes": {
           ".validate": "newData.hasChildren() || newData.val() == null"
-        },
+        }
       }
     },
     "packOrders": {
