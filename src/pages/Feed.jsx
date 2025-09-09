@@ -52,7 +52,6 @@ const Feed = () => {
   const [stars, setStars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [followingIds, setFollowingIds] = useState([]);
-  const [commentDrafts, setCommentDrafts] = useState({}); // {postId: text}
 
   
   // Delete confirmation modal state
@@ -96,23 +95,19 @@ const Feed = () => {
         list.push({ id: child.key, ...val });
       }
     });
-    // Attach counts for likes, comments, reposts
+    // Attach counts for likes, reposts
     const likesRoot = ref(database, 'likes');
-    const commentsRoot = ref(database, 'comments');
     const repostsRoot = ref(database, 'reposts');
-    const [likesSnap, commentsSnap, repostsSnap] = await Promise.all([
+    const [likesSnap, repostsSnap] = await Promise.all([
       get(likesRoot).catch(() => null),
-      get(commentsRoot).catch(() => null),
       get(repostsRoot).catch(() => null)
-    ]).then(([ls, cs, rs]) => [ls, cs, rs]).catch(() => [null, null, null]);
+    ]).then(([ls, rs]) => [ls, rs]).catch(() => [null, null]);
     const likesObj = likesSnap?.exists() ? likesSnap.val() : {};
-    const commentsObj = commentsSnap?.exists() ? commentsSnap.val() : {};
     const repostsObj = repostsSnap?.exists() ? repostsSnap.val() : {};
     const withCounts = list.map(p => {
       const likes = likesObj[p.id] ? Object.keys(likesObj[p.id]).length : 0;
-      const comments = commentsObj[p.id] ? Object.keys(commentsObj[p.id]).length : 0;
       const reposts = repostsObj[p.id] ? Object.keys(repostsObj[p.id]).length : 0;
-      return { ...p, likeCount: likes, commentCount: comments, repostCount: reposts };
+      return { ...p, likeCount: likes, repostCount: reposts };
     });
     setAllPosts(withCounts);
   }
@@ -140,7 +135,7 @@ const Feed = () => {
       posts.forEach(p => {
         const ageHrs = Math.max(1, (now - (p.timestamp || p.createdAt || 0)) / (1000*60*60));
         const recencyScore = 1 / ageHrs; // newer => higher
-        const engagement = (p.likeCount || 0) * 2 + (p.repostCount || 0) * 3 + (p.commentCount || 0);
+        const engagement = (p.likeCount || 0) * 2 + (p.repostCount || 0) * 3;
         p._score = recencyScore * 10 + engagement;
       });
       posts.sort((a,b) => (b._score || 0) - (a._score || 0));
@@ -192,20 +187,6 @@ const Feed = () => {
     await filterAndDecorate(currentTab);
   }
 
-  async function submitComment(postId) {
-    if (!currentUser) return;
-    const text = (commentDrafts[postId] || '').trim();
-    if (!text) return;
-    const commentsRef = ref(database, `comments/${postId}`);
-    await push(commentsRef, {
-      userId: currentUser.uid,
-      text,
-      timestamp: Date.now()
-    });
-    setCommentDrafts(prev => ({ ...prev, [postId]: '' }));
-    await loadPosts();
-    await filterAndDecorate(currentTab);
-  }
 
   async function deletePost(postId) {
     if (!currentUser) {
@@ -415,27 +396,9 @@ const Feed = () => {
                       <i className={`${liked ? 'fas' : 'far'} fa-heart`} /> {likeCount}
                     </button>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <button className="action-button" style={{ background: 'transparent', border: 'none', color: '#fff', opacity: 0.8 }} onClick={() => {
-                        const el = document.getElementById(`cbox-${post.id}`);
-                        if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-                      }}>
-                        <i className="far fa-comment" /> {typeof post.commentCount === 'number' ? post.commentCount : (typeof post.comments === 'object' ? Object.keys(post.comments).length : (post.comments || 0))}
-                      </button>
                       <button className="action-button" style={{ background: 'transparent', border: 'none', color: '#fff', opacity: 0.8 }} onClick={() => handleRepost(post)} disabled={currentUser && currentUser.uid === post.userId} title={currentUser && currentUser.uid === post.userId ? 'Você não pode repostar seu próprio post' : 'Repostar'}>
                         <i className="far fa-share-square" /> {post.repostCount || 0}
                       </button>
-                    </div>
-                  </div>
-                  <div id={`cbox-${post.id}`} style={{ display: 'none', marginTop: 10 }}>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <input
-                        type="text"
-                        placeholder="Escreva um comentário..."
-                        value={commentDrafts[post.id] || ''}
-                        onChange={(e) => setCommentDrafts(prev => ({ ...prev, [post.id]: e.target.value }))}
-                        style={{ flex: 1, padding: 8, borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.06)', color: '#fff' }}
-                      />
-                      <button className="search-btn" onClick={() => submitComment(post.id)}>Enviar</button>
                     </div>
                   </div>
                 </div>

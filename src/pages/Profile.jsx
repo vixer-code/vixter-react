@@ -625,13 +625,6 @@ const [formData, setFormData] = useState({
         // Don't fail the entire operation if likes removal fails
       }
       
-      // Try to remove associated comments but don't fail if it doesn't exist
-      try {
-        const commentsRef = ref(database, `comments/${postToDelete.id}`);
-        await remove(commentsRef);
-      } catch (commentsError) {
-        // Don't fail the entire operation if comments removal fails
-      }
       
       // Show success message
       alert('Publicação removida com sucesso!');

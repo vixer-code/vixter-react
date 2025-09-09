@@ -141,7 +141,6 @@ const Vixies = () => {
         attachment: post.attachment || null,
         likes: 0,
         likedBy: [],
-        comments: {},
         isRepost: true,
         originalPostId: post.id,
         originalAuthorId: post.authorId,
@@ -225,7 +224,6 @@ const Vixies = () => {
   const calculateEngagementScore = (post) => {
     const likes = post.likes || 0;
     const reposts = post.reposts || 0;
-    const comments = post.comments || 0;
     const age = Date.now() - post.timestamp;
     const ageInHours = age / (1000 * 60 * 60);
     
@@ -383,7 +381,7 @@ const Vixies = () => {
         <div className="vixies-feed">
           {filteredPosts.length === 0 ? (
             <div className="no-posts">
-              <i className="fas fa-comments"></i>
+              <i className="fas fa-heart"></i>
               <h3>Nenhum post encontrado</h3>
               <p>
                 {selectedCategory !== 'all' 

@@ -128,7 +128,6 @@ const Vixink = () => {
         attachment: post.attachment || null,
         likes: 0,
         likedBy: [],
-        comments: {},
         isRepost: true,
         originalPostId: post.id,
         originalAuthorId: post.authorId,
@@ -209,12 +208,11 @@ const Vixink = () => {
   const calculateEngagementScore = (post) => {
     const likes = post.likes || 0;
     const reposts = post.reposts || 0;
-    const comments = post.comments || 0;
     const age = Date.now() - post.timestamp;
     const ageInHours = age / (1000 * 60 * 60);
     
     // Engagement score with time decay
-    const engagement = likes + (reposts * 2) + (comments * 1.5);
+    const engagement = likes + (reposts * 2);
     const timeDecay = Math.max(0.1, 1 - (ageInHours / 168)); // Decay over 7 days
     return engagement * timeDecay;
   };
