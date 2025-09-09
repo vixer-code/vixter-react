@@ -35,14 +35,56 @@ const PostCreator = ({
 
   // Load user's services and packs for attachment
   useEffect(() => {
-    if (showAttachment && currentUser && userProfile?.accountType === 'provider') {
+    console.log('PostCreator useEffect - showAttachment:', showAttachment, 'currentUser:', !!currentUser, 'userProfile:', userProfile, 'accountType:', userProfile?.accountType);
+    if (showAttachment && currentUser) {
       loadUserAttachments();
     }
   }, [showAttachment, currentUser, userProfile]);
 
+  // Load attachments when component mounts and user is available
+  useEffect(() => {
+    if (currentUser && showAttachment) {
+      console.log('PostCreator: Component mounted, loading attachments');
+      loadUserAttachments();
+    }
+  }, [currentUser, showAttachment]);
+
+  // Debug: Log when showAttachment changes
+  useEffect(() => {
+    console.log('PostCreator: showAttachment changed:', showAttachment);
+  }, [showAttachment]);
+
+  // Load attachments when modal is opened
+  useEffect(() => {
+    if (showAttachmentModal && currentUser) {
+      console.log('PostCreator: Modal opened, loading attachments');
+      loadUserAttachments();
+    }
+  }, [showAttachmentModal, currentUser]);
+
+  // Load attachments when modal is opened (alternative approach)
+  const handleModalOpen = async () => {
+    console.log('PostCreator: Modal opening, loading attachments');
+    if (currentUser) {
+      await loadUserAttachments();
+    }
+    setShowAttachmentModal(true);
+  };
+
+  // Debug: Log when modal state changes
+  useEffect(() => {
+    console.log('PostCreator: Modal state changed:', showAttachmentModal);
+  }, [showAttachmentModal]);
+
+  // Debug: Log when userServices or userPacks change
+  useEffect(() => {
+    console.log('PostCreator: userServices changed:', userServices.length, 'userPacks changed:', userPacks.length);
+  }, [userServices, userPacks]);
+
   const loadUserAttachments = async () => {
     if (!currentUser) return;
     
+    console.log('PostCreator: Loading attachments for user:', currentUser.uid);
     setLoadingAttachments(true);
     try {
       // Load services
@@ -51,11 +93,19 @@ const PostCreator = ({
         where('sellerId', '==', currentUser.uid)
       );
       const servicesSnapshot = await getDocs(servicesQuery);
-      const services = servicesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        type: 'service'
-      }));
+      console.log('PostCreator: Services query result:', servicesSnapshot.docs.length, 'docs');
+      const allServices = servicesSnapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('PostCreator: Service found:', doc.id, data.title, data.status, 'sellerId:', data.sellerId);
+        return {
+          id: doc.id,
+          ...data,
+          type: 'service'
+        };
+      });
+      
+      const services = allServices.filter(service => service.status === 'active'); // Only show active services
+      console.log('PostCreator: Active services:', services.length, 'out of', allServices.length);
 
       // Load packs
       const packsQuery = query(
@@ -63,12 +113,21 @@ const PostCreator = ({
         where('sellerId', '==', currentUser.uid)
       );
       const packsSnapshot = await getDocs(packsQuery);
-      const packs = packsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        type: 'pack'
-      }));
+      console.log('PostCreator: Packs query result:', packsSnapshot.docs.length, 'docs');
+      const allPacks = packsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('PostCreator: Pack found:', doc.id, data.title, data.status, 'sellerId:', data.sellerId);
+        return {
+          id: doc.id,
+          ...data,
+          type: 'pack'
+        };
+      });
+      
+      const packs = allPacks.filter(pack => pack.status === 'active'); // Only show active packs
+      console.log('PostCreator: Active packs:', packs.length, 'out of', allPacks.length);
 
+      console.log('PostCreator: Setting services:', services.length, 'packs:', packs.length);
       setUserServices(services);
       setUserPacks(packs);
     } catch (error) {
@@ -271,10 +330,10 @@ const PostCreator = ({
         )}
 
         {/* Attachment Button (for Vixies/Vixink) */}
-        {showAttachment && userProfile?.accountType === 'provider' && (
+        {showAttachment && currentUser && (
           <button
             type="button"
-            onClick={() => setShowAttachmentModal(true)}
+            onClick={handleModalOpen}
             className="attach-service-btn"
           >
             <i className="fa-solid fa-paperclip"></i>
@@ -300,7 +359,10 @@ const PostCreator = ({
             <div className="modal-header">
               <h3>Anexar Serviço ou Pack</h3>
               <button 
-                onClick={() => setShowAttachmentModal(false)}
+                onClick={() => {
+                  console.log('PostCreator: Modal closed');
+                  setShowAttachmentModal(false);
+                }}
                 className="close-btn"
               >
                 ×
@@ -315,7 +377,7 @@ const PostCreator = ({
                   {/* Services */}
                   {userServices.length > 0 && (
                     <div className="attachment-section">
-                      <h4>Seus Serviços</h4>
+                      <h4>Seus Serviços ({userServices.length})</h4>
                       <div className="items-grid">
                         {userServices.map(service => (
                           <div
@@ -338,7 +400,7 @@ const PostCreator = ({
                   {/* Packs */}
                   {userPacks.length > 0 && (
                     <div className="attachment-section">
-                      <h4>Seus Packs</h4>
+                      <h4>Seus Packs ({userPacks.length})</h4>
                       <div className="items-grid">
                         {userPacks.map(pack => (
                           <div
@@ -362,6 +424,8 @@ const PostCreator = ({
                     <div className="no-attachments">
                       <p>Você ainda não tem serviços ou packs para anexar.</p>
                       <p>Crie alguns serviços ou packs primeiro!</p>
+                      <p>Debug: userServices.length = {userServices.length}, userPacks.length = {userPacks.length}</p>
+                      <p>Debug: loadingAttachments = {loadingAttachments.toString()}</p>
                     </div>
                   )}
                 </>
