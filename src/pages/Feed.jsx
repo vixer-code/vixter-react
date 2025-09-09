@@ -12,6 +12,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import CachedImage from '../components/CachedImage';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import PostCreator from '../components/PostCreator';
 import './Feed.css';
 
 function extractHashTags(text) {
@@ -53,11 +54,6 @@ const Feed = () => {
   const [followingIds, setFollowingIds] = useState([]);
   const [commentDrafts, setCommentDrafts] = useState({}); // {postId: text}
 
-  // Create post modal state
-  const [isCreating, setIsCreating] = useState(false);
-  const [postText, setPostText] = useState('');
-  const [postFile, setPostFile] = useState(null);
-  const [isPublishing, setIsPublishing] = useState(false);
   
   // Delete confirmation modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -157,53 +153,6 @@ const Feed = () => {
     setStars([]);
   }
 
-  async function handlePublish() {
-    if (!currentUser) {
-      window.location.href = '/login';
-      return;
-    }
-    const content = postText.trim();
-    // Enforce: no links allowed in text
-    const hasUrl = /(https?:\/\/|www\.)/i.test(content);
-    if (hasUrl) {
-      alert('Links não são permitidos em posts.');
-      return;
-    }
-    // Allow text-only posts - image is optional
-    if (!content.trim() && !postFile) {
-      alert('Posts devem conter texto ou uma imagem.');
-      return;
-    }
-    
-    try {
-      setIsPublishing(true);
-      let imageUrl = null;
-      if (postFile) {
-        const filePath = `posts/${currentUser.uid}/${Date.now()}_${postFile.name}`;
-        const sref = storageRef(storage, filePath);
-        const snap = await uploadBytes(sref, postFile);
-        imageUrl = await getDownloadURL(snap.ref);
-      }
-      const hashtags = extractHashTags(content);
-      const newPost = {
-        userId: currentUser.uid,
-        content,
-        images: imageUrl ? [imageUrl] : [],
-        hashtags,
-        createdAt: Date.now(),
-        timestamp: Date.now()
-      };
-      const postsRootRef = ref(database, 'posts');
-      await push(postsRootRef, newPost);
-      setIsCreating(false);
-      setPostText('');
-      setPostFile(null);
-      await loadPosts();
-      await filterAndDecorate(currentTab);
-    } finally {
-      setIsPublishing(false);
-    }
-  }
 
   async function toggleLike(postId, liked) {
     if (!currentUser) return;
@@ -359,9 +308,22 @@ const Feed = () => {
         {/* Left sidebar */}
         <aside className="left-sidebar" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div className="sidebar-card all-games" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 16 }}>
-            <button className="search-btn" style={{ width: '100%' }} onClick={() => (currentUser ? setIsCreating(true) : (window.location.href = '/login'))}>
-              Criar Publicação
-            </button>
+            {currentUser ? (
+              <PostCreator
+                mode="feed"
+                onPostCreated={() => {
+                  // Refresh posts after creation
+                  loadPosts();
+                }}
+                placeholder="O que você está pensando?"
+                showAttachment={false}
+                categories={[]}
+              />
+            ) : (
+              <button className="search-btn" style={{ width: '100%' }} onClick={() => (window.location.href = '/login')}>
+                Criar Publicação
+              </button>
+            )}
           </div>
 
           <div className="sidebar-card" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 16 }}>
@@ -508,28 +470,6 @@ const Feed = () => {
         </aside>
       </div>
 
-      {/* Create Post Modal */}
-      {isCreating && (
-        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="modal" style={{ background: '#fff', color: '#111', borderRadius: 12, padding: 16, width: '92%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <h2 style={{ margin: 0 }}>Criar Publicação</h2>
-            <textarea
-              value={postText}
-              onChange={e => setPostText(e.target.value)}
-              placeholder="O que você está pensando?"
-              maxLength={280}
-              style={{ minHeight: 120, padding: 8, fontSize: 14 }}
-            />
-            <input type="file" accept="image/*" onChange={e => setPostFile(e.target.files?.[0] || null)} />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setIsCreating(false)}>Cancelar</button>
-              <button className="search-btn" disabled={isPublishing} onClick={handlePublish}>
-                {isPublishing ? 'Publicando…' : 'Publicar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal

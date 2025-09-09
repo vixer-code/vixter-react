@@ -200,7 +200,7 @@
           ".validate": "newData.isString() && (newData.val() == 'image' || newData.val() == 'video' || newData.val() == 'audio')"
         },
         "attachment": {
-          ".validate": "newData.hasChildren(['kind', 'id', 'title'])",
+          ".validate": "newData.val() == null || newData.hasChildren(['kind', 'id', 'title'])",
           "kind": {
             ".validate": "newData.isString() && (newData.val() == 'service' || newData.val() == 'pack')"
           },
@@ -215,25 +215,10 @@
           }
         },
         "likes": {
-          ".validate": "newData.hasChildren()",
-          "$userId": {
-            ".validate": "newData.isBoolean()"
-          }
+          ".validate": "newData.hasChildren() || newData.val() == null"
         },
         "comments": {
-          ".validate": "newData.hasChildren()",
-          "$commentId": {
-            ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp']) && newData.child('authorId').val() == auth.uid",
-            "authorId": {
-              ".validate": "newData.isString() && newData.val() == auth.uid"
-            },
-            "content": {
-              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500"
-            },
-            "timestamp": {
-              ".validate": "newData.isNumber() && newData.val() <= now + 300000"
-            }
-          }
+          ".validate": "newData.hasChildren() || newData.val() == null"
         }
       }
     }

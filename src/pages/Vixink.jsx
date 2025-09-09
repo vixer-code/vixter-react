@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { database, storage } from '../../config/firebase';
-import { ref, onValue, push, off, query, orderByChild, set, get } from 'firebase/database';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { database } from '../../config/firebase';
+import { ref, onValue, off, query, orderByChild, set, get } from 'firebase/database';
 import { Link } from 'react-router-dom';
+import PostCreator from '../components/PostCreator';
 import './Vixink.css';
 
 const Vixink = () => {
@@ -16,10 +16,6 @@ const Vixink = () => {
   const [users, setUsers] = useState({});
   const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newPost, setNewPost] = useState('');
-  const [mediaFile, setMediaFile] = useState(null);
-  const [mediaType, setMediaType] = useState('image');
-  const [attachment, setAttachment] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('main'); // main | following
 
@@ -97,47 +93,9 @@ const Vixink = () => {
     return unsubscribe;
   };
 
-  const createPost = async () => {
-    if (!currentUser) return;
-    if (!userProfile || userProfile.accountType !== 'provider') {
-      showNotification('Apenas provedores podem postar em Vixink.', 'warning');
-      return;
-    }
-    const text = newPost.trim();
-    const hasUrl = /(https?:\/\/|www\.)/i.test(text);
-    if (hasUrl) {
-      showNotification('Links não são permitidos no texto do post.', 'warning');
-      return;
-    }
-    if (!mediaFile) {
-      showNotification('Selecione uma mídia (imagem, vídeo ou áudio).', 'warning');
-      return;
-    }
-    try {
-      const path = `vixink/${currentUser.uid}/${Date.now()}_${mediaFile.name}`;
-      const sref = storageRef(storage, path);
-      const snap = await uploadBytes(sref, mediaFile);
-      const url = await getDownloadURL(snap.ref);
-      const postData = {
-        content: text,
-        authorId: currentUser.uid,
-        authorName: currentUser.displayName || 'Usuário',
-        authorPhotoURL: currentUser.photoURL || '/images/defpfp1.png',
-        category: selectedCategory,
-        timestamp: Date.now(),
-        media: [{ type: mediaType, url }],
-        attachment: attachment || null
-      };
-      const postsRef = ref(database, 'vixink_posts');
-      await push(postsRef, postData);
-      setNewPost('');
-      setMediaFile(null);
-      setAttachment(null);
-      showNotification('Post criado com sucesso!', 'success');
-    } catch (error) {
-      console.error('Error creating post:', error);
-      showNotification('Erro ao criar post', 'error');
-    }
+  const handlePostCreated = () => {
+    // Refresh posts or perform any other action after post creation
+    loadPosts();
   };
 
   const likePost = async (postId, currentLikes, likedBy) => {
@@ -294,68 +252,13 @@ const Vixink = () => {
         <div className="vixink-sidebar">
           <div className="create-post-section">
             {currentUser ? (
-              <div className="create-post-card">
-                <div className="create-post-header">
-                  <img
-                    src={currentUser.photoURL || '/images/defpfp1.png'}
-                    alt={currentUser.displayName || 'User'}
-                    className="user-avatar"
-                    onError={(e) => {
-                      e.target.src = '/images/defpfp1.png';
-                    }}
-                  />
-                  <div className="create-post-input-container">
-                    <textarea
-                      value={newPost}
-                      onChange={(e) => setNewPost(e.target.value)}
-                      placeholder="Descreva seu conteúdo (sem links)"
-                      className="create-post-input"
-                      rows="3"
-                    />
-                  </div>
-                </div>
-                
-                <div className="create-post-options">
-                  <div className="media-picker">
-                    <label>
-                      <span>Tipo de mídia:</span>
-                      <select value={mediaType} onChange={(e) => setMediaType(e.target.value)}>
-                        <option value="image">Imagem</option>
-                        <option value="video">Vídeo</option>
-                        <option value="audio">Áudio</option>
-                      </select>
-                    </label>
-                    <input type="file" accept={mediaType+"/*"} onChange={(e) => setMediaFile(e.target.files?.[0] || null)} />
-                  </div>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="category-select"
-                  >
-                    {categories.map(category => (
-                      <option key={category.value} value={category.value}>
-                        {category.label}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="attach-btn"
-                    onClick={() => showNotification('Seletor de serviços/packs será implementado em breve.', 'info')}
-                  >
-                    Anexar Serviço/Pack
-                  </button>
-                  
-                  <button
-                    onClick={createPost}
-                    disabled={!newPost.trim()}
-                    className="create-post-btn"
-                  >
-                    <i className="fas fa-paper-plane"></i>
-                    Publicar
-                  </button>
-                </div>
-              </div>
+              <PostCreator
+                mode="vixink"
+                onPostCreated={handlePostCreated}
+                placeholder="Descreva seu conteúdo (sem links)"
+                showAttachment={true}
+                categories={categories}
+              />
             ) : (
               <div className="login-prompt">
                 <h3>Faça login para compartilhar</h3>
