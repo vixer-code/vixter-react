@@ -24,14 +24,14 @@
   font-size: 1.1rem;
   color: var(--text-primary);
   margin: 0;
-  opacity: 0.8;
+  opacity: 1; /* mais visível */
 }
 
 .vixies-content {
-  display: grid;
-  grid-template-columns: 350px 1fr;
+  display: flex;
+  justify-content: center; /* centraliza o feed */
   gap: 30px;
-  align-items: start;
+  align-items: flex-start;
 }
 
 /* Tabs */
@@ -64,7 +64,7 @@
   gap: 8px;
   position: relative;
   overflow: hidden;
-  opacity: 0.85;
+  opacity: 1; /* mais visível */
 }
 
 .tab-btn::before {
@@ -87,7 +87,6 @@
 .tab-btn:hover {
   color: var(--text-primary);
   transform: translateY(-1px);
-  opacity: 1;
 }
 
 .tab-btn.active {
@@ -95,7 +94,6 @@
   color: white;
   box-shadow: 0 4px 16px rgba(138, 43, 226, 0.3);
   transform: translateY(-2px);
-  opacity: 1;
 }
 
 .tab-btn.active::before {
@@ -104,6 +102,7 @@
 
 /* Sidebar */
 .vixies-sidebar {
+  flex: 0 0 300px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -263,15 +262,15 @@
 .restriction-icon {
   color: var(--accent-color);
   font-size: 16px;
-  opacity: 0.8;
 }
 
 .restriction-text p {
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-size: 13px;
   margin: 0;
   font-weight: 500;
   flex: 1;
+  opacity: 1; /* mais visível */
 }
 
 .dismiss-btn {
@@ -283,13 +282,11 @@
   border-radius: 4px;
   transition: all 0.2s ease;
   font-size: 12px;
-  opacity: 0.6;
 }
 
 .dismiss-btn:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
-  opacity: 1;
 }
 
 .client-feed-only {
@@ -322,7 +319,6 @@
 .feed-only-icon {
   color: white;
   font-size: 18px;
-  opacity: 0.9;
 }
 
 .feed-only-text p {
@@ -360,8 +356,9 @@
 
 .filter-group label {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-weight: 500;
+  opacity: 1; /* mais visível */
 }
 
 .sort-select {
@@ -376,6 +373,8 @@
 
 /* Feed */
 .vixies-feed {
+  flex: 1;
+  max-width: 650px; /* largura confortável de leitura */
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -434,7 +433,7 @@
 .post-time {
   font-size: 12px;
   color: var(--text-primary);
-  opacity: 0.85;
+  opacity: 1; /* mais visível */
 }
 
 .post-category {
@@ -454,8 +453,8 @@
 
 .post-content p {
   color: var(--text-primary);
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.7; /* mais legível */
   margin: 0;
 }
 
@@ -478,13 +477,12 @@
   transition: all 0.3s ease;
   padding: 8px 12px;
   border-radius: 8px;
-  opacity: 0.85;
+  opacity: 1; /* mais visível */
 }
 
 .action-btn:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
-  opacity: 1;
 }
 
 .like-btn.liked {
@@ -534,16 +532,20 @@
 /* Responsive Design */
 @media (max-width: 1024px) {
   .vixies-content {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: center;
     gap: 20px;
   }
 
   .vixies-sidebar {
     order: 2;
+    width: 100%;
+    max-width: 650px;
   }
 
   .vixies-feed {
     order: 1;
+    width: 100%;
   }
 }
 
@@ -650,4 +652,4 @@
 
 .repost-indicator a:hover {
   text-decoration: underline;
-} 
+}
