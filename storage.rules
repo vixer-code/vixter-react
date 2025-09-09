@@ -163,6 +163,33 @@ service firebase.storage {
       allow delete: if isAuthenticated() && isOwner(authorId);
       allow read, write, delete: if isAdmin();
     }
+
+    // Vixies posts media - only providers can upload
+    match /vixies/{authorId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+                     isOwner(authorId) && 
+                     (isImageFile() || isVideoFile()) && 
+                     isValidFileSize();
+      allow delete: if isAuthenticated() && isOwner(authorId);
+      allow read, write, delete: if isAdmin();
+    }
+
+    // Vixink posts media
+    match /vixink/{authorId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(authorId) && (isImageFile() || isVideoFile()) && isValidFileSize();
+      allow delete: if isAuthenticated() && isOwner(authorId);
+      allow read, write, delete: if isAdmin();
+    }
+
+    // Feed posts media
+    match /feed/{authorId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(authorId) && (isImageFile() || isVideoFile()) && isValidFileSize();
+      allow delete: if isAuthenticated() && isOwner(authorId);
+      allow read, write, delete: if isAdmin();
+    }
     
     // =====================================================
     // MESSAGE MEDIA FILES

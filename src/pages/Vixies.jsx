@@ -230,7 +230,7 @@ const Vixies = () => {
     const ageInHours = age / (1000 * 60 * 60);
     
     // Engagement score with time decay
-    const engagement = likes + (reposts * 2) + (comments * 1.5);
+    const engagement = (likes * 2) + (reposts);
     const timeDecay = Math.max(0.1, 1 - (ageInHours / 168)); // Decay over 7 days
     return engagement * timeDecay;
   };

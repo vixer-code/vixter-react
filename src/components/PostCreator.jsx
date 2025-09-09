@@ -127,6 +127,16 @@ const PostCreator = ({
       return;
     }
 
+    if (mode === 'vixink' && (!userProfile || userProfile.accountType !== 'provider')) {
+      showWarning('Apenas provedores podem postar em Vixink');
+      return;
+    }
+
+    // Debug authentication
+    console.log('Current user:', currentUser);
+    console.log('User profile:', userProfile);
+    console.log('Mode:', mode);
+
     const content = postText.trim();
     
     // Validate content
@@ -149,11 +159,27 @@ const PostCreator = ({
       
       // Upload media if provided
       if (mediaFile) {
-        const path = `${mode}/${currentUser.uid}/${Date.now()}_${mediaFile.name}`;
-        const sref = storageRef(storage, path);
-        const snap = await uploadBytes(sref, mediaFile);
-        const url = await getDownloadURL(snap.ref);
-        mediaData = [{ type: mediaType, url }];
+        try {
+          // Verify authentication token
+          const token = await currentUser.getIdToken();
+          console.log('Auth token exists:', !!token);
+          
+          const path = `${mode}/${currentUser.uid}/${Date.now()}_${mediaFile.name}`;
+          console.log('Uploading media to path:', path);
+          console.log('User UID:', currentUser.uid);
+          console.log('User account type:', userProfile?.accountType);
+          console.log('Mode:', mode);
+          
+          const sref = storageRef(storage, path);
+          const snap = await uploadBytes(sref, mediaFile);
+          const url = await getDownloadURL(snap.ref);
+          mediaData = [{ type: mediaType, url }];
+          console.log('Media uploaded successfully:', url);
+        } catch (uploadError) {
+          console.error('Error uploading media:', uploadError);
+          showError(`Erro ao fazer upload da mídia: ${uploadError.message}`);
+          return;
+        }
       }
 
       // Create post data based on mode
