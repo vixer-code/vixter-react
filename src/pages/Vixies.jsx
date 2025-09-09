@@ -17,9 +17,7 @@ const Vixies = () => {
   const [users, setUsers] = useState({});
   const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState('newest');
   const [activeTab, setActiveTab] = useState('main'); // main | following
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [dismissedClientRestriction, setDismissedClientRestriction] = useState(false);
 
   const categories = [
@@ -30,13 +28,6 @@ const Vixies = () => {
     { value: 'tech', label: 'Tecnologia' },
     { value: 'lifestyle', label: 'Lifestyle' },
     { value: 'other', label: 'Outros' }
-  ];
-
-  const sortOptions = [
-    { value: 'newest', label: 'Mais Recentes' },
-    { value: 'oldest', label: 'Mais Antigos' },
-    { value: 'popular', label: 'Mais Populares' },
-    { value: 'trending', label: 'Em Alta' }
   ];
 
   useEffect(() => {
@@ -234,11 +225,6 @@ const Vixies = () => {
   };
 
   const filteredPosts = posts.filter(post => {
-    // Category filter
-    if (selectedCategory !== 'all' && post.category !== selectedCategory) {
-      return false;
-    }
-    
     // Following filter
     if (activeTab === 'following') {
       return following.includes(post.authorId);
@@ -345,37 +331,6 @@ const Vixies = () => {
             )}
           </div>
 
-          <div className="filters-section">
-            <h3>Filtros</h3>
-            <div className="filter-group">
-              <label>Categoria:</label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="category-select"
-              >
-                {categories.map(category => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="filter-group">
-              <label>Ordenar por:</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="sort-select"
-              >
-                {sortOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
         </div>
 
         <div className="vixies-feed">
@@ -384,8 +339,8 @@ const Vixies = () => {
               <i className="fas fa-heart"></i>
               <h3>Nenhum post encontrado</h3>
               <p>
-                {selectedCategory !== 'all' 
-                  ? 'Não há posts nesta categoria ainda'
+                {activeTab === 'following'
+                  ? 'Você não está seguindo ninguém ainda'
                   : 'Seja o primeiro a compartilhar algo!'
                 }
               </p>
