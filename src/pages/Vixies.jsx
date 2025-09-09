@@ -20,15 +20,6 @@ const Vixies = () => {
   const [activeTab, setActiveTab] = useState('main'); // main | following
   const [dismissedClientRestriction, setDismissedClientRestriction] = useState(false);
 
-  const categories = [
-    { value: 'all', label: 'Todos' },
-    { value: 'gaming', label: 'Gaming' },
-    { value: 'art', label: 'Arte' },
-    { value: 'music', label: 'Música' },
-    { value: 'tech', label: 'Tecnologia' },
-    { value: 'lifestyle', label: 'Lifestyle' },
-    { value: 'other', label: 'Outros' }
-  ];
 
   useEffect(() => {
     let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
@@ -125,7 +116,6 @@ const Vixies = () => {
         authorUsername: userProfile?.username || '',
         content: post.content,
         timestamp: Date.now(),
-        category: post.category,
         media: post.media || null,
         mediaUrl: post.mediaUrl || null,
         mediaType: post.mediaType || null,
@@ -188,29 +178,6 @@ const Vixies = () => {
     return date.toLocaleDateString('pt-BR');
   };
 
-  const getCategoryIcon = (category) => {
-    const icons = {
-      gaming: 'fas fa-gamepad',
-      art: 'fas fa-palette',
-      music: 'fas fa-music',
-      tech: 'fas fa-microchip',
-      lifestyle: 'fas fa-heart',
-      other: 'fas fa-star'
-    };
-    return icons[category] || 'fas fa-star';
-  };
-
-  const getCategoryColor = (category) => {
-    const colors = {
-      gaming: '#ff6b6b',
-      art: '#4ecdc4',
-      music: '#ff9ff3',
-      tech: '#54a0ff',
-      lifestyle: '#ff7675',
-      other: '#5f27cd'
-    };
-    return colors[category] || '#5f27cd';
-  };
 
   const calculateEngagementScore = (post) => {
     const likes = post.likes || 0;
@@ -316,7 +283,6 @@ const Vixies = () => {
                   onPostCreated={handlePostCreated}
                   placeholder="Descreva seu conteúdo (sem links)"
                   showAttachment={true}
-                  categories={categories}
                 />
               )
             ) : (
@@ -369,12 +335,6 @@ const Vixies = () => {
                       </div>
                     </div>
                     
-                    <div 
-                      className="post-category"
-                      style={{ backgroundColor: getCategoryColor(post.category) }}
-                    >
-                      <i className={getCategoryIcon(post.category)}></i>
-                    </div>
                   </div>
 
                   {/* Repost indicator */}
@@ -406,7 +366,6 @@ const Vixies = () => {
                       <div className="attached-item">
                         <div className="attached-cover" style={{ backgroundImage: `url(${post.attachment.coverUrl || '/images/default-service.jpg'})` }}></div>
                         <div className="attached-info">
-                          <div className="attached-title">{post.attachment.title}</div>
                           <Link to={`/${post.attachment.kind === 'service' ? 'service' : 'pack'}/${post.attachment.id}`} className="view-more">Ver mais</Link>
                         </div>
                       </div>
