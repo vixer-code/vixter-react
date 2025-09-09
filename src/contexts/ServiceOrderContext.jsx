@@ -163,7 +163,7 @@ export const ServiceOrderProvider = ({ children }) => {
           }
         });
 
-        showSuccess('Pedido de serviço enviado com sucesso!');
+        showSuccess('Pedido de serviço enviado com sucesso! O provedor foi notificado e receberá o pedido em breve.');
         return { success: true, orderId: orderData.id };
       }
 
@@ -191,7 +191,7 @@ export const ServiceOrderProvider = ({ children }) => {
       });
 
       if (result.data.success) {
-        showSuccess('Pedido aceito com sucesso!');
+        showSuccess('Pedido aceito com sucesso! Uma conversa foi criada para comunicação com o cliente.');
         
         // Update the order in messaging and create conversation
         const order = serviceOrders.find(o => o.id === orderId);
@@ -232,7 +232,7 @@ export const ServiceOrderProvider = ({ children }) => {
       });
 
       if (result.data.success) {
-        showSuccess('Pedido recusado');
+        showSuccess('Pedido recusado. O valor foi devolvido ao cliente.');
         
         // Update the order in messaging
         const order = serviceOrders.find(o => o.id === orderId);
@@ -271,7 +271,7 @@ export const ServiceOrderProvider = ({ children }) => {
       });
 
       if (result.data.success) {
-        showSuccess('Serviço marcado como entregue!');
+        showSuccess('Serviço marcado como entregue! O cliente foi notificado e pode confirmar a entrega.');
         
         // Update the order in messaging
         const order = serviceOrders.find(o => o.id === orderId);
@@ -310,7 +310,7 @@ export const ServiceOrderProvider = ({ children }) => {
       });
 
       if (result.data.success) {
-        showSuccess('Entrega confirmada! O vendedor receberá os créditos.');
+        showSuccess('Entrega confirmada! O provedor receberá os créditos e a conversa será finalizada.');
         
         // Update the order in messaging
         const order = serviceOrders.find(o => o.id === orderId);
@@ -427,6 +427,47 @@ export const ServiceOrderProvider = ({ children }) => {
     ).length;
   }, [receivedOrders]);
 
+  // Auto-release service after delivery (when customer doesn't respond)
+  const autoReleaseService = useCallback(async (orderId) => {
+    if (!currentUser) return false;
+
+    try {
+      setProcessing(true);
+
+      const result = await apiFunc({
+        resource: 'serviceOrder',
+        action: 'autoRelease',
+        payload: { orderId }
+      });
+
+      if (result.data.success) {
+        showSuccess('Serviço liberado automaticamente. O provedor recebeu os créditos.');
+        
+        // Update the order in messaging
+        const order = serviceOrders.find(o => o.id === orderId);
+        if (order) {
+          await sendServiceNotification({
+            ...order,
+            status: ORDER_STATUS.AUTO_RELEASED
+          });
+          
+          // Mark service conversation as completed
+          await markServiceConversationCompleted(orderId);
+        }
+        
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error auto-releasing service:', error);
+      showError('Erro ao liberar serviço automaticamente');
+      return false;
+    } finally {
+      setProcessing(false);
+    }
+  }, [currentUser, apiFunc, serviceOrders, sendServiceNotification, showSuccess, showError]);
+
   const value = useMemo(() => ({
     // State
     serviceOrders,
@@ -441,6 +482,7 @@ export const ServiceOrderProvider = ({ children }) => {
     declineServiceOrder,
     markServiceDelivered,
     confirmServiceDelivery,
+    autoReleaseService,
     getOrderById,
 
     // Utilities
@@ -462,6 +504,7 @@ export const ServiceOrderProvider = ({ children }) => {
     declineServiceOrder,
     markServiceDelivered,
     confirmServiceDelivery,
+    autoReleaseService,
     getOrderById,
     calculateOrderTotal,
     getOrderStatusInfo,

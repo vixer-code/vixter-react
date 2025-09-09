@@ -95,7 +95,8 @@ const SearchBar = () => {
   };
 
   const searchServices = async () => {
-    if (!userProfile || userProfile.idVerified !== true) {
+    // Allow all authenticated users to search services
+    if (!userProfile) {
       return [];
     }
 
@@ -128,7 +129,8 @@ const SearchBar = () => {
   };
 
   const searchPacks = async () => {
-    if (!userProfile || userProfile.idVerified !== true) {
+    // Allow all authenticated users to search packs
+    if (!userProfile) {
       return [];
     }
 

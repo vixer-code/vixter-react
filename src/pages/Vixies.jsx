@@ -18,6 +18,7 @@ const Vixies = () => {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest');
   const [activeTab, setActiveTab] = useState('main'); // main | following
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const categories = [
     { value: 'all', label: 'Todos' },
@@ -37,7 +38,7 @@ const Vixies = () => {
   ];
 
   useEffect(() => {
-    if (!userProfile || userProfile.idVerified !== true) {
+    if (!userProfile) {
       setPosts([]);
       setLoading(false);
       return;
@@ -289,6 +290,20 @@ const Vixies = () => {
 
           <div className="filters-section">
             <h3>Filtros</h3>
+            <div className="filter-group">
+              <label>Categoria:</label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="category-select"
+              >
+                {categories.map(category => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="filter-group">
               <label>Ordenar por:</label>
               <select

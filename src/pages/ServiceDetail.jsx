@@ -21,6 +21,8 @@ const ServiceDetail = () => {
   const [loading, setLoading] = useState(true);
   const [selectedFeatures, setSelectedFeatures] = useState([]);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [showRefundPolicyModal, setShowRefundPolicyModal] = useState(false);
+  const [agreeToRefundPolicy, setAgreeToRefundPolicy] = useState(false);
 
   useEffect(() => {
     loadService();
@@ -82,10 +84,21 @@ const ServiceDetail = () => {
       return;
     }
 
+    // Show refund policy modal first
+    setShowRefundPolicyModal(true);
+  };
+
+  const handleConfirmPurchase = async () => {
+    if (!agreeToRefundPolicy) {
+      showNotification('Você deve concordar com a política de reembolso para continuar', 'warning');
+      return;
+    }
+
     const success = await createServiceOrder(service, selectedFeatures);
     if (success) {
-      setShowPurchaseModal(false);
-      showNotification('Pedido de serviço enviado com sucesso!', 'success');
+      setShowRefundPolicyModal(false);
+      setAgreeToRefundPolicy(false);
+      showNotification('Pedido de serviço enviado com sucesso! O provedor foi notificado e receberá o pedido em breve.', 'success');
       navigate('/wallet');
     }
   };
@@ -331,6 +344,95 @@ const ServiceDetail = () => {
                 className="btn-primary"
                 onClick={handlePurchase}
                 disabled={processing}
+              >
+                {processing ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i>
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-check"></i>
+                    Confirmar Compra
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Refund Policy Modal */}
+      {showRefundPolicyModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Política de Reembolso</h3>
+              <button 
+                className="modal-close"
+                onClick={() => {
+                  setShowRefundPolicyModal(false);
+                  setAgreeToRefundPolicy(false);
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="refund-policy-content">
+                <div className="service-info">
+                  <h4>{service?.title}</h4>
+                  <p>por {service?.providerName}</p>
+                  <div className="total-amount">
+                    <strong>Total: {formatCurrency(calculateTotal())} VP</strong>
+                  </div>
+                </div>
+                
+                <div className="refund-policy-text">
+                  <h5>⚠️ Política de Reembolso</h5>
+                  <p>
+                    <strong>Esta compra é NÃO REEMBOLSÁVEL.</strong> Ao continuar, você reconhece e concorda que:
+                  </p>
+                  <ul>
+                    <li>O valor será reservado em sua conta</li>
+                    <li>O provedor será notificado para aceitar o pedido</li>
+                    <li>Uma vez aceito, o serviço será executado conforme acordado</li>
+                    <li>Não haverá reembolso após a confirmação da compra</li>
+                    <li>Em caso de cancelamento pelo provedor, o valor será devolvido</li>
+                  </ul>
+                </div>
+                
+                <div className="agreement-checkbox">
+                  <label className="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      checked={agreeToRefundPolicy}
+                      onChange={(e) => setAgreeToRefundPolicy(e.target.checked)}
+                    />
+                    <span className="checkmark"></span>
+                    <span className="checkbox-text">
+                      Eu li e concordo com a política de reembolso (não reembolsável)
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <button 
+                className="btn-secondary"
+                onClick={() => {
+                  setShowRefundPolicyModal(false);
+                  setAgreeToRefundPolicy(false);
+                }}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn-primary"
+                onClick={handleConfirmPurchase}
+                disabled={!agreeToRefundPolicy || processing}
               >
                 {processing ? (
                   <>

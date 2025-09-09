@@ -81,7 +81,8 @@ const SearchResults = () => {
   };
 
   const searchServices = async (term) => {
-    if (!userProfile || userProfile.idVerified !== true) {
+    // Allow all authenticated users to search services
+    if (!userProfile) {
       return [];
     }
 
@@ -114,7 +115,8 @@ const SearchResults = () => {
   };
 
   const searchPacks = async (term) => {
-    if (!userProfile || userProfile.idVerified !== true) {
+    // Allow all authenticated users to search packs
+    if (!userProfile) {
       return [];
     }
 
@@ -225,7 +227,7 @@ const SearchResults = () => {
           >
             Usuários ({filteredResults.users.length})
           </button>
-          {userProfile && userProfile.idVerified && (
+          {userProfile && (
             <>
               <button 
                 className={`tab-btn ${activeTab === 'services' ? 'active' : ''}`}
