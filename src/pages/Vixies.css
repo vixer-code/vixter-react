@@ -438,60 +438,7 @@
   margin: 0;
 }
 
-/* ===== Filters Section ===== */
-.filters-section {
-  background: var(--bg-primary);
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--border-color);
-  margin-bottom: 20px;
-}
-
-.filters-section h3 {
-  font-size: 1.4rem;
-  color: #00ffca;
-  margin: 0 0 20px 0;
-  font-weight: 800;
-  opacity: 1;
-  text-shadow: 0 2px 4px rgba(0, 255, 202, 0.3);
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.filter-group label {
-  font-size: 15px;
-  color: #00ffca;
-  font-weight: 700;
-  opacity: 1;
-  margin-bottom: 6px;
-  text-shadow: 0 1px 3px rgba(0, 255, 202, 0.4);
-}
-
-.sort-select {
-  padding: 12px 16px;
-  border: 2px solid #00ffca;
-  border-radius: 8px;
-  background: var(--bg-secondary);
-  color: #00ffca;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  opacity: 1;
-  box-shadow: 0 2px 8px rgba(0, 255, 202, 0.2);
-}
-
-.sort-select:focus {
-  outline: none;
-  border-color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-}
+/* ===== Filters Section - REMOVED ===== */
 
 /* ===== Posts ===== */
 .post-card, .vixie-card {
@@ -532,7 +479,7 @@
 .post-header h4, .vixie-header h4 {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #FFFFFF;
+  color: #d1d5db;
   opacity: 1;
   margin: 0;
 }
