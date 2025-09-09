@@ -4,7 +4,7 @@ import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { getProfileUrlById } from '../utils/profileUrls';
 import { database } from '../../config/firebase';
-import { ref, onValue, set, off, query, orderByChild, get, remove } from 'firebase/database';
+import { ref, onValue, set, update, push, off, query, orderByChild, get, remove } from 'firebase/database';
 import { Link } from 'react-router-dom';
 import PostCreator from '../components/PostCreator';
 import './Vixies.css';
@@ -107,7 +107,7 @@ const Vixies = () => {
         : [...(likedBy || []), currentUser.uid];
       const newLikes = isLiked ? (currentLikes || 0) - 1 : (currentLikes || 0) + 1;
       const postRef = ref(database, `vixies_posts/${postId}`);
-      await set(postRef, { ...posts.find(p => p.id === postId), likes: newLikes, likedBy: newLikedBy });
+      await update(postRef, { likes: newLikes, likedBy: newLikedBy });
     } catch (error) {
       console.error('Error liking post:', error);
       showError('Erro ao curtir post');
@@ -116,22 +116,61 @@ const Vixies = () => {
 
   const repostPost = async (post) => {
     if (!currentUser) return;
-    const self = post.authorId === currentUser.uid;
-    const postRepostsRef = ref(database, `vixiesReposts/${post.id}/${currentUser.uid}`);
-    const userRepostsRef = ref(database, `userReposts/${currentUser.uid}/${post.id}`);
-    if (self) {
-      const snap = await get(userRepostsRef).catch(() => null);
-      const prev = snap && snap.exists() ? snap.val() : null;
-      const prevCount = typeof prev === 'object' && prev ? Number(prev.count || 0) : (prev ? 1 : 0);
-      if (prevCount >= 3) { showInfo('Limite de 3 reposts atingido.'); return; }
-      const next = { count: prevCount + 1, lastAt: Date.now() };
-      await set(userRepostsRef, next);
-      await set(postRepostsRef, next.lastAt);
-    } else {
+    
+    try {
+      // Check if user already reposted this post
+      const postRepostsRef = ref(database, `vixiesReposts/${post.id}/${currentUser.uid}`);
       const snap = await get(postRepostsRef).catch(() => null);
-      if (snap && snap.exists()) { showInfo('Você já repostou este conteúdo.'); return; }
+      if (snap && snap.exists()) { 
+        showInfo('Você já repostou este conteúdo.'); 
+        return; 
+      }
+
+      // Create a new repost post
+      const repostData = {
+        authorId: currentUser.uid,
+        authorName: userProfile?.displayName || userProfile?.name || 'Usuário',
+        authorPhotoURL: userProfile?.profilePictureURL || userProfile?.photoURL || '/images/defpfp1.png',
+        authorUsername: userProfile?.username || '',
+        content: post.content,
+        timestamp: Date.now(),
+        category: post.category,
+        media: post.media || null,
+        mediaUrl: post.mediaUrl || null,
+        mediaType: post.mediaType || null,
+        attachment: post.attachment || null,
+        likes: 0,
+        likedBy: [],
+        comments: {},
+        isRepost: true,
+        originalPostId: post.id,
+        originalAuthorId: post.authorId,
+        originalAuthorName: post.authorName,
+        repostCount: 0
+      };
+
+      // Save the repost post
+      const repostRef = ref(database, 'vixies_posts');
+      const newRepostRef = push(repostRef, repostData);
+      
+      // Update repost tracking
       await set(postRepostsRef, Date.now());
+      const userRepostsRef = ref(database, `userReposts/${currentUser.uid}/${post.id}`);
       await set(userRepostsRef, Date.now());
+      
+      // Update original post repost count
+      const originalPostRef = ref(database, `vixies_posts/${post.id}`);
+      const originalPostSnap = await get(originalPostRef);
+      if (originalPostSnap.exists()) {
+        const originalData = originalPostSnap.val();
+        const newRepostCount = (originalData.repostCount || 0) + 1;
+        await update(originalPostRef, { repostCount: newRepostCount });
+      }
+
+      showSuccess('Post repostado com sucesso!');
+    } catch (error) {
+      console.error('Error reposting:', error);
+      showError('Erro ao repostar conteúdo');
     }
   };
 
@@ -385,6 +424,18 @@ const Vixies = () => {
                       <i className={getCategoryIcon(post.category)}></i>
                     </div>
                   </div>
+
+                  {/* Repost indicator */}
+                  {post.isRepost && (
+                    <div className="repost-indicator">
+                      <i className="fas fa-retweet"></i>
+                      <span>
+                        <Link to={getProfileUrlById(post.authorId, post.authorUsername)}>
+                          {post.authorName}
+                        </Link> repostou
+                      </span>
+                    </div>
+                  )}
 
                   <div className="post-content">
                     <p>{post.content}</p>

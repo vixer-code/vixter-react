@@ -621,4 +621,33 @@
     justify-content: center;
     min-width: 80px;
   }
+}
+
+/* Repost indicator */
+.repost-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(0, 255, 202, 0.1);
+  border-left: 3px solid var(--accent-color);
+  margin: 8px 0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.repost-indicator i {
+  color: var(--accent-color);
+  font-size: 0.8rem;
+}
+
+.repost-indicator a {
+  color: var(--accent-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.repost-indicator a:hover {
+  text-decoration: underline;
 } 

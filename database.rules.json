@@ -134,7 +134,7 @@
       "$postId": {
         ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp', 'category'])",
         "authorId": {
-          ".validate": "newData.isString() && newData.val() == auth.uid"
+          ".validate": "newData.isString()"
         },
         "content": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000"
@@ -181,7 +181,7 @@
       "$postId": {
         ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp', 'category'])",
         "authorId": {
-          ".validate": "newData.isString() && newData.val() == auth.uid"
+          ".validate": "newData.isString()"
         },
         "content": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000"
@@ -262,6 +262,10 @@
       ".write": "auth != null"
     },
     "vixiesReposts": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "vixinkReposts": {
       ".read": "auth != null",
       ".write": "auth != null"
     },
