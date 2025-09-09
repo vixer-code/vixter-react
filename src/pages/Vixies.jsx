@@ -270,13 +270,23 @@ const Vixies = () => {
         <div className="vixies-sidebar">
           <div className="create-post-section">
             {currentUser ? (
-              <PostCreator
-                mode="vixies"
-                onPostCreated={handlePostCreated}
-                placeholder="Descreva seu conteúdo (sem links)"
-                showAttachment={true}
-                categories={categories}
-              />
+              userProfile?.accountType === 'client' ? (
+                <div className="client-restriction">
+                  <h3>Visualização apenas</h3>
+                  <p>Contas de cliente podem apenas visualizar o feed. Para criar conteúdo, faça upgrade para uma conta de criador.</p>
+                  <Link to="/profile" className="upgrade-btn">
+                    Ver Perfil
+                  </Link>
+                </div>
+              ) : (
+                <PostCreator
+                  mode="vixies"
+                  onPostCreated={handlePostCreated}
+                  placeholder="Descreva seu conteúdo (sem links)"
+                  showAttachment={true}
+                  categories={categories}
+                />
+              )
             ) : (
               <div className="login-prompt">
                 <h3>Faça login para compartilhar</h3>
