@@ -10,6 +10,7 @@ import { useServicesR2 as useServices } from '../contexts/ServicesContextR2';
 import { useNotification } from '../contexts/NotificationContext';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { getDefaultImage } from '../utils/defaultImages';
+import { getProfileUrl } from '../utils/profileUrls';
 import { useEmailVerification } from '../hooks/useEmailVerification';
 const CreateServiceModal = lazy(() => import('../components/CreateServiceModal'));
 const CreatePackModal = lazy(() => import('../components/CreatePackModal'));
@@ -22,11 +23,11 @@ import PackBuyersModal from '../components/PackBuyersModal';
 import './Profile.css';
 
 const Profile = () => {
-  const { userId } = useParams();
+  const { username } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { userProfile, getUserById, updateUserProfile, formatUserDisplayName, getUserAvatarUrl, loading: userLoading } = useUser();
+  const { userProfile, getUserById, getUserByUsername, updateUserProfile, formatUserDisplayName, getUserAvatarUrl, loading: userLoading } = useUser();
   
   // Get account type from user profile
   const accountType = userProfile?.accountType || 'client';
@@ -183,22 +184,21 @@ const Profile = () => {
 
   // Load profile from UserContext or Firestore
   useEffect(() => {
-    const targetUserId = userId || currentUser?.uid;
-    if (!targetUserId) return;
-
     const loadProfileData = async () => {
       setLoading(true);
       
-      if (!userId && userProfile) {
+      if (!username && userProfile) {
         // Current user profile from UserContext
         setProfile(userProfile);
         setLoading(false);
-      } else if (userId) {
-        // Other user profile from Firestore
+      } else if (username) {
+        // Other user profile from Firestore by username
         try {
-          const userData = await getUserById(userId);
+          const userData = await getUserByUsername(username);
           if (userData) {
             setProfile(userData);
+            // Load followers for the found user
+            loadFollowers(userData.id);
           } else {
             showError('Usuário não encontrado.', 'Erro');
             navigate('/');
@@ -213,11 +213,7 @@ const Profile = () => {
     };
 
     loadProfileData();
-    // Load followers whenever the viewed profile changes
-    if (targetUserId) {
-      loadFollowers(targetUserId);
-    }
-  }, [userId, currentUser, userProfile, getUserById, showError, navigate]);
+  }, [username, currentUser, userProfile, getUserByUsername, showError, navigate]);
 
   // Initialize form data when profile changes
   useEffect(() => {
@@ -249,19 +245,19 @@ const [formData, setFormData] = useState({
 
   // Load user services from Firestore
   useEffect(() => {
-    const targetUserId = userId || currentUser?.uid;
+    const targetUserId = profile?.id || currentUser?.uid;
     if (targetUserId) {
       loadUserServices(targetUserId);
     }
-  }, [userId, currentUser, loadUserServices]);
+  }, [profile?.id, currentUser, loadUserServices]);
 
   // Load user packs from Firestore
   useEffect(() => {
-    const targetUserId = userId || currentUser?.uid;
+    const targetUserId = profile?.id || currentUser?.uid;
     if (targetUserId) {
       loadUserPacks(targetUserId);
     }
-  }, [userId, currentUser, loadUserPacks]);
+  }, [profile?.id, currentUser, loadUserPacks]);
 
   // Load purchased packs for clients
   useEffect(() => {
@@ -321,11 +317,11 @@ const [formData, setFormData] = useState({
     }
   };
 
-  const loadPosts = async (targetUserId) => {
+  const loadPosts = async (userId) => {
     try {
       // Load user's own posts
       const postsRootRef = ref(database, 'posts');
-      const postsByUserQuery = query(postsRootRef, orderByChild('userId'), equalTo(targetUserId));
+      const postsByUserQuery = query(postsRootRef, orderByChild('userId'), equalTo(userId));
       const snapshot = await get(postsByUserQuery);
       const postsList = [];
       if (snapshot.exists()) {
@@ -335,7 +331,7 @@ const [formData, setFormData] = useState({
       }
 
       // Load reposts made by this user
-      const userRepostsRef = ref(database, `userReposts/${targetUserId}`);
+      const userRepostsRef = ref(database, `userReposts/${userId}`);
       const repostsSnap = await get(userRepostsRef);
       if (repostsSnap.exists()) {
         const repostEntries = Object.entries(repostsSnap.val()); // [postId, timestamp]
@@ -348,7 +344,7 @@ const [formData, setFormData] = useState({
             return {
               id: postId,
               ...val,
-              repostedBy: targetUserId,
+              repostedBy: userId,
               repostedAt: Number(repostedAt) || Date.now(),
               _displayTimestamp: Number(repostedAt) || val.createdAt || val.timestamp || 0,
               _isRepost: true,
@@ -541,9 +537,9 @@ const [formData, setFormData] = useState({
     setServiceToDelete(null);
   };
 
-  const handleFollowerClick = (followerId) => {
+  const handleFollowerClick = (follower) => {
     setShowFollowersModal(false);
-    navigate(`/profile/${followerId}`);
+    navigate(getProfileUrl(follower));
   };
 
   const handleDeletePost = async (postId) => {
@@ -674,9 +670,9 @@ const [formData, setFormData] = useState({
 
   // Removed loadSubscriptions state and fetch for now (feature coming soon)
 
-  const loadReviews = async (targetUserId) => {
+  const loadReviews = async (userId) => {
     try {
-      const reviewsRef = ref(database, `reviews/${targetUserId}`);
+      const reviewsRef = ref(database, `reviews/${userId}`);
       const snapshot = await get(reviewsRef);
       
       if (snapshot.exists()) {
@@ -738,7 +734,7 @@ const [formData, setFormData] = useState({
       const { doc, setDoc, deleteDoc, writeBatch, increment } = await import('firebase/firestore');
       const { firestore } = await import('../../config/firebase');
       
-      const targetUserId = userId || currentUser.uid;
+      const targetUserId = profile?.id || currentUser.uid;
       const followerRef = doc(firestore, 'users', targetUserId, 'followers', currentUser.uid);
       const followingRef = doc(firestore, 'users', currentUser.uid, 'following', targetUserId);
       const targetUserDoc = doc(firestore, 'users', targetUserId);
@@ -896,7 +892,7 @@ const [formData, setFormData] = useState({
     );
   };
 
-  const isOwner = !userId || currentUser?.uid === userId;
+  const isOwner = !username || currentUser?.uid === profile?.id;
 
   // Optimized tab switching to prevent INP issues
   const handleTabClick = useCallback((event) => {
@@ -931,12 +927,8 @@ const [formData, setFormData] = useState({
     setSalesLoading(false);
   }, [currentUser, isOwner, isProvider]);
 
-  // Load sales dashboard when sales tab is active
-  useEffect(() => {
-    if (activeTab === 'sales') {
-      loadSalesDashboard();
-    }
-  }, [activeTab, loadSalesDashboard]);
+  // Sales dashboard functionality removed (was orphaned code)
+  // Dashboards are now embedded within services tab
 
   // Preload cover image immediately for LCP optimization
   useEffect(() => {
@@ -1206,7 +1198,7 @@ const [formData, setFormData] = useState({
           >
             Packs
           </button>
-          {isClient && (
+          {isClient && isOwner && (
             <button 
               className={`profile-tab ${activeTab === 'my-packs' ? 'active' : ''}`}
               onClick={handleTabClick}
@@ -1530,8 +1522,8 @@ const [formData, setFormData] = useState({
       {/* Services Tab */}
       <div className={`tab-content ${activeTab === 'services' ? 'active' : ''}`}>
         <div className="services-tab-content">
-          {/* Client Dashboard Section - Only for clients */}
-          {isClient && (
+          {/* Client Dashboard Section - Only for clients and only on own profile */}
+          {isClient && isOwner && (
             <div className="client-dashboard">
               <div className="section-header">
                 <h2>
@@ -1600,8 +1592,8 @@ const [formData, setFormData] = useState({
             </div>
           )}
 
-          {/* Provider Dashboard Section - Only for providers */}
-          {(isProvider || isBoth) && (
+          {/* Provider Dashboard Section - Only for providers and only on own profile */}
+          {(isProvider || isBoth) && isOwner && (
             <div className="provider-dashboard">
               <div className="section-header">
                 <h2>

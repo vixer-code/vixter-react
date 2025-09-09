@@ -1183,6 +1183,32 @@ export const EnhancedMessagingProvider = ({ children }) => {
   const sendMessage = useCallback(async (text, replyToId = null) => {
     if (!text.trim() || !selectedConversation || !currentUser?.uid) return false;
 
+    // Check if this is a service conversation and if it's on hold
+    if (selectedConversation.type === 'service' && selectedConversation.serviceOrderId) {
+      try {
+        // Get the service order status from Firestore
+        const { doc, getDoc } = await import('firebase/firestore');
+        const { firestore } = await import('../config/firebase');
+        
+        const serviceOrderRef = doc(firestore, 'serviceOrders', selectedConversation.serviceOrderId);
+        const serviceOrderSnap = await getDoc(serviceOrderRef);
+        
+        if (serviceOrderSnap.exists()) {
+          const serviceOrderData = serviceOrderSnap.data();
+          const status = serviceOrderData.status;
+          
+          // If the service order is pending acceptance, the conversation is on hold
+          if (status === 'PENDING_ACCEPTANCE') {
+            showError('Esta conversa está em espera. O vendedor ainda não aceitou o pedido.');
+            return false;
+          }
+        }
+      } catch (error) {
+        console.error('Error checking service order status:', error);
+        // Continue with message sending if we can't check the status
+      }
+    }
+
     // If offline, queue the message
     if (!isOnline) {
       console.log('App is offline - queuing message');

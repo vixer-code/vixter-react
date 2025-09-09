@@ -79,6 +79,16 @@
   opacity: 0.8;
 }
 
+.service-status-indicator {
+  background: rgba(255, 193, 7, 0.1);
+  color: #ffc107;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
 /* Messages Container */
 .messages-container {
   flex: 1;

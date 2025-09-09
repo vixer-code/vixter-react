@@ -269,6 +269,9 @@ const Header = () => {
                     <Link to="/my-services">
                       <i className="fas fa-briefcase"></i> Meus Serviços
                     </Link>
+                    <Link to="/my-purchases">
+                      <i className="fas fa-shopping-bag"></i> Minhas Compras
+                    </Link>
                     <Link to="/wallet"><i className="fas fa-wallet"></i> Carteira</Link>
                     <Link to="/settings"><i className="fas fa-cog"></i> Configurações</Link>
                     <div className="dropdown-divider"></div>
@@ -359,6 +362,9 @@ const Header = () => {
               </Link></li>
               <li><Link to="/my-services" onClick={() => setTimeout(closeMobileMenu, 100)}>
                 <i className="fas fa-briefcase"></i>Meus Serviços
+              </Link></li>
+              <li><Link to="/my-purchases" onClick={() => setTimeout(closeMobileMenu, 100)}>
+                <i className="fas fa-shopping-bag"></i>Minhas Compras
               </Link></li>
               <li><Link to="/wallet" onClick={() => setTimeout(closeMobileMenu, 100)}>
                 <i className="fas fa-wallet"></i>Carteira

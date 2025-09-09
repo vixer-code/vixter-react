@@ -31,6 +31,7 @@ const Vixies = lazy(() => import('./pages/Vixies'));
 const Vixink = lazy(() => import('./pages/Vixink'));
 const SearchResults = lazy(() => import('./pages/SearchResults'));
 const MyServices = lazy(() => import('./pages/MyServices'));
+const MyPurchases = lazy(() => import('./pages/MyPurchases'));
 const ServiceDetail = lazy(() => import('./pages/ServiceDetail'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -72,7 +73,7 @@ function App() {
                                 <Route path="/register" element={<Register />} />
                                 <Route path="/feed" element={<Feed />} />
                                 <Route path="/profile" element={<Profile />} />
-                                <Route path="/profile/:userId" element={<Profile />} />
+                                <Route path="/profile/:username" element={<Profile />} />
                                 <Route path="/wallet" element={<Wallet />} />
                                 <Route path="/messages" element={<Messages />} />
                                 <Route path="/messaging-test" element={<MessagingTestPage />} />
@@ -81,6 +82,7 @@ function App() {
                                 <Route path="/vixink" element={<Vixink />} />
                                 <Route path="/search" element={<SearchResults />} />
                                 <Route path="/my-services" element={<MyServices />} />
+                                <Route path="/my-purchases" element={<MyPurchases />} />
                                 <Route path="/service/:serviceId" element={<ServiceDetail />} />
                                 <Route path="/settings" element={<div>Settings Page - Coming Soon</div>} />
                                 <Route path="/services" element={<div>Services Page - Coming Soon</div>} />

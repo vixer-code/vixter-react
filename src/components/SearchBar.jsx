@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { database, db } from '../../config/firebase';
+import { getProfileUrl } from '../utils/profileUrls';
 import { ref, query, orderByChild, startAt, endAt, get, limitToFirst } from 'firebase/database';
 import { collection, query as firestoreQuery, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
@@ -236,7 +237,7 @@ const SearchBar = () => {
                   {searchResults.users.map((user) => (
                     <Link
                       key={user.id}
-                      to={`/profile/${user.id}`}
+                      to={getProfileUrl(user)}
                       className="search-result-item"
                       onClick={handleResultClick}
                     >

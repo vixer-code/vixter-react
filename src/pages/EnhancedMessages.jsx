@@ -201,6 +201,11 @@ const EnhancedMessages = () => {
             <span>📱 Modo offline - {offlineMessages.length} mensagem(ns) na fila</span>
           </div>
         )}
+        {selectedConversation?.type === 'service' && selectedConversation?.serviceOrderId && (
+          <div className="service-status-indicator">
+            <span>🛠️ Conversa de serviço - Aguardando aceitação do vendedor</span>
+          </div>
+        )}
       </div>
 
       <div className="messages-container">

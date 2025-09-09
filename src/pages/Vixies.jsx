@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
+import { getProfileUrlById } from '../utils/profileUrls';
 import { database } from '../../config/firebase';
 import { ref, onValue, set, off, query, orderByChild, get, remove } from 'firebase/database';
 import { Link } from 'react-router-dom';
@@ -367,7 +368,7 @@ const Vixies = () => {
                         }}
                       />
                       <div className="author-info">
-                        <Link to={`/profile/${post.authorId}`} className="author-name">
+                        <Link to={getProfileUrlById(post.authorId, post.authorUsername)} className="author-name">
                           {post.authorName}
                         </Link>
                         <span className="post-time">{formatTime(post.timestamp)}</span>

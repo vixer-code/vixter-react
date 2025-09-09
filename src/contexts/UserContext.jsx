@@ -255,6 +255,31 @@ export const UserProvider = ({ children }) => {
     }
   }, []);
 
+  // Get user by username
+  const getUserByUsername = useCallback(async (username) => {
+    if (!username) return null;
+
+    try {
+      // Search for user by username in Firestore
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('username', '==', username.toLowerCase()));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        return {
+          id: userDoc.id,
+          ...userDoc.data()
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error getting user by username:', error);
+      return null;
+    }
+  }, []);
+
   // Check if user can claim daily bonus
   const canClaimDailyBonus = useCallback(() => {
     if (!userProfile || !userProfile.lastDailyBonus) return true;
@@ -305,6 +330,7 @@ export const UserProvider = ({ children }) => {
     migrateUserFromRTDB,
     searchUsers,
     getUserById,
+    getUserByUsername,
     
     // Utilities
     canClaimDailyBonus,
