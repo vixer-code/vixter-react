@@ -122,7 +122,7 @@
 
 /* ===== Sidebar ===== */
 .vixies-sidebar {
-  flex: 0 0 300px;
+  flex: 0 0 650px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -671,6 +671,7 @@
     order: 2;
     width: 100%;
     max-width: 650px;
+    flex: none;
   }
 
   .vixies-feed {
