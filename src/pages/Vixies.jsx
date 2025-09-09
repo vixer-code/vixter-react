@@ -39,12 +39,6 @@ const Vixies = () => {
   ];
 
   useEffect(() => {
-    if (!userProfile) {
-      setPosts([]);
-      setLoading(false);
-      return;
-    }
-
     let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
 
     // Load posts
@@ -93,7 +87,7 @@ const Vixies = () => {
       if (usersUnsubscribe) usersUnsubscribe();
       if (followingUnsubscribe) followingUnsubscribe();
     };
-  }, [userProfile, currentUser]);
+  }, [currentUser]);
 
   const handlePostCreated = useCallback(() => {
     // Refresh posts or perform any other action after post creation
@@ -222,7 +216,7 @@ const Vixies = () => {
     }
   });
 
-  if (loading) {
+  if (loading || !userProfile) {
     return (
       <div className="vixies-container">
         <div className="loading-spinner">Carregando posts...</div>
