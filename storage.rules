@@ -167,10 +167,7 @@ service firebase.storage {
     // Vixies posts media - only providers can upload
     match /vixies/{authorId}/{fileName} {
       allow read: if true;
-      allow write: if isAuthenticated() && 
-                     isOwner(authorId) && 
-                     (isImageFile() || isVideoFile()) && 
-                     isValidFileSize();
+      allow write: if isAuthenticated() && isOwner(authorId);
       allow delete: if isAuthenticated() && isOwner(authorId);
       allow read, write, delete: if isAdmin();
     }
@@ -178,7 +175,7 @@ service firebase.storage {
     // Vixink posts media
     match /vixink/{authorId}/{fileName} {
       allow read: if true;
-      allow write: if isAuthenticated() && isOwner(authorId) && (isImageFile() || isVideoFile()) && isValidFileSize();
+      allow write: if isAuthenticated() && isOwner(authorId);
       allow delete: if isAuthenticated() && isOwner(authorId);
       allow read, write, delete: if isAdmin();
     }

@@ -163,20 +163,32 @@ const PostCreator = ({
           // Verify authentication token
           const token = await currentUser.getIdToken();
           console.log('Auth token exists:', !!token);
+          console.log('Token details:', { uid: currentUser.uid, email: currentUser.email });
           
           const path = `${mode}/${currentUser.uid}/${Date.now()}_${mediaFile.name}`;
           console.log('Uploading media to path:', path);
           console.log('User UID:', currentUser.uid);
           console.log('User account type:', userProfile?.accountType);
           console.log('Mode:', mode);
+          console.log('File details:', { 
+            name: mediaFile.name, 
+            size: mediaFile.size, 
+            type: mediaFile.type 
+          });
           
           const sref = storageRef(storage, path);
+          console.log('Storage reference created:', sref.fullPath);
+          
           const snap = await uploadBytes(sref, mediaFile);
+          console.log('Upload completed, getting download URL...');
+          
           const url = await getDownloadURL(snap.ref);
           mediaData = [{ type: mediaType, url }];
           console.log('Media uploaded successfully:', url);
         } catch (uploadError) {
           console.error('Error uploading media:', uploadError);
+          console.error('Error code:', uploadError.code);
+          console.error('Error message:', uploadError.message);
           showError(`Erro ao fazer upload da mídia: ${uploadError.message}`);
           return;
         }
