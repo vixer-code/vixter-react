@@ -256,7 +256,6 @@ const Vixies = () => {
       <div className="vixies-header">
         <div className="vixies-title">
           <h1>Vixies</h1>
-          <p>Compartilhe suas experiências e descubra conteúdo incrível</p>
         </div>
       </div>
 

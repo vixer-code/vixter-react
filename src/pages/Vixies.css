@@ -26,13 +26,6 @@
   background-clip: text;
 }
 
-.vixies-title p {
-  font-size: 1.1rem;
-  color: var(--text-primary);
-  margin: 0;
-  opacity: 1;
-  font-weight: 500;
-}
 
 /* ===== Layout geral do feed ===== */
 .vixies-content {
