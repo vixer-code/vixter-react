@@ -153,6 +153,15 @@ const PostCreator = ({
       return;
     }
 
+    // Debug authentication and user data
+    console.log('Current user:', {
+      uid: currentUser.uid,
+      email: currentUser.email,
+      displayName: currentUser.displayName,
+      photoURL: currentUser.photoURL
+    });
+    console.log('User profile:', userProfile);
+
     if (mode === 'vixies' && (!userProfile || userProfile.accountType !== 'provider')) {
       showWarning('Apenas provedores podem postar em Vixies');
       return;
@@ -240,6 +249,9 @@ const PostCreator = ({
       if (mode === 'vixies' || mode === 'vixink') {
         postData.category = selectedCategory || 'all';
       }
+
+      console.log('Post data to be sent:', postData);
+      console.log('Database path:', `${mode}_posts`);
 
       // Publish to appropriate database location
       const postsRef = ref(database, `${mode}_posts`);
