@@ -278,46 +278,22 @@ const Vixies = () => {
                   </div>
                 )
               ) : (
-                <div className="create-post-card">
-                  <div className="create-post-avatar">
-                    <img
-                      src={userProfile?.profilePictureURL || '/images/defpfp1.png'}
-                      alt="Avatar"
-                      onError={(e) => {
-                        e.target.src = '/images/defpfp1.png';
-                      }}
-                    />
-                  </div>
-                  <div className="create-post-body">
-                    <textarea
-                      placeholder="O que você está pensando?"
-                      maxLength={1000}
-                      rows={3}
-                    />
-                    <div className="create-post-actions">
-                      <label className="action-btn">
-                        <i className="fa-solid fa-image"></i> Imagem
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          style={{ display: 'none' }}
-                        />
-                      </label>
-                      <label className="action-btn">
-                        <i className="fa-solid fa-link"></i> Anexar Serviço
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style={{ display: 'none' }}
-                        />
-                      </label>
-                      <button className="btn primary">
-                        Publicar
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <PostCreator
+                  mode="vixies"
+                  onPostCreated={handlePostCreated}
+                  placeholder="O que você está pensando?"
+                  showAttachment={true}
+                  categories={[
+                    { value: 'all', label: 'Todas as categorias' },
+                    { value: 'art', label: 'Arte' },
+                    { value: 'music', label: 'Música' },
+                    { value: 'writing', label: 'Escrita' },
+                    { value: 'design', label: 'Design' },
+                    { value: 'photography', label: 'Fotografia' },
+                    { value: 'video', label: 'Vídeo' },
+                    { value: 'other', label: 'Outros' }
+                  ]}
+                />
               )
             ) : (
               <div className="login-prompt">

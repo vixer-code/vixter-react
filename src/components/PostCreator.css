@@ -1,9 +1,20 @@
 .post-creator {
-  background: #1a1a1a;
+  background: rgba(26, 26, 46, 0.5);
+  backdrop-filter: blur(10px);
   border-radius: 12px;
-  padding: 16px;
+  padding: 2rem;
   margin-bottom: 20px;
-  border: 1px solid #333;
+  border: 1px solid rgba(138, 43, 226, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.post-creator:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+  border-color: rgba(138, 43, 226, 0.5);
 }
 
 .post-creator-header {
@@ -26,12 +37,12 @@
 
 .post-creator-input {
   width: 100%;
-  background: #2a2a2a;
-  border: 1px solid #444;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
   padding: 12px;
-  color: #fff;
-  font-size: 14px;
+  color: #ffffff;
+  font-size: 1rem;
   resize: vertical;
   min-height: 80px;
   font-family: inherit;
@@ -39,12 +50,11 @@
 
 .post-creator-input:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  border-color: #00FFCA;
 }
 
 .post-creator-input::placeholder {
-  color: #888;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .selected-attachment {
