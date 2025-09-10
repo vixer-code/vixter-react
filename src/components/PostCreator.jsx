@@ -269,6 +269,8 @@ const PostCreator = ({
 
       console.log('Post data to be sent:', postData);
       console.log('Database path:', `${mode}_posts`);
+      console.log('Attachment data:', attachment);
+      console.log('Media data:', mediaData);
 
       // Publish to appropriate database location
       const postsRef = ref(database, `${mode}_posts`);
@@ -304,8 +306,8 @@ const PostCreator = ({
     <div className="post-creator">
       <div className="post-creator-header">
         <img
-          src={currentUser?.photoURL || '/images/defpfp1.png'}
-          alt={currentUser?.displayName || 'User'}
+          src={userProfile?.profilePictureURL || currentUser?.photoURL || '/images/defpfp1.png'}
+          alt={userProfile?.username || currentUser?.displayName || 'User'}
           className="user-avatar"
           onError={(e) => {
             e.target.src = '/images/defpfp1.png';
