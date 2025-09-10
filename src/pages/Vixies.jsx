@@ -185,8 +185,20 @@ const Vixies = () => {
     const age = Date.now() - post.timestamp;
     const ageInHours = age / (1000 * 60 * 60);
     
-    // Engagement score with time decay
+    // Engagement score with strong time boost for recent posts
     const engagement = (likes * 2) + (reposts);
+    
+    // Strong boost for posts less than 1 hour old
+    if (ageInHours < 1) {
+      return engagement + 1000; // Big boost for very recent posts
+    }
+    
+    // Moderate boost for posts less than 24 hours old
+    if (ageInHours < 24) {
+      return engagement + 100;
+    }
+    
+    // Normal time decay for older posts
     const timeDecay = Math.max(0.1, 1 - (ageInHours / 168)); // Decay over 7 days
     return engagement * timeDecay;
   };

@@ -107,7 +107,9 @@ const PostCreator = ({
       kind: item.type,
       id: item.id,
       title: item.title,
-      coverUrl: item.coverImageURL || item.coverImage
+      coverUrl: item.coverImageURL || item.coverImage || item.image,
+      coverImage: item.coverImageURL || item.coverImage || item.image,
+      image: item.coverImageURL || item.coverImage || item.image
     });
     setShowAttachmentModal(false);
   };
