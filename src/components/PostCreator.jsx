@@ -69,6 +69,14 @@ const PostCreator = ({
       const servicesSnapshot = await getDocs(servicesQuery);
       const services = servicesSnapshot.docs.map(doc => {
         const data = doc.data();
+        console.log('Service data loaded:', {
+          id: doc.id,
+          title: data.title,
+          coverImageURL: data.coverImageURL,
+          coverImage: data.coverImage,
+          image: data.image,
+          allFields: Object.keys(data)
+        });
         return {
           id: doc.id,
           ...data,
@@ -85,6 +93,14 @@ const PostCreator = ({
       const packsSnapshot = await getDocs(packsQuery);
       const packs = packsSnapshot.docs.map(doc => {
         const data = doc.data();
+        console.log('Pack data loaded:', {
+          id: doc.id,
+          title: data.title,
+          coverImageURL: data.coverImageURL,
+          coverImage: data.coverImage,
+          image: data.image,
+          allFields: Object.keys(data)
+        });
         return {
           id: doc.id,
           ...data,
@@ -103,13 +119,26 @@ const PostCreator = ({
   };
 
   const handleAttachmentSelect = (item) => {
+    console.log('Selected attachment item:', {
+      id: item.id,
+      title: item.title,
+      type: item.type,
+      coverImageURL: item.coverImageURL,
+      coverImage: item.coverImage,
+      image: item.image,
+      allFields: Object.keys(item)
+    });
+    
+    const imageUrl = item.coverImageURL || item.coverImage || item.image;
+    console.log('Selected image URL:', imageUrl);
+    
     setAttachment({
       kind: item.type,
       id: item.id,
       title: item.title,
-      coverUrl: item.coverImageURL || item.coverImage || item.image,
-      coverImage: item.coverImageURL || item.coverImage || item.image,
-      image: item.coverImageURL || item.coverImage || item.image
+      coverUrl: imageUrl,
+      coverImage: imageUrl,
+      image: imageUrl
     });
     setShowAttachmentModal(false);
   };
@@ -209,7 +238,7 @@ const PostCreator = ({
 
       // Add mode-specific fields
       if (mode === 'vixies' || mode === 'vixink') {
-        postData.category = selectedCategory;
+        postData.category = selectedCategory || 'all';
       }
 
       // Publish to appropriate database location
