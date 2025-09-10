@@ -377,8 +377,15 @@ const Vixies = () => {
                       </div>
                     )}
                     {post.attachment && (() => {
-                      const imageUrl = post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image || '/images/default-service.jpg';
-                      console.log('Attachment image URL:', imageUrl);
+                      let imageUrl = post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image || '/images/default-service.jpg';
+                      
+                      // Fix URL construction - ensure media.vixter.com.br URLs are absolute
+                      if (imageUrl.startsWith('media.vixter.com.br/')) {
+                        imageUrl = `https://${imageUrl}`;
+                      }
+                      
+                      console.log('Attachment image URL (original):', post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image);
+                      console.log('Attachment image URL (fixed):', imageUrl);
                       return (
                         <div className="attached-item">
                           <div 

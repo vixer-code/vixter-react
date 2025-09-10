@@ -358,19 +358,28 @@ const Vixink = () => {
                         ))}
                       </div>
                     )}
-                    {post.attachment && (
-                      <div className="attached-item">
-                        <div 
-                          className="attached-cover" 
-                          style={{ 
-                            backgroundImage: `url(${post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image || '/images/default-service.jpg'})` 
-                          }}
-                        ></div>
-                        <div className="attached-info">
-                          <Link to={`/${post.attachment.kind === 'service' ? 'service' : 'pack'}/${post.attachment.id}`} className="view-more">Ver mais</Link>
+                    {post.attachment && (() => {
+                      let imageUrl = post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image || '/images/default-service.jpg';
+                      
+                      // Fix URL construction - ensure media.vixter.com.br URLs are absolute
+                      if (imageUrl.startsWith('media.vixter.com.br/')) {
+                        imageUrl = `https://${imageUrl}`;
+                      }
+                      
+                      return (
+                        <div className="attached-item">
+                          <div 
+                            className="attached-cover" 
+                            style={{ 
+                              backgroundImage: `url(${imageUrl})` 
+                            }}
+                          ></div>
+                          <div className="attached-info">
+                            <Link to={`/${post.attachment.kind === 'service' ? 'service' : 'pack'}/${post.attachment.id}`} className="view-more">Ver mais</Link>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
 
                   <div className="post-actions">
