@@ -122,7 +122,6 @@
 
 /* ===== Sidebar ===== */
 .vixies-sidebar {
-  flex: 0 0 650px;
   display: flex;
   flex-direction: column;
   gap: 20px;
