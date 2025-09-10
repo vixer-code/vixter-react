@@ -379,8 +379,8 @@ const Vixies = () => {
                     {post.attachment && (() => {
                       let imageUrl = post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image || '/images/default-service.jpg';
                       
-                      // Fix URL construction - ensure media.vixter.com.br URLs are absolute
-                      if (imageUrl.startsWith('media.vixter.com.br/')) {
+                      // Ensure imageUrl is a string and fix URL construction
+                      if (typeof imageUrl === 'string' && imageUrl.startsWith('media.vixter.com.br/')) {
                         imageUrl = `https://${imageUrl}`;
                       }
                       
