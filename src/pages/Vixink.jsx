@@ -340,7 +340,9 @@ const Vixink = () => {
             </div>
           ) : (
             filteredPosts.map((post) => {
-              const author = users[post.authorId] || {};
+              // Use current user profile if it's the current user's post
+              const isCurrentUser = currentUser && post.authorId === currentUser.uid;
+              const author = isCurrentUser ? userProfile : (users[post.authorId] || {});
               const isLiked = post.likedBy?.includes(currentUser?.uid);
               
               return (
@@ -356,7 +358,7 @@ const Vixink = () => {
                         }}
                       />
                       <div className="author-info">
-                        <Link to={getProfileUrlById(post.authorId, post.authorUsername)} className="author-name">
+                        <Link to={isCurrentUser ? '/profile' : getProfileUrlById(post.authorId, post.authorUsername)} className="author-name">
                           {post.authorName}
                         </Link>
                         <span className="post-time">{formatTime(post.timestamp)}</span>
@@ -370,7 +372,7 @@ const Vixink = () => {
                     <div className="repost-indicator">
                       <i className="fas fa-retweet"></i>
                       <span>
-                        <Link to={getProfileUrlById(post.authorId, post.authorUsername)}>
+                        <Link to={isCurrentUser ? '/profile' : getProfileUrlById(post.authorId, post.authorUsername)}>
                           {post.authorName}
                         </Link> repostou
                       </span>
@@ -392,7 +394,12 @@ const Vixink = () => {
                     )}
                     {post.attachment && (
                       <div className="attached-item">
-                        <div className="attached-cover" style={{ backgroundImage: `url(${post.attachment.coverUrl || '/images/default-service.jpg'})` }}></div>
+                        <div 
+                          className="attached-cover" 
+                          style={{ 
+                            backgroundImage: `url(${post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image || '/images/default-service.jpg'})` 
+                          }}
+                        ></div>
                         <div className="attached-info">
                           <Link to={`/${post.attachment.kind === 'service' ? 'service' : 'pack'}/${post.attachment.id}`} className="view-more">Ver mais</Link>
                         </div>
