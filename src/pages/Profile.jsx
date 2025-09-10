@@ -686,14 +686,21 @@ const [formData, setFormData] = useState({
     if (!file || !currentUser) return;
 
     try {
-      console.log('Starting image upload:', { type, fileName: file.name, fileSize: file.size });
+      console.log('Starting image upload:', { 
+        type, 
+        fileName: file.name, 
+        fileSize: file.size, 
+        fileType: file.type,
+        currentUser: currentUser?.uid 
+      });
       setUploading(true);
 
       // Direct upload to Firebase Storage
-      const path = type === 'avatar' ? `profilePictures/${currentUser.uid}` : `coverPhotos/${currentUser.uid}`;
+      const path = type === 'avatar' ? `profilePictures/${currentUser.uid}/${file.name}` : `coverPhotos/${currentUser.uid}/${file.name}`;
       console.log('Uploading to Firebase Storage path:', path);
       
       const fileRef = storageRef(storage, path);
+      console.log('File reference created, attempting upload...');
       await uploadBytes(fileRef, file, {
         contentType: file.type,
         cacheControl: 'public, max-age=31536000, immutable'

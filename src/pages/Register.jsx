@@ -457,7 +457,7 @@ const Register = () => {
     try {
       console.log('[uploadProfilePicture] Uploading profile picture for user:', userId);
       
-      const profilePictureRef = storageRef(storage, `profilePictures/${userId}`);
+      const profilePictureRef = storageRef(storage, `profilePictures/${userId}/${formData.customAvatar.name}`);
       const snapshot = await uploadBytes(profilePictureRef, formData.customAvatar);
       const downloadURL = await getDownloadURL(snapshot.ref);
       

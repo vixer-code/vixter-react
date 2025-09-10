@@ -8,37 +8,50 @@ service firebase.storage {
     
     // Check if user is authenticated
     function isAuthenticated() {
-      return request.auth != null;
+      return request.auth != null && request.auth.uid != null;
     }
     
     // Check if user is the file owner
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return request.auth != null && 
+             request.auth.uid != null && 
+             userId != null &&
+             request.auth.uid == userId;
     }
     
     // Check if user is admin
     function isAdmin() {
-      return request.auth.uid in ['admin_uid_1', 'admin_uid_2']; // Replace with actual admin UIDs
+      return request.auth != null && 
+             request.auth.uid != null &&
+             request.auth.uid in ['admin_uid_1', 'admin_uid_2']; // Replace with actual admin UIDs
     }
     
     // Validate image file types (use request.resource for writes)
     function isImageFile() {
-      return request.resource != null && request.resource.contentType.matches('image/.*');
+      return request.resource != null && 
+             request.resource.contentType != null &&
+             request.resource.contentType.matches('image/.*');
     }
     
     // Validate video file types (use request.resource for writes)
     function isVideoFile() {
-      return request.resource != null && request.resource.contentType.matches('video/.*');
+      return request.resource != null && 
+             request.resource.contentType != null &&
+             request.resource.contentType.matches('video/.*');
     }
     
     // Validate file size (max 100MB) for writes
     function isValidFileSize() {
-      return request.resource != null && request.resource.size <= 100 * 1024 * 1024;
+      return request.resource != null && 
+             request.resource.size != null &&
+             request.resource.size <= 100 * 1024 * 1024;
     }
     
     // Validate profile image size (max 10MB) for writes
     function isValidProfileImageSize() {
-      return request.resource != null && request.resource.size <= 10 * 1024 * 1024;
+      return request.resource != null && 
+             request.resource.size != null &&
+             request.resource.size <= 10 * 1024 * 1024;
     }
     
     // =====================================================
@@ -65,14 +78,20 @@ service firebase.storage {
     // Backward compatibility for current client uploads
     match /profilePictures/{userId}/{fileName} {
       allow read: if true;
-      allow write: if isAuthenticated() && isOwner(userId) && isImageFile() && isValidProfileImageSize();
+      allow write: if isAuthenticated() && 
+                     isOwner(userId) && 
+                     isImageFile() && 
+                     isValidProfileImageSize();
       allow delete: if isAuthenticated() && isOwner(userId);
       allow read, write, delete: if isAdmin();
     }
 
     match /coverPhotos/{userId}/{fileName} {
       allow read: if true;
-      allow write: if isAuthenticated() && isOwner(userId) && isImageFile() && isValidFileSize();
+      allow write: if isAuthenticated() && 
+                     isOwner(userId) && 
+                     isImageFile() && 
+                     isValidFileSize();
       allow delete: if isAuthenticated() && isOwner(userId);
       allow read, write, delete: if isAdmin();
     }
