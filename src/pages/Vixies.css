@@ -130,17 +130,30 @@
 
 /* ===== Criar Post ===== */
 .create-post-section {
-  background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
-  padding: 20px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 20px;
 }
 
 .create-post-card {
   display: flex;
   gap: 15px;
+  width: 100%;
+  max-width: 650px;
+  background: rgba(26, 26, 46, 0.5);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(138, 43, 226, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.create-post-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+  border-color: rgba(138, 43, 226, 0.5);
 }
 
 .create-post-avatar {
@@ -670,7 +683,6 @@
   .vixies-sidebar {
     order: 2;
     width: 100%;
-    max-width: 650px;
     flex: none;
   }
 
@@ -719,7 +731,6 @@
     font-size: 1.8rem;
   }
 
-  .create-post-section,
   .filters-section,
   .post-card {
     padding: 15px;
