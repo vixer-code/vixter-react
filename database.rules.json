@@ -157,6 +157,27 @@
         "mediaType": {
           ".validate": "newData.isString() && (newData.val() == 'image' || newData.val() == 'video' || newData.val() == 'audio')"
         },
+        "attachment": {
+          ".validate": "newData.val() == null || newData.hasChildren(['kind', 'id', 'title'])",
+          "kind": {
+            ".validate": "newData.isString() && (newData.val() == 'service' || newData.val() == 'pack')"
+          },
+          "id": {
+            ".validate": "newData.isString()"
+          },
+          "title": {
+            ".validate": "newData.isString()"
+          },
+          "coverUrl": {
+            ".validate": "newData.isString()"
+          },
+          "coverImage": {
+            ".validate": "newData.isString()"
+          },
+          "image": {
+            ".validate": "newData.isString()"
+          }
+        },
         "likes": {
           ".validate": "newData.hasChildren()",
           "$userId": {
@@ -210,6 +231,12 @@
             ".validate": "newData.isString()"
           },
           "coverUrl": {
+            ".validate": "newData.isString()"
+          },
+          "coverImage": {
+            ".validate": "newData.isString()"
+          },
+          "image": {
             ".validate": "newData.isString()"
           }
         },
