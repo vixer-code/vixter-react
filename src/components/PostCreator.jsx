@@ -161,6 +161,13 @@ const PostCreator = ({
       photoURL: currentUser.photoURL
     });
     console.log('User profile:', userProfile);
+    console.log('User profile photo fields:', {
+      profilePictureURL: userProfile?.profilePictureURL,
+      photoURL: userProfile?.photoURL,
+      avatar: userProfile?.avatar,
+      image: userProfile?.image,
+      allFields: userProfile ? Object.keys(userProfile) : 'No profile'
+    });
 
     if (mode === 'vixies' && (!userProfile || userProfile.accountType !== 'provider')) {
       showWarning('Apenas provedores podem postar em Vixies');
@@ -234,12 +241,22 @@ const PostCreator = ({
         }
       }
 
+      // Get user photo URL from profile or auth
+      const userPhotoURL = userProfile?.profilePictureURL || currentUser.photoURL || '/images/defpfp1.png';
+      const userName = userProfile?.username || currentUser.displayName || 'Usuário';
+      
+      console.log('User photo sources:', {
+        userProfilePhoto: userProfile?.profilePictureURL,
+        currentUserPhoto: currentUser.photoURL,
+        finalPhotoURL: userPhotoURL
+      });
+
       // Create post data based on mode
       const postData = {
         content,
         authorId: currentUser.uid,
-        authorName: currentUser.displayName || 'Usuário',
-        authorPhotoURL: currentUser.photoURL || '/images/defpfp1.png',
+        authorName: userName,
+        authorPhotoURL: userPhotoURL,
         timestamp: Date.now(),
         media: mediaData,
         attachment: attachment || null

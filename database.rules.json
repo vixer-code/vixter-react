@@ -62,7 +62,7 @@
             }
           },
           "timestamp": {
-            ".validate": "newData.isNumber() && newData.val() <= now + 300000"
+            ".validate": "newData.isNumber() && newData.val() <= now + 600000"
           },
           "read": {
             ".validate": "newData.isBoolean()",
@@ -134,7 +134,7 @@
       "$postId": {
         ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp', 'category'])",
         "authorId": {
-          ".validate": "newData.isString()"
+          ".validate": "newData.isString() && newData.val() == auth.uid"
         },
         "authorName": {
           ".validate": "newData.isString()"
@@ -146,7 +146,7 @@
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000"
         },
         "timestamp": {
-          ".validate": "newData.isNumber() && newData.val() <= now + 300000"
+          ".validate": "newData.isNumber() && newData.val() <= now + 600000"
         },
         "category": {
           ".validate": "newData.isString() && (newData.val() == 'all' || newData.val() == 'news' || newData.val() == 'tutorial' || newData.val() == 'review' || newData.val() == 'guide' || newData.val() == 'other')"
@@ -172,7 +172,7 @@
       "$postId": {
         ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp', 'category'])",
         "authorId": {
-          ".validate": "newData.isString()"
+          ".validate": "newData.isString() && newData.val() == auth.uid"
         },
         "authorName": {
           ".validate": "newData.isString()"
@@ -184,7 +184,7 @@
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000"
         },
         "timestamp": {
-          ".validate": "newData.isNumber() && newData.val() <= now + 300000"
+          ".validate": "newData.isNumber() && newData.val() <= now + 600000"
         },
         "category": {
           ".validate": "newData.isString() && (newData.val() == 'all' || newData.val() == 'gaming' || newData.val() == 'art' || newData.val() == 'music' || newData.val() == 'tech' || newData.val() == 'lifestyle' || newData.val() == 'other')"
