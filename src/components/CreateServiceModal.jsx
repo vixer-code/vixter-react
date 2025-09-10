@@ -329,6 +329,19 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   const handleCoverImageChange = (event) => {
     const file = event.target.files[0];
     if (file) {
+      // Validate file size (max 5MB for mobile compatibility)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        showError('A imagem de capa deve ter no máximo 5MB para melhor compatibilidade mobile');
+        return;
+      }
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showError('Por favor, selecione apenas arquivos de imagem');
+        return;
+      }
+      
       setCoverImageFile(file);
       const reader = new FileReader();
       reader.onload = (e) => setCoverImagePreview(e.target.result);
@@ -547,7 +560,7 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       } else {
         const result = await createService(serviceDataWithFiles);
         if (!result || !result.success || !result.serviceId) {
-          throw new Error('Falha ao criar serviço');
+          throw new Error('Falha ao criar serviço. Verifique sua conexão e tente novamente.');
         }
         serviceId = result.serviceId;
       }
@@ -561,7 +574,19 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       onClose();
     } catch (error) {
       console.error('❌ Error creating/updating service:', error);
-      const errorMessage = `Falha ao ${editingService ? 'atualizar' : 'criar'} serviço: ${error.message}`;
+      
+      // More specific error messages for mobile users
+      let errorMessage = error.message;
+      if (error.message.includes('permission')) {
+        errorMessage = 'Erro de permissão. Verifique se sua conta tem permissão para criar serviços.';
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'Timeout na operação. Tente novamente com uma conexão mais estável.';
+      } else {
+        errorMessage = `Falha ao ${editingService ? 'atualizar' : 'criar'} serviço: ${error.message}`;
+      }
+      
       showError(errorMessage);
     } finally {
       setIsSubmitting(false);

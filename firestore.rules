@@ -21,19 +21,6 @@ service cloud.firestore {
       return request.auth.uid in ['admin_uid_1', 'admin_uid_2']; // Replace with actual admin UIDs
     }
     
-    // Validate required fields for wallet
-    function isValidWallet() {
-      return request.resource.data.keys().hasAll(['uid', 'vp', 'vc', 'vbp', 'vcPending', 'updatedAt']) &&
-             request.resource.data.uid == request.auth.uid &&
-             request.resource.data.vp is number &&
-             request.resource.data.vc is number &&
-             request.resource.data.vbp is number &&
-             request.resource.data.vcPending is number &&
-             request.resource.data.vp >= 0 &&
-             request.resource.data.vc >= 0 &&
-             request.resource.data.vbp >= 0 &&
-             request.resource.data.vcPending >= 0;
-    }
     
     // =====================================================
     // WALLET COLLECTION RULES
@@ -187,11 +174,11 @@ service cloud.firestore {
       
       // Only service owners can create/update their services
       allow create, update: if isAuthenticated() && 
-                              isOwner(request.resource.data.creatorId);
+                              isOwner(request.resource.data.providerId);
       
       // Only service owners can delete their services
       allow delete: if isAuthenticated() && 
-                      isOwner(resource.data.creatorId);
+                      isOwner(resource.data.providerId);
       
       // Admin access
       allow read, write: if isAdmin();

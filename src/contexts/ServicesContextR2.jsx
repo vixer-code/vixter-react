@@ -262,38 +262,54 @@ export const ServicesProviderR2 = ({ children }) => {
 
         // Upload cover image
         if (serviceData.coverImageFile) {
-          const coverResult = await uploadServiceMedia(serviceData.coverImageFile, serviceId);
-          mediaData.coverImage = {
-            key: coverResult.key,
-            publicUrl: coverResult.publicUrl,
-            size: coverResult.size,
-            type: coverResult.type
-          };
+          try {
+            const coverResult = await uploadServiceMedia(serviceData.coverImageFile, serviceId);
+            mediaData.coverImage = {
+              key: coverResult.key,
+              publicUrl: coverResult.publicUrl,
+              size: coverResult.size,
+              type: coverResult.type
+            };
+          } catch (uploadError) {
+            console.error('Error uploading cover image:', uploadError);
+            showError('Erro ao fazer upload da imagem de capa. O serviço foi criado sem imagem.');
+            // Continue without cover image rather than failing completely
+          }
         }
 
         // Upload sample images
         if (serviceData.sampleImageFiles && serviceData.sampleImageFiles.length > 0) {
           for (const file of serviceData.sampleImageFiles) {
-            const sampleResult = await uploadServiceMedia(file, serviceId);
-            mediaData.sampleImages.push({
-              key: sampleResult.key,
-              publicUrl: sampleResult.publicUrl,
-              size: sampleResult.size,
-              type: sampleResult.type
-            });
+            try {
+              const sampleResult = await uploadServiceMedia(file, serviceId);
+              mediaData.sampleImages.push({
+                key: sampleResult.key,
+                publicUrl: sampleResult.publicUrl,
+                size: sampleResult.size,
+                type: sampleResult.type
+              });
+            } catch (uploadError) {
+              console.error('Error uploading sample image:', uploadError);
+              // Continue with other images rather than failing completely
+            }
           }
         }
 
         // Upload sample videos
         if (serviceData.sampleVideoFiles && serviceData.sampleVideoFiles.length > 0) {
           for (const file of serviceData.sampleVideoFiles) {
-            const sampleResult = await uploadServiceMedia(file, serviceId);
-            mediaData.sampleVideos.push({
-              key: sampleResult.key,
-              publicUrl: sampleResult.publicUrl,
-              size: sampleResult.size,
-              type: sampleResult.type
-            });
+            try {
+              const sampleResult = await uploadServiceMedia(file, serviceId);
+              mediaData.sampleVideos.push({
+                key: sampleResult.key,
+                publicUrl: sampleResult.publicUrl,
+                size: sampleResult.size,
+                type: sampleResult.type
+              });
+            } catch (uploadError) {
+              console.error('Error uploading sample video:', uploadError);
+              // Continue with other videos rather than failing completely
+            }
           }
         }
 
