@@ -277,16 +277,6 @@ const Vixink = () => {
                   onPostCreated={handlePostCreated}
                   placeholder="O que você está pensando?"
                   showAttachment={true}
-                  categories={[
-                    { value: 'all', label: 'Todas as categorias' },
-                    { value: 'art', label: 'Arte' },
-                    { value: 'music', label: 'Música' },
-                    { value: 'writing', label: 'Escrita' },
-                    { value: 'design', label: 'Design' },
-                    { value: 'photography', label: 'Fotografia' },
-                    { value: 'video', label: 'Vídeo' },
-                    { value: 'other', label: 'Outros' }
-                  ]}
                 />
               )
             ) : (

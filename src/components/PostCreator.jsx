@@ -297,58 +297,33 @@ const PostCreator = ({
         </div>
       )}
 
-      <div className="post-creator-options">
-        {/* Media Upload */}
-        <div className="media-picker">
-          <label>
-            <span>Tipo de mídia (opcional):</span>
-            <select value={mediaType} onChange={(e) => setMediaType(e.target.value)}>
-              <option value="image">Imagem</option>
-              <option value="video">Vídeo</option>
-              <option value="audio">Áudio</option>
-            </select>
-          </label>
-          <input 
-            type="file" 
-            accept={mediaType+"/*"} 
+      <div className="create-post-actions">
+        <label className="action-btn">
+          <i className="fa-solid fa-image"></i> Imagem
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            style={{ display: 'none' }}
             onChange={handleFileChange}
-            placeholder="Escolha um arquivo (opcional)"
           />
-        </div>
-
-        {/* Category Selection (for Vixies/Vixink) */}
-        {categories.length > 0 && (
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="category-select"
-          >
-            {categories.map(category => (
-              <option key={category.value} value={category.value}>
-                {category.label}
-              </option>
-            ))}
-          </select>
-        )}
-
-        {/* Attachment Button (for Vixies/Vixink) */}
+        </label>
         {showAttachment && currentUser && (
           <button
             type="button"
             onClick={handleModalOpen}
-            className="attach-service-btn"
+            className="action-btn"
           >
-            <i className="fa-solid fa-paperclip"></i>
-            Anexar Serviço
+            <i className="fa-solid fa-link"></i> Anexar Serviço
           </button>
         )}
       </div>
 
-      <div className="post-creator-actions">
+      <div className="create-post-actions">
         <button
           onClick={handlePublish}
           disabled={isPublishing || (!postText.trim() && !mediaFile)}
-          className="publish-btn"
+          className="btn primary"
         >
           {isPublishing ? 'Publicando...' : 'Publicar'}
         </button>
