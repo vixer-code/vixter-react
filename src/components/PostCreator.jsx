@@ -271,6 +271,9 @@ const PostCreator = ({
       console.log('Database path:', `${mode}_posts`);
       console.log('Attachment data:', attachment);
       console.log('Media data:', mediaData);
+      console.log('Attachment coverUrl:', attachment?.coverUrl);
+      console.log('Attachment coverImage:', attachment?.coverImage);
+      console.log('Attachment image:', attachment?.image);
 
       // Publish to appropriate database location
       const postsRef = ref(database, `${mode}_posts`);
@@ -414,20 +417,32 @@ const PostCreator = ({
                     <div className="attachment-section">
                       <h4>Seus Serviços ({userServices.length})</h4>
                       <div className="items-grid">
-                        {userServices.map(service => (
-                          <div
-                            key={service.id}
-                            className="attachment-item"
-                            onClick={() => handleAttachmentSelect(service)}
-                          >
-                            <img 
-                              src={service.coverImageURL || service.coverImage} 
-                              alt={service.title}
-                              className="item-cover"
-                            />
-                            <span className="item-title">{service.title}</span>
-                          </div>
-                        ))}
+                        {userServices.map(service => {
+                          let imageUrl = service.coverImageURL || service.coverImage;
+                          
+                          // Fix URL construction for modal images
+                          if (typeof imageUrl === 'string' && imageUrl.startsWith('media.vixter.com.br/')) {
+                            imageUrl = `https://${imageUrl}`;
+                          }
+                          
+                          return (
+                            <div
+                              key={service.id}
+                              className="attachment-item"
+                              onClick={() => handleAttachmentSelect(service)}
+                            >
+                              <img 
+                                src={imageUrl} 
+                                alt={service.title}
+                                className="item-cover"
+                                onError={(e) => {
+                                  e.target.src = '/images/default-service.jpg';
+                                }}
+                              />
+                              <span className="item-title">{service.title}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -437,20 +452,32 @@ const PostCreator = ({
                     <div className="attachment-section">
                       <h4>Seus Packs ({userPacks.length})</h4>
                       <div className="items-grid">
-                        {userPacks.map(pack => (
-                          <div
-                            key={pack.id}
-                            className="attachment-item"
-                            onClick={() => handleAttachmentSelect(pack)}
-                          >
-                            <img 
-                              src={pack.coverImageURL || pack.coverImage} 
-                              alt={pack.title}
-                              className="item-cover"
-                            />
-                            <span className="item-title">{pack.title}</span>
-                          </div>
-                        ))}
+                        {userPacks.map(pack => {
+                          let imageUrl = pack.coverImageURL || pack.coverImage;
+                          
+                          // Fix URL construction for modal images
+                          if (typeof imageUrl === 'string' && imageUrl.startsWith('media.vixter.com.br/')) {
+                            imageUrl = `https://${imageUrl}`;
+                          }
+                          
+                          return (
+                            <div
+                              key={pack.id}
+                              className="attachment-item"
+                              onClick={() => handleAttachmentSelect(pack)}
+                            >
+                              <img 
+                                src={imageUrl} 
+                                alt={pack.title}
+                                className="item-cover"
+                                onError={(e) => {
+                                  e.target.src = '/images/default-service.jpg';
+                                }}
+                              />
+                              <span className="item-title">{pack.title}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
