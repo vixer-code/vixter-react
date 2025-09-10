@@ -32,22 +32,16 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     category: '',
     description: '',
     price: '',
+    discount: '',
     features: [],
     complementaryOptions: [],
     coverImage: null,
-    showcasePhotos: [],
-    showcaseVideos: [],
     tags: []
   });
 
   // File uploads state
   const [coverImageFile, setCoverImageFile] = useState(null);
   const [coverImagePreview, setCoverImagePreview] = useState('');
-  const [showcasePhotoFiles, setShowcasePhotoFiles] = useState([]);
-  const [showcasePhotoPreviews, setShowcasePhotoPreviews] = useState([]);
-  const [showcaseVideoFiles, setShowcaseVideoFiles] = useState([]);
-  const [showcaseVideoPreviews, setShowcaseVideoPreviews] = useState([]);
-  const [activeMediaTab, setActiveMediaTab] = useState('photos');
 
   // Input refs
   const featuresInputRef = useRef(null);
@@ -240,19 +234,14 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       category: '',
       description: '',
       price: '',
+      discount: '',
       features: [],
       complementaryOptions: [],
       coverImage: null,
-      showcasePhotos: [],
-      showcaseVideos: [],
       tags: []
     });
     setCoverImageFile(null);
     setCoverImagePreview('');
-    setShowcasePhotoFiles([]);
-    setShowcasePhotoPreviews([]);
-    setShowcaseVideoFiles([]);
-    setShowcaseVideoPreviews([]);
     setCurrentStep(0);
   };
 
@@ -349,58 +338,28 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     }
   };
 
-  const handleShowcasePhotosChange = (event) => {
-    const files = Array.from(event.target.files);
-    if (files.length + showcasePhotoFiles.length <= 10) {
-      setShowcasePhotoFiles(prev => [...prev, ...files]);
-      
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setShowcasePhotoPreviews(prev => [...prev, e.target.result]);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
+  // Discount validation functions (same as packs)
+  const getDiscountError = () => {
+    if (formData.discount === '') return null;
+    const v = parseInt(formData.discount, 10);
+    if (isNaN(v)) return 'Desconto deve ser um número';
+    if (v < 0 || v > 100) return 'Desconto deve estar entre 0 e 100';
+    return null;
   };
 
-  const handleShowcaseVideosChange = (event) => {
-    const files = Array.from(event.target.files);
-    if (files.length + showcaseVideoFiles.length <= 5) {
-      setShowcaseVideoFiles(prev => [...prev, ...files]);
-      
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setShowcaseVideoPreviews(prev => [...prev, e.target.result]);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
+  // Currency helpers (same logic as Service: VC -> VP @ 1.5x)
+  const convertVCtoVP = (vcAmount) => vcAmount * 1.5;
+  const formatCurrency = (amount, decimals = 2) => {
+    return parseFloat(amount || 0).toFixed(decimals).replace('.', ',');
   };
+  const formatVC = (amount) => `${formatCurrency(amount)} VC`;
+  const formatVP = (amount) => `${formatCurrency(amount)} VP`;
 
-  const removeShowcasePhoto = (index) => {
-    // Remove from preview arrays (for new uploads)
-    setShowcasePhotoFiles(prev => prev.filter((_, i) => i !== index));
-    setShowcasePhotoPreviews(prev => prev.filter((_, i) => i !== index));
-    
-    // Also remove from formData.showcasePhotos (for existing images)
-    setFormData(prev => ({
-      ...prev,
-      showcasePhotos: prev.showcasePhotos.filter((_, i) => i !== index)
-    }));
-  };
-
-  const removeShowcaseVideo = (index) => {
-    // Remove from preview arrays (for new uploads)
-    setShowcaseVideoFiles(prev => prev.filter((_, i) => i !== index));
-    setShowcaseVideoPreviews(prev => prev.filter((_, i) => i !== index));
-    
-    // Also remove from formData.showcaseVideos (for existing videos)
-    setFormData(prev => ({
-      ...prev,
-      showcaseVideos: prev.showcaseVideos.filter((_, i) => i !== index)
-    }));
+  const effectivePrice = () => {
+    const price = parseFloat(formData.price || 0);
+    const discount = parseInt(formData.discount || 0, 10) || 0;
+    const final = discount > 0 ? price * (1 - discount / 100) : price;
+    return Math.max(final, 0);
   };
 
   // fileToDataURL removed - now using R2 upload
@@ -412,7 +371,7 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       case 1: // Description
         return formData.description.trim().length >= 50;
       case 2: // Pricing
-        return formData.price && parseFloat(formData.price) >= 10;
+        return formData.price && parseFloat(formData.price) >= 10 && !getDiscountError();
       case 3: // Media (optional)
         return true;
       case 4: // Preview
@@ -496,6 +455,12 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       return;
     }
 
+    const discountErr = getDiscountError();
+    if (discountErr) {
+      showError(discountErr);
+      return;
+    }
+
     // Check if cover image is provided
     if (!coverImageFile && !formData.coverImage) {
       showError('Você deve carregar uma imagem de capa para o serviço');
@@ -529,6 +494,7 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
         category: formData.category,
         description: formData.description,
         price: parseFloat(formData.price), // Price in VC
+        discount: parseInt(formData.discount || 0, 10) || 0,
         features: formData.features,
         complementaryOptions: formData.complementaryOptions,
         tags: formData.tags,
@@ -544,12 +510,8 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
         createdAt: Date.now(),
         // Pass files for R2 upload
         coverImageFile: coverImageFile,
-        sampleImageFiles: showcasePhotoFiles,
-        sampleVideoFiles: showcaseVideoFiles,
         // Keep existing URLs for editing
-        existingCoverImage: formData.coverImage,
-        existingShowcasePhotos: formData.showcasePhotos,
-        existingShowcaseVideos: formData.showcaseVideos
+        existingCoverImage: formData.coverImage
       };
 
       // Create or update service via Cloud Functions (Firestore) with R2 upload
@@ -861,6 +823,47 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
               </div>
 
               <div className="form-group">
+                <label htmlFor="service-discount">Desconto (%)</label>
+                <input
+                  type="number"
+                  id="service-discount"
+                  value={formData.discount}
+                  onChange={(e) => handleInputChange('discount', e.target.value)}
+                  min="0"
+                  max="100"
+                  step="1"
+                  placeholder="0"
+                  className={getDiscountError() ? 'error' : ''}
+                />
+                <small>Desconto opcional (0-100%)</small>
+                {getDiscountError() && (
+                  <div className="validation-error">
+                    <i className="fas fa-exclamation-triangle"></i>
+                    {getDiscountError()}
+                  </div>
+                )}
+              </div>
+
+              {formData.price && !getPriceValidationError() && (
+                <div className="currency-display">
+                  <div className="currency-row">
+                    <span>Você recebe:</span>
+                    <span className="currency-value vc">{formatVC(effectivePrice())}</span>
+                  </div>
+                  <div className="currency-row">
+                    <span>Cliente paga:</span>
+                    <span className="currency-value vp">{formatVP(convertVCtoVP(effectivePrice()))}</span>
+                  </div>
+                  {formData.discount && parseInt(formData.discount, 10) > 0 && (
+                    <div className="discount-display">
+                      <span>Desconto aplicado: {formData.discount}%</span>
+                    </div>
+                  )}
+                  <div className="conversion-note">Taxa de conversão: 1 VC = 1,5 VP</div>
+                </div>
+              )}
+
+              <div className="form-group">
                 <label>Opções Complementares</label>
                 <p>Adicione extras que os clientes podem adquirir para melhorar o serviço base.</p>
                 
@@ -974,98 +977,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                 <small>Esta será a imagem principal mostrada para seu serviço</small>
               </div>
 
-              <div className="form-group">
-                <label>Conteúdo de Demonstração</label>
-                <p>Faça upload de fotos e vídeos para demonstrar seu serviço aos clientes.</p>
-                
-                <div className="media-tabs">
-                  <button
-                    type="button"
-                    className={`media-tab ${activeMediaTab === 'photos' ? 'active' : ''}`}
-                    onClick={() => setActiveMediaTab('photos')}
-                  >
-                    Fotos
-                  </button>
-                  <button
-                    type="button"
-                    className={`media-tab ${activeMediaTab === 'videos' ? 'active' : ''}`}
-                    onClick={() => setActiveMediaTab('videos')}
-                  >
-                    Vídeos
-                  </button>
-                </div>
-
-                {activeMediaTab === 'photos' && (
-                  <div className="media-content">
-                    <div className="image-upload-container">
-                      <input
-                        type="file"
-                        id="showcase-photos"
-                        accept="image/*"
-                        multiple
-                        onChange={handleShowcasePhotosChange}
-                        style={{ display: 'none' }}
-                      />
-                      <label htmlFor="showcase-photos" className="upload-placeholder">
-                        <i className="upload-icon">+</i>
-                        <span>Adicionar Fotos</span>
-                      </label>
-                    </div>
-                    <div className="showcase-grid">
-                      {showcasePhotoPreviews.map((preview, index) => (
-                        <div key={index} className="showcase-item">
-                          <img src={preview} alt={`Showcase ${index + 1}`} />
-                          <button 
-                            type="button" 
-                            className="remove-media"
-                            onClick={() => removeShowcasePhoto(index)}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    <small>Até 10 fotos (JPG/PNG)</small>
-                  </div>
-                )}
-
-                {activeMediaTab === 'videos' && (
-                  <div className="media-content">
-                    <div className="image-upload-container">
-                      <input
-                        type="file"
-                        id="showcase-videos"
-                        accept="video/*"
-                        multiple
-                        onChange={handleShowcaseVideosChange}
-                        style={{ display: 'none' }}
-                      />
-                      <label htmlFor="showcase-videos" className="upload-placeholder">
-                        <i className="upload-icon">+</i>
-                        <span>Adicionar Vídeos</span>
-                      </label>
-                    </div>
-                    <div className="showcase-grid">
-                      {showcaseVideoPreviews.map((preview, index) => (
-                        <div key={index} className="showcase-item">
-                          <video controls>
-                            <source src={preview} type="video/mp4" />
-                            Seu navegador não suporta vídeo.
-                          </video>
-                          <button 
-                            type="button" 
-                            className="remove-media"
-                            onClick={() => removeShowcaseVideo(index)}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    <small>Até 5 vídeos (MP4/MOV, máx. 100 MB cada)</small>
-                  </div>
-                )}
-              </div>
 
               <div className="form-group">
                 <label>Tags do Serviço</label>
@@ -1114,9 +1025,20 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                     </div>
                   </div>
                   <div className="preview-price-container">
-                    <div className="preview-price-main">
-                      A partir de {formData.price ? formatVP(convertVCtoVP(formData.price)) : '0,00 VP'}
-                    </div>
+                    {formData.discount && parseInt(formData.discount, 10) > 0 ? (
+                      <>
+                        <div className="preview-price-secondary">
+                          {formatVC(formData.price)}
+                        </div>
+                        <div className="preview-price-main">
+                          A partir de {formatVP(convertVCtoVP(effectivePrice()))}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="preview-price-main">
+                        A partir de {formData.price ? formatVP(convertVCtoVP(formData.price)) : '0,00 VP'}
+                      </div>
+                    )}
                   </div>
                 </div>
                 

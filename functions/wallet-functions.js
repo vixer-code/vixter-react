@@ -308,7 +308,7 @@ async function handlePaymentFailed(paymentIntent) {
 
 // Services Internal Functions
 async function createServiceInternal(userId, payload) {
-  const { title, description, price, category, tags, features, complementaryOptions, status, currency } = payload;
+  const { title, description, price, discount, category, tags, features, complementaryOptions, status, currency } = payload;
 
   if (!title || !description || !price || price <= 0) {
     throw new HttpsError("invalid-argument", "Dados do serviço são obrigatórios");
@@ -321,6 +321,7 @@ async function createServiceInternal(userId, payload) {
     title: title.trim(),
     description: description.trim(),
     price: Math.round(price),
+    discount: Number(discount) || 0,
     category: category || 'geral',
     tags: Array.isArray(tags) ? tags : [],
     features: Array.isArray(features) ? features : [],
@@ -331,9 +332,7 @@ async function createServiceInternal(userId, payload) {
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     // Media URLs are now data URLs passed directly
-    coverImageURL: payload.coverImageURL || null,
-    showcasePhotosURLs: payload.showcasePhotosURLs || [],
-    showcaseVideosURLs: payload.showcaseVideosURLs || []
+    coverImageURL: payload.coverImageURL || null
   };
 
   await serviceRef.set(serviceData);

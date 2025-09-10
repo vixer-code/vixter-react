@@ -255,9 +255,7 @@ export const ServicesProviderR2 = ({ children }) => {
         
         // Upload media files to R2
         const mediaData = {
-          coverImage: null,
-          sampleImages: [],
-          sampleVideos: []
+          coverImage: null
         };
 
         // Upload cover image
@@ -277,41 +275,6 @@ export const ServicesProviderR2 = ({ children }) => {
           }
         }
 
-        // Upload sample images
-        if (serviceData.sampleImageFiles && serviceData.sampleImageFiles.length > 0) {
-          for (const file of serviceData.sampleImageFiles) {
-            try {
-              const sampleResult = await uploadServiceMedia(file, serviceId);
-              mediaData.sampleImages.push({
-                key: sampleResult.key,
-                publicUrl: sampleResult.publicUrl,
-                size: sampleResult.size,
-                type: sampleResult.type
-              });
-            } catch (uploadError) {
-              console.error('Error uploading sample image:', uploadError);
-              // Continue with other images rather than failing completely
-            }
-          }
-        }
-
-        // Upload sample videos
-        if (serviceData.sampleVideoFiles && serviceData.sampleVideoFiles.length > 0) {
-          for (const file of serviceData.sampleVideoFiles) {
-            try {
-              const sampleResult = await uploadServiceMedia(file, serviceId);
-              mediaData.sampleVideos.push({
-                key: sampleResult.key,
-                publicUrl: sampleResult.publicUrl,
-                size: sampleResult.size,
-                type: sampleResult.type
-              });
-            } catch (uploadError) {
-              console.error('Error uploading sample video:', uploadError);
-              // Continue with other videos rather than failing completely
-            }
-          }
-        }
 
         // Update service with media data
         await apiFunc({
