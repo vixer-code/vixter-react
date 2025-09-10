@@ -172,6 +172,24 @@ const Vixink = () => {
     return date.toLocaleDateString('pt-BR');
   };
 
+  // Function to handle WebP compatibility
+  const getImageUrl = (url) => {
+    if (!url || typeof url !== 'string') return url;
+    
+    // Fix URL construction for media.vixter.com.br
+    if (url.startsWith('media.vixter.com.br/')) {
+      url = `https://${url}`;
+    }
+    
+    // For WebP images, add a timestamp to force refresh
+    if (url.includes('.webp')) {
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}t=${Date.now()}`;
+    }
+    
+    return url;
+  };
+
 
   const calculateEngagementScore = (post) => {
     const likes = post.likes || 0;
@@ -359,15 +377,10 @@ const Vixink = () => {
                       </div>
                     )}
                     {post.attachment && (() => {
-                      let imageUrl = post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image || '/images/default-service.jpg';
+                      const imageUrl = getImageUrl(post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image || '/images/default-service.jpg');
                       
-                      // Ensure imageUrl is a string and fix URL construction
-                      if (typeof imageUrl === 'string' && imageUrl.startsWith('media.vixter.com.br/')) {
-                        imageUrl = `https://${imageUrl}`;
-                      }
-                      
-                      console.log('Vixink - Attachment image URL type:', typeof imageUrl);
-                      console.log('Vixink - Attachment image URL value:', imageUrl);
+                      console.log('Vixink - Attachment image URL (original):', post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image);
+                      console.log('Vixink - Attachment image URL (fixed):', imageUrl);
                       
                       return (
                         <div className="attached-item">
@@ -376,6 +389,8 @@ const Vixink = () => {
                             style={{ 
                               backgroundImage: `url(${imageUrl})` 
                             }}
+                            onLoad={() => console.log('Vixink - Image loaded successfully')}
+                            onError={() => console.log('Vixink - Image failed to load')}
                           ></div>
                           <div className="attached-info">
                             <Link to={`/${post.attachment.kind === 'service' ? 'service' : 'pack'}/${post.attachment.id}`} className="view-more">Ver mais</Link>

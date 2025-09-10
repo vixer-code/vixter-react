@@ -147,6 +147,25 @@ const PostCreator = ({
     setAttachment(null);
   };
 
+  // Function to handle WebP compatibility
+  const getImageUrl = (url) => {
+    if (!url || typeof url !== 'string') return url;
+    
+    // Fix URL construction for media.vixter.com.br
+    if (url.startsWith('media.vixter.com.br/')) {
+      url = `https://${url}`;
+    }
+    
+    // For WebP images, we can add a fallback or ensure proper headers
+    if (url.includes('.webp')) {
+      // Add a timestamp to force refresh and ensure proper content-type
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}t=${Date.now()}`;
+    }
+    
+    return url;
+  };
+
   const handlePublish = async () => {
     if (!currentUser) {
       showError('Você precisa estar logado para postar');
@@ -418,12 +437,7 @@ const PostCreator = ({
                       <h4>Seus Serviços ({userServices.length})</h4>
                       <div className="items-grid">
                         {userServices.map(service => {
-                          let imageUrl = service.coverImageURL || service.coverImage;
-                          
-                          // Fix URL construction for modal images
-                          if (typeof imageUrl === 'string' && imageUrl.startsWith('media.vixter.com.br/')) {
-                            imageUrl = `https://${imageUrl}`;
-                          }
+                          const imageUrl = getImageUrl(service.coverImageURL || service.coverImage);
                           
                           return (
                             <div
@@ -436,8 +450,10 @@ const PostCreator = ({
                                 alt={service.title}
                                 className="item-cover"
                                 onError={(e) => {
+                                  console.log('Service image failed to load:', imageUrl);
                                   e.target.src = '/images/default-service.jpg';
                                 }}
+                                onLoad={() => console.log('Service image loaded:', imageUrl)}
                               />
                               <span className="item-title">{service.title}</span>
                             </div>
@@ -453,12 +469,7 @@ const PostCreator = ({
                       <h4>Seus Packs ({userPacks.length})</h4>
                       <div className="items-grid">
                         {userPacks.map(pack => {
-                          let imageUrl = pack.coverImageURL || pack.coverImage;
-                          
-                          // Fix URL construction for modal images
-                          if (typeof imageUrl === 'string' && imageUrl.startsWith('media.vixter.com.br/')) {
-                            imageUrl = `https://${imageUrl}`;
-                          }
+                          const imageUrl = getImageUrl(pack.coverImageURL || pack.coverImage);
                           
                           return (
                             <div
@@ -471,8 +482,10 @@ const PostCreator = ({
                                 alt={pack.title}
                                 className="item-cover"
                                 onError={(e) => {
+                                  console.log('Pack image failed to load:', imageUrl);
                                   e.target.src = '/images/default-service.jpg';
                                 }}
+                                onLoad={() => console.log('Pack image loaded:', imageUrl)}
                               />
                               <span className="item-title">{pack.title}</span>
                             </div>

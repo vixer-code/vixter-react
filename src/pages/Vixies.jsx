@@ -178,6 +178,24 @@ const Vixies = () => {
     return date.toLocaleDateString('pt-BR');
   };
 
+  // Function to handle WebP compatibility
+  const getImageUrl = (url) => {
+    if (!url || typeof url !== 'string') return url;
+    
+    // Fix URL construction for media.vixter.com.br
+    if (url.startsWith('media.vixter.com.br/')) {
+      url = `https://${url}`;
+    }
+    
+    // For WebP images, add a timestamp to force refresh
+    if (url.includes('.webp')) {
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}t=${Date.now()}`;
+    }
+    
+    return url;
+  };
+
 
   const calculateEngagementScore = (post) => {
     const likes = post.likes || 0;
@@ -377,12 +395,7 @@ const Vixies = () => {
                       </div>
                     )}
                     {post.attachment && (() => {
-                      let imageUrl = post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image || '/images/default-service.jpg';
-                      
-                      // Ensure imageUrl is a string and fix URL construction
-                      if (typeof imageUrl === 'string' && imageUrl.startsWith('media.vixter.com.br/')) {
-                        imageUrl = `https://${imageUrl}`;
-                      }
+                      const imageUrl = getImageUrl(post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image || '/images/default-service.jpg');
                       
                       console.log('Attachment image URL (original):', post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image);
                       console.log('Attachment image URL (fixed):', imageUrl);
