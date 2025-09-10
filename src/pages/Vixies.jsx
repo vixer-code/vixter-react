@@ -376,19 +376,25 @@ const Vixies = () => {
                         ))}
                       </div>
                     )}
-                    {post.attachment && (
-                      <div className="attached-item">
-                        <div 
-                          className="attached-cover" 
-                          style={{ 
-                            backgroundImage: `url(${post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image || '/images/default-service.jpg'})` 
-                          }}
-                        ></div>
-                        <div className="attached-info">
-                          <Link to={`/${post.attachment.kind === 'service' ? 'service' : 'pack'}/${post.attachment.id}`} className="view-more">Ver mais</Link>
+                    {post.attachment && (() => {
+                      const imageUrl = post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image || '/images/default-service.jpg';
+                      console.log('Attachment image URL:', imageUrl);
+                      return (
+                        <div className="attached-item">
+                          <div 
+                            className="attached-cover" 
+                            style={{ 
+                              backgroundImage: `url(${imageUrl})` 
+                            }}
+                            onLoad={() => console.log('Image loaded successfully')}
+                            onError={() => console.log('Image failed to load')}
+                          ></div>
+                          <div className="attached-info">
+                            <Link to={`/${post.attachment.kind === 'service' ? 'service' : 'pack'}/${post.attachment.id}`} className="view-more">Ver mais</Link>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
 
                   <div className="post-actions">
