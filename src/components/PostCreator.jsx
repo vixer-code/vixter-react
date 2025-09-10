@@ -298,28 +298,27 @@ const PostCreator = ({
       )}
 
       <div className="create-post-actions">
-        <label className="action-btn">
-          <i className="fa-solid fa-image"></i> Imagem
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-          />
-        </label>
-        {showAttachment && currentUser && (
-          <button
-            type="button"
-            onClick={handleModalOpen}
-            className="action-btn"
-          >
-            <i className="fa-solid fa-link"></i> Anexar Serviço
-          </button>
-        )}
-      </div>
-
-      <div className="create-post-actions">
+        <div className="action-buttons-left">
+          <label className="action-btn">
+            <i className="fa-solid fa-image"></i> Imagem
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+          </label>
+          {showAttachment && currentUser && (
+            <button
+              type="button"
+              onClick={handleModalOpen}
+              className="action-btn"
+            >
+              <i className="fa-solid fa-link"></i> Anexar Serviço
+            </button>
+          )}
+        </div>
         <button
           onClick={handlePublish}
           disabled={isPublishing || (!postText.trim() && !mediaFile)}
