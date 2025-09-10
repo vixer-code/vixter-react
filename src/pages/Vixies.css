@@ -137,7 +137,6 @@
   display: flex;
   gap: 15px;
   width: 100%;
-  max-width: 650px;
   background: rgba(26, 26, 46, 0.5);
   backdrop-filter: blur(10px);
   border-radius: 12px;
