@@ -104,7 +104,9 @@ const PackDetail = () => {
         'Saldo Insuficiente',
         8000,
         {
-          onClick: () => {
+          onClick: (data) => {
+            console.log('Notification clicked! Data:', data);
+            console.log('Navigating to wallet...');
             navigate('/wallet?tab=packs');
           },
           data: { action: 'recharge' }
@@ -127,7 +129,9 @@ const PackDetail = () => {
         'Saldo Insuficiente',
         8000,
         {
-          onClick: () => {
+          onClick: (data) => {
+            console.log('Notification clicked! Data:', data);
+            console.log('Closing modal and navigating to wallet...');
             setShowPurchaseModal(false);
             navigate('/wallet?tab=packs');
           },

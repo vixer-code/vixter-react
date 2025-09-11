@@ -42,30 +42,33 @@ export const NotificationProvider = ({ children }) => {
     setNotifications(prev => prev.filter(notification => notification.id !== id));
   }, []);
 
-  const showSuccess = useCallback((message, title = 'Success', duration = 5000) => {
+  const showSuccess = useCallback((message, title = 'Success', duration = 5000, options = {}) => {
     return addNotification({
       type: 'success',
       title,
       message,
       duration,
+      ...options,
     });
   }, [addNotification]);
 
-  const showError = useCallback((message, title = 'Error', duration = 7000) => {
+  const showError = useCallback((message, title = 'Error', duration = 7000, options = {}) => {
     return addNotification({
       type: 'error',
       title,
       message,
       duration,
+      ...options,
     });
   }, [addNotification]);
 
-  const showWarning = useCallback((message, title = 'Warning', duration = 6000) => {
+  const showWarning = useCallback((message, title = 'Warning', duration = 6000, options = {}) => {
     return addNotification({
       type: 'warning',
       title,
       message,
       duration,
+      ...options,
     });
   }, [addNotification]);
 
