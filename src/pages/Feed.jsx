@@ -1,258 +1,248 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-  ref,
-  get,
-  set,
-  remove,
-  push
-} from 'firebase/database';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { database, storage, firestore } from '../../config/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import CachedImage from '../components/CachedImage';
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import { useUser } from '../contexts/UserContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { getProfileUrlById } from '../utils/profileUrls';
+import { database } from '../../config/firebase';
+import { ref, onValue, off, query, orderByChild, set, update, push, get } from 'firebase/database';
+import { Link } from 'react-router-dom';
 import PostCreator from '../components/PostCreator';
 import './Feed.css';
 
-function extractHashTags(text) {
-  return (text || '').match(/#(\w+)/g)?.map(t => t.replace('#', '')) || [];
-}
-
-function formatTimeAgo(timestamp) {
-  if (!timestamp) return 'Agora';
-  const now = Date.now();
-  const diff = Math.floor((now - timestamp) / 1000);
-  if (diff < 60) return 'Agora mesmo';
-  if (diff < 3600) return `${Math.floor(diff / 60)} min atrás`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h atrás`;
-  const d = new Date(timestamp);
-  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
-}
-
-function formatExactDateTime(timestamp) {
-  if (!timestamp) return '';
-  return new Date(timestamp).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-}
-
 const Feed = () => {
   const { currentUser } = useAuth();
-
-  const [currentTab, setCurrentTab] = useState('recent');
-  const [allPosts, setAllPosts] = useState([]);
-  const [filteredPosts, setFilteredPosts] = useState([]);
+  const { userProfile } = useUser();
+  const { showSuccess, showError, showWarning, showInfo } = useNotification();
+  const [posts, setPosts] = useState([]);
   const [users, setUsers] = useState({});
-  const [trending, setTrending] = useState([]);
-  const [stars, setStars] = useState([]);
+  const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [followingIds, setFollowingIds] = useState([]);
-
-  
-  // Delete confirmation modal state
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [postToDelete, setPostToDelete] = useState(null);
+  const [activeTab, setActiveTab] = useState('main'); // main | following
+  const [dismissedClientRestriction, setDismissedClientRestriction] = useState(false);
 
   useEffect(() => {
-    loadInitial();
-    const interval = setInterval(buildCommunityStars, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+    let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
 
-  useEffect(() => {
-    // Recompute filters/trending when tab or posts change
-    filterAndDecorate(currentTab);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTab, allPosts]);
-
-  async function loadInitial() {
-    setLoading(true);
-    try {
-      await Promise.all([loadPosts(), buildCommunityStars()]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadPosts() {
-    // Load posts from RTDB
-    const postsRootRef = ref(database, 'posts');
-    const snapshot = await get(postsRootRef);
-    if (!snapshot.exists()) {
-      setAllPosts([]);
-      return;
-    }
-    const list = [];
-    snapshot.forEach(child => {
-      const val = child.val();
-      // Include posts with images OR text content
-      if ((Array.isArray(val.images) && val.images.length > 0) || (val.content && val.content.trim())) {
-        list.push({ id: child.key, ...val });
-      }
-    });
-    // Attach counts for likes, reposts
-    const likesRoot = ref(database, 'likes');
-    const repostsRoot = ref(database, 'reposts');
-    const [likesSnap, repostsSnap] = await Promise.all([
-      get(likesRoot).catch(() => null),
-      get(repostsRoot).catch(() => null)
-    ]).then(([ls, rs]) => [ls, rs]).catch(() => [null, null]);
-    const likesObj = likesSnap?.exists() ? likesSnap.val() : {};
-    const repostsObj = repostsSnap?.exists() ? repostsSnap.val() : {};
-    const withCounts = list.map(p => {
-      const likes = likesObj[p.id] ? Object.keys(likesObj[p.id]).length : 0;
-      const reposts = repostsObj[p.id] ? Object.keys(repostsObj[p.id]).length : 0;
-      return { ...p, likeCount: likes, repostCount: reposts };
-    });
-    setAllPosts(withCounts);
-  }
-
-  async function ensureUsersLoaded(userIds) {
-    // Minimal: no-op (UserContext already caches). Could be enhanced to fetch profiles.
-    return;
-  }
-
-  async function filterAndDecorate(tab) {
-    let posts = [...allPosts];
-    // Build trending hashtags
-    const tags = new Map();
-    posts.forEach(p => (p.hashtags || []).forEach(tag => tags.set(tag, (tags.get(tag) || 0) + 1)));
-    setTrending(Array.from(tags.entries()).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([t])=>t));
-
-    if (tab === 'following') {
-      // Only posts by followed users or reposted by followed users
-      const followedSet = new Set(followingIds);
-      posts = posts.filter(p => followedSet.has(p.userId) || (Array.isArray(p.reposters) ? p.reposters.some(uid => followedSet.has(uid)) : false));
-      posts.sort((a,b) => (b.timestamp || b.createdAt || 0) - (a.timestamp || a.createdAt || 0));
-    } else {
-      // Recent/relevant: sort by weighted score
-      const now = Date.now();
-      posts.forEach(p => {
-        const ageHrs = Math.max(1, (now - (p.timestamp || p.createdAt || 0)) / (1000*60*60));
-        const recencyScore = 1 / ageHrs; // newer => higher
-        const engagement = (p.likeCount || 0) * 2 + (p.repostCount || 0) * 3;
-        p._score = recencyScore * 10 + engagement;
+    // Load posts from general feed
+    const postsRef = ref(database, 'general_feed_posts');
+    const postsQuery = query(postsRef, orderByChild('timestamp'));
+    postsUnsubscribe = onValue(postsQuery, (snapshot) => {
+      const postsData = [];
+      snapshot.forEach((childSnapshot) => {
+        const post = {
+          id: childSnapshot.key,
+          ...childSnapshot.val()
+        };
+        postsData.push(post);
       });
-      posts.sort((a,b) => (b._score || 0) - (a._score || 0));
-    }
-    setFilteredPosts(posts);
-  }
-
-  async function buildCommunityStars() {
-    // Placeholder: empty for now
-    setStars([]);
-  }
-
-
-  async function toggleLike(postId, liked) {
-    if (!currentUser) return;
-    const likeRef = ref(database, `likes/${postId}/${currentUser.uid}`);
-    if (liked) {
-      await remove(likeRef);
-    } else {
-      await set(likeRef, true);
-    }
-    await loadPosts();
-    await filterAndDecorate(currentTab);
-  }
-
-  async function handleRepost(post) {
-    if (!currentUser || !post) return;
-    const isSelf = post.userId === currentUser.uid;
-    const repostRef = ref(database, `reposts/${post.id}/${currentUser.uid}`);
-    const userRepostsRef = ref(database, `userReposts/${currentUser.uid}/${post.id}`);
-
-    if (isSelf) {
-      // Allow up to 3 self-reposts per post
-      const snap = await get(userRepostsRef).catch(() => null);
-      const prev = snap && snap.exists() ? snap.val() : null;
-      const prevCount = typeof prev === 'object' && prev !== null ? Number(prev.count || 0) : (prev ? 1 : 0);
-      if (prevCount >= 3) return;
-      const next = { count: prevCount + 1, lastAt: Date.now() };
-      await set(userRepostsRef, next);
-      await set(repostRef, next.lastAt);
-    } else {
-      // Repost to others only once per post
-      const snap = await get(repostRef).catch(() => null);
-      if (snap && snap.exists()) return;
-      await set(repostRef, Date.now());
-      await set(userRepostsRef, Date.now());
-    }
-    await loadPosts();
-    await filterAndDecorate(currentTab);
-  }
-
-
-  async function deletePost(postId) {
-    if (!currentUser) {
-      console.log('No current user found');
-      return;
-    }
-    
-    console.log('Current user:', currentUser.uid);
-    console.log('Attempting to delete post:', postId);
-    
-    // Find the post to show its content in the modal
-    const post = allPosts.find(p => p.id === postId);
-    if (post) {
-      console.log('Found post to delete:', post);
-      console.log('Post author ID:', post.userId);
-      console.log('Current user ID:', currentUser.uid);
-      console.log('Can delete?', post.userId === currentUser.uid);
       
-      setPostToDelete({ id: postId, content: post.content });
-      setShowDeleteModal(true);
-    } else {
-      console.log('Post not found in local state');
+      // Sort by timestamp (newest first)
+      postsData.sort((a, b) => b.timestamp - a.timestamp);
+      setPosts(postsData);
+      setLoading(false);
+    }, (error) => {
+      console.error('Feed: Error loading posts', error);
+      setLoading(false);
+    });
+
+    // Load users
+    const usersRef = ref(database, 'users');
+    usersUnsubscribe = onValue(usersRef, (snapshot) => {
+      const usersData = {};
+      snapshot.forEach((childSnapshot) => {
+        usersData[childSnapshot.key] = childSnapshot.val();
+      });
+      setUsers(usersData);
+    });
+
+    // Load following list
+    if (currentUser?.uid) {
+      const followingRef = ref(database, `users/${currentUser.uid}/following`);
+      followingUnsubscribe = onValue(followingRef, (snapshot) => {
+        const followingData = [];
+        snapshot.forEach((childSnapshot) => {
+          followingData.push(childSnapshot.key);
+        });
+        setFollowing(followingData);
+      });
     }
-  }
 
-  const confirmDeletePost = async () => {
-    if (!postToDelete) return;
-    
-    // TODO: Implement via Cloud Function deletePost
-    alert('🚧 Exclusão de posts será implementada via Cloud Functions em breve!');
-    setShowDeleteModal(false);
-    setPostToDelete(null);
-  };
-
-  const cancelDeletePost = () => {
-    setShowDeleteModal(false);
-    setPostToDelete(null);
-  };
-
-  const postsWithAuthors = useMemo(() => {
-    return filteredPosts.map(p => ({
-      ...p,
-      author: users[p.userId] || {}
-    }));
-  }, [filteredPosts, users]);
-
-  // Load following ids from Firestore for following tab filtering
-  useEffect(() => {
-    const loadFollowing = async () => {
-      if (!currentUser) { setFollowingIds([]); return; }
-      try {
-        const followingRef = collection(firestore, 'users', currentUser.uid, 'following');
-        const snap = await getDocs(followingRef);
-        const ids = snap.docs.map(d => d.id);
-        setFollowingIds(ids);
-      } catch (e) {
-        setFollowingIds([]);
-      }
+    return () => {
+      if (postsUnsubscribe) postsUnsubscribe();
+      if (usersUnsubscribe) usersUnsubscribe();
+      if (followingUnsubscribe) followingUnsubscribe();
     };
-    loadFollowing();
-  }, [currentUser]);
+  }, [currentUser?.uid]);
+
+  const handleLike = useCallback(async (postId) => {
+    if (!currentUser?.uid) return;
+
+    try {
+      const postRef = ref(database, `general_feed_posts/${postId}`);
+      const postSnapshot = await get(postRef);
+      
+      if (!postSnapshot.exists()) return;
+
+      const post = postSnapshot.val();
+      const likes = post.likes || {};
+      const isLiked = likes[currentUser.uid];
+
+      if (isLiked) {
+        // Unlike
+        delete likes[currentUser.uid];
+        await update(postRef, {
+          likes,
+          likeCount: Math.max(0, (post.likeCount || 0) - 1)
+        });
+      } else {
+        // Like
+        likes[currentUser.uid] = true;
+        await update(postRef, {
+          likes,
+          likeCount: (post.likeCount || 0) + 1
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      showError('Erro ao curtir post');
+    }
+  }, [currentUser?.uid, showError]);
+
+  const handleFollow = useCallback(async (userId) => {
+    if (!currentUser?.uid || userId === currentUser.uid) return;
+
+    try {
+      const followingRef = ref(database, `users/${currentUser.uid}/following/${userId}`);
+      const followerRef = ref(database, `users/${userId}/followers/${currentUser.uid}`);
+      
+      const isFollowing = following.includes(userId);
+      
+      if (isFollowing) {
+        // Unfollow
+        await set(followingRef, null);
+        await set(followerRef, null);
+        showSuccess('Deixou de seguir');
+      } else {
+        // Follow
+        await set(followingRef, true);
+        await set(followerRef, true);
+        showSuccess('Agora você está seguindo');
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+      showError('Erro ao seguir/parar de seguir');
+    }
+  }, [currentUser?.uid, following, showSuccess, showError]);
+
+  const handleDeletePost = useCallback(async (postId) => {
+    if (!currentUser?.uid) return;
+
+    try {
+      const postRef = ref(database, `general_feed_posts/${postId}`);
+      await get(postRef).then(async (snapshot) => {
+        if (snapshot.exists()) {
+          const post = snapshot.val();
+          if (post.userId === currentUser.uid) {
+            await set(postRef, null);
+            showSuccess('Post deletado');
+          } else {
+            showError('Você só pode deletar seus próprios posts');
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      showError('Erro ao deletar post');
+    }
+  }, [currentUser?.uid, showSuccess, showError]);
+
+  const formatTimeAgo = (timestamp) => {
+    if (!timestamp) return 'Agora';
+    const now = Date.now();
+    const diff = Math.floor((now - timestamp) / 1000);
+    if (diff < 60) return 'Agora mesmo';
+    if (diff < 3600) return `${Math.floor(diff / 60)} min atrás`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h atrás`;
+    const d = new Date(timestamp);
+    return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+  };
+
+  const getFilteredPosts = () => {
+    if (activeTab === 'following') {
+      return posts.filter(post => following.includes(post.userId));
+    }
+    return posts;
+  };
+
+  const renderPost = (post) => {
+    const user = users[post.userId];
+    if (!user) return null;
+
+    const isLiked = post.likes?.[currentUser?.uid] || false;
+    const isFollowing = following.includes(post.userId);
+    const isOwnPost = post.userId === currentUser?.uid;
+
+    return (
+      <div key={post.id} className="post">
+        <div className="post-header">
+          <Link to={`/profile/${post.userId}`} className="post-user">
+            <img
+              src={getProfileUrlById(post.userId)}
+              alt={user.displayName || user.email}
+              className="post-avatar"
+            />
+            <div className="post-user-info">
+              <span className="post-username">
+                {user.displayName || user.email}
+              </span>
+              <span className="post-time">
+                {formatTimeAgo(post.timestamp)}
+              </span>
+            </div>
+          </Link>
+          <div className="post-actions">
+            {!isOwnPost && (
+              <button
+                className={`follow-btn ${isFollowing ? 'following' : ''}`}
+                onClick={() => handleFollow(post.userId)}
+              >
+                {isFollowing ? 'Seguindo' : 'Seguir'}
+              </button>
+            )}
+            {isOwnPost && (
+              <button
+                className="delete-btn"
+                onClick={() => handleDeletePost(post.id)}
+              >
+                🗑️
+              </button>
+            )}
+          </div>
+        </div>
+        
+        <div className="post-content">
+          <p className="post-text">{post.text}</p>
+          {post.imageUrl && (
+            <img src={post.imageUrl} alt="Post" className="post-image" />
+          )}
+        </div>
+        
+        <div className="post-footer">
+          <button
+            className={`like-btn ${isLiked ? 'liked' : ''}`}
+            onClick={() => handleLike(post.id)}
+          >
+            ❤️ {post.likeCount || 0}
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   if (loading) {
     return (
       <div className="feed-container">
-        <div className="loading-spinner">Carregando…</div>
+        <div className="loading">Carregando feed...</div>
       </div>
     );
   }
@@ -260,191 +250,50 @@ const Feed = () => {
   return (
     <div className="feed-container">
       <div className="feed-header">
-        <h1>Feed</h1>
-        <p>Posts recentes e relevantes da comunidade e de quem você segue</p>
+        <h1>Feed Geral</h1>
+        <div className="feed-tabs">
+          <button
+            className={`tab ${activeTab === 'main' ? 'active' : ''}`}
+            onClick={() => setActiveTab('main')}
+          >
+            Todos
+          </button>
+          <button
+            className={`tab ${activeTab === 'following' ? 'active' : ''}`}
+            onClick={() => setActiveTab('following')}
+          >
+            Seguindo
+          </button>
+        </div>
       </div>
 
-      <div className="feed-tabs">
-        <button
-          className={`tab-btn ${currentTab === 'recent' ? 'active' : ''}`}
-          onClick={() => setCurrentTab('recent')}
-        >
-          Recentes
-        </button>
-        <button
-          className={`tab-btn ${currentTab === 'following' ? 'active' : ''}`}
-          onClick={() => setCurrentTab('following')}
-        >
-          Seguindo
-        </button>
-        <button
-          className={`tab-btn ${currentTab === 'official' ? 'active' : ''}`}
-          onClick={() => setCurrentTab('official')}
-        >
-          Oficial
-        </button>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 260px', gap: 20 }}>
-        {/* Left sidebar */}
-        <aside className="left-sidebar" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div className="sidebar-card all-games" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 16 }}>
-            {currentUser ? (
-              <PostCreator
-                mode="feed"
-                onPostCreated={() => {
-                  // Refresh posts after creation
-                  loadPosts();
-                }}
-                placeholder="O que você está pensando?"
-                showAttachment={false}
-                categories={[]}
-              />
-            ) : (
-              <button className="search-btn" style={{ width: '100%' }} onClick={() => (window.location.href = '/login')}>
-                Criar Publicação
-              </button>
+      <div className="feed-content">
+        {getFilteredPosts().length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">📝</div>
+            <p>
+              {activeTab === 'following' 
+                ? 'Nenhum post dos usuários que você segue'
+                : 'Nenhum post ainda'
+              }
+            </p>
+            {activeTab === 'main' && (
+              <p>Seja o primeiro a postar no feed geral!</p>
             )}
           </div>
-
-          <div className="sidebar-card" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 16 }}>
-            <h2 style={{ fontSize: 18, margin: '0 0 12px' }}>Tópicos em Alta</h2>
-            <div className="trend-topics" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {trending.length === 0 ? (
-                <span className="hashtag">Sem tendências</span>
-              ) : (
-                trending.map(tag => (
-                  <span key={tag} className="hashtag" style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: '4px 10px' }}>#{tag}</span>
-                ))
-              )}
-            </div>
-          </div>
-        </aside>
-
-        {/* Main content */}
-        <main className="main-content">
-          <div className="posts-container" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {postsWithAuthors.length === 0 && (
-              <div className="no-results"><p>Nenhuma publicação disponível.</p></div>
-            )}
-
-            {postsWithAuthors.map(post => {
-              const likesObj = post.likes || {};
-              const likeCount = typeof post.likeCount === 'number' ? post.likeCount : Object.keys(likesObj).length;
-              const liked = currentUser ? !!likesObj[currentUser?.uid] : false;
-              const author = post.author || {};
-              const ts = post.timestamp || post.createdAt;
-              return (
-                <div key={post.id} className="post-card" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 16 }}>
-                                      <div className="post-header" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-                      <div className="post-author-avatar" style={{ width: 44, height: 44, borderRadius: '50%', overflow: 'hidden' }}>
-                        <CachedImage src={author.profilePictureURL} defaultType="PROFILE_1" alt={author.displayName || 'Usuário'} showLoading={false} />
-                      </div>
-                      <div className="post-meta" style={{ display: 'flex', flexDirection: 'column' }}>
-                        <div className="post-author-name" style={{ fontWeight: 600 }}>{author.displayName || 'Usuário'}</div>
-                        <div className="post-date" title={new Date(ts).toLocaleString('pt-BR')} style={{ color: '#B8B8B8', fontSize: 12 }}>
-                          {formatTimeAgo(ts)} · {formatExactDateTime(ts)}
-                        </div>
-                      </div>
-                      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {currentUser && currentUser.uid === post.userId && (
-                          <button
-                            className="delete-post-btn"
-                            onClick={() => deletePost(post.id)}
-                            title="Excluir publicação"
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#ff4757',
-                              cursor: 'pointer',
-                              padding: '4px 8px',
-                              borderRadius: '4px',
-                              opacity: 0.8
-                            }}
-                          >
-                            <i className="fa-solid fa-trash"></i>
-                          </button>
-                        )}
-                        <div style={{ opacity: 0.7 }}>
-                          <i className="fa-solid fa-ellipsis"></i>
-                        </div>
-                      </div>
-                    </div>
-
-                  <div className="post-content" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {(post.content || '').trim() && <p style={{ whiteSpace: 'pre-wrap', color: '#DDD' }}>{post.content}</p>}
-                    {Array.isArray(post.images) && post.images.length > 0 && (
-                      <div className="post-image-container" style={{ borderRadius: 12, overflow: 'hidden' }}>
-                        <CachedImage src={post.images[0]} alt="Imagem da publicação" className="post-image" showLoading={false} />
-                      </div>
-                    )}
-                    {Array.isArray(post.hashtags) && post.hashtags.length > 0 && (
-                      <div className="post-hashtags" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        {post.hashtags.map(tag => (
-                          <span key={tag} className="hashtag" style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: '4px 10px' }}>#{tag}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="post-actions" style={{ display: 'flex', gap: 16, marginTop: 12, alignItems: 'center' }}>
-                    <button
-                      className="action-button like-button"
-                      onClick={() => toggleLike(post.id, liked)}
-                      style={{ background: 'transparent', border: 'none', color: liked ? '#e83f5b' : '#fff', cursor: 'pointer' }}
-                    >
-                      <i className={`${liked ? 'fas' : 'far'} fa-heart`} /> {likeCount}
-                    </button>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <button className="action-button" style={{ background: 'transparent', border: 'none', color: '#fff', opacity: 0.8 }} onClick={() => handleRepost(post)} disabled={currentUser && currentUser.uid === post.userId} title={currentUser && currentUser.uid === post.userId ? 'Você não pode repostar seu próprio post' : 'Repostar'}>
-                        <i className="far fa-share-square" /> {post.repostCount || 0}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </main>
-
-        {/* Right sidebar */}
-        <aside className="right-sidebar" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div className="sidebar-card community-stars" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 16 }}>
-            <h2 style={{ fontSize: 18, margin: '0 0 12px' }}>Estrelas da Comunidade</h2>
-            {stars.map(s => (
-              <div key={s.id} className="star-user" style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                <div className="star-user-info" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <CachedImage src={s.profilePictureURL} defaultType="PROFILE_2" alt={s.displayName || 'Usuário'} className="star-user-avatar" showLoading={false} />
-                  <div className="star-user-details">
-                    <div className="star-user-name" style={{ fontWeight: 600 }}>
-                      {s.displayName || 'Usuário'} <i className="fas fa-star" style={{ color: '#ffc107' }}></i>
-                    </div>
-                    <div className="star-user-followers" style={{ color: '#B8B8B8' }}>Seguidores: {s.totalFollowers}</div>
-                  </div>
-                </div>
-                <div className="game-badges" style={{ display: 'flex', gap: 8 }}>
-                  {s.accountLevel && <span className="game-badge" style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: '3px 8px' }}>{s.accountLevel}</span>}
-                  {s.location && <span className="game-badge" style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: '3px 8px' }}>{s.location}</span>}
-                </div>
-              </div>
-            ))}
-            {stars.length === 0 && <div style={{ color: '#B8B8B8' }}>Sem destaques ainda</div>}
-          </div>
-        </aside>
+        ) : (
+          getFilteredPosts().map(renderPost)
+        )}
       </div>
 
-
-      {/* Delete Confirmation Modal */}
-      <DeleteConfirmationModal
-        isOpen={showDeleteModal}
-        onClose={cancelDeletePost}
-        onConfirm={confirmDeletePost}
-        postContent={postToDelete?.content}
+      <PostCreator
+        onPostCreated={() => {
+          showSuccess('Post criado com sucesso!');
+        }}
+        postType="general_feed"
       />
     </div>
   );
 };
 
 export default Feed;
-
- 

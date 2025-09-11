@@ -198,6 +198,11 @@ const PostCreator = ({
       return;
     }
 
+    // General feed allows all users to post
+    if (mode === 'general_feed') {
+      // No restrictions - all users can post
+    }
+
     // Debug authentication
     console.log('Current user:', currentUser);
     console.log('User profile:', userProfile);
