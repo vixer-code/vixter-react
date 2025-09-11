@@ -14,7 +14,7 @@ const PackDetail = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
-  const { vpBalance } = useWallet();
+  const { vpBalance, processPackSale } = useWallet();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   
   const [pack, setPack] = useState(null);
@@ -142,19 +142,28 @@ const PackDetail = () => {
     }
 
     try {
-      // TODO: Implement pack purchase logic with direct VC transfer
-      // Pack purchase should:
-      // 1. Transfer VP from buyer to seller as VC (not pending)
-      // 2. Add pack to buyer's purchased packs
-      // 3. Redirect to pack viewing page
+      // Process pack purchase with direct VC transfer to seller
+      const vcAmount = Math.round(totalCost / 1.5); // Convert VP to VC (1 VC = 1.5 VP)
       
-      showSuccess('Pack comprado com sucesso! Redirecionando...');
-      setShowPurchaseModal(false);
+      const result = await processPackSale(
+        currentUser.uid, // buyerId
+        pack.providerId, // sellerId
+        packId, // packId
+        pack.title, // packName
+        totalCost // vpAmount
+      );
       
-      // Redirect to pack viewing page after successful purchase
-      setTimeout(() => {
-        navigate(`/pack/${packId}/view`);
-      }, 1500);
+      if (result) {
+        showSuccess(`Pack comprado com sucesso! ${vcAmount} VC foram transferidos para o vendedor. Redirecionando...`);
+        setShowPurchaseModal(false);
+        
+        // Redirect to pack viewing page after successful purchase
+        setTimeout(() => {
+          navigate(`/pack/${packId}/view`);
+        }, 1500);
+      } else {
+        showError('Erro ao processar compra do pack. Tente novamente.');
+      }
       
     } catch (error) {
       console.error('Error purchasing pack:', error);

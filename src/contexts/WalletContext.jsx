@@ -229,13 +229,13 @@ export const WalletProvider = ({ children }) => {
   }, []);
 
   // Process pack sale (immediate VC)
-  const processPackSale = useCallback(async (buyerId, packId, packName, vpAmount) => {
+  const processPackSale = useCallback(async (buyerId, sellerId, packId, packName, vpAmount) => {
     if (!currentUser) return false;
 
     try {
       const result = await processPackSaleFunc({
         buyerId,
-        sellerId: currentUser.uid,
+        sellerId,
         vpAmount,
         packId,
         packName

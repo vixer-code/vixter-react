@@ -16,6 +16,7 @@ import { db, functions } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import { useMessaging } from './EnhancedMessagingContext';
+import { useWallet } from './WalletContext';
 
 const ServiceOrderContext = createContext({});
 
@@ -30,6 +31,7 @@ export const useServiceOrder = () => {
 export const ServiceOrderProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showInfo } = useNotification();
+  const { processServicePurchase } = useWallet();
   
   // Safely get messaging functions with fallbacks
   let sendServiceNotification, createServiceConversation, markServiceConversationCompleted;
@@ -174,13 +176,30 @@ export const ServiceOrderProvider = ({ children }) => {
       if (result.data.success) {
         const orderData = result.data.order;
         
+        // Process the service purchase through wallet (adds VC pending to seller)
+        const vcAmount = Math.round(totalVpAmount / 1.5); // Convert VP to VC (1 VC = 1.5 VP)
+        const walletResult = await processServicePurchase(
+          serviceData.providerId,
+          serviceData.id,
+          serviceData.title,
+          serviceData.description,
+          totalVpAmount
+        );
+        
+        if (!walletResult.success) {
+          console.error('Failed to process service purchase through wallet');
+          showError('Erro ao processar pagamento. Tente novamente.');
+          return false;
+        }
+        
         // Send service notification to messaging
         await sendServiceNotification({
           id: orderData.id,
           serviceName: serviceData.title,
           buyerId: currentUser.uid,
           sellerId: serviceData.providerId,
-          vpAmount: serviceData.price,
+          vpAmount: totalVpAmount,
+          vcAmount: vcAmount,
           status: ORDER_STATUS.PENDING_ACCEPTANCE,
           additionalFeatures: additionalFeatures,
           metadata: {
@@ -221,6 +240,8 @@ export const ServiceOrderProvider = ({ children }) => {
         
         // Update the order in messaging and create conversation
         const order = serviceOrders.find(o => o.id === orderId);
+        console.log('Found order for conversation creation:', order);
+        
         if (order) {
           await sendServiceNotification({
             ...order,
@@ -228,7 +249,11 @@ export const ServiceOrderProvider = ({ children }) => {
           });
           
           // Create service conversation
-          await createServiceConversation(order);
+          console.log('Creating service conversation...');
+          const conversation = await createServiceConversation(order);
+          console.log('Service conversation created:', conversation);
+        } else {
+          console.error('Order not found for conversation creation:', orderId);
         }
         
         return true;

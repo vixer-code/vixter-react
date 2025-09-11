@@ -309,6 +309,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       }
       
       console.log('Service conversations loaded:', serviceConversationsData.length);
+      console.log('Service conversations data:', serviceConversationsData);
       setServiceConversations(serviceConversationsData);
     });
 
@@ -1549,21 +1550,31 @@ export const EnhancedMessagingProvider = ({ children }) => {
     if (!currentUser?.uid) return null;
 
     try {
+      console.log('Creating service conversation for order:', serviceOrder);
+      console.log('Order buyerId:', serviceOrder.buyerId);
+      console.log('Order sellerId:', serviceOrder.sellerId);
+      console.log('Order id:', serviceOrder.id);
+      
       const conversationId = generateConversationId(
         serviceOrder.buyerId, 
         serviceOrder.sellerId, 
         serviceOrder.id
       );
+      console.log('Generated conversation ID:', conversationId);
 
       const conversationData = {
         id: conversationId,
         type: 'service',
-        participants: [serviceOrder.buyerId, serviceOrder.sellerId],
+        participants: {
+          [serviceOrder.buyerId]: true,
+          [serviceOrder.sellerId]: true
+        },
         serviceOrderId: serviceOrder.id,
         serviceName: serviceOrder.metadata?.serviceName || 'Serviço',
-        createdAt: serverTimestamp(),
-        lastMessageAt: serverTimestamp(),
+        createdAt: Date.now(),
+        lastMessageTime: Date.now(),
         lastMessage: 'Conversa iniciada para o serviço',
+        lastSenderId: serviceOrder.sellerId,
         unreadCount: { [serviceOrder.buyerId]: 0, [serviceOrder.sellerId]: 0 },
         isCompleted: false
       };
@@ -1571,6 +1582,19 @@ export const EnhancedMessagingProvider = ({ children }) => {
       // Save to RTDB
       const conversationRef = ref(database, `conversations/${conversationId}`);
       await set(conversationRef, conversationData);
+      console.log('Service conversation saved to RTDB:', conversationId);
+
+      // Also save to Firestore for persistent storage
+      try {
+        await saveConversation(conversationData);
+        console.log('Service conversation saved to Firestore:', conversationId);
+      } catch (firestoreError) {
+        console.warn('Failed to save service conversation to Firestore:', firestoreError);
+      }
+
+      // Add to local state immediately
+      setServiceConversations(prev => [conversationData, ...prev]);
+      console.log('Service conversation added to local state');
 
       return conversationData;
     } catch (error) {
