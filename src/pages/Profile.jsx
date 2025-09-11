@@ -815,6 +815,7 @@ const [formData, setFormData] = useState({
         createdAt: Date.now(),
         authorName: profile?.displayName || currentUser.displayName || 'Você',
         authorPhoto: profile?.profilePictureURL || currentUser.photoURL || null,
+        authorUsername: profile?.username || '',
         hashtags
       };
 

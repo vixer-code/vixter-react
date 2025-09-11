@@ -276,6 +276,7 @@ const PostCreator = ({
         authorId: currentUser.uid,
         authorName: userName,
         authorPhotoURL: userPhotoURL,
+        authorUsername: userProfile?.username || '',
         timestamp: Date.now(),
         media: mediaData,
         attachment: attachment || null
