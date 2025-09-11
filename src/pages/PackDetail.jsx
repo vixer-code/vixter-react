@@ -143,8 +143,6 @@ const PackDetail = () => {
 
     try {
       // Process pack purchase with direct VC transfer to seller
-      const vcAmount = Math.round(totalCost / 1.5); // Convert VP to VC (1 VC = 1.5 VP)
-      
       const result = await processPackSale(
         currentUser.uid, // buyerId
         pack.providerId, // sellerId
@@ -154,7 +152,7 @@ const PackDetail = () => {
       );
       
       if (result) {
-        showSuccess(`Pack comprado com sucesso! ${vcAmount} VC foram transferidos para o vendedor. Redirecionando...`);
+        showSuccess(`Pack comprado com sucesso! Redirecionando...`);
         setShowPurchaseModal(false);
         
         // Redirect to pack viewing page after successful purchase
