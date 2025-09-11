@@ -124,10 +124,83 @@ const Header = () => {
                 {/* VP Balance Display */}
                 <li className="auth-hide logged-in">
                   <div className="vp-balance" onClick={handleVpBalanceClick}>
-                    {userProfile?.accountType === 'provider' && (
-                      <div className="currency-icon vc-icon"></div>
-                    )}
-                                       <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    {userProfile?.accountType === 'provider' ? (
+                      <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                          <filter id="header-glow-vc" x="-30%" y="-30%" width="160%" height="160%">
+                            <feGaussianBlur stdDeviation="2" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                          </filter>
+                          
+                          <linearGradient id="header-hexGradient-vc" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#0A1F0A" />
+                            <stop offset="100%" stopColor="#1A2E1A" />
+                          </linearGradient>
+                          
+                          <radialGradient id="header-glowGradient-vc" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                            <stop offset="0%" stopColor="#00C853" stopOpacity="0.7" />
+                            <stop offset="100%" stopColor="#00C853" stopOpacity="0" />
+                          </radialGradient>
+                          
+                          <linearGradient id="header-textGradient-vc" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#00C853" />
+                            <stop offset="100%" stopColor="#4CAF50" />
+                          </linearGradient>
+                        </defs>
+                        
+                        <circle cx="64" cy="64" r="58" fill="url(#header-glowGradient-vc)" />
+                        
+                        <path d="M64 8 L108 32 L108 96 L64 120 L20 96 L20 32 Z" 
+                              fill="url(#header-hexGradient-vc)" 
+                              stroke="#00C853" 
+                              strokeWidth="1.5" 
+                              filter="url(#header-glow-vc)" />
+                        
+                        <path d="M64 8 L108 32 L108 96 L64 120 L20 96 L20 32 Z" 
+                              fill="none" 
+                              stroke="#4CAF50" 
+                              strokeWidth="1" 
+                              strokeDasharray="3,3"
+                              opacity="0.8" />
+                              
+                        <path d="M64 24 L88 36 L88 88 L64 100 L40 88 L40 36 Z" 
+                              fill="none" 
+                              stroke="#81C784" 
+                              strokeWidth="1" 
+                              opacity="0.8" />
+                        
+                        <g filter="url(#header-glow-vc)">
+                          <text x="64" y="72" 
+                                fontFamily="'Press Start 2P', monospace" 
+                                fontSize="20" 
+                                fill="url(#header-textGradient-vc)"
+                                textAnchor="middle"
+                                fontWeight="bold">VC</text>
+                        </g>
+                        
+                        <path d="M32 60 H20 V68 H28" fill="none" stroke="#4CAF50" strokeWidth="1.5" />
+                        <path d="M96 60 H108 V68 H100" fill="none" stroke="#4CAF50" strokeWidth="1.5" />
+                        <path d="M64 24 V18" fill="none" stroke="#4CAF50" strokeWidth="1.5" />
+                        <path d="M64 100 V106" fill="none" stroke="#4CAF50" strokeWidth="1.5" />
+                       
+                        <circle cx="20" cy="60" r="2" fill="#4CAF50" />
+                        <circle cx="28" cy="68" r="2" fill="#4CAF50" />
+                        <circle cx="108" cy="60" r="2" fill="#4CAF50" />
+                        <circle cx="100" cy="68" r="2" fill="#4CAF50" />
+                        <circle cx="64" cy="18" r="2" fill="#4CAF50" />
+                        <circle cx="64" cy="106" r="2" fill="#4CAF50" />
+                       
+                        <path d="M64 8 L108 32 L108 96 L64 120 L20 96 L20 32 Z" 
+                              fill="none" 
+                              stroke="#A5D6A7" 
+                              strokeWidth="0.8" 
+                              opacity="0.5">
+                          <animate attributeName="opacity" values="0.1;0.5;0.1" dur="3s" repeatCount="indefinite" />
+                          <animate attributeName="stroke-width" values="0.8;2;0.8" dur="3s" repeatCount="indefinite" />
+                        </path>
+                      </svg>
+                    ) : (
+                      <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
                        {/* Glow background */}
                        <defs>
                          <filter id="header-glow" x="-30%" y="-30%" width="160%" height="160%">
@@ -219,6 +292,7 @@ const Header = () => {
                          <animate attributeName="stroke-width" values="0.8;2;0.8" dur="3s" repeatCount="indefinite" />
                        </path>
                      </svg>
+                    )}
                     <span id="vp-amount">{formatCurrency(vpBalance || 0)}</span>
                   </div>
                 </li>
@@ -393,10 +467,33 @@ const Header = () => {
         {currentUser && (
           <div className="mobile-nav-footer">
             <div className="mobile-vp-balance" onClick={() => { handleVpBalanceClick(); closeMobileMenu(); }}>
-              {userProfile?.accountType === 'provider' && (
-                <div className="currency-icon vc-icon"></div>
-              )}
-              <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+              {userProfile?.accountType === 'provider' ? (
+                <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="mobile-hexGradient-vc" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#0A1F0A" />
+                      <stop offset="100%" stopColor="#1A2E1A" />
+                    </linearGradient>
+                    <linearGradient id="mobile-textGradient-vc" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#00C853" />
+                      <stop offset="100%" stopColor="#4CAF50" />
+                    </linearGradient>
+                  </defs>
+                  
+                  <path d="M64 8 L108 32 L108 96 L64 120 L20 96 L20 32 Z" 
+                        fill="url(#mobile-hexGradient-vc)" 
+                        stroke="#00C853" 
+                        strokeWidth="1.5" />
+                  
+                  <text x="64" y="72" 
+                        fontFamily="'Press Start 2P', monospace" 
+                        fontSize="16" 
+                        fill="url(#mobile-textGradient-vc)"
+                        textAnchor="middle"
+                        fontWeight="bold">VC</text>
+                </svg>
+              ) : (
+                <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
                 {/* Simplified VP icon for mobile */}
                 <defs>
                   <linearGradient id="mobile-hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -421,6 +518,7 @@ const Header = () => {
                       textAnchor="middle"
                       fontWeight="bold">VP</text>
               </svg>
+              )}
               <span>{formatCurrency(vpBalance || 0)}</span>
             </div>
             
