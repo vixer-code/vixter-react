@@ -121,11 +121,13 @@ const Feed = () => {
         // Unfollow
         await set(followingRef, null);
         await set(followerRef, null);
+        setFollowing(prevFollowing => prevFollowing.filter(id => id !== userId));
         showSuccess('Deixou de seguir');
       } else {
         // Follow
         await set(followingRef, true);
         await set(followerRef, true);
+        setFollowing(prevFollowing => [...prevFollowing, userId]);
         showSuccess('Agora você está seguindo');
       }
     } catch (error) {

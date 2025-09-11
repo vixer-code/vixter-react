@@ -302,13 +302,17 @@
 }
 
 .purchase-seller,
-.purchase-amount {
+.purchase-seller-username,
+.purchase-amount,
+.purchase-service-start {
   color: #b0b0b0;
   font-size: 0.95rem;
 }
 
 .purchase-seller strong,
-.purchase-amount strong {
+.purchase-seller-username strong,
+.purchase-amount strong,
+.purchase-service-start strong {
   color: #ffffff;
   margin-right: 8px;
 }
@@ -349,7 +353,8 @@
 }
 
 .btn-primary,
-.btn-secondary {
+.btn-secondary,
+.btn-rebuy {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -386,6 +391,18 @@
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.4);
   transform: translateY(-2px);
+}
+
+.btn-rebuy {
+  background: linear-gradient(45deg, #8a2be2, #6a1b9a);
+  color: #ffffff;
+  border: 1px solid #8a2be2;
+}
+
+.btn-rebuy:hover {
+  background: linear-gradient(45deg, #6a1b9a, #8a2be2);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(138, 43, 238, 0.3);
 }
 
 .purchase-completed-info,
@@ -453,7 +470,8 @@
   }
 
   .btn-primary,
-  .btn-secondary {
+  .btn-secondary,
+  .btn-rebuy {
     justify-content: center;
   }
 

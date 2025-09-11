@@ -110,6 +110,11 @@ service cloud.firestore {
       // This allows reading displayName, username, photoURL, status for conversations
       allow read: if isAuthenticated();
       
+      // Allow users to update followersCount and followingCount for follow/unfollow operations
+      allow update: if isAuthenticated() && 
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['followersCount', 'followingCount', 'updatedAt']);
+      
       // Admin access
       allow read, write: if isAdmin();
       
@@ -118,10 +123,10 @@ service cloud.firestore {
       // =====================================================
       
       match /followers/{followerId} {
-        // Users can read their own followers
-        allow read: if isAuthenticated() && isOwner(userId);
+        // Anyone authenticated can read followers (for public profiles)
+        allow read: if isAuthenticated();
         
-        // Followers can write to their own follower document
+        // Anyone authenticated can add themselves as a follower
         allow write: if isAuthenticated() && isOwner(followerId);
         
         // Admin access
@@ -133,8 +138,8 @@ service cloud.firestore {
       // =====================================================
       
       match /following/{followingId} {
-        // Users can read their own following list
-        allow read: if isAuthenticated() && isOwner(userId);
+        // Anyone authenticated can read following lists (for public profiles)
+        allow read: if isAuthenticated();
         
         // Users can write to their own following list
         allow write: if isAuthenticated() && isOwner(userId);

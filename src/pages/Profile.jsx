@@ -754,7 +754,25 @@ const [formData, setFormData] = useState({
       await batch.commit();
       setIsFollowing(!isFollowing);
       
-      await loadFollowers(targetUserId);
+      // Update followers count locally without reloading the entire list
+      if (isFollowing) {
+        // User unfollowed - decrease followers count
+        setFollowers(prevFollowers => {
+          const updatedFollowers = prevFollowers.filter(f => f.id !== currentUser.uid);
+          return updatedFollowers;
+        });
+      } else {
+        // User followed - add current user to followers list
+        if (currentUser && userProfile) {
+          const newFollower = {
+            id: currentUser.uid,
+            displayName: userProfile.displayName || currentUser.displayName || 'Usuário',
+            username: userProfile.username || '',
+            profilePictureURL: userProfile.profilePictureURL || currentUser.photoURL || null
+          };
+          setFollowers(prevFollowers => [...prevFollowers, newFollower]);
+        }
+      }
     } catch (error) {
       console.error('Error following/unfollowing:', error);
     }

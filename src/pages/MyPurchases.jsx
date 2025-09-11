@@ -177,6 +177,31 @@ const MyPurchases = () => {
     });
   };
 
+  const formatServiceStartDate = (serviceOrder) => {
+    // Try to get service start date from various possible fields
+    const startDate = serviceOrder.serviceStartDate || 
+                     serviceOrder.timestamps?.serviceStartDate || 
+                     serviceOrder.timestamps?.acceptedAt || 
+                     serviceOrder.timestamps?.createdAt;
+    
+    if (!startDate) return 'Data não disponível';
+    const date = startDate.toDate ? startDate.toDate() : new Date(startDate);
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const handleRebuyService = (serviceOrder) => {
+    // Navigate to the service detail page for customization and repurchase
+    if (serviceOrder.serviceId) {
+      navigate(`/service/${serviceOrder.serviceId}`);
+    } else {
+      showError('ID do serviço não encontrado');
+    }
+  };
+
   const getStatusInfo = (status) => {
     switch (status) {
       case 'COMPLETED':
@@ -184,11 +209,11 @@ const MyPurchases = () => {
       case 'PENDING':
         return { label: 'Pendente', color: 'warning', icon: 'clock' };
       case 'ACCEPTED':
-        return { label: 'Aceito', color: 'info', icon: 'check' };
+        return { label: 'Em Andamento', color: 'info', icon: 'play-circle' };
       case 'DELIVERED':
         return { label: 'Entregue', color: 'primary', icon: 'truck' };
       case 'CONFIRMED':
-        return { label: 'Concluído', color: 'success', icon: 'check-circle' };
+        return { label: 'Finalizado', color: 'success', icon: 'check-circle' };
       case 'CANCELLED':
         return { label: 'Cancelado', color: 'danger', icon: 'times-circle' };
       case 'BANNED':
@@ -337,9 +362,19 @@ const MyPurchases = () => {
                     <div className="purchase-seller">
                       <strong>Vendedor:</strong> {purchase.sellerName || 'Provedor'}
                     </div>
+                    {isService && (
+                      <div className="purchase-seller-username">
+                        <strong>Username:</strong> @{purchase.sellerUsername || purchase.sellerName?.toLowerCase().replace(/\s+/g, '') || 'vendedor'}
+                      </div>
+                    )}
                     <div className="purchase-amount">
                       <strong>Valor:</strong> {purchase.vpAmount} VP
                     </div>
+                    {isService && (
+                      <div className="purchase-service-start">
+                        <strong>Início do Serviço:</strong> {formatServiceStartDate(purchase)}
+                      </div>
+                    )}
                     {isService && purchase.deliveryNotes && (
                       <div className="purchase-notes">
                         <strong>Notas de Entrega:</strong>
@@ -378,6 +413,15 @@ const MyPurchases = () => {
                         <i className="fas fa-images"></i>
                         Ver Mídias
                       </button>
+                      {(purchase.status === 'CONFIRMED' || purchase.status === 'COMPLETED') && (
+                        <button 
+                          className="btn-rebuy"
+                          onClick={() => handleRebuyService(purchase)}
+                        >
+                          <i className="fas fa-redo"></i>
+                          Comprar Novamente
+                        </button>
+                      )}
                     </>
                   )}
                   
