@@ -124,7 +124,17 @@ const ServiceDetail = () => {
     
     // Check if user has sufficient VP balance
     if (vpBalance < totalCost) {
-      showError(`Saldo insuficiente! Você tem ${vpBalance} VP, mas precisa de ${totalCost} VP para esta compra.`);
+      showError(
+        `Saldo insuficiente! Você tem ${vpBalance} VP, mas precisa de ${totalCost} VP para esta compra. Clique para adicionar saldo.`,
+        'Saldo Insuficiente',
+        8000,
+        {
+          onClick: () => {
+            navigate('/wallet?tab=packs');
+          },
+          data: { action: 'recharge' }
+        }
+      );
       return;
     }
 
@@ -142,19 +152,20 @@ const ServiceDetail = () => {
     
     // Double-check balance before processing
     if (vpBalance < totalCost) {
-      const shouldRecharge = window.confirm(
-        `Saldo insuficiente! Você tem ${vpBalance} VP, mas precisa de ${totalCost} VP para esta compra.\n\n` +
-        `Gostaria de realizar uma recarga de VP na sua conta?`
+      showError(
+        `Saldo insuficiente! Você tem ${vpBalance} VP, mas precisa de ${totalCost} VP para esta compra. Clique para adicionar saldo.`,
+        'Saldo Insuficiente',
+        8000,
+        {
+          onClick: () => {
+            setShowRefundPolicyModal(false);
+            setAgreeToRefundPolicy(false);
+            navigate('/wallet?tab=packs');
+          },
+          data: { action: 'recharge' }
+        }
       );
-      
-      if (shouldRecharge) {
-        setShowRefundPolicyModal(false);
-        setAgreeToRefundPolicy(false);
-        navigate('/wallet?tab=packs');
-        return;
-      } else {
-        return;
-      }
+      return;
     }
 
     console.log('Creating service order with:', { service, selectedFeatures, createServiceOrder });
