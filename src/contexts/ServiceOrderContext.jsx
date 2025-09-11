@@ -130,17 +130,30 @@ export const ServiceOrderProvider = ({ children }) => {
     try {
       setProcessing(true);
 
+      // Calculate total price including discount
+      const basePrice = serviceData.price || 0;
+      const discount = serviceData.discount || 0;
+      const discountedPrice = discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
+      const featuresTotal = additionalFeatures.reduce((total, feature) => {
+        const price = feature.price || feature.vpAmount || 0;
+        return total + (isNaN(price) ? 0 : price);
+      }, 0);
+      const totalVpAmount = Math.round((discountedPrice + featuresTotal) * 1.5); // Convert VC to VP
+
       const result = await apiFunc({
         resource: 'serviceOrder',
         action: 'create',
         payload: {
           serviceId: serviceData.id,
           sellerId: serviceData.providerId,
-          vpAmount: serviceData.price,
+          vpAmount: totalVpAmount,
           additionalFeatures: additionalFeatures,
           metadata: {
             serviceName: serviceData.title,
-            serviceDescription: serviceData.description
+            serviceDescription: serviceData.description,
+            originalPrice: basePrice,
+            discount: discount,
+            discountedPrice: discountedPrice
           }
         }
       });

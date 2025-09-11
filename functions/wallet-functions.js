@@ -516,6 +516,31 @@ export const api = onCall(async (request) => {
         }
         break;
       
+      case 'serviceOrder':
+        switch (action) {
+          case 'create':
+            result = await createServiceOrderInternal(userId, payload);
+            break;
+          case 'update':
+            result = await updateServiceOrderInternal(payload.orderId, payload.updates);
+            break;
+          case 'accept':
+            result = await acceptServiceOrderInternal(userId, payload.orderId);
+            break;
+          case 'decline':
+            result = await declineServiceOrderInternal(userId, payload.orderId);
+            break;
+          case 'deliver':
+            result = await markServiceDeliveredInternal(userId, payload.orderId);
+            break;
+          case 'confirm':
+            result = await confirmServiceDeliveryInternal(userId, payload.orderId);
+            break;
+          default:
+            throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
+        }
+        break;
+      
       default:
         throw new HttpsError('invalid-argument', `Unknown resource: ${resource}`);
     }
@@ -528,5 +553,377 @@ export const api = onCall(async (request) => {
     throw new HttpsError('internal', 'Internal server error');
   }
 });
+
+// === SERVICE ORDER FUNCTIONS ===
+
+// Create service order
+async function createServiceOrderInternal(buyerId, payload) {
+  const { serviceId, sellerId, vpAmount, additionalFeatures = [], metadata = {} } = payload;
+
+  if (!serviceId || !sellerId || !vpAmount || vpAmount <= 0) {
+    throw new HttpsError("invalid-argument", "Dados do pedido são obrigatórios");
+  }
+
+  // Get buyer wallet
+  const buyerWalletRef = db.collection('wallets').doc(buyerId);
+  const buyerWalletSnap = await buyerWalletRef.get();
+  
+  if (!buyerWalletSnap.exists) {
+    throw new HttpsError("not-found", "Carteira do comprador não encontrada");
+  }
+
+  const buyerWallet = buyerWalletSnap.data();
+  const vpNeeded = vpAmount;
+  const vcAmount = Math.round(vpAmount / 1.5); // Convert VP to VC
+
+  // Check if buyer has enough VP
+  if (buyerWallet.vp < vpNeeded) {
+    throw new HttpsError("insufficient-funds", "Saldo insuficiente de VP");
+  }
+
+  // Get seller wallet
+  const sellerWalletRef = db.collection('wallets').doc(sellerId);
+  const sellerWalletSnap = await sellerWalletRef.get();
+  
+  if (!sellerWalletSnap.exists) {
+    throw new HttpsError("not-found", "Carteira do vendedor não encontrada");
+  }
+
+  // Create service order
+  const orderRef = db.collection('serviceOrders').doc();
+  const orderData = {
+    id: orderRef.id,
+    serviceId,
+    buyerId,
+    sellerId,
+    vpAmount,
+    vcAmount,
+    additionalFeatures,
+    status: 'PENDING_ACCEPTANCE',
+    metadata: {
+      serviceName: metadata.serviceName || '',
+      serviceDescription: metadata.serviceDescription || '',
+      ...metadata
+    },
+    timestamps: {
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    },
+    // Chat will be created when seller accepts
+    chatId: null,
+    // Payment tracking
+    paymentStatus: 'PENDING',
+    refundStatus: 'NONE'
+  };
+
+  // Start transaction
+  const batch = db.batch();
+
+  // Create order
+  batch.set(orderRef, orderData);
+
+  // Deduct VP from buyer
+  batch.update(buyerWalletRef, {
+    vp: admin.firestore.FieldValue.increment(-vpNeeded),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  // Add VC Pending to seller
+  batch.update(sellerWalletRef, {
+    vcPending: admin.firestore.FieldValue.increment(vcAmount),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  // Create transaction record
+  const transactionRef = db.collection('transactions').doc();
+  batch.set(transactionRef, {
+    id: transactionRef.id,
+    userId: buyerId,
+    type: 'SERVICE_PURCHASE',
+    amount: -vpNeeded,
+    currency: 'VP',
+    description: `Compra de serviço: ${metadata.serviceName || 'Serviço'}`,
+    metadata: {
+      orderId: orderRef.id,
+      serviceId,
+      sellerId,
+      vcAmount
+    },
+    status: 'COMPLETED',
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  // Create seller transaction record
+  const sellerTransactionRef = db.collection('transactions').doc();
+  batch.set(sellerTransactionRef, {
+    id: sellerTransactionRef.id,
+    userId: sellerId,
+    type: 'SERVICE_SALE_PENDING',
+    amount: vcAmount,
+    currency: 'VC',
+    description: `Venda de serviço (pendente): ${metadata.serviceName || 'Serviço'}`,
+    metadata: {
+      orderId: orderRef.id,
+      serviceId,
+      buyerId,
+      vpAmount
+    },
+    status: 'PENDING',
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  await batch.commit();
+
+  logger.info(`✅ Service order created: ${orderRef.id}`);
+  return { success: true, order: orderData };
+}
+
+// Accept service order
+async function acceptServiceOrderInternal(sellerId, orderId) {
+  const orderRef = db.collection('serviceOrders').doc(orderId);
+  const orderSnap = await orderRef.get();
+
+  if (!orderSnap.exists) {
+    throw new HttpsError("not-found", "Pedido não encontrado");
+  }
+
+  const order = orderSnap.data();
+
+  if (order.sellerId !== sellerId) {
+    throw new HttpsError("permission-denied", "Você não pode aceitar este pedido");
+  }
+
+  if (order.status !== 'PENDING_ACCEPTANCE') {
+    throw new HttpsError("invalid-argument", "Pedido não está pendente de aceitação");
+  }
+
+  // Create chat conversation
+  const chatRef = db.collection('conversations').doc();
+  const chatData = {
+    id: chatRef.id,
+    participants: [order.buyerId, order.sellerId],
+    type: 'SERVICE_ORDER',
+    metadata: {
+      orderId: orderId,
+      serviceId: order.serviceId,
+      serviceName: order.metadata.serviceName,
+      status: 'ACTIVE'
+    },
+    lastMessage: null,
+    timestamps: {
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }
+  };
+
+  // Update order with chat ID and status
+  await orderRef.update({
+    status: 'ACCEPTED',
+    chatId: chatRef.id,
+    timestamps: {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }
+  });
+
+  // Create chat
+  await chatRef.set(chatData);
+
+  logger.info(`✅ Service order accepted: ${orderId}`);
+  return { success: true, chatId: chatRef.id };
+}
+
+// Decline service order
+async function declineServiceOrderInternal(sellerId, orderId) {
+  const orderRef = db.collection('serviceOrders').doc(orderId);
+  const orderSnap = await orderRef.get();
+
+  if (!orderSnap.exists) {
+    throw new HttpsError("not-found", "Pedido não encontrado");
+  }
+
+  const order = orderSnap.data();
+
+  if (order.sellerId !== sellerId) {
+    throw new HttpsError("permission-denied", "Você não pode recusar este pedido");
+  }
+
+  if (order.status !== 'PENDING_ACCEPTANCE') {
+    throw new HttpsError("invalid-argument", "Pedido não está pendente de aceitação");
+  }
+
+  // Start transaction to refund buyer
+  const batch = db.batch();
+
+  // Update order status
+  batch.update(orderRef, {
+    status: 'CANCELLED',
+    refundStatus: 'PROCESSING',
+    timestamps: {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }
+  });
+
+  // Get buyer wallet
+  const buyerWalletRef = db.collection('wallets').doc(order.buyerId);
+  const buyerWalletSnap = await buyerWalletRef.get();
+  
+  if (buyerWalletSnap.exists) {
+    // Refund VP to buyer
+    batch.update(buyerWalletRef, {
+      vp: admin.firestore.FieldValue.increment(order.vpAmount),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  }
+
+  // Get seller wallet
+  const sellerWalletRef = db.collection('wallets').doc(order.sellerId);
+  const sellerWalletSnap = await sellerWalletRef.get();
+  
+  if (sellerWalletSnap.exists) {
+    // Remove VC Pending from seller
+    batch.update(sellerWalletRef, {
+      vcPending: admin.firestore.FieldValue.increment(-order.vcAmount),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  }
+
+  // Create refund transaction
+  const refundTransactionRef = db.collection('transactions').doc();
+  batch.set(refundTransactionRef, {
+    id: refundTransactionRef.id,
+    userId: order.buyerId,
+    type: 'SERVICE_REFUND',
+    amount: order.vpAmount,
+    currency: 'VP',
+    description: `Reembolso de serviço: ${order.metadata.serviceName || 'Serviço'}`,
+    metadata: {
+      orderId: orderId,
+      serviceId: order.serviceId,
+      sellerId: order.sellerId
+    },
+    status: 'COMPLETED',
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  await batch.commit();
+
+  logger.info(`✅ Service order declined: ${orderId}`);
+  return { success: true };
+}
+
+// Mark service as delivered
+async function markServiceDeliveredInternal(sellerId, orderId) {
+  const orderRef = db.collection('serviceOrders').doc(orderId);
+  const orderSnap = await orderRef.get();
+
+  if (!orderSnap.exists) {
+    throw new HttpsError("not-found", "Pedido não encontrado");
+  }
+
+  const order = orderSnap.data();
+
+  if (order.sellerId !== sellerId) {
+    throw new HttpsError("permission-denied", "Você não pode marcar este pedido como entregue");
+  }
+
+  if (order.status !== 'ACCEPTED') {
+    throw new HttpsError("invalid-argument", "Pedido não foi aceito");
+  }
+
+  await orderRef.update({
+    status: 'DELIVERED',
+    timestamps: {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }
+  });
+
+  logger.info(`✅ Service marked as delivered: ${orderId}`);
+  return { success: true };
+}
+
+// Confirm service delivery
+async function confirmServiceDeliveryInternal(buyerId, orderId) {
+  const orderRef = db.collection('serviceOrders').doc(orderId);
+  const orderSnap = await orderRef.get();
+
+  if (!orderSnap.exists) {
+    throw new HttpsError("not-found", "Pedido não encontrado");
+  }
+
+  const order = orderSnap.data();
+
+  if (order.buyerId !== buyerId) {
+    throw new HttpsError("permission-denied", "Você não pode confirmar este pedido");
+  }
+
+  if (order.status !== 'DELIVERED') {
+    throw new HttpsError("invalid-argument", "Serviço não foi entregue");
+  }
+
+  // Start transaction to release VC Pending to VC
+  const batch = db.batch();
+
+  // Update order status
+  batch.update(orderRef, {
+    status: 'CONFIRMED',
+    paymentStatus: 'COMPLETED',
+    timestamps: {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }
+  });
+
+  // Get seller wallet
+  const sellerWalletRef = db.collection('wallets').doc(order.sellerId);
+  const sellerWalletSnap = await sellerWalletRef.get();
+  
+  if (sellerWalletSnap.exists) {
+    // Move VC from Pending to Available
+    batch.update(sellerWalletRef, {
+      vcPending: admin.firestore.FieldValue.increment(-order.vcAmount),
+      vc: admin.firestore.FieldValue.increment(order.vcAmount),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  }
+
+  // Create completion transaction
+  const completionTransactionRef = db.collection('transactions').doc();
+  batch.set(completionTransactionRef, {
+    id: completionTransactionRef.id,
+    userId: order.sellerId,
+    type: 'SERVICE_SALE_COMPLETED',
+    amount: order.vcAmount,
+    currency: 'VC',
+    description: `Venda de serviço concluída: ${order.metadata.serviceName || 'Serviço'}`,
+    metadata: {
+      orderId: orderId,
+      serviceId: order.serviceId,
+      buyerId: order.buyerId,
+      vpAmount: order.vpAmount
+    },
+    status: 'COMPLETED',
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  await batch.commit();
+
+  logger.info(`✅ Service delivery confirmed: ${orderId}`);
+  return { success: true };
+}
+
+// Update service order
+async function updateServiceOrderInternal(orderId, updates) {
+  const orderRef = db.collection('serviceOrders').doc(orderId);
+  
+  const updateData = {
+    ...updates,
+    timestamps: {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }
+  };
+
+  await orderRef.update(updateData);
+  logger.info(`✅ Service order updated: ${orderId}`);
+  return { success: true };
+}
 
 logger.info('✅ Wallet functions loaded - Stripe preserved, watermarking removed');

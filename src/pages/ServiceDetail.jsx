@@ -69,7 +69,14 @@ const ServiceDetail = () => {
       return total + (isNaN(price) ? 0 : price);
     }, 0);
     const basePrice = isNaN(service.price) ? 0 : service.price;
-    return basePrice + featuresTotal;
+    const discount = service.discount || 0;
+    const discountedPrice = discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
+    return discountedPrice + featuresTotal;
+  };
+
+  const calculateVpTotal = () => {
+    const vcTotal = calculateTotal();
+    return Math.round(vcTotal * 1.5); // Convert VC to VP
   };
 
   const handlePurchase = async () => {
@@ -157,7 +164,15 @@ const ServiceDetail = () => {
               </div>
             </div>
             <div className="service-price">
-              <span className="price-amount">{formatVP(service.price)}</span>
+              {service.discount && service.discount > 0 ? (
+                <>
+                  <span className="price-original">{formatVP(service.price * 1.5)}</span>
+                  <span className="price-amount">{formatVP(calculateVpTotal())}</span>
+                  <span className="discount-badge">-{service.discount}%</span>
+                </>
+              ) : (
+                <span className="price-amount">{formatVP(service.price * 1.5)}</span>
+              )}
             </div>
           </div>
 
@@ -282,8 +297,14 @@ const ServiceDetail = () => {
               <div className="price-breakdown">
                 <div className="price-item">
                   <span>Preço base</span>
-                  <span>{formatVP(service.price)}</span>
+                  <span>{formatVP(service.price * 1.5)}</span>
                 </div>
+                {service.discount && service.discount > 0 && (
+                  <div className="price-item discount-item">
+                    <span>Desconto ({service.discount}%)</span>
+                    <span>-{formatVP((service.price * 1.5) - calculateVpTotal())}</span>
+                  </div>
+                )}
                 {selectedFeatures.map((feature, index) => (
                   <div key={index} className="price-item feature-price-item">
                     <span>{feature.name || feature.title}</span>
@@ -292,7 +313,7 @@ const ServiceDetail = () => {
                 ))}
                 <div className="price-total">
                   <span>Total</span>
-                  <span>{formatVP(calculateTotal())}</span>
+                  <span>{formatVP(calculateVpTotal())}</span>
                 </div>
               </div>
             </div>
@@ -349,8 +370,14 @@ const ServiceDetail = () => {
               <div className="price-breakdown">
                 <div className="price-item">
                   <span>Preço base</span>
-                  <span>{formatVP(service.price)}</span>
+                  <span>{formatVP(service.price * 1.5)}</span>
                 </div>
+                {service.discount && service.discount > 0 && (
+                  <div className="price-item discount-item">
+                    <span>Desconto ({service.discount}%)</span>
+                    <span>-{formatVP((service.price * 1.5) - calculateVpTotal())}</span>
+                  </div>
+                )}
                 {selectedFeatures.map((feature, index) => (
                   <div key={index} className="price-item">
                     <span>{feature.name || feature.title}</span>
@@ -359,7 +386,7 @@ const ServiceDetail = () => {
                 ))}
                 <div className="price-total">
                   <span>Total a pagar</span>
-                  <span>{formatVP(calculateTotal())}</span>
+                  <span>{formatVP(calculateVpTotal())}</span>
                 </div>
               </div>
 
