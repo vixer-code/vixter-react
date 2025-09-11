@@ -30,7 +30,20 @@ export const useServiceOrder = () => {
 export const ServiceOrderProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showInfo } = useNotification();
-  const { sendServiceNotification, createServiceConversation, markServiceConversationCompleted } = useMessaging();
+  
+  // Safely get messaging functions with fallbacks
+  let sendServiceNotification, createServiceConversation, markServiceConversationCompleted;
+  try {
+    const messagingContext = useMessaging();
+    sendServiceNotification = messagingContext?.sendServiceNotification || (() => Promise.resolve());
+    createServiceConversation = messagingContext?.createServiceConversation || (() => Promise.resolve(null));
+    markServiceConversationCompleted = messagingContext?.markServiceConversationCompleted || (() => Promise.resolve());
+  } catch (error) {
+    console.warn('Messaging context not available, using fallback functions:', error);
+    sendServiceNotification = () => Promise.resolve();
+    createServiceConversation = () => Promise.resolve(null);
+    markServiceConversationCompleted = () => Promise.resolve();
+  }
   
   // State
   const [serviceOrders, setServiceOrders] = useState([]);
@@ -522,10 +535,7 @@ export const ServiceOrderProvider = ({ children }) => {
     calculateOrderTotal,
     getOrderStatusInfo,
     filterOrdersByStatus,
-    getPendingOrdersCount,
-    sendServiceNotification,
-    createServiceConversation,
-    markServiceConversationCompleted
+    getPendingOrdersCount
   ]);
 
   return (
