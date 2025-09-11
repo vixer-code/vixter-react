@@ -36,9 +36,31 @@ const ServiceDetail = () => {
       const serviceSnap = await getDoc(serviceRef);
       
       if (serviceSnap.exists()) {
+        const serviceData = serviceSnap.data();
+        
+        // Load provider information
+        let providerData = {};
+        if (serviceData.providerId) {
+          try {
+            const providerRef = doc(db, 'users', serviceData.providerId);
+            const providerSnap = await getDoc(providerRef);
+            if (providerSnap.exists()) {
+              providerData = providerSnap.data();
+            }
+          } catch (providerError) {
+            console.warn('Error loading provider data:', providerError);
+          }
+        }
+        
         setService({
           id: serviceSnap.id,
-          ...serviceSnap.data()
+          ...serviceData,
+          // Add provider information
+          providerName: providerData.displayName || serviceData.providerName,
+          providerUsername: providerData.username || serviceData.providerUsername,
+          providerAvatar: providerData.profilePictureURL || serviceData.providerAvatar,
+          providerRating: providerData.rating || serviceData.providerRating,
+          providerCompletedOrders: providerData.completedOrders || serviceData.providerCompletedOrders
         });
       } else {
         showNotification('Serviço não encontrado', 'error');
@@ -124,6 +146,13 @@ const ServiceDetail = () => {
       return;
     }
 
+    console.log('Creating service order with:', { service, selectedFeatures, createServiceOrder });
+    
+    if (typeof createServiceOrder !== 'function') {
+      showNotification('Erro: Função de criação de pedido não disponível', 'error');
+      return;
+    }
+    
     const success = await createServiceOrder(service, selectedFeatures);
     if (success) {
       setShowRefundPolicyModal(false);

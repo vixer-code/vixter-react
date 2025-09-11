@@ -33,9 +33,31 @@ const PackDetail = () => {
       const packSnap = await getDoc(packRef);
       
       if (packSnap.exists()) {
+        const packData = packSnap.data();
+        
+        // Load provider information
+        let providerData = {};
+        if (packData.providerId) {
+          try {
+            const providerRef = doc(db, 'users', packData.providerId);
+            const providerSnap = await getDoc(providerRef);
+            if (providerSnap.exists()) {
+              providerData = providerSnap.data();
+            }
+          } catch (providerError) {
+            console.warn('Error loading provider data:', providerError);
+          }
+        }
+        
         setPack({
           id: packSnap.id,
-          ...packSnap.data()
+          ...packData,
+          // Add provider information
+          providerName: providerData.displayName || packData.providerName,
+          providerUsername: providerData.username || packData.providerUsername,
+          providerAvatar: providerData.profilePictureURL || packData.providerAvatar,
+          providerRating: providerData.rating || packData.providerRating,
+          providerCompletedOrders: providerData.completedOrders || packData.providerCompletedOrders
         });
       } else {
         showNotification('Pack não encontrado', 'error');

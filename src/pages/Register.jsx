@@ -5,7 +5,7 @@ import { Eye, EyeOff, Mail, Lock, User, MapPin, FileText, Globe, Calendar, AtSig
 import { ref, set, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage, db } from '../../config/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import './Auth.css';
 
 const Register = () => {
@@ -55,6 +55,7 @@ const Register = () => {
     isValid: false,
     message: ''
   });
+  const [previewImage, setPreviewImage] = useState(null);
 
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -289,10 +290,20 @@ const Register = () => {
     const { name, value, type, checked, files } = e.target;
     
     if (type === 'file') {
+      const file = files[0];
       setFormData(prev => ({
         ...prev,
-        [name]: files[0]
+        [name]: file
       }));
+      
+      // Create preview for custom avatar
+      if (name === 'customAvatar' && file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setPreviewImage(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
     } else if (type === 'checkbox') {
       if (name === 'interests') {
         setFormData(prev => ({
@@ -320,6 +331,11 @@ const Register = () => {
       ...prev,
       avatarChoice
     }));
+    
+    // Clear preview if not custom
+    if (avatarChoice !== 'custom') {
+      setPreviewImage(null);
+    }
   };
 
   const handleDocumentChange = (documentType, file) => {
@@ -578,10 +594,23 @@ const Register = () => {
 
       // Upload profile picture if custom avatar selected
       if (formData.customAvatar) {
-        const profilePictureURL = await uploadProfilePicture(user.uid);
-        if (profilePictureURL) {
-          const userRef = ref(database, `users/${user.uid}`);
-          await update(userRef, { profilePictureURL });
+        try {
+          const profilePictureURL = await uploadProfilePicture(user.uid);
+          if (profilePictureURL) {
+            // Update both database and firestore
+            const userRef = ref(database, `users/${user.uid}`);
+            await update(userRef, { profilePictureURL });
+            
+            // Also update Firestore
+            const userDocRef = doc(db, 'users', user.uid);
+            await updateDoc(userDocRef, { 
+              profilePictureURL,
+              updatedAt: serverTimestamp()
+            });
+          }
+        } catch (uploadError) {
+          console.error('Error uploading profile picture:', uploadError);
+          // Don't fail registration if image upload fails
         }
       }
       
@@ -886,6 +915,13 @@ const Register = () => {
                 onChange={handleChange}
               />
               <label htmlFor="customAvatar" className="btn secondary">Escolher imagem</label>
+              
+              {previewImage && (
+                <div className="image-preview">
+                  <img src={previewImage} alt="Preview" className="preview-image" />
+                  <p className="preview-text">Imagem selecionada</p>
+                </div>
+              )}
             </div>
           )}
         </div>

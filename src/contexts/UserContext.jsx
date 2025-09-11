@@ -43,8 +43,13 @@ export const UserProvider = ({ children }) => {
 
   // Load user profile from Firestore
   useEffect(() => {
-    if (currentUser) {
-      loadUserProfile();
+    if (currentUser && currentUser.uid) {
+      // Add a small delay to ensure auth is fully ready
+      const timer = setTimeout(() => {
+        loadUserProfile();
+      }, 100);
+      
+      return () => clearTimeout(timer);
     } else {
       setUserProfile(null);
       setLoading(false);
