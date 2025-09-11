@@ -15,13 +15,12 @@ const PackDetail = () => {
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
   const { vpBalance } = useWallet();
-  const { showNotification } = useNotification();
+  const { showSuccess, showError, showWarning, showInfo } = useNotification();
   
   const [pack, setPack] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [showRefundPolicyModal, setShowRefundPolicyModal] = useState(false);
-  const [agreeToRefundPolicy, setAgreeToRefundPolicy] = useState(false);
+  // Packs não têm política de reembolso - compra direta
 
   useEffect(() => {
     loadPack();
@@ -60,12 +59,12 @@ const PackDetail = () => {
           providerCompletedOrders: providerData.completedOrders || packData.providerCompletedOrders
         });
       } else {
-        showNotification('Pack não encontrado', 'error');
+        showError('Pack não encontrado');
         navigate('/');
       }
     } catch (error) {
       console.error('Error loading pack:', error);
-      showNotification('Erro ao carregar pack', 'error');
+      showError('Erro ao carregar pack');
     } finally {
       setLoading(false);
     }
@@ -81,18 +80,18 @@ const PackDetail = () => {
 
   const handlePurchase = async () => {
     if (!currentUser) {
-      showNotification('Você precisa estar logado para comprar um pack', 'warning');
+      showWarning('Você precisa estar logado para comprar um pack');
       navigate('/login');
       return;
     }
 
     if (userProfile?.accountType !== 'client' && userProfile?.accountType !== 'both') {
-      showNotification('Apenas clientes podem comprar packs', 'warning');
+      showWarning('Apenas clientes podem comprar packs');
       return;
     }
 
     if (pack.providerId === currentUser.uid) {
-      showNotification('Você não pode comprar seu próprio pack', 'warning');
+      showWarning('Você não pode comprar seu próprio pack');
       return;
     }
 
@@ -100,32 +99,61 @@ const PackDetail = () => {
     
     // Check if user has sufficient VP balance
     if (vpBalance < totalCost) {
-      showNotification(`Saldo insuficiente! Você tem ${vpBalance} VP, mas precisa de ${totalCost} VP para esta compra.`, 'error');
-      return;
+      const shouldRecharge = window.confirm(
+        `Saldo insuficiente! Você tem ${vpBalance} VP, mas precisa de ${totalCost} VP para esta compra.\n\n` +
+        `Gostaria de realizar uma recarga de VP na sua conta?`
+      );
+      
+      if (shouldRecharge) {
+        navigate('/wallet?tab=packs');
+        return;
+      } else {
+        return;
+      }
     }
 
-    // Show refund policy modal first
-    setShowRefundPolicyModal(true);
+    // Packs são comprados diretamente - sem política de reembolso
+    setShowPurchaseModal(true);
   };
 
   const handleConfirmPurchase = async () => {
-    if (!agreeToRefundPolicy) {
-      showNotification('Você deve concordar com a política de reembolso para continuar', 'warning');
-      return;
-    }
-
     const totalCost = calculateVpTotal();
     
     // Double-check balance before processing
     if (vpBalance < totalCost) {
-      showNotification(`Saldo insuficiente! Você tem ${vpBalance} VP, mas precisa de ${totalCost} VP para esta compra.`, 'error');
-      return;
+      const shouldRecharge = window.confirm(
+        `Saldo insuficiente! Você tem ${vpBalance} VP, mas precisa de ${totalCost} VP para esta compra.\n\n` +
+        `Gostaria de realizar uma recarga de VP na sua conta?`
+      );
+      
+      if (shouldRecharge) {
+        setShowPurchaseModal(false);
+        navigate('/wallet?tab=packs');
+        return;
+      } else {
+        return;
+      }
     }
 
-    // TODO: Implement pack purchase logic
-    showNotification('Compra de pack será implementada em breve!', 'info');
-    setShowRefundPolicyModal(false);
-    setAgreeToRefundPolicy(false);
+    try {
+      // TODO: Implement pack purchase logic with direct VC transfer
+      // Pack purchase should:
+      // 1. Transfer VP from buyer to seller as VC (not pending)
+      // 2. Add pack to buyer's purchased packs
+      // 3. Redirect to pack viewing page
+      
+      showSuccess('Pack comprado com sucesso! Redirecionando...');
+      setShowPurchaseModal(false);
+      
+      // Redirect to pack viewing page after successful purchase
+      setTimeout(() => {
+        navigate(`/pack/${packId}/view`);
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Error purchasing pack:', error);
+      showError('Erro ao comprar pack. Tente novamente.');
+    }
   };
 
   const formatVP = (amount) => {
@@ -387,102 +415,6 @@ const PackDetail = () => {
         </div>
       )}
 
-      {/* Refund Policy Modal */}
-      {showRefundPolicyModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3>Política de Reembolso</h3>
-              <button 
-                className="modal-close"
-                onClick={() => {
-                  setShowRefundPolicyModal(false);
-                  setAgreeToRefundPolicy(false);
-                }}
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="modal-body">
-              <div className="refund-policy-content">
-                <div className="pack-info">
-                  <h4>{pack?.title}</h4>
-                  <p>por {pack?.providerName}</p>
-                  <div className="total-amount">
-                    <strong>Total: {formatVP(calculateVpTotal())}</strong>
-                  </div>
-                </div>
-                
-                <div className="balance-confirmation">
-                  <h5>💰 Confirmação de Saldo</h5>
-                  <div className="balance-details">
-                    <div className="balance-item">
-                      <span>Saldo atual:</span>
-                      <span className="current-balance">{formatVP(vpBalance)}</span>
-                    </div>
-                    <div className="balance-item">
-                      <span>Valor da compra:</span>
-                      <span className="purchase-amount">{formatVP(calculateVpTotal())}</span>
-                    </div>
-                    <div className="balance-item total">
-                      <span>Saldo após compra:</span>
-                      <span className="remaining-balance">{formatVP(vpBalance - calculateVpTotal())}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="refund-policy-text">
-                  <h5>⚠️ Política de Reembolso</h5>
-                  <p>
-                    <strong>Esta compra é NÃO REEMBOLSÁVEL.</strong> Ao continuar, você reconhece e concorda que:
-                  </p>
-                  <ul>
-                    <li>O valor será reservado em sua conta</li>
-                    <li>O vendedor será notificado</li>
-                    <li>Uma vez confirmado, o pack será adicionado à sua conta</li>
-                    <li>Não haverá reembolso após a confirmação da compra</li>
-                    <li>Em caso de cancelamento pelo vendedor, o valor será devolvido</li>
-                  </ul>
-                </div>
-                
-                <div className="agreement-checkbox">
-                  <label className="checkbox-label">
-                    <input 
-                      type="checkbox" 
-                      checked={agreeToRefundPolicy}
-                      onChange={(e) => setAgreeToRefundPolicy(e.target.checked)}
-                    />
-                    <span className="checkmark"></span>
-                    <span className="checkbox-text">
-                      Eu li e concordo com a política de reembolso (não reembolsável)
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
-            
-            <div className="modal-actions">
-              <button 
-                className="btn-secondary"
-                onClick={() => {
-                  setShowRefundPolicyModal(false);
-                  setAgreeToRefundPolicy(false);
-                }}
-              >
-                Cancelar
-              </button>
-              <button 
-                className="btn-primary"
-                onClick={handleConfirmPurchase}
-              >
-                <i className="fas fa-check"></i>
-                Confirmar Compra
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

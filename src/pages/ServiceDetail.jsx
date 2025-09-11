@@ -17,7 +17,7 @@ const ServiceDetail = () => {
   const { userProfile } = useUser();
   const { vpBalance } = useWallet();
   const { createServiceOrder, processing } = useServiceOrder();
-  const { showNotification } = useNotification();
+  const { showSuccess, showError, showWarning } = useNotification();
   
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,12 +63,12 @@ const ServiceDetail = () => {
           providerCompletedOrders: providerData.completedOrders || serviceData.providerCompletedOrders
         });
       } else {
-        showNotification('Serviço não encontrado', 'error');
+        showError('Serviço não encontrado');
         navigate('/');
       }
     } catch (error) {
       console.error('Error loading service:', error);
-      showNotification('Erro ao carregar serviço', 'error');
+      showError('Erro ao carregar serviço');
     } finally {
       setLoading(false);
     }
@@ -105,18 +105,18 @@ const ServiceDetail = () => {
 
   const handlePurchase = async () => {
     if (!currentUser) {
-      showNotification('Você precisa estar logado para comprar um serviço', 'warning');
+      showWarning('Você precisa estar logado para comprar um serviço');
       navigate('/login');
       return;
     }
 
     if (userProfile?.accountType !== 'client' && userProfile?.accountType !== 'both') {
-      showNotification('Apenas clientes podem comprar serviços', 'warning');
+      showWarning('Apenas clientes podem comprar serviços');
       return;
     }
 
     if (service.providerId === currentUser.uid) {
-      showNotification('Você não pode comprar seu próprio serviço', 'warning');
+      showWarning('Você não pode comprar seu próprio serviço');
       return;
     }
 
@@ -124,7 +124,7 @@ const ServiceDetail = () => {
     
     // Check if user has sufficient VP balance
     if (vpBalance < totalCost) {
-      showNotification(`Saldo insuficiente! Você tem ${vpBalance} VP, mas precisa de ${totalCost} VP para esta compra.`, 'error');
+      showError(`Saldo insuficiente! Você tem ${vpBalance} VP, mas precisa de ${totalCost} VP para esta compra.`);
       return;
     }
 
@@ -134,7 +134,7 @@ const ServiceDetail = () => {
 
   const handleConfirmPurchase = async () => {
     if (!agreeToRefundPolicy) {
-      showNotification('Você deve concordar com a política de reembolso para continuar', 'warning');
+      showWarning('Você deve concordar com a política de reembolso para continuar');
       return;
     }
 
@@ -142,23 +142,39 @@ const ServiceDetail = () => {
     
     // Double-check balance before processing
     if (vpBalance < totalCost) {
-      showNotification(`Saldo insuficiente! Você tem ${vpBalance} VP, mas precisa de ${totalCost} VP para esta compra.`, 'error');
-      return;
+      const shouldRecharge = window.confirm(
+        `Saldo insuficiente! Você tem ${vpBalance} VP, mas precisa de ${totalCost} VP para esta compra.\n\n` +
+        `Gostaria de realizar uma recarga de VP na sua conta?`
+      );
+      
+      if (shouldRecharge) {
+        setShowRefundPolicyModal(false);
+        setAgreeToRefundPolicy(false);
+        navigate('/wallet?tab=packs');
+        return;
+      } else {
+        return;
+      }
     }
 
     console.log('Creating service order with:', { service, selectedFeatures, createServiceOrder });
     
     if (typeof createServiceOrder !== 'function') {
-      showNotification('Erro: Função de criação de pedido não disponível', 'error');
+      showError('Erro: Função de criação de pedido não disponível');
       return;
     }
     
-    const success = await createServiceOrder(service, selectedFeatures);
-    if (success) {
-      setShowRefundPolicyModal(false);
-      setAgreeToRefundPolicy(false);
-      showNotification('Pedido de serviço enviado com sucesso! O provedor foi notificado e receberá o pedido em breve.', 'success');
-      navigate('/wallet');
+    try {
+      const success = await createServiceOrder(service, selectedFeatures);
+      if (success) {
+        setShowRefundPolicyModal(false);
+        setAgreeToRefundPolicy(false);
+        showSuccess('Pedido de serviço enviado com sucesso! O provedor foi notificado e receberá o pedido em breve.');
+        navigate('/wallet');
+      }
+    } catch (error) {
+      console.error('Error creating service order:', error);
+      showError('Erro ao criar pedido de serviço. Tente novamente.');
     }
   };
 
@@ -514,7 +530,9 @@ const ServiceDetail = () => {
                     </div>
                     <div className="balance-item total">
                       <span>Saldo após compra:</span>
-                      <span className="remaining-balance">{formatVP(vpBalance - calculateVpTotal())}</span>
+                      <span className={`remaining-balance ${(vpBalance - calculateVpTotal()) < 0 ? 'insufficient' : ''}`}>
+                        {formatVP(Math.max(0, vpBalance - calculateVpTotal()))}
+                      </span>
                     </div>
                   </div>
                 </div>

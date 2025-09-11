@@ -467,6 +467,43 @@
   font-weight: 600;
 }
 
+.remaining-balance.insufficient {
+  color: #f44336;
+  font-weight: bold;
+}
+
+/* Pack purchase info styles */
+.pack-purchase-info {
+  margin: 20px 0;
+  padding: 16px;
+  background: #e8f5e8;
+  border-radius: 8px;
+  border-left: 4px solid #4CAF50;
+}
+
+.pack-purchase-info h5 {
+  margin: 0 0 12px 0;
+  color: #2e7d32;
+  font-size: 1rem;
+}
+
+.pack-purchase-info p {
+  margin: 0 0 12px 0;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.pack-purchase-info ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.pack-purchase-info li {
+  margin-bottom: 6px;
+}
+
 .refund-policy-text {
   margin: 20px 0;
 }

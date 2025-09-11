@@ -585,3 +585,64 @@
     flex-direction: column;
   }
 }
+
+/* Balance confirmation styles */
+.balance-confirmation {
+  margin: 20px 0;
+  padding: 16px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.balance-confirmation h5 {
+  margin: 0 0 12px 0;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.balance-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.balance-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.balance-item:last-child {
+  border-bottom: none;
+}
+
+.balance-item.total {
+  font-weight: bold;
+  font-size: 1.1rem;
+  padding-top: 12px;
+  border-top: 2px solid #444;
+  border-bottom: none;
+}
+
+.current-balance {
+  color: #4CAF50;
+  font-weight: 500;
+}
+
+.purchase-amount {
+  color: #FF9800;
+  font-weight: 500;
+}
+
+.remaining-balance {
+  color: #4CAF50;
+  font-weight: 500;
+}
+
+.remaining-balance.insufficient {
+  color: #f44336;
+  font-weight: bold;
+}
