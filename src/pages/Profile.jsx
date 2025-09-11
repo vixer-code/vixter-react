@@ -387,21 +387,15 @@ const [formData, setFormData] = useState({
     setActiveTab('packs');
   };
 
-  // Open service preview for visitors
-  const handleOpenServicePreview = (service) => {
-    setServiceToPreview(service);
-    setShowServicePreview(true);
-  };
 
   const handleEditPack = (pack) => {
     setEditingPack(pack);
     setShowCreatePackModal(true);
   };
 
-  // Open pack preview for visitors
+  // Navigate to pack detail page for visitors
   const handleOpenPackPreview = (pack) => {
-    setPackToPreview(pack);
-    setShowPackPreview(true);
+    navigate(`/pack/${pack.id}`);
   };
 
   const handleDeletePack = async (packId) => {
@@ -448,6 +442,11 @@ const [formData, setFormData] = useState({
   const handleEditService = (service) => {
     setEditingService(service);
     setShowCreateServiceModal(true);
+  };
+
+  // Navigate to service detail page for visitors
+  const handleOpenServicePreview = (service) => {
+    navigate(`/service/${service.id}`);
   };
 
   // Purchase functions will be implemented via Cloud Functions for atomic transactions

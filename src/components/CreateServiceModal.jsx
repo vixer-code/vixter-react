@@ -42,6 +42,10 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   // File uploads state
   const [coverImageFile, setCoverImageFile] = useState(null);
   const [coverImagePreview, setCoverImagePreview] = useState('');
+  const [showcasePhotoFiles, setShowcasePhotoFiles] = useState([]);
+  const [showcaseVideoFiles, setShowcaseVideoFiles] = useState([]);
+  const [showcasePhotoPreviews, setShowcasePhotoPreviews] = useState([]);
+  const [showcaseVideoPreviews, setShowcaseVideoPreviews] = useState([]);
 
   // Input refs
   const featuresInputRef = useRef(null);
@@ -242,6 +246,10 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     });
     setCoverImageFile(null);
     setCoverImagePreview('');
+    setShowcasePhotoFiles([]);
+    setShowcaseVideoFiles([]);
+    setShowcasePhotoPreviews([]);
+    setShowcaseVideoPreviews([]);
     setCurrentStep(0);
   };
 

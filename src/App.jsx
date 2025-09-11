@@ -33,6 +33,7 @@ const SearchResults = lazy(() => import('./pages/SearchResults'));
 const MyServices = lazy(() => import('./pages/MyServices'));
 const MyPurchases = lazy(() => import('./pages/MyPurchases'));
 const ServiceDetail = lazy(() => import('./pages/ServiceDetail'));
+const PackDetail = lazy(() => import('./pages/PackDetail'));
 const ServiceOrders = lazy(() => import('./pages/ServiceOrders'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -86,6 +87,7 @@ function App() {
                                 <Route path="/my-purchases" element={<MyPurchases />} />
                                 <Route path="/service-orders" element={<ServiceOrders />} />
                                 <Route path="/service/:serviceId" element={<ServiceDetail />} />
+                                <Route path="/pack/:packId" element={<PackDetail />} />
                                 <Route path="/settings" element={<div>Settings Page - Coming Soon</div>} />
                                 <Route path="/services" element={<div>Services Page - Coming Soon</div>} />
                                 

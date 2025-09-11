@@ -3,98 +3,74 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useWallet } from '../contexts/WalletContext';
-import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import CachedImage from '../components/CachedImage';
-import './ServiceDetail.css';
+import './PackDetail.css';
 
-const ServiceDetail = () => {
-  const { serviceId } = useParams();
+const PackDetail = () => {
+  const { packId } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
   const { vpBalance } = useWallet();
-  const { createServiceOrder, processing } = useServiceOrder();
   const { showNotification } = useNotification();
   
-  const [service, setService] = useState(null);
+  const [pack, setPack] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedFeatures, setSelectedFeatures] = useState([]);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showRefundPolicyModal, setShowRefundPolicyModal] = useState(false);
   const [agreeToRefundPolicy, setAgreeToRefundPolicy] = useState(false);
 
   useEffect(() => {
-    loadService();
-  }, [serviceId]);
+    loadPack();
+  }, [packId]);
 
-  const loadService = async () => {
+  const loadPack = async () => {
     try {
-      const serviceRef = doc(db, 'services', serviceId);
-      const serviceSnap = await getDoc(serviceRef);
+      const packRef = doc(db, 'packs', packId);
+      const packSnap = await getDoc(packRef);
       
-      if (serviceSnap.exists()) {
-        setService({
-          id: serviceSnap.id,
-          ...serviceSnap.data()
+      if (packSnap.exists()) {
+        setPack({
+          id: packSnap.id,
+          ...packSnap.data()
         });
       } else {
-        showNotification('Serviço não encontrado', 'error');
+        showNotification('Pack não encontrado', 'error');
         navigate('/');
       }
     } catch (error) {
-      console.error('Error loading service:', error);
-      showNotification('Erro ao carregar serviço', 'error');
+      console.error('Error loading pack:', error);
+      showNotification('Erro ao carregar pack', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFeatureToggle = (feature) => {
-    setSelectedFeatures(prev => {
-      const featureId = feature.id || feature.title || feature.name;
-      const isSelected = prev.find(f => (f.id || f.title || f.name) === featureId);
-      if (isSelected) {
-        return prev.filter(f => (f.id || f.title || f.name) !== featureId);
-      } else {
-        return [...prev, feature];
-      }
-    });
-  };
-
-  const calculateTotal = () => {
-    if (!service) return 0;
-    const featuresTotal = selectedFeatures.reduce((total, feature) => {
-      const price = feature.price || feature.vpAmount || 0;
-      return total + (isNaN(price) ? 0 : price);
-    }, 0);
-    const basePrice = isNaN(service.price) ? 0 : service.price;
-    const discount = service.discount || 0;
-    const discountedPrice = discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
-    return discountedPrice + featuresTotal;
-  };
-
   const calculateVpTotal = () => {
-    const vcTotal = calculateTotal();
-    return Math.round(vcTotal * 1.5); // Convert VC to VP
+    if (!pack) return 0;
+    const basePrice = pack.price || 0;
+    const discount = pack.discount || 0;
+    const discountedPrice = discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
+    return Math.round(discountedPrice * 1.5); // Convert VC to VP
   };
 
   const handlePurchase = async () => {
     if (!currentUser) {
-      showNotification('Você precisa estar logado para comprar um serviço', 'warning');
+      showNotification('Você precisa estar logado para comprar um pack', 'warning');
       navigate('/login');
       return;
     }
 
     if (userProfile?.accountType !== 'client' && userProfile?.accountType !== 'both') {
-      showNotification('Apenas clientes podem comprar serviços', 'warning');
+      showNotification('Apenas clientes podem comprar packs', 'warning');
       return;
     }
 
-    if (service.providerId === currentUser.uid) {
-      showNotification('Você não pode comprar seu próprio serviço', 'warning');
+    if (pack.providerId === currentUser.uid) {
+      showNotification('Você não pode comprar seu próprio pack', 'warning');
       return;
     }
 
@@ -124,13 +100,10 @@ const ServiceDetail = () => {
       return;
     }
 
-    const success = await createServiceOrder(service, selectedFeatures);
-    if (success) {
-      setShowRefundPolicyModal(false);
-      setAgreeToRefundPolicy(false);
-      showNotification('Pedido de serviço enviado com sucesso! O provedor foi notificado e receberá o pedido em breve.', 'success');
-      navigate('/wallet');
-    }
+    // TODO: Implement pack purchase logic
+    showNotification('Compra de pack será implementada em breve!', 'info');
+    setShowRefundPolicyModal(false);
+    setAgreeToRefundPolicy(false);
   };
 
   const formatVP = (amount) => {
@@ -142,22 +115,22 @@ const ServiceDetail = () => {
 
   if (loading) {
     return (
-      <div className="service-detail-container">
+      <div className="pack-detail-container">
         <div className="loading-spinner">
           <i className="fas fa-spinner fa-spin"></i>
-          <span>Carregando serviço...</span>
+          <span>Carregando pack...</span>
         </div>
       </div>
     );
   }
 
-  if (!service) {
+  if (!pack) {
     return (
-      <div className="service-detail-container">
+      <div className="pack-detail-container">
         <div className="error-state">
           <i className="fas fa-exclamation-triangle"></i>
-          <h2>Serviço não encontrado</h2>
-          <p>O serviço que você está procurando não existe ou foi removido.</p>
+          <h2>Pack não encontrado</h2>
+          <p>O pack que você está procurando não existe ou foi removido.</p>
           <button onClick={() => navigate('/')} className="btn-primary">
             Voltar ao Início
           </button>
@@ -167,55 +140,55 @@ const ServiceDetail = () => {
   }
 
   return (
-    <div className="service-detail-container">
-      <div className="service-detail-content">
-        <div className="service-main">
-          <div className="service-header">
-            <div className="service-title-section">
-              <h1>{service.title}</h1>
-              <div className="service-meta">
-                <span className="service-category">{service.category}</span>
-                <span className="service-rating">
+    <div className="pack-detail-container">
+      <div className="pack-detail-content">
+        <div className="pack-main">
+          <div className="pack-header">
+            <div className="pack-title-section">
+              <h1>{pack.title}</h1>
+              <div className="pack-meta">
+                <span className="pack-category">{pack.category}</span>
+                <span className="pack-rating">
                   <i className="fas fa-star"></i>
-                  {service.rating || 'N/A'}
+                  {pack.rating || 'N/A'}
                 </span>
               </div>
             </div>
-            <div className="service-price">
-              {service.discount && service.discount > 0 ? (
+            <div className="pack-price">
+              {pack.discount && pack.discount > 0 ? (
                 <>
-                  <span className="price-original">{formatVP(service.price * 1.5)}</span>
+                  <span className="price-original">{formatVP(pack.price * 1.5)}</span>
                   <span className="price-amount">{formatVP(calculateVpTotal())}</span>
-                  <span className="discount-badge">-{service.discount}%</span>
+                  <span className="discount-badge">-{pack.discount}%</span>
                 </>
               ) : (
-                <span className="price-amount">{formatVP(service.price * 1.5)}</span>
+                <span className="price-amount">{formatVP(pack.price * 1.5)}</span>
               )}
             </div>
           </div>
 
-          <div className="service-images">
+          <div className="pack-images">
             {/* Cover Image */}
-            {service.coverImage?.publicUrl && (
+            {pack.coverImage?.publicUrl && (
               <div className="image-gallery">
                 <CachedImage
-                  src={service.coverImage.publicUrl}
-                  alt={`${service.title} - Imagem principal`}
-                  className="service-image"
+                  src={pack.coverImage.publicUrl}
+                  alt={`${pack.title} - Imagem principal`}
+                  className="pack-image"
                   showLoading={true}
                 />
               </div>
             )}
             
             {/* Sample Images */}
-            {service.sampleImages && service.sampleImages.length > 0 && (
+            {pack.sampleImages && pack.sampleImages.length > 0 && (
               <div className="image-gallery">
-                {service.sampleImages.map((image, index) => (
+                {pack.sampleImages.map((image, index) => (
                   <CachedImage
                     key={index}
                     src={image.publicUrl}
-                    alt={`${service.title} - Imagem ${index + 1}`}
-                    className="service-image"
+                    alt={`${pack.title} - Imagem ${index + 1}`}
+                    className="pack-image"
                     showLoading={true}
                   />
                 ))}
@@ -223,14 +196,14 @@ const ServiceDetail = () => {
             )}
             
             {/* Fallback for old structure */}
-            {service.images && service.images.length > 0 && !service.coverImage && !service.sampleImages && (
+            {pack.images && pack.images.length > 0 && !pack.coverImage && !pack.sampleImages && (
               <div className="image-gallery">
-                {service.images.map((image, index) => (
+                {pack.images.map((image, index) => (
                   <CachedImage
                     key={index}
                     src={image}
-                    alt={`${service.title} - Imagem ${index + 1}`}
-                    className="service-image"
+                    alt={`${pack.title} - Imagem ${index + 1}`}
+                    className="pack-image"
                     showLoading={true}
                   />
                 ))}
@@ -238,7 +211,7 @@ const ServiceDetail = () => {
             )}
             
             {/* No images fallback */}
-            {!service.coverImage && !service.sampleImages && (!service.images || service.images.length === 0) && (
+            {!pack.coverImage && !pack.sampleImages && (!pack.images || pack.images.length === 0) && (
               <div className="no-image">
                 <i className="fas fa-image"></i>
                 <span>Nenhuma imagem disponível</span>
@@ -246,61 +219,31 @@ const ServiceDetail = () => {
             )}
           </div>
 
-          <div className="service-description">
+          <div className="pack-description">
             <h3>Descrição</h3>
-            <p>{service.description}</p>
+            <p>{pack.description}</p>
           </div>
 
-          {service.additionalFeatures && service.additionalFeatures.length > 0 && (
-            <div className="service-features">
-              <h3>Recursos Complementares</h3>
-              <div className="features-list">
-                {service.additionalFeatures.map((feature, index) => {
-                  const featureId = feature.id || feature.title || feature.name;
-                  const isSelected = selectedFeatures.find(f => (f.id || f.title || f.name) === featureId);
-                  return (
-                    <div 
-                      key={featureId || index}
-                      className={`feature-item ${isSelected ? 'selected' : ''}`}
-                      onClick={() => handleFeatureToggle(feature)}
-                    >
-                      <div className="feature-info">
-                        <h4>{feature.name || feature.title}</h4>
-                        <p>{feature.description || feature.desc}</p>
-                      </div>
-                      <div className="feature-price">
-                        +{formatVP(feature.price || feature.vpAmount || 0)}
-                      </div>
-                      <div className="feature-checkbox">
-                        <i className={`fas fa-${isSelected ? 'check' : 'plus'}`}></i>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <div className="service-provider">
+          <div className="pack-provider">
             <h3>Vendedor(a)</h3>
             <div className="provider-info">
               <CachedImage
-                src={service.providerAvatar || service.providerPhotoURL}
-                alt={service.providerName || service.sellerName}
+                src={pack.providerAvatar || pack.providerPhotoURL}
+                alt={pack.providerName || pack.sellerName}
                 className="provider-avatar"
                 showLoading={false}
               />
               <div className="provider-details">
-                <h4>{service.providerName || service.sellerName}</h4>
-                <p>@{service.providerUsername || service.sellerUsername || 'usuário'}</p>
+                <h4>{pack.providerName || pack.sellerName}</h4>
+                <p>@{pack.providerUsername || pack.sellerUsername || 'usuário'}</p>
                 <div className="provider-stats">
                   <span>
                     <i className="fas fa-star"></i>
-                    {service.providerRating || service.sellerRating || 'N/A'}
+                    {pack.providerRating || pack.sellerRating || 'N/A'}
                   </span>
                   <span>
                     <i className="fas fa-check-circle"></i>
-                    {service.providerCompletedOrders || service.sellerCompletedOrders || 0} serviços concluídos
+                    {pack.providerCompletedOrders || pack.sellerCompletedOrders || 0} packs vendidos
                   </span>
                 </div>
               </div>
@@ -308,27 +251,21 @@ const ServiceDetail = () => {
           </div>
         </div>
 
-        <div className="service-sidebar">
+        <div className="pack-sidebar">
           <div className="purchase-card">
             <div className="purchase-summary">
               <h3>Resumo do Pedido</h3>
               <div className="price-breakdown">
                 <div className="price-item">
                   <span>Preço base</span>
-                  <span>{formatVP(service.price * 1.5)}</span>
+                  <span>{formatVP(pack.price * 1.5)}</span>
                 </div>
-                {service.discount && service.discount > 0 && (
+                {pack.discount && pack.discount > 0 && (
                   <div className="price-item discount-item">
-                    <span>Desconto ({service.discount}%)</span>
-                    <span>-{formatVP((service.price * 1.5) - calculateVpTotal())}</span>
+                    <span>Desconto ({pack.discount}%)</span>
+                    <span>-{formatVP((pack.price * 1.5) - calculateVpTotal())}</span>
                   </div>
                 )}
-                {selectedFeatures.map((feature, index) => (
-                  <div key={index} className="price-item feature-price-item">
-                    <span>{feature.name || feature.title}</span>
-                    <span>+{formatVP(feature.price || feature.vpAmount || 0)}</span>
-                  </div>
-                ))}
                 <div className="price-total">
                   <span>Total</span>
                   <span>{formatVP(calculateVpTotal())}</span>
@@ -339,25 +276,24 @@ const ServiceDetail = () => {
             <div className="purchase-actions">
               {currentUser ? (
                 (userProfile?.accountType === 'client' || userProfile?.accountType === 'both') ? (
-                  service.providerId !== currentUser.uid ? (
+                  pack.providerId !== currentUser.uid ? (
                     <button 
                       className="btn-purchase"
-                      onClick={() => setShowPurchaseModal(true)}
-                      disabled={processing}
+                      onClick={handlePurchase}
                     >
                       <i className="fas fa-shopping-cart"></i>
-                      Comprar Serviço
+                      Comprar Pack
                     </button>
                   ) : (
-                    <div className="own-service-notice">
+                    <div className="own-pack-notice">
                       <i className="fas fa-info-circle"></i>
-                      <span>Este é o seu próprio serviço</span>
+                      <span>Este é o seu próprio pack</span>
                     </div>
                   )
                 ) : (
                   <div className="provider-notice">
                     <i className="fas fa-info-circle"></i>
-                    <span>Apenas clientes podem comprar serviços</span>
+                    <span>Apenas clientes podem comprar packs</span>
                   </div>
                 )
               ) : (
@@ -380,28 +316,22 @@ const ServiceDetail = () => {
           <div className="modal-content">
             <h3>Confirmar Compra</h3>
             <div className="purchase-confirmation">
-              <div className="service-summary">
-                <h4>{service.title}</h4>
-                <p>por {service.providerName}</p>
+              <div className="pack-summary">
+                <h4>{pack.title}</h4>
+                <p>por {pack.providerName}</p>
               </div>
               
               <div className="price-breakdown">
                 <div className="price-item">
                   <span>Preço base</span>
-                  <span>{formatVP(service.price * 1.5)}</span>
+                  <span>{formatVP(pack.price * 1.5)}</span>
                 </div>
-                {service.discount && service.discount > 0 && (
+                {pack.discount && pack.discount > 0 && (
                   <div className="price-item discount-item">
-                    <span>Desconto ({service.discount}%)</span>
-                    <span>-{formatVP((service.price * 1.5) - calculateVpTotal())}</span>
+                    <span>Desconto ({pack.discount}%)</span>
+                    <span>-{formatVP((pack.price * 1.5) - calculateVpTotal())}</span>
                   </div>
                 )}
-                {selectedFeatures.map((feature, index) => (
-                  <div key={index} className="price-item">
-                    <span>{feature.name || feature.title}</span>
-                    <span>+{formatVP(feature.price || feature.vpAmount || 0)}</span>
-                  </div>
-                ))}
                 <div className="price-total">
                   <span>Total a pagar</span>
                   <span>{formatVP(calculateVpTotal())}</span>
@@ -411,7 +341,7 @@ const ServiceDetail = () => {
               <div className="purchase-terms">
                 <p>
                   <i className="fas fa-info-circle"></i>
-                  Ao confirmar, o valor será reservado e o provedor será notificado para aceitar o pedido.
+                  Ao confirmar, o valor será reservado e o vendedor será notificado.
                 </p>
               </div>
             </div>
@@ -425,20 +355,10 @@ const ServiceDetail = () => {
               </button>
               <button 
                 className="btn-primary"
-                onClick={handlePurchase}
-                disabled={processing}
+                onClick={() => setShowRefundPolicyModal(true)}
               >
-                {processing ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin"></i>
-                    Processando...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-check"></i>
-                    Confirmar Compra
-                  </>
-                )}
+                <i className="fas fa-check"></i>
+                Confirmar Compra
               </button>
             </div>
           </div>
@@ -464,9 +384,9 @@ const ServiceDetail = () => {
             
             <div className="modal-body">
               <div className="refund-policy-content">
-                <div className="service-info">
-                  <h4>{service?.title}</h4>
-                  <p>por {service?.providerName}</p>
+                <div className="pack-info">
+                  <h4>{pack?.title}</h4>
+                  <p>por {pack?.providerName}</p>
                   <div className="total-amount">
                     <strong>Total: {formatVP(calculateVpTotal())}</strong>
                   </div>
@@ -497,10 +417,10 @@ const ServiceDetail = () => {
                   </p>
                   <ul>
                     <li>O valor será reservado em sua conta</li>
-                    <li>O provedor será notificado para aceitar o pedido</li>
-                    <li>Uma vez aceito, o serviço será executado conforme acordado</li>
+                    <li>O vendedor será notificado</li>
+                    <li>Uma vez confirmado, o pack será adicionado à sua conta</li>
                     <li>Não haverá reembolso após a confirmação da compra</li>
-                    <li>Em caso de cancelamento pelo provedor, o valor será devolvido</li>
+                    <li>Em caso de cancelamento pelo vendedor, o valor será devolvido</li>
                   </ul>
                 </div>
                 
@@ -533,19 +453,9 @@ const ServiceDetail = () => {
               <button 
                 className="btn-primary"
                 onClick={handleConfirmPurchase}
-                disabled={!agreeToRefundPolicy || processing}
               >
-                {processing ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin"></i>
-                    Processando...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-check"></i>
-                    Confirmar Compra
-                  </>
-                )}
+                <i className="fas fa-check"></i>
+                Confirmar Compra
               </button>
             </div>
           </div>
@@ -555,4 +465,4 @@ const ServiceDetail = () => {
   );
 };
 
-export default ServiceDetail;
+export default PackDetail;
