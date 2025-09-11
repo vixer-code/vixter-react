@@ -124,6 +124,9 @@ const Header = () => {
                 {/* VP Balance Display */}
                 <li className="auth-hide logged-in">
                   <div className="vp-balance" onClick={handleVpBalanceClick}>
+                    {userProfile?.accountType === 'provider' && (
+                      <div className="currency-icon vc-icon"></div>
+                    )}
                                        <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
                        {/* Glow background */}
                        <defs>
@@ -390,6 +393,9 @@ const Header = () => {
         {currentUser && (
           <div className="mobile-nav-footer">
             <div className="mobile-vp-balance" onClick={() => { handleVpBalanceClick(); closeMobileMenu(); }}>
+              {userProfile?.accountType === 'provider' && (
+                <div className="currency-icon vc-icon"></div>
+              )}
               <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
                 {/* Simplified VP icon for mobile */}
                 <defs>

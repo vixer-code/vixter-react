@@ -265,6 +265,52 @@ header .vp-balance .vp-icon svg,
   box-sizing: border-box !important;
 }
 
+/* VC Icon - Header specific styling */
+.vp-balance .currency-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  margin-right: 8px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.vp-balance .currency-icon.vc-icon {
+  background: linear-gradient(135deg, #00FFCA 0%, #00D4AA 100%);
+  position: relative;
+}
+
+.vp-balance .currency-icon.vc-icon::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 100%);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.vp-balance .currency-icon.vc-icon::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: #00FFCA;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 4px rgba(0, 255, 202, 0.6);
+}
+
 #vp-amount {
   position: relative;
   z-index: 1;
@@ -697,6 +743,52 @@ header .vp-balance .vp-icon svg,
   margin-right: 10px;
   height: 24px;
   width: 24px;
+}
+
+/* VC Icon - Mobile specific styling */
+.mobile-vp-balance .currency-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  margin-right: 8px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.mobile-vp-balance .currency-icon.vc-icon {
+  background: linear-gradient(135deg, #00FFCA 0%, #00D4AA 100%);
+  position: relative;
+}
+
+.mobile-vp-balance .currency-icon.vc-icon::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 100%);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.mobile-vp-balance .currency-icon.vc-icon::after {
+  content: '';
+  width: 5px;
+  height: 5px;
+  background: #00FFCA;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 3px rgba(0, 255, 202, 0.6);
 }
 
 .mobile-notification-section {
