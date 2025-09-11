@@ -560,17 +560,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     return vcAmount * 1.5;
   };
 
-  const formatCurrency = (amount, decimals = 2) => {
-    return parseFloat(amount || 0).toFixed(decimals).replace('.', ',');
-  };
-
-  const formatVC = (amount) => {
-    return `${formatCurrency(amount)} VC`;
-  };
-
-  const formatVP = (amount) => {
-    return `${formatCurrency(amount)} VP`;
-  };
 
   const handlePriceSuggestion = (suggestion) => {
     handleInputChange('price', suggestion.vc.toString());
