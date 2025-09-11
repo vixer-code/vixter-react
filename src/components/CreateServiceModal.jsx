@@ -556,9 +556,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     }
   };
 
-  const convertVCtoVP = (vcAmount) => {
-    return vcAmount * 1.5;
-  };
 
 
   const handlePriceSuggestion = (suggestion) => {
