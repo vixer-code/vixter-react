@@ -1,6 +1,6 @@
 // emailService.js - Serviço para envio de notificações por e-mail
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '../config/firebase';
+import { functions } from '../../config/firebase';
 
 // Função para enviar e-mail de status de serviço
 const sendServiceStatusEmail = httpsCallable(functions, 'sendServiceStatusEmail');

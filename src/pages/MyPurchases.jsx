@@ -380,6 +380,18 @@ const MyPurchases = () => {
 
             const isCompleted = purchase.status === 'CONFIRMED' || purchase.status === 'COMPLETED' || purchase.status === 'AUTO_RELEASED';
             
+            // Debug logs
+            console.log('Purchase debug:', {
+              id: purchase.id,
+              status: purchase.status,
+              type: purchase.type,
+              isService,
+              isDelivered: purchase.status === 'DELIVERED',
+              coverImage: purchase.metadata?.coverImageURL || purchase.metadata?.coverImage || purchase.coverImage,
+              metadata: purchase.metadata,
+              fullPurchase: purchase
+            });
+            
             return (
               <div key={purchase.id} className={`purchase-card ${isCompleted ? 'completed' : ''}`}>
                 <div className="purchase-header">

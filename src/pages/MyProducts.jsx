@@ -5,7 +5,7 @@ import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import { usePackOrder } from '../contexts/PackOrderContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { Link } from 'react-router-dom';
-import './MyServices.css';
+import './MyProducts.css';
 
 const MyProducts = () => {
   const { currentUser } = useAuth();

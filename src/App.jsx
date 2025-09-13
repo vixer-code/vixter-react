@@ -30,7 +30,7 @@ const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const Vixies = lazy(() => import('./pages/Vixies'));
 const Vixink = lazy(() => import('./pages/Vixink'));
 const SearchResults = lazy(() => import('./pages/SearchResults'));
-const MyServices = lazy(() => import('./pages/MyServices'));
+const MyServices = lazy(() => import('./pages/MyProducts'));
 const MyPurchases = lazy(() => import('./pages/MyPurchases'));
 const ServiceDetail = lazy(() => import('./pages/ServiceDetail'));
 const PackDetail = lazy(() => import('./pages/PackDetail'));
