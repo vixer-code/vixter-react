@@ -3,8 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
-import { ref, get, query, orderByChild, equalTo } from 'firebase/database';
-import { database } from '../../config/firebase';
+import { collection, query as fsQuery, where, orderBy, getDocs } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import { Link, useNavigate } from 'react-router-dom';
 import SmartMediaViewer from '../components/SmartMediaViewer';
 import PackContentViewer from '../components/PackContentViewer';
@@ -38,29 +38,27 @@ const MyPurchases = () => {
     if (!currentUser) return;
     
     try {
-      const packOrdersRef = ref(database, 'packOrders');
-      const queryRef = query(packOrdersRef, orderByChild('buyerId'), equalTo(currentUser.uid));
-      const snapshot = await get(queryRef);
+      const packOrdersRef = collection(db, 'packOrders');
+      const queryRef = fsQuery(
+        packOrdersRef,
+        where('buyerId', '==', currentUser.uid),
+        orderBy('timestamps.createdAt', 'desc')
+      );
+      const snapshot = await getDocs(queryRef);
       
-      if (snapshot.exists()) {
-        const orders = [];
-        snapshot.forEach((childSnapshot) => {
-          const orderData = childSnapshot.val();
-          if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
-            orders.push({
-              id: childSnapshot.key,
-              type: 'pack',
-              ...orderData
-            });
-          }
-        });
-        
-        // Sort by purchase date (newest first)
-        orders.sort((a, b) => (b.timestamps?.createdAt || 0) - (a.timestamps?.createdAt || 0));
-        setPurchasedPacks(orders);
-      } else {
-        setPurchasedPacks([]);
-      }
+      const orders = [];
+      snapshot.forEach((doc) => {
+        const orderData = doc.data();
+        if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
+          orders.push({
+            id: doc.id,
+            type: 'pack',
+            ...orderData
+          });
+        }
+      });
+      
+      setPurchasedPacks(orders);
     } catch (error) {
       console.error('Error loading purchased packs:', error);
       showError('Erro ao carregar packs comprados');
@@ -72,29 +70,27 @@ const MyPurchases = () => {
     if (!currentUser) return;
     
     try {
-      const serviceOrdersRef = ref(database, 'serviceOrders');
-      const queryRef = query(serviceOrdersRef, orderByChild('buyerId'), equalTo(currentUser.uid));
-      const snapshot = await get(queryRef);
+      const serviceOrdersRef = collection(db, 'serviceOrders');
+      const queryRef = fsQuery(
+        serviceOrdersRef,
+        where('buyerId', '==', currentUser.uid),
+        orderBy('timestamps.createdAt', 'desc')
+      );
+      const snapshot = await getDocs(queryRef);
       
-      if (snapshot.exists()) {
-        const orders = [];
-        snapshot.forEach((childSnapshot) => {
-          const orderData = childSnapshot.val();
-          if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
-            orders.push({
-              id: childSnapshot.key,
-              type: 'service',
-              ...orderData
-            });
-          }
-        });
-        
-        // Sort by purchase date (newest first)
-        orders.sort((a, b) => (b.timestamps?.createdAt || 0) - (a.timestamps?.createdAt || 0));
-        setPurchasedServices(orders);
-      } else {
-        setPurchasedServices([]);
-      }
+      const orders = [];
+      snapshot.forEach((doc) => {
+        const orderData = doc.data();
+        if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
+          orders.push({
+            id: doc.id,
+            type: 'service',
+            ...orderData
+          });
+        }
+      });
+      
+      setPurchasedServices(orders);
     } catch (error) {
       console.error('Error loading purchased services:', error);
       showError('Erro ao carregar serviços comprados');

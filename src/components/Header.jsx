@@ -350,9 +350,11 @@ const Header = () => {
                     <Link to="/messages">
                       <i className="fas fa-envelope"></i> Mensagens
                     </Link>
-                    <Link to="/my-services">
-                      <i className="fas fa-briefcase"></i> Meus Serviços
-                    </Link>
+                    {userProfile?.accountType === 'provider' && (
+                      <Link to="/my-services">
+                        <i className="fas fa-briefcase"></i> Meus Serviços
+                      </Link>
+                    )}
                     {(userProfile?.accountType === 'client' || userProfile?.accountType === 'both') && (
                       <Link to="/my-purchases">
                         <i className="fas fa-shopping-bag"></i> Minhas Compras
@@ -441,9 +443,11 @@ const Header = () => {
               <li><Link to="/messages" className={isActive('/messages') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
                 <i className="fas fa-envelope"></i>Mensagens
               </Link></li>
-              <li><Link to="/my-services" onClick={() => setTimeout(closeMobileMenu, 100)}>
-                <i className="fas fa-briefcase"></i>Meus Serviços
-              </Link></li>
+              {userProfile?.accountType === 'provider' && (
+                <li><Link to="/my-services" onClick={() => setTimeout(closeMobileMenu, 100)}>
+                  <i className="fas fa-briefcase"></i>Meus Serviços
+                </Link></li>
+              )}
               {(userProfile?.accountType === 'client' || userProfile?.accountType === 'both') && (
                 <li><Link to="/my-purchases" onClick={() => setTimeout(closeMobileMenu, 100)}>
                   <i className="fas fa-shopping-bag"></i>Minhas Compras

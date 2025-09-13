@@ -48,9 +48,6 @@ const Wallet = () => {
   const [providerHistory, setProviderHistory] = useState([]); // full list
   const [providerHistoryLoading, setProviderHistoryLoading] = useState(false);
   const [providerHistoryPeriod, setProviderHistoryPeriod] = useState('all');
-  // Client purchases
-  const [clientPurchases, setClientPurchases] = useState([]); // {id,type,title,amount,coin,timestamp,sellerUsername,complements}
-  const [clientPurchasesLoading, setClientPurchasesLoading] = useState(false);
 
   // Modal states
   const [showBuyVPModal, setShowBuyVPModal] = useState(false);
@@ -282,72 +279,6 @@ const Wallet = () => {
     loadProviderHistory();
   }, [isProvider, currentUser, activeTab, providerHistoryPeriod]);
 
-  // Load client purchases (VP purchases of services and packs)
-  useEffect(() => {
-    const loadClientPurchases = async () => {
-      if (!isClient || !currentUser) return;
-      if (activeTab !== 'transactions') return;
-      setClientPurchasesLoading(true);
-      try {
-        // Reuse filters.period for client view
-        const now = new Date();
-        let startDate;
-        if (filters.period === '7days') {
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        } else if (filters.period === '30days') {
-          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        } else if (filters.period === '3months') {
-          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-        } else {
-          startDate = new Date(0);
-        }
-        const startTs = Timestamp.fromDate(startDate);
-
-        const serviceOrdersRef = collection(db, 'serviceOrders');
-        const packOrdersRef = collection(db, 'packOrders');
-        const qServices = fsQuery(
-          serviceOrdersRef,
-          where('buyerId', '==', currentUser.uid),
-          where('timestamp', '>=', startTs),
-          orderBy('timestamp', 'desc')
-        );
-        const qPacks = fsQuery(
-          packOrdersRef,
-          where('buyerId', '==', currentUser.uid),
-          where('timestamp', '>=', startTs),
-          orderBy('timestamp', 'desc')
-        );
-
-        const [servicesSnap, packsSnap] = await Promise.all([getDocs(qServices), getDocs(qPacks)]);
-        const rows = [];
-        servicesSnap.forEach((docSnap) => rows.push({ id: docSnap.id, type: 'service', ...docSnap.data() }));
-        packsSnap.forEach((docSnap) => rows.push({ id: docSnap.id, type: 'pack', ...docSnap.data() }));
-
-        // Resolve seller usernames
-        const uniqueSellerIds = Array.from(new Set(rows.map(r => r.sellerId).filter(Boolean)));
-        const sellerProfiles = await Promise.all(uniqueSellerIds.map(async (sid) => ({ sid, profile: await getUserById(sid) })));
-        const sellerMap = new Map(sellerProfiles.map(({ sid, profile }) => [sid, profile]));
-
-        const display = rows.map((o) => {
-          const title = o.title || o.itemTitle || (o.type === 'service' ? 'Serviço' : 'Pack');
-          const amount = Number(o.priceVP || o.price || 0); // client paid in VP
-          const ts = o.timestamp?.toMillis?.() ? o.timestamp.toMillis() : Date.now();
-          const seller = sellerMap.get(o.sellerId);
-          const sellerUsername = seller?.username || '';
-          const complements = Array.isArray(o.complements) ? o.complements : [];
-          return { id: o.id, type: o.type, title, amount, coin: 'VP', timestamp: ts, sellerUsername, complements };
-        });
-        display.sort((a, b) => b.timestamp - a.timestamp);
-        setClientPurchases(display);
-      } catch (e) {
-        console.error('Error loading client purchases:', e);
-        setClientPurchases([]);
-      } finally {
-        setClientPurchasesLoading(false);
-      }
-    };
-    loadClientPurchases();
-  }, [isClient, currentUser, activeTab, filters.period, getUserById]);
 
   const applyFilters = () => {
     const filtered = filterTransactions(filters);
@@ -1092,54 +1023,6 @@ const Wallet = () => {
       {/* Transactions Tab */}
       {activeTab === 'transactions' && (
         <div className="tab-content active">
-          {isClient && (
-            <div className="client-purchases-section">
-              <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3>Suas Compras</h3>
-              </div>
-              {clientPurchasesLoading ? (
-                <div className="loading-state"><i className="fa-solid fa-spinner fa-spin"></i> Carregando compras...</div>
-              ) : clientPurchases.length === 0 ? (
-                <div className="empty-state">Nenhuma compra encontrada.</div>
-              ) : (
-                <div className="transactions-list">
-                  {clientPurchases.map((row) => (
-                    <details key={`${row.type}:${row.id}`} className="transaction-item" style={{ borderRadius: 8, overflow: 'hidden' }}>
-                      <summary style={{ display: 'flex', alignItems: 'center', gap: 12, listStyle: 'none' }}>
-                        <div className="transaction-icon">
-                          <i className={row.type === 'service' ? 'fas fa-briefcase' : 'fas fa-box-open'}></i>
-                        </div>
-                        <div className="transaction-details" style={{ flex: 1 }}>
-                          <div className="transaction-description">
-                            {row.title} <small>por @{row.sellerUsername}</small>
-                          </div>
-                          <div className="transaction-date">{new Date(row.timestamp).toLocaleString('pt-BR')}</div>
-                        </div>
-                        <div className="transaction-amount">
-                          <span className="amount-value">{formatCurrency(row.amount)} {row.coin}</span>
-                        </div>
-                      </summary>
-                      {row.complements && row.complements.length > 0 && (
-                        <div className="complements" style={{ padding: '8px 12px 12px 48px' }}>
-                          <div className="widget-header" style={{ marginBottom: 6 }}>Itens Complementares</div>
-                          <ul className="ranked-list">
-                            {row.complements.map((c, idx) => (
-                              <li key={idx}>
-                                <span className="title">{c.title || 'Item'}</span>
-                                {typeof c.priceVP === 'number' && (
-                                  <span className="meta">{formatCurrency(Number(c.priceVP))} VP</span>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </details>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
           {(isProvider || isBoth) && (
             <div className="provider-sales-section">
               <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
