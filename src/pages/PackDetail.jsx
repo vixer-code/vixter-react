@@ -7,6 +7,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import CachedImage from '../components/CachedImage';
+import R2MediaViewer from '../components/R2MediaViewer';
 import './PackDetail.css';
 
 const PackDetail = () => {
@@ -232,13 +233,14 @@ const PackDetail = () => {
 
           <div className="pack-images">
             {/* Cover Image */}
-            {pack.coverImage?.publicUrl && (
+            {pack.coverImage?.key && (
               <div className="image-gallery">
-                <CachedImage
-                  src={pack.coverImage.publicUrl}
+                <R2MediaViewer
+                  mediaKey={pack.coverImage.key}
+                  type="pack"
+                  watermarked={false}
                   alt={`${pack.title} - Imagem principal`}
                   className="pack-image"
-                  showLoading={true}
                 />
               </div>
             )}
@@ -247,12 +249,13 @@ const PackDetail = () => {
             {pack.sampleImages && pack.sampleImages.length > 0 && (
               <div className="image-gallery">
                 {pack.sampleImages.map((image, index) => (
-                  <CachedImage
+                  <R2MediaViewer
                     key={index}
-                    src={image.publicUrl}
+                    mediaKey={image.key}
+                    type="pack"
+                    watermarked={false}
                     alt={`${pack.title} - Imagem ${index + 1}`}
                     className="pack-image"
-                    showLoading={true}
                   />
                 ))}
               </div>

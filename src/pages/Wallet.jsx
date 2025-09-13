@@ -1047,8 +1047,9 @@ const Wallet = () => {
         {(isClient || isBoth) && (
           <>
             <button 
-              className="btn-secondary"
-              onClick={() => setShowSendModal(true)}
+              className={`btn-secondary ${isClient && !isBoth ? 'disabled' : ''}`}
+              onClick={() => !isClient || isBoth ? setShowSendModal(true) : null}
+              disabled={isClient && !isBoth}
             >
               <i className="fas fa-paper-plane"></i> Enviar VP
             </button>
@@ -1552,8 +1553,9 @@ const Wallet = () => {
                 Cancelar
               </button>
               <button 
-                className="btn-primary"
-                onClick={handleSendVP}
+                className={`btn-primary ${isClient && !isBoth ? 'disabled' : ''}`}
+                onClick={!isClient || isBoth ? handleSendVP : null}
+                disabled={isClient && !isBoth}
               >
                 Enviar VP
               </button>

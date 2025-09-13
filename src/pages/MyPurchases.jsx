@@ -9,7 +9,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import SmartMediaViewer from '../components/SmartMediaViewer';
 import PackContentViewer from '../components/PackContentViewer';
 import ServiceMediaViewer from '../components/ServiceMediaViewer';
-import CachedImage from '../components/CachedImage';
 import './MyPurchases.css';
 
 const MyPurchases = () => {

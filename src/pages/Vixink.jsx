@@ -368,11 +368,11 @@ const Vixink = () => {
                     {Array.isArray(post.media) && post.media.length > 0 && (
                       <div className="post-media">
                         {post.media.map((m, idx) => (
-                          <div key={idx} className="media-item">
+                          <React.Fragment key={idx}>
                             {m.type === 'image' && (<img src={m.url} alt="conteúdo" />)}
                             {m.type === 'video' && (<video src={m.url} controls />)}
                             {m.type === 'audio' && (<audio src={m.url} controls />)}
-                          </div>
+                          </React.Fragment>
                         ))}
                       </div>
                     )}

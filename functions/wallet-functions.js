@@ -20,6 +20,7 @@ const STRIPE_SECRET = defineSecret('STRIPE_SECRET_KEY');
 const STRIPE_WEBHOOK_SECRET = defineSecret('STRIPE_WEBHOOK_SECRET');
 
 // Environment configuration
+/* eslint-disable no-undef */
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const STRIPE_API_VERSION = '2023-10-16';
 
@@ -32,6 +33,7 @@ const getEnvironmentInfo = () => {
     timestamp: new Date().toISOString()
   };
 };
+/* eslint-enable no-undef */
 
 // Configurações globais
 setGlobalOptions({
@@ -1275,7 +1277,7 @@ export const checkStripeConnectConfig = onCall({
   memory: "128MiB",
   timeoutSeconds: 30,
   secrets: [STRIPE_SECRET],
-}, async (request) => {
+}, async () => {
   try {
     const stripe = new Stripe(STRIPE_SECRET.value(), {
       apiVersion: STRIPE_API_VERSION,
@@ -1316,7 +1318,7 @@ export const checkStripeConnectConfig = onCall({
 export const checkEnvironment = onCall({
   memory: "64MiB",
   timeoutSeconds: 30,
-}, async (request) => {
+}, async () => {
   try {
     const envInfo = getEnvironmentInfo();
     
@@ -1360,7 +1362,6 @@ export const sendPurchaseConfirmationEmail = onCall({
   }
 
   const { 
-    packageId, 
     packageName, 
     vpAmount, 
     vbpBonus, 

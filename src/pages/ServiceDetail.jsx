@@ -8,6 +8,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import CachedImage from '../components/CachedImage';
+import R2MediaViewer from '../components/R2MediaViewer';
 import './ServiceDetail.css';
 
 const ServiceDetail = () => {
@@ -256,13 +257,14 @@ const ServiceDetail = () => {
 
           <div className="service-images">
             {/* Cover Image */}
-            {service.coverImage?.publicUrl && (
+            {service.coverImage?.key && (
               <div className="image-gallery">
-                <CachedImage
-                  src={service.coverImage.publicUrl}
+                <R2MediaViewer
+                  mediaKey={service.coverImage.key}
+                  type="service"
+                  watermarked={false}
                   alt={`${service.title} - Imagem principal`}
                   className="service-image"
-                  showLoading={true}
                 />
               </div>
             )}
@@ -271,12 +273,13 @@ const ServiceDetail = () => {
             {service.sampleImages && service.sampleImages.length > 0 && (
               <div className="image-gallery">
                 {service.sampleImages.map((image, index) => (
-                  <CachedImage
+                  <R2MediaViewer
                     key={index}
-                    src={image.publicUrl}
+                    mediaKey={image.key}
+                    type="service"
+                    watermarked={false}
                     alt={`${service.title} - Imagem ${index + 1}`}
                     className="service-image"
-                    showLoading={true}
                   />
                 ))}
               </div>

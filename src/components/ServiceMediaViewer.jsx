@@ -154,12 +154,11 @@ const ServiceMediaViewer = ({ service, onClose }) => {
 
         <div className="media-grid">
           {allMedia.map((mediaItem, index) => (
-            <div
-              key={mediaItem.key || index}
-              className="media-item"
-              onClick={() => handleMediaClick(mediaItem)}
-            >
-              <div className="media-preview">
+            <React.Fragment key={mediaItem.key || index}>
+              <div 
+                className="media-preview"
+                onClick={() => handleMediaClick(mediaItem)}
+              >
                 {loading[mediaItem.key] ? (
                   <div className="loading-spinner">
                     <i className="fas fa-spinner fa-spin"></i>
@@ -212,7 +211,7 @@ const ServiceMediaViewer = ({ service, onClose }) => {
                   {loading[mediaItem.key] ? 'Carregando...' : 'Visualizar'}
                 </button>
               </div>
-            </div>
+            </React.Fragment>
           ))}
         </div>
 
