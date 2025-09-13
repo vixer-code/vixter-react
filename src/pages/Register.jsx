@@ -693,6 +693,18 @@ const Register = () => {
       
       console.log('[handleSubmit] User registered successfully:', user.uid);
       
+      // Send email verification immediately after registration
+      try {
+        await user.sendEmailVerification({
+          url: `https://vixter.com.br/profile`,
+          handleCodeInApp: false
+        });
+        console.log('[handleSubmit] Email verification sent successfully');
+      } catch (emailError) {
+        console.error('[handleSubmit] Error sending email verification:', emailError);
+        // Don't fail registration if email verification fails
+      }
+      
       // Create complete user profile in Firebase Database
       const withVerification = cpfVerificationState.isVerified;
       await createUserProfile(user.uid, withVerification);
@@ -754,11 +766,11 @@ const Register = () => {
       // Determine success message
       let message;
       if (age < 18) {
-        message = 'Conta criada com sucesso! Como você é menor de idade, algumas funcionalidades estarão restritas para sua segurança.';
+        message = 'Conta criada com sucesso! Enviamos um email de verificação para você. Como você é menor de idade, algumas funcionalidades estarão restritas para sua segurança.';
       } else if (withVerification) {
-        message = 'Registro realizado com sucesso! Seus documentos estão sendo analisados e você receberá uma notificação em breve.';
+        message = 'Registro realizado com sucesso! Enviamos um email de verificação para você. Seus documentos estão sendo analisados e você receberá uma notificação em breve.';
       } else {
-        message = 'Registro realizado com sucesso! Você pode completar a verificação de identidade a qualquer momento em suas configurações para acessar todas as funcionalidades.';
+        message = 'Registro realizado com sucesso! Enviamos um email de verificação para você. Você pode completar a verificação de identidade a qualquer momento em suas configurações para acessar todas as funcionalidades.';
       }
       
       console.log('[handleSubmit] Registration completed successfully');

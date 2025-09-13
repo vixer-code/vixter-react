@@ -3,20 +3,35 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { applyActionCode, checkActionCode } from 'firebase/auth';
+import { auth } from '../../config/firebase';
 import './VerifyEmail.css';
 
 const VerifyEmail = () => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showInfo } = useNotification();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [loading, setLoading] = useState(false);
   const [resendDisabled, setResendDisabled] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [checkInterval, setCheckInterval] = useState(null);
+  const [processingVerification, setProcessingVerification] = useState(false);
 
   useEffect(() => {
+    // Check if there are verification parameters in the URL
+    const urlParams = new URLSearchParams(location.search);
+    const mode = urlParams.get('mode');
+    const oobCode = urlParams.get('oobCode');
+    const apiKey = urlParams.get('apiKey');
+
+    if (mode === 'verifyEmail' && oobCode) {
+      handleEmailVerificationFromLink(oobCode);
+      return;
+    }
+
     if (!currentUser) {
       navigate('/login');
       return;
@@ -36,7 +51,50 @@ const VerifyEmail = () => {
         clearInterval(checkInterval);
       }
     };
-  }, [currentUser]);
+  }, [currentUser, location.search]);
+
+  const handleEmailVerificationFromLink = async (oobCode) => {
+    setProcessingVerification(true);
+    try {
+      console.log('[handleEmailVerificationFromLink] Processing verification code:', oobCode);
+      
+      // Check if the action code is valid
+      await checkActionCode(auth, oobCode);
+      
+      // Apply the verification
+      await applyActionCode(auth, oobCode);
+      
+      console.log('[handleEmailVerificationFromLink] Email verified successfully');
+      showSuccess('E-mail verificado com sucesso!');
+      
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, '/verify-email');
+      
+      // Redirect to profile after a short delay
+      setTimeout(() => {
+        navigate('/profile');
+      }, 2000);
+      
+    } catch (error) {
+      console.error('[handleEmailVerificationFromLink] Error verifying email:', error);
+      
+      let errorMessage = 'Erro ao verificar e-mail. Tente novamente.';
+      if (error.code === 'auth/invalid-action-code') {
+        errorMessage = 'Link de verificação inválido ou expirado. Solicite um novo e-mail.';
+      } else if (error.code === 'auth/expired-action-code') {
+        errorMessage = 'Link de verificação expirado. Solicite um novo e-mail.';
+      } else if (error.code === 'auth/user-disabled') {
+        errorMessage = 'Esta conta foi desabilitada.';
+      }
+      
+      showError(errorMessage);
+      
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, '/verify-email');
+    } finally {
+      setProcessingVerification(false);
+    }
+  };
 
   const startAutoCheck = () => {
     const interval = setInterval(async () => {
@@ -146,6 +204,22 @@ const VerifyEmail = () => {
     return (
       <div className="verify-email-container">
         <div className="loading-text">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (processingVerification) {
+    return (
+      <div className="verify-email-container">
+        <div className="verify-email-card">
+          <div className="verify-email-header">
+            <div className="verify-email-icon">⏳</div>
+            <h1>Verificando E-mail</h1>
+            <p className="verify-email-subtitle">
+              Processando verificação do seu e-mail...
+            </p>
+          </div>
+        </div>
       </div>
     );
   }

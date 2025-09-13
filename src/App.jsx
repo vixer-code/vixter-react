@@ -27,6 +27,10 @@ const Wallet = lazy(() => import('./pages/Wallet'));
 const Messages = lazy(() => import('./pages/EnhancedMessages'));
 const MessagingTestPage = lazy(() => import('./pages/MessagingTestPage'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const AuthAction = lazy(() => import('./pages/AuthAction'));
+const HandleAuthAction = lazy(() => import('./pages/HandleAuthAction'));
 const Vixies = lazy(() => import('./pages/Vixies'));
 const Vixink = lazy(() => import('./pages/Vixink'));
 const SearchResults = lazy(() => import('./pages/SearchResults'));
@@ -34,7 +38,6 @@ const MyServices = lazy(() => import('./pages/MyProducts'));
 const MyPurchases = lazy(() => import('./pages/MyPurchases'));
 const ServiceDetail = lazy(() => import('./pages/ServiceDetail'));
 const PackDetail = lazy(() => import('./pages/PackDetail'));
-const ServiceOrders = lazy(() => import('./pages/ServiceOrders'));
 const Settings = lazy(() => import('./pages/Settings'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -81,12 +84,15 @@ function App() {
                                 <Route path="/messages" element={<Messages />} />
                                 <Route path="/messaging-test" element={<MessagingTestPage />} />
                                 <Route path="/verify-email" element={<VerifyEmail />} />
+                                <Route path="/forgot-password" element={<ForgotPassword />} />
+                                <Route path="/reset-password" element={<ResetPassword />} />
+                                <Route path="/auth-action" element={<AuthAction />} />
+                                <Route path="/handle-auth-action" element={<HandleAuthAction />} />
                                 <Route path="/vixies" element={<Vixies />} />
                                 <Route path="/vixink" element={<Vixink />} />
                                 <Route path="/search" element={<SearchResults />} />
                                 <Route path="/my-services" element={<MyServices />} />
                                 <Route path="/my-purchases" element={<MyPurchases />} />
-                                <Route path="/service-orders" element={<ServiceOrders />} />
                                 <Route path="/service/:serviceId" element={<ServiceDetail />} />
                                 <Route path="/pack/:packId" element={<PackDetail />} />
                                 <Route path="/settings" element={<Settings />} />
