@@ -556,3 +556,15 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(0, 255, 202, 0.4);
 }
+
+/* Disable hover effects for completed cards */
+.purchase-card.completed:hover {
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+  border-color: rgba(0, 255, 202, 0.3);
+  transform: none;
+  box-shadow: none;
+}
+
+.purchase-card.completed:hover::before {
+  opacity: 1;
+}
