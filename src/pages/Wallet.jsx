@@ -5,6 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { db } from '../../config/firebase';
 import { collection, query as fsQuery, where, orderBy, limit as fsLimit, getDocs, Timestamp } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../config/firebase';
 import './Wallet.css';
 
 const Wallet = () => {
@@ -54,8 +56,15 @@ const Wallet = () => {
   const [showBuyVPModal, setShowBuyVPModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [showRedeemModal, setShowRedeemModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('credit-card');
+
+  // Withdrawal states
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawFee, setWithdrawFee] = useState(null);
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [feeLoading, setFeeLoading] = useState(false);
 
   // Form states
   const [sendForm, setSendForm] = useState({
@@ -508,6 +517,79 @@ const Wallet = () => {
     }
   };
 
+  // Withdrawal functions
+  const calculateWithdrawalFee = async (amount) => {
+    if (!amount || amount < 50) {
+      setWithdrawFee(null);
+      return;
+    }
+
+    setFeeLoading(true);
+    try {
+      const calculateFee = httpsCallable(functions, 'calculateWithdrawalFee');
+      const result = await calculateFee({ amount: parseInt(amount) });
+      setWithdrawFee(result.data);
+    } catch (error) {
+      console.error('Error calculating withdrawal fee:', error);
+      showError('Erro ao calcular taxa de saque', 'Erro');
+    } finally {
+      setFeeLoading(false);
+    }
+  };
+
+  const handleWithdrawAmountChange = (value) => {
+    setWithdrawAmount(value);
+    if (value) {
+      calculateWithdrawalFee(value);
+    } else {
+      setWithdrawFee(null);
+    }
+  };
+
+  const processWithdrawal = async () => {
+    if (!withdrawAmount || !withdrawFee) {
+      showError('Valor inválido para saque', 'Erro');
+      return;
+    }
+
+    if (parseInt(withdrawAmount) < 50) {
+      showError('Saque mínimo é 50 VC', 'Erro');
+      return;
+    }
+
+    if (parseInt(withdrawAmount) > vcBalance) {
+      showError('Saldo VC insuficiente', 'Erro');
+      return;
+    }
+
+    setWithdrawLoading(true);
+    try {
+      const processWithdraw = httpsCallable(functions, 'processVCWithdrawal');
+      const result = await processWithdraw({
+        amount: parseInt(withdrawAmount),
+        confirmWithFee: true
+      });
+
+      showSuccess(
+        `Saque processado com sucesso! ${result.data.netAmount} VC foram transferidos para sua conta Stripe.`,
+        'Saque Realizado'
+      );
+
+      setShowWithdrawModal(false);
+      setWithdrawAmount('');
+      setWithdrawFee(null);
+    } catch (error) {
+      console.error('Error processing withdrawal:', error);
+      if (error.code === 'functions/failed-precondition') {
+        showError('Configure sua conta Stripe nas configurações primeiro', 'Conta Stripe Necessária');
+      } else {
+        showError('Erro ao processar saque. Tente novamente.', 'Erro');
+      }
+    } finally {
+      setWithdrawLoading(false);
+    }
+  };
+
   const pagedTransactions = useMemo(() => {
     const startIndex = (currentPage - 1) * TRANSACTIONS_PER_PAGE;
     const endIndex = startIndex + TRANSACTIONS_PER_PAGE;
@@ -842,7 +924,7 @@ const Wallet = () => {
             </div>
             <button 
               className="btn-success small"
-              disabled
+              onClick={() => setShowWithdrawModal(true)}
             >
               <i className="fas fa-money-bill-wave"></i> Sacar VC
             </button>
@@ -983,7 +1065,7 @@ const Wallet = () => {
         {(isProvider || isBoth) && (
           <button 
             className="btn-secondary"
-            onClick={() => showInfo('Funcionalidade de saque será implementada em breve!', 'Em Breve')}
+            onClick={() => setShowWithdrawModal(true)}
           >
             <i className="fas fa-money-bill-wave"></i> Sacar VC
           </button>
@@ -1639,6 +1721,124 @@ const Wallet = () => {
                 onClick={handleBuyVP}
               >
                 {selectedPackage ? `Comprar ${selectedPackage.amount} por ${selectedPackage.price}` : 'Selecione um pacote'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Withdraw VC Modal */}
+      {showWithdrawModal && (
+        <div className="modal-overlay" onClick={() => setShowWithdrawModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Sacar VC para BRL</h3>
+              <button 
+                className="modal-close"
+                onClick={() => setShowWithdrawModal(false)}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="withdrawal-info">
+                <div className="info-card">
+                  <i className="fas fa-info-circle"></i>
+                  <div>
+                    <strong>Como funciona:</strong>
+                    <p>Seus VC são convertidos para BRL e transferidos para sua conta Stripe. No Stripe você pode configurar:</p>
+                    <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', color: '#b0b0b0' }}>
+                      <li>PIX (recebimento instantâneo)</li>
+                      <li>Conta bancária (1-2 dias úteis)</li>
+                      <li>Outros métodos de pagamento</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="withdrawAmount">Valor em VC</label>
+                <input
+                  type="number"
+                  id="withdrawAmount"
+                  value={withdrawAmount}
+                  onChange={(e) => handleWithdrawAmountChange(e.target.value)}
+                  placeholder="50"
+                  min="50"
+                  max={vcBalance}
+                />
+                <small>Saldo disponível: {formatCurrency(vcBalance, '')} VC | Mínimo: 50 VC</small>
+              </div>
+
+              {withdrawFee && (
+                <div className="fee-preview">
+                  <h4>Resumo do Saque</h4>
+                  <div className="fee-breakdown">
+                    <div className="fee-row">
+                      <span>Valor solicitado:</span>
+                      <span>{formatCurrency(withdrawFee.vcAmount, '')} VC</span>
+                    </div>
+                    <div className="fee-row">
+                      <span>Taxa ({withdrawFee.feePercentage}%):</span>
+                      <span className="fee-amount">-{formatCurrency(withdrawFee.feeAmount, '')} VC</span>
+                    </div>
+                    <div className="fee-row total">
+                      <span>Valor líquido:</span>
+                      <span className="net-amount">{formatCurrency(withdrawFee.netAmount, '')} VC</span>
+                    </div>
+                    <div className="fee-row">
+                      <span>Valor em BRL:</span>
+                      <span className="brl-amount">R$ {formatCurrency(withdrawFee.brlAmount, '')}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {feeLoading && (
+                <div className="loading-state">
+                  <i className="fas fa-spinner fa-spin"></i> Calculando taxa...
+                </div>
+              )}
+
+              {withdrawAmount && parseInt(withdrawAmount) < 50 && (
+                <div className="error-message">
+                  <i className="fas fa-exclamation-triangle"></i>
+                  Saque mínimo é 50 VC
+                </div>
+              )}
+
+              {withdrawAmount && parseInt(withdrawAmount) > vcBalance && (
+                <div className="error-message">
+                  <i className="fas fa-exclamation-triangle"></i>
+                  Saldo VC insuficiente
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="btn-secondary"
+                onClick={() => {
+                  setShowWithdrawModal(false);
+                  setWithdrawAmount('');
+                  setWithdrawFee(null);
+                }}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn-success"
+                onClick={processWithdrawal}
+                disabled={!withdrawFee || withdrawLoading || parseInt(withdrawAmount) < 50 || parseInt(withdrawAmount) > vcBalance}
+              >
+                {withdrawLoading ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i> Processando...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-money-bill-wave"></i> Confirmar Saque
+                  </>
+                )}
               </button>
             </div>
           </div>

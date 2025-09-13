@@ -19,6 +19,20 @@ import Stripe from "stripe";
 const STRIPE_SECRET = defineSecret('STRIPE_SECRET_KEY');
 const STRIPE_WEBHOOK_SECRET = defineSecret('STRIPE_WEBHOOK_SECRET');
 
+// Environment configuration
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const STRIPE_API_VERSION = '2023-10-16';
+
+// Helper function to get environment info
+const getEnvironmentInfo = () => {
+  return {
+    isProduction: IS_PRODUCTION,
+    nodeEnv: process.env.NODE_ENV,
+    stripeKeyPrefix: process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_') ? 'live' : 'test',
+    timestamp: new Date().toISOString()
+  };
+};
+
 // Configurações globais
 setGlobalOptions({
   region: "us-east1",
@@ -925,5 +939,556 @@ async function updateServiceOrderInternal(orderId, updates) {
   logger.info(`✅ Service order updated: ${orderId}`);
   return { success: true };
 }
+
+/**
+ * Cria conta Stripe Connect para providers
+ */
+export const createStripeConnectAccount = onCall({
+  memory: "256MiB",
+  timeoutSeconds: 60,
+  secrets: [STRIPE_SECRET],
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const userId = request.auth.uid;
+  const { returnUrl, refreshUrl } = request.data;
+
+  if (!returnUrl || !refreshUrl) {
+    throw new HttpsError("invalid-argument", "URLs de retorno e refresh são obrigatórias");
+  }
+
+  try {
+    const stripe = new Stripe(STRIPE_SECRET.value(), {
+      apiVersion: STRIPE_API_VERSION,
+    });
+
+    // Verificar se já existe uma conta Stripe Connect
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+
+    if (userData?.stripeAccountId) {
+      // Verificar se a conta ainda está ativa
+      try {
+        const account = await stripe.accounts.retrieve(userData.stripeAccountId);
+        if (account.details_submitted) {
+          return { 
+            success: true, 
+            accountId: userData.stripeAccountId,
+            isComplete: true,
+            message: "Conta Stripe já configurada"
+          };
+        }
+      } catch (error) {
+        // Conta não existe ou foi removida, criar nova
+      }
+    }
+
+    // Criar nova conta Stripe Connect
+    const account = await stripe.accounts.create({
+      type: 'express',
+      country: 'BR',
+      email: request.auth.token.email,
+      capabilities: {
+        card_payments: { requested: true },
+        transfers: { requested: true },
+      },
+      settings: {
+        payouts: {
+          schedule: {
+            interval: 'daily', // Pagamentos diários
+          },
+        },
+      },
+      business_type: 'individual', // Para pessoas físicas
+    });
+
+    // Criar link de onboarding
+    const accountLink = await stripe.accountLinks.create({
+      account: account.id,
+      return_url: returnUrl,
+      refresh_url: refreshUrl,
+      type: 'account_onboarding',
+    });
+
+    // Salvar account ID no usuário
+    await userRef.set({
+      stripeAccountId: account.id,
+      stripeAccountStatus: 'pending',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    logger.info(`✅ Stripe Connect account created for user ${userId}: ${account.id}`);
+    
+    return {
+      success: true,
+      accountId: account.id,
+      onboardingUrl: accountLink.url,
+      isComplete: false
+    };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao criar conta Stripe Connect para ${userId}:`, error);
+    throw new HttpsError("internal", "Erro ao criar conta Stripe");
+  }
+});
+
+/**
+ * Verifica status da conta Stripe Connect
+ */
+export const getStripeConnectStatus = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 30,
+  secrets: [STRIPE_SECRET],
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const userId = request.auth.uid;
+
+  try {
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+
+    if (!userData?.stripeAccountId) {
+      return {
+        success: true,
+        hasAccount: false,
+        message: "Nenhuma conta Stripe configurada"
+      };
+    }
+
+    const stripe = new Stripe(STRIPE_SECRET.value(), {
+      apiVersion: STRIPE_API_VERSION,
+    });
+
+    const account = await stripe.accounts.retrieve(userData.stripeAccountId);
+    
+    // Atualizar status no banco
+    await userRef.update({
+      stripeAccountStatus: account.details_submitted ? 'complete' : 'pending',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return {
+      success: true,
+      hasAccount: true,
+      isComplete: account.details_submitted,
+      accountId: userData.stripeAccountId,
+      chargesEnabled: account.charges_enabled,
+      payoutsEnabled: account.payouts_enabled,
+      requirements: account.requirements
+    };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao verificar status Stripe Connect para ${userId}:`, error);
+    throw new HttpsError("internal", "Erro ao verificar conta Stripe");
+  }
+});
+
+/**
+ * Processa saque de VC para BRL via Stripe
+ */
+export const processVCWithdrawal = onCall({
+  memory: "256MiB",
+  timeoutSeconds: 60,
+  secrets: [STRIPE_SECRET],
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { amount, confirmWithFee } = request.data;
+  const userId = request.auth.uid;
+
+  if (!amount || amount <= 0) {
+    throw new HttpsError("invalid-argument", "Valor inválido");
+  }
+
+  if (!confirmWithFee) {
+    throw new HttpsError("invalid-argument", "Confirmação de taxa obrigatória");
+  }
+
+  // Taxa percentual configurável (5% por padrão)
+  const WITHDRAWAL_FEE_PERCENTAGE = 0.05; // 5%
+  const MINIMUM_WITHDRAWAL = 50; // 50 VC mínimo
+
+  if (amount < MINIMUM_WITHDRAWAL) {
+    throw new HttpsError("invalid-argument", `Saque mínimo é ${MINIMUM_WITHDRAWAL} VC`);
+  }
+
+  try {
+    // Verificar saldo VC
+    const walletRef = db.collection('wallets').doc(userId);
+    const walletDoc = await walletRef.get();
+    
+    if (!walletDoc.exists) {
+      throw new HttpsError("not-found", "Carteira não encontrada");
+    }
+
+    const wallet = walletDoc.data();
+    if (wallet.vc < amount) {
+      throw new HttpsError("invalid-argument", "Saldo VC insuficiente");
+    }
+
+    // Verificar conta Stripe Connect
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+
+    if (!userData?.stripeAccountId) {
+      throw new HttpsError("failed-precondition", "Conta Stripe não configurada");
+    }
+
+    const stripe = new Stripe(STRIPE_SECRET.value(), {
+      apiVersion: STRIPE_API_VERSION,
+    });
+
+    // Verificar se a conta está ativa
+    const account = await stripe.accounts.retrieve(userData.stripeAccountId);
+    if (!account.details_submitted || !account.payouts_enabled) {
+      throw new HttpsError("failed-precondition", "Conta Stripe não está pronta para receber pagamentos");
+    }
+
+    // Calcular valores
+    const feeAmount = Math.round(amount * WITHDRAWAL_FEE_PERCENTAGE);
+    const netAmount = amount - feeAmount;
+    const brlAmount = netAmount; // 1 VC = 1 BRL
+
+    // Criar transferência para a conta do provider
+    const transfer = await stripe.transfers.create({
+      amount: brlAmount * 100, // Stripe usa centavos
+      currency: 'brl',
+      destination: userData.stripeAccountId,
+      metadata: {
+        userId: userId,
+        vcAmount: amount.toString(),
+        feeAmount: feeAmount.toString(),
+        netAmount: netAmount.toString()
+      }
+    });
+
+    // Debitar VC da carteira
+    await walletRef.update({
+      vc: admin.firestore.FieldValue.increment(-amount),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Registrar transação de saque
+    const withdrawalRef = db.collection('withdrawals').doc();
+    await withdrawalRef.set({
+      id: withdrawalRef.id,
+      userId: userId,
+      vcAmount: amount,
+      brlAmount: brlAmount,
+      feeAmount: feeAmount,
+      netAmount: netAmount,
+      stripeTransferId: transfer.id,
+      status: 'completed',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Registrar transação na carteira
+    const transactionRef = db.collection('transactions').doc();
+    await transactionRef.set({
+      id: transactionRef.id,
+      userId: userId,
+      type: 'WITHDRAW_VC',
+      amounts: {
+        vc: -amount
+      },
+      metadata: {
+        description: `Saque de VC para BRL`,
+        stripeTransferId: transfer.id,
+        feeAmount: feeAmount,
+        netAmount: netAmount
+      },
+      timestamp: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    logger.info(`✅ VC withdrawal processed for user ${userId}: ${amount} VC -> ${brlAmount} BRL (fee: ${feeAmount} VC)`);
+
+    return {
+      success: true,
+      withdrawalId: withdrawalRef.id,
+      vcAmount: amount,
+      brlAmount: brlAmount,
+      feeAmount: feeAmount,
+      netAmount: netAmount,
+      stripeTransferId: transfer.id
+    };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao processar saque VC para ${userId}:`, error);
+    
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    
+    throw new HttpsError("internal", "Erro ao processar saque");
+  }
+});
+
+/**
+ * Calcula taxa de saque para preview
+ */
+export const calculateWithdrawalFee = onCall({
+  memory: "64MiB",
+  timeoutSeconds: 30,
+}, async (request) => {
+  const { amount } = request.data;
+  
+  if (!amount || amount <= 0) {
+    throw new HttpsError("invalid-argument", "Valor inválido");
+  }
+
+  const WITHDRAWAL_FEE_PERCENTAGE = 0.05; // 5%
+  const MINIMUM_WITHDRAWAL = 50;
+
+  if (amount < MINIMUM_WITHDRAWAL) {
+    throw new HttpsError("invalid-argument", `Saque mínimo é ${MINIMUM_WITHDRAWAL} VC`);
+  }
+
+  const feeAmount = Math.round(amount * WITHDRAWAL_FEE_PERCENTAGE);
+  const netAmount = amount - feeAmount;
+  const brlAmount = netAmount;
+
+  return {
+    success: true,
+    vcAmount: amount,
+    feeAmount: feeAmount,
+    netAmount: netAmount,
+    brlAmount: brlAmount,
+    feePercentage: WITHDRAWAL_FEE_PERCENTAGE * 100
+  };
+});
+
+/**
+ * Verifica configuração do Stripe Connect
+ */
+export const checkStripeConnectConfig = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 30,
+  secrets: [STRIPE_SECRET],
+}, async (request) => {
+  try {
+    const stripe = new Stripe(STRIPE_SECRET.value(), {
+      apiVersion: STRIPE_API_VERSION,
+    });
+
+    // Verificar se a conta principal tem Connect habilitado
+    const account = await stripe.accounts.retrieve();
+    
+    // Verificar se Connect está habilitado
+    const hasConnect = account.charges_enabled && account.payouts_enabled;
+    
+    return {
+      success: true,
+      hasConnect: hasConnect,
+      accountId: account.id,
+      chargesEnabled: account.charges_enabled,
+      payoutsEnabled: account.payouts_enabled,
+      country: account.country,
+      environment: getEnvironmentInfo(),
+      message: hasConnect 
+        ? "Stripe Connect configurado corretamente" 
+        : "Stripe Connect não está habilitado. Ative no dashboard do Stripe."
+    };
+
+  } catch (error) {
+    logger.error('Error checking Stripe Connect config:', error);
+    return {
+      success: false,
+      error: error.message,
+      message: "Erro ao verificar configuração do Stripe"
+    };
+  }
+});
+
+/**
+ * Verifica ambiente e configurações (para debug)
+ */
+export const checkEnvironment = onCall({
+  memory: "64MiB",
+  timeoutSeconds: 30,
+}, async (request) => {
+  try {
+    const envInfo = getEnvironmentInfo();
+    
+    return {
+      success: true,
+      environment: envInfo,
+      message: `Ambiente: ${envInfo.isProduction ? 'Produção' : 'Desenvolvimento'} | Stripe: ${envInfo.stripeKeyPrefix}`,
+      recommendations: envInfo.isProduction ? [
+        "✅ Ambiente de produção detectado",
+        "✅ Use chaves live do Stripe",
+        "✅ Configure URLs reais no Stripe",
+        "✅ Monitore logs e erros"
+      ] : [
+        "🔧 Ambiente de desenvolvimento",
+        "🔧 Use chaves test do Stripe",
+        "🔧 URLs de teste configuradas",
+        "🔧 Dados de teste são seguros"
+      ]
+    };
+
+  } catch (error) {
+    logger.error('Error checking environment:', error);
+    return {
+      success: false,
+      error: error.message,
+      message: "Erro ao verificar ambiente"
+    };
+  }
+});
+
+/**
+ * Envia email de confirmação de compra personalizado
+ */
+export const sendPurchaseConfirmationEmail = onCall({
+  memory: "256MiB",
+  timeoutSeconds: 60,
+  secrets: [STRIPE_SECRET],
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { 
+    packageId, 
+    packageName, 
+    vpAmount, 
+    vbpBonus, 
+    price, 
+    paymentMethod,
+    stripeSessionId 
+  } = request.data;
+
+  const userId = request.auth.uid;
+  const userEmail = request.auth.token.email;
+
+  try {
+    const stripe = new Stripe(STRIPE_SECRET.value(), {
+      apiVersion: STRIPE_API_VERSION,
+    });
+
+    // Buscar dados da sessão do Stripe
+    let sessionData = null;
+    if (stripeSessionId) {
+      try {
+        const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
+        sessionData = {
+          id: session.id,
+          paymentStatus: session.payment_status,
+          amountTotal: session.amount_total,
+          currency: session.currency
+        };
+      } catch (error) {
+        logger.warn('Could not retrieve Stripe session:', error);
+      }
+    }
+
+    // Dados do email
+    const emailData = {
+      to: userEmail,
+      subject: `🎉 Compra realizada com sucesso! ${packageName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa; padding: 20px;">
+          <div style="background: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            
+            <!-- Header -->
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #8A2BE2; margin: 0; font-size: 28px;">🎉 Compra Realizada!</h1>
+              <p style="color: #666; margin: 10px 0 0 0;">Obrigado por escolher a Vixter</p>
+            </div>
+
+            <!-- Package Info -->
+            <div style="background: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <h2 style="margin: 0 0 10px 0; font-size: 24px;">${packageName}</h2>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <p style="margin: 5px 0; font-size: 18px;">${vpAmount} VP</p>
+                  ${vbpBonus > 0 ? `<p style="margin: 5px 0; font-size: 16px; opacity: 0.9;">+ ${vbpBonus} VBP de bônus</p>` : ''}
+                </div>
+                <div style="text-align: right;">
+                  <p style="margin: 5px 0; font-size: 20px; font-weight: bold;">R$ ${(price / 100).toFixed(2).replace('.', ',')}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment Details -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <h3 style="margin: 0 0 15px 0; color: #333;">Detalhes do Pagamento</h3>
+              <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                <span style="color: #666;">Método de pagamento:</span>
+                <span style="font-weight: 500;">${paymentMethod === 'credit-card' ? 'Cartão de Crédito' : 'PIX'}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                <span style="color: #666;">Status:</span>
+                <span style="color: #28a745; font-weight: 500;">✅ Pago</span>
+              </div>
+              ${sessionData ? `
+              <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                <span style="color: #666;">ID da transação:</span>
+                <span style="font-family: monospace; font-size: 12px;">${sessionData.id}</span>
+              </div>
+              ` : ''}
+            </div>
+
+            <!-- What's Next -->
+            <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <h3 style="margin: 0 0 15px 0; color: #1976d2;">O que fazer agora?</h3>
+              <ul style="margin: 0; padding-left: 20px; color: #333;">
+                <li>Seus VP já estão disponíveis na sua carteira</li>
+                <li>Use os VP para comprar serviços de criadores</li>
+                <li>Explore a plataforma e descubra novos talentos</li>
+                <li>${vbpBonus > 0 ? 'Use seus VBP para atividades especiais' : ''}</li>
+              </ul>
+            </div>
+
+            <!-- Footer -->
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+              <p style="color: #666; margin: 0 0 10px 0;">Precisa de ajuda?</p>
+              <p style="margin: 0;">
+                <a href="mailto:suporte@vixter.com" style="color: #8A2BE2; text-decoration: none;">suporte@vixter.com</a>
+              </p>
+              <p style="color: #999; font-size: 12px; margin: 15px 0 0 0;">
+                Este é um email automático. Não responda a esta mensagem.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      `
+    };
+
+    // Enviar email usando Firebase Functions (se configurado)
+    // Ou integrar com SendGrid, Mailgun, etc.
+    
+    logger.info(`📧 Purchase confirmation email prepared for ${userEmail}: ${packageName}`);
+
+    return {
+      success: true,
+      message: "Email de confirmação preparado",
+      emailData: {
+        to: userEmail,
+        subject: emailData.subject,
+        packageName,
+        vpAmount,
+        vbpBonus,
+        price
+      }
+    };
+
+  } catch (error) {
+    logger.error(`💥 Error sending purchase confirmation email for ${userId}:`, error);
+    throw new HttpsError("internal", "Erro ao enviar email de confirmação");
+  }
+});
 
 logger.info('✅ Wallet functions loaded - Stripe preserved, watermarking removed');
