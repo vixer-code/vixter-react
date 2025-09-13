@@ -35,6 +35,7 @@ const MyPurchases = lazy(() => import('./pages/MyPurchases'));
 const ServiceDetail = lazy(() => import('./pages/ServiceDetail'));
 const PackDetail = lazy(() => import('./pages/PackDetail'));
 const ServiceOrders = lazy(() => import('./pages/ServiceOrders'));
+const Settings = lazy(() => import('./pages/Settings'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -88,7 +89,7 @@ function App() {
                                 <Route path="/service-orders" element={<ServiceOrders />} />
                                 <Route path="/service/:serviceId" element={<ServiceDetail />} />
                                 <Route path="/pack/:packId" element={<PackDetail />} />
-                                <Route path="/settings" element={<div>Settings Page - Coming Soon</div>} />
+                                <Route path="/settings" element={<Settings />} />
                                 <Route path="/services" element={<div>Services Page - Coming Soon</div>} />
                                 
                                 {/* Catch-all route - must be last */}
