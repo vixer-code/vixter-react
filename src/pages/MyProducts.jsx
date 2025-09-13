@@ -31,6 +31,25 @@ const MyProducts = () => {
     ORDER_STATUS: PACK_ORDER_STATUS
   } = usePackOrder();
   const { showNotification } = useNotification();
+
+  // Fallback constants in case contexts haven't loaded yet
+  const SERVICE_STATUS = SERVICE_ORDER_STATUS || {
+    PENDING_ACCEPTANCE: 'PENDING_ACCEPTANCE',
+    ACCEPTED: 'ACCEPTED',
+    DELIVERED: 'DELIVERED',
+    CONFIRMED: 'CONFIRMED',
+    AUTO_RELEASED: 'AUTO_RELEASED',
+    CANCELLED: 'CANCELLED'
+  };
+  
+  const PACK_STATUS = PACK_ORDER_STATUS || {
+    PENDING_ACCEPTANCE: 'PENDING_ACCEPTANCE',
+    ACCEPTED: 'ACCEPTED',
+    DELIVERED: 'DELIVERED',
+    CONFIRMED: 'CONFIRMED',
+    AUTO_RELEASED: 'AUTO_RELEASED',
+    CANCELLED: 'CANCELLED'
+  };
   
   const [activeTab, setActiveTab] = useState('pending');
   const [productType, setProductType] = useState('all'); // 'all', 'services', 'packs'
@@ -130,30 +149,30 @@ const MyProducts = () => {
     switch (activeTab) {
       case 'pending':
         return filteredByType.filter(order => 
-          order.status === SERVICE_ORDER_STATUS.PENDING_ACCEPTANCE || 
-          order.status === PACK_ORDER_STATUS.PENDING_ACCEPTANCE
+          order.status === SERVICE_STATUS.PENDING_ACCEPTANCE || 
+          order.status === PACK_STATUS.PENDING_ACCEPTANCE
         );
       case 'accepted':
         return filteredByType.filter(order => 
-          order.status === SERVICE_ORDER_STATUS.ACCEPTED || 
-          order.status === PACK_ORDER_STATUS.ACCEPTED
+          order.status === SERVICE_STATUS.ACCEPTED || 
+          order.status === PACK_STATUS.ACCEPTED
         );
       case 'delivered':
         return filteredByType.filter(order => 
-          order.status === SERVICE_ORDER_STATUS.DELIVERED || 
-          order.status === PACK_ORDER_STATUS.DELIVERED
+          order.status === SERVICE_STATUS.DELIVERED || 
+          order.status === PACK_STATUS.DELIVERED
         );
       case 'completed':
         return filteredByType.filter(order => 
-          order.status === SERVICE_ORDER_STATUS.CONFIRMED || 
-          order.status === SERVICE_ORDER_STATUS.AUTO_RELEASED ||
-          order.status === PACK_ORDER_STATUS.CONFIRMED || 
-          order.status === PACK_ORDER_STATUS.AUTO_RELEASED
+          order.status === SERVICE_STATUS.CONFIRMED || 
+          order.status === SERVICE_STATUS.AUTO_RELEASED ||
+          order.status === PACK_STATUS.CONFIRMED || 
+          order.status === PACK_STATUS.AUTO_RELEASED
         );
       case 'cancelled':
         return filteredByType.filter(order => 
-          order.status === SERVICE_ORDER_STATUS.CANCELLED || 
-          order.status === PACK_ORDER_STATUS.CANCELLED
+          order.status === SERVICE_STATUS.CANCELLED || 
+          order.status === PACK_STATUS.CANCELLED
         );
       default:
         return filteredByType;
@@ -244,8 +263,8 @@ const MyProducts = () => {
         >
           <i className="fas fa-clock"></i>
           Pendentes ({filteredOrders.filter(o => 
-            o.status === SERVICE_ORDER_STATUS.PENDING_ACCEPTANCE || 
-            o.status === PACK_ORDER_STATUS.PENDING_ACCEPTANCE
+            o.status === SERVICE_STATUS.PENDING_ACCEPTANCE || 
+            o.status === PACK_STATUS.PENDING_ACCEPTANCE
           ).length})
         </button>
         <button 
@@ -254,8 +273,8 @@ const MyProducts = () => {
         >
           <i className="fas fa-check"></i>
           Aceitos ({filteredOrders.filter(o => 
-            o.status === SERVICE_ORDER_STATUS.ACCEPTED || 
-            o.status === PACK_ORDER_STATUS.ACCEPTED
+            o.status === SERVICE_STATUS.ACCEPTED || 
+            o.status === PACK_STATUS.ACCEPTED
           ).length})
         </button>
         <button 
@@ -264,8 +283,8 @@ const MyProducts = () => {
         >
           <i className="fas fa-truck"></i>
           Entregues ({filteredOrders.filter(o => 
-            o.status === SERVICE_ORDER_STATUS.DELIVERED || 
-            o.status === PACK_ORDER_STATUS.DELIVERED
+            o.status === SERVICE_STATUS.DELIVERED || 
+            o.status === PACK_STATUS.DELIVERED
           ).length})
         </button>
         <button 
@@ -274,10 +293,10 @@ const MyProducts = () => {
         >
           <i className="fas fa-check-circle"></i>
           Concluídos ({filteredOrders.filter(o => 
-            o.status === SERVICE_ORDER_STATUS.CONFIRMED || 
-            o.status === SERVICE_ORDER_STATUS.AUTO_RELEASED ||
-            o.status === PACK_ORDER_STATUS.CONFIRMED || 
-            o.status === PACK_ORDER_STATUS.AUTO_RELEASED
+            o.status === SERVICE_STATUS.CONFIRMED || 
+            o.status === SERVICE_STATUS.AUTO_RELEASED ||
+            o.status === PACK_STATUS.CONFIRMED || 
+            o.status === PACK_STATUS.AUTO_RELEASED
           ).length})
         </button>
         <button 
@@ -286,8 +305,8 @@ const MyProducts = () => {
         >
           <i className="fas fa-times-circle"></i>
           Cancelados ({filteredOrders.filter(o => 
-            o.status === SERVICE_ORDER_STATUS.CANCELLED || 
-            o.status === PACK_ORDER_STATUS.CANCELLED
+            o.status === SERVICE_STATUS.CANCELLED || 
+            o.status === PACK_STATUS.CANCELLED
           ).length})
         </button>
       </div>
@@ -313,12 +332,12 @@ const MyProducts = () => {
               getServiceStatusInfo(order.status) : 
               getPackStatusInfo(order.status);
               
-            const isPending = order.status === SERVICE_ORDER_STATUS.PENDING_ACCEPTANCE || 
-                             order.status === PACK_ORDER_STATUS.PENDING_ACCEPTANCE;
-            const isAccepted = order.status === SERVICE_ORDER_STATUS.ACCEPTED || 
-                              order.status === PACK_ORDER_STATUS.ACCEPTED;
-            const isDelivered = order.status === SERVICE_ORDER_STATUS.DELIVERED || 
-                               order.status === PACK_ORDER_STATUS.DELIVERED;
+            const isPending = order.status === SERVICE_STATUS.PENDING_ACCEPTANCE || 
+                             order.status === PACK_STATUS.PENDING_ACCEPTANCE;
+            const isAccepted = order.status === SERVICE_STATUS.ACCEPTED || 
+                              order.status === PACK_STATUS.ACCEPTED;
+            const isDelivered = order.status === SERVICE_STATUS.DELIVERED || 
+                               order.status === PACK_STATUS.DELIVERED;
 
             return (
               <div key={order.id} className="order-card">
