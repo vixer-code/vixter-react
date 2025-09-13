@@ -130,12 +130,16 @@ const MyProducts = () => {
     setShowDeliveryModal(true);
   };
 
-  const getFilteredOrders = () => {
+  const getAllOrders = () => {
     // Combine service and pack orders
-    const allOrders = [
+    return [
       ...(serviceOrders || []).map(order => ({ ...order, type: 'service' })),
       ...(packOrders || []).map(order => ({ ...order, type: 'pack' }))
     ];
+  };
+
+  const getFilteredOrders = () => {
+    const allOrders = getAllOrders();
 
     // Filter by product type first
     let filteredByType = allOrders;
@@ -177,6 +181,44 @@ const MyProducts = () => {
       default:
         return filteredByType;
     }
+  };
+
+  // Get counts for each status tab
+  const getStatusCounts = () => {
+    const allOrders = getAllOrders();
+    
+    // Filter by product type first
+    let filteredByType = allOrders;
+    if (productType === 'services') {
+      filteredByType = allOrders.filter(order => order.type === 'service');
+    } else if (productType === 'packs') {
+      filteredByType = allOrders.filter(order => order.type === 'pack');
+    }
+
+    return {
+      pending: filteredByType.filter(order => 
+        order.status === SERVICE_STATUS.PENDING_ACCEPTANCE || 
+        order.status === PACK_STATUS.PENDING_ACCEPTANCE
+      ).length,
+      accepted: filteredByType.filter(order => 
+        order.status === SERVICE_STATUS.ACCEPTED || 
+        order.status === PACK_STATUS.ACCEPTED
+      ).length,
+      delivered: filteredByType.filter(order => 
+        order.status === SERVICE_STATUS.DELIVERED || 
+        order.status === PACK_STATUS.DELIVERED
+      ).length,
+      completed: filteredByType.filter(order => 
+        order.status === SERVICE_STATUS.CONFIRMED || 
+        order.status === SERVICE_STATUS.AUTO_RELEASED ||
+        order.status === PACK_STATUS.CONFIRMED || 
+        order.status === PACK_STATUS.AUTO_RELEASED
+      ).length,
+      cancelled: filteredByType.filter(order => 
+        order.status === SERVICE_STATUS.CANCELLED || 
+        order.status === PACK_STATUS.CANCELLED
+      ).length
+    };
   };
 
   const formatDate = (timestamp) => {
@@ -222,6 +264,12 @@ const MyProducts = () => {
   }
 
   const filteredOrders = getFilteredOrders();
+  const statusCounts = getStatusCounts();
+
+  // Debug: Log order structure to understand available fields
+  if (filteredOrders.length > 0) {
+    console.log('Sample order structure:', filteredOrders[0]);
+  }
 
   return (
     <div className="my-services-container">
@@ -262,52 +310,35 @@ const MyProducts = () => {
           onClick={() => setActiveTab('pending')}
         >
           <i className="fas fa-clock"></i>
-          Pendentes ({filteredOrders.filter(o => 
-            o.status === SERVICE_STATUS.PENDING_ACCEPTANCE || 
-            o.status === PACK_STATUS.PENDING_ACCEPTANCE
-          ).length})
+          Pendentes ({statusCounts.pending})
         </button>
         <button 
           className={`tab-btn ${activeTab === 'accepted' ? 'active' : ''}`}
           onClick={() => setActiveTab('accepted')}
         >
           <i className="fas fa-check"></i>
-          Aceitos ({filteredOrders.filter(o => 
-            o.status === SERVICE_STATUS.ACCEPTED || 
-            o.status === PACK_STATUS.ACCEPTED
-          ).length})
+          Aceitos ({statusCounts.accepted})
         </button>
         <button 
           className={`tab-btn ${activeTab === 'delivered' ? 'active' : ''}`}
           onClick={() => setActiveTab('delivered')}
         >
           <i className="fas fa-truck"></i>
-          Entregues ({filteredOrders.filter(o => 
-            o.status === SERVICE_STATUS.DELIVERED || 
-            o.status === PACK_STATUS.DELIVERED
-          ).length})
+          Entregues ({statusCounts.delivered})
         </button>
         <button 
           className={`tab-btn ${activeTab === 'completed' ? 'active' : ''}`}
           onClick={() => setActiveTab('completed')}
         >
           <i className="fas fa-check-circle"></i>
-          Concluídos ({filteredOrders.filter(o => 
-            o.status === SERVICE_STATUS.CONFIRMED || 
-            o.status === SERVICE_STATUS.AUTO_RELEASED ||
-            o.status === PACK_STATUS.CONFIRMED || 
-            o.status === PACK_STATUS.AUTO_RELEASED
-          ).length})
+          Concluídos ({statusCounts.completed})
         </button>
         <button 
           className={`tab-btn ${activeTab === 'cancelled' ? 'active' : ''}`}
           onClick={() => setActiveTab('cancelled')}
         >
           <i className="fas fa-times-circle"></i>
-          Cancelados ({filteredOrders.filter(o => 
-            o.status === SERVICE_STATUS.CANCELLED || 
-            o.status === PACK_STATUS.CANCELLED
-          ).length})
+          Cancelados ({statusCounts.cancelled})
         </button>
       </div>
 
@@ -368,19 +399,19 @@ const MyProducts = () => {
                   <div className="order-client">
                     <strong>Cliente:</strong> 
                     <Link 
-                      to={`/profile/${order.buyerUsername || order.buyerName?.toLowerCase().replace(/\s+/g, '') || 'usuario'}`}
+                      to={`/profile/${order.buyerUsername || order.buyerName?.toLowerCase().replace(/\s+/g, '') || order.buyerId || 'usuario'}`}
                       className="client-link"
                     >
-                      {order.buyerName || 'Cliente'}
+                      {order.buyerName || order.buyerDisplayName || order.buyerUsername || 'Cliente'}
                     </Link>
                   </div>
                   <div className="order-client-username">
                     <strong>Username:</strong> 
                     <Link 
-                      to={`/profile/${order.buyerUsername || order.buyerName?.toLowerCase().replace(/\s+/g, '') || 'usuario'}`}
+                      to={`/profile/${order.buyerUsername || order.buyerName?.toLowerCase().replace(/\s+/g, '') || order.buyerId || 'usuario'}`}
                       className="username-link"
                     >
-                      @{order.buyerUsername || order.buyerName?.toLowerCase().replace(/\s+/g, '') || 'usuario'}
+                      @{order.buyerUsername || order.buyerName?.toLowerCase().replace(/\s+/g, '') || order.buyerId || 'usuario'}
                     </Link>
                   </div>
                   <div className="order-amount">

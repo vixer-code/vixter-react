@@ -7,11 +7,8 @@
   color: #FFFFFF;
   overflow: hidden;
   margin-top: 80px; /* Header height */
-  position: fixed;
-  top: 80px; /* Header height */
-  left: 0;
-  right: 0;
-  bottom: 60px; /* Footer height */
+  margin-bottom: 60px; /* Footer height */
+  position: relative;
   z-index: 1;
 }
 
@@ -43,22 +40,26 @@
 /* Connection Status */
 .connection-status {
   padding: 8px 20px;
-  background: #fff;
-  border-bottom: 1px solid #e0e0e0;
+  background: #1A1A2E;
+  border-bottom: 1px solid rgba(0, 255, 202, 0.2);
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 0.9rem;
+  flex-shrink: 0;
+  margin: 0;
 }
 
 .connection-status.connected {
-  background: #d4edda;
-  color: #155724;
+  background: rgba(0, 255, 202, 0.1);
+  color: #00FFCA;
+  border-bottom-color: #00FFCA;
 }
 
 .connection-status.disconnected {
-  background: #f8d7da;
-  color: #721c24;
+  background: rgba(255, 107, 107, 0.1);
+  color: #ff6b6b;
+  border-bottom-color: #ff6b6b;
 }
 
 .status-indicator {
@@ -329,8 +330,7 @@
     height: calc(100vh - 60px - 60px); /* 100vh - mobile header - footer */
     max-height: calc(100vh - 60px - 60px);
     margin-top: 60px; /* Mobile header height */
-    top: 60px; /* Mobile header height */
-    bottom: 60px; /* Footer height */
+    margin-bottom: 60px; /* Footer height */
   }
   
   .conversations-sidebar {
@@ -437,8 +437,7 @@
     height: calc(100vh - 50px - 60px); /* 100vh - small mobile header - footer */
     max-height: calc(100vh - 50px - 60px);
     margin-top: 50px; /* Small mobile header height */
-    top: 50px; /* Small mobile header height */
-    bottom: 60px; /* Footer height */
+    margin-bottom: 60px; /* Footer height */
   }
   
   .connection-status {
