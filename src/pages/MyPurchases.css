@@ -496,3 +496,63 @@
     height: 150px;
   }
 }
+
+/* Completed Service Styles */
+.purchase-card.completed {
+  opacity: 0.8;
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+  border: 1px solid rgba(0, 255, 202, 0.3);
+  position: relative;
+}
+
+.purchase-card.completed::before {
+  content: '✓ CONCLUÍDO';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, #00ffca 0%, #00d4aa 100%);
+  color: #000;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  z-index: 10;
+}
+
+.purchase-card.completed .purchase-header h3 {
+  color: #00ffca;
+}
+
+.purchase-card.completed .purchase-details {
+  color: #b0b0b0;
+}
+
+.purchase-card.completed .purchase-cover {
+  filter: grayscale(0.3);
+  opacity: 0.7;
+}
+
+.purchase-card.completed .btn-primary.disabled {
+  background: #666;
+  color: #999;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.purchase-card.completed .btn-primary.disabled:hover {
+  background: #666;
+  transform: none;
+  box-shadow: none;
+}
+
+.purchase-card.completed .btn-rebuy {
+  background: linear-gradient(135deg, #00ffca 0%, #00d4aa 100%);
+  color: #000;
+  font-weight: bold;
+}
+
+.purchase-card.completed .btn-rebuy:hover {
+  background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 255, 202, 0.4);
+}

@@ -13,7 +13,7 @@ import './MyPurchases.css';
 
 const MyPurchases = () => {
   const { currentUser } = useAuth();
-  const { userProfile } = useUser();
+  const { userProfile, getUserById } = useUser();
   const { showError, showSuccess } = useNotification();
   const { createOrGetConversation } = useEnhancedMessaging();
   const navigate = useNavigate();
@@ -22,6 +22,7 @@ const MyPurchases = () => {
   const [purchasedServices, setPurchasedServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [sellerData, setSellerData] = useState({});
   const [viewingPack, setViewingPack] = useState(null);
   const [viewingService, setViewingService] = useState(null);
 
@@ -65,6 +66,29 @@ const MyPurchases = () => {
     }
   }, [currentUser, showError]);
 
+  // Load seller data for services
+  const loadSellerData = useCallback(async (services) => {
+    const sellerIds = [...new Set(services.map(service => service.sellerId).filter(Boolean))];
+    const sellerDataMap = {};
+    
+    for (const sellerId of sellerIds) {
+      try {
+        const seller = await getUserById(sellerId);
+        if (seller) {
+          sellerDataMap[sellerId] = {
+            name: seller.displayName || seller.username || seller.name || 'Vendedor',
+            username: seller.username || seller.displayName?.toLowerCase().replace(/\s+/g, '') || 'vendedor',
+            profilePicture: seller.profilePictureURL || null
+          };
+        }
+      } catch (error) {
+        console.error('Error loading seller data:', error);
+      }
+    }
+    
+    setSellerData(sellerDataMap);
+  }, [getUserById]);
+
   // Load purchased services
   const loadPurchasedServices = useCallback(async () => {
     if (!currentUser) return;
@@ -91,11 +115,16 @@ const MyPurchases = () => {
       });
       
       setPurchasedServices(orders);
+      
+      // Load seller data for services
+      if (orders.length > 0) {
+        await loadSellerData(orders);
+      }
     } catch (error) {
       console.error('Error loading purchased services:', error);
       showError('Erro ao carregar serviços comprados');
     }
-  }, [currentUser, showError]);
+  }, [currentUser, showError, loadSellerData]);
 
   // Load all purchases
   useEffect(() => {
@@ -209,7 +238,7 @@ const MyPurchases = () => {
       case 'CONFIRMED':
         return { label: 'Finalizado', color: 'success', icon: 'check-circle' };
       case 'AUTO_RELEASED':
-        return { label: 'Liberado Automaticamente', color: 'success', icon: 'check-circle' };
+        return { label: 'Concluído', color: 'success', icon: 'check-circle' };
       case 'CANCELLED':
         return { label: 'Cancelado', color: 'danger', icon: 'times-circle' };
       case 'DISPUTED':
@@ -318,8 +347,10 @@ const MyPurchases = () => {
             const isService = purchase.type === 'service';
             const isPack = purchase.type === 'pack';
 
+            const isCompleted = purchase.status === 'CONFIRMED' || purchase.status === 'COMPLETED' || purchase.status === 'AUTO_RELEASED';
+            
             return (
-              <div key={purchase.id} className="purchase-card">
+              <div key={purchase.id} className={`purchase-card ${isCompleted ? 'completed' : ''}`}>
                 <div className="purchase-header">
                   <div className="purchase-info">
                     <h3>
@@ -347,11 +378,11 @@ const MyPurchases = () => {
                   <div className="purchase-cover">
                     {isService ? (
                       <SmartMediaViewer
-                        mediaData={purchase.metadata?.coverImageURL || purchase.metadata?.coverImage}
+                        mediaData={purchase.metadata?.coverImageURL || purchase.metadata?.coverImage || purchase.coverImage}
                         type="service"
                         watermarked={false}
                         fallbackSrc="/images/default-service.jpg"
-                        alt={purchase.metadata?.serviceName || 'Serviço'}
+                        alt={purchase.metadata?.serviceName || purchase.serviceName || 'Serviço'}
                         sizes="(max-width: 768px) 100px, 150px"
                       />
                     ) : (
@@ -368,11 +399,11 @@ const MyPurchases = () => {
 
                   <div className="purchase-details">
                     <div className="purchase-seller">
-                      <strong>Vendedor:</strong> {purchase.sellerName || 'Provedor'}
+                      <strong>Vendedor:</strong> {sellerData[purchase.sellerId]?.name || purchase.sellerName || 'Provedor'}
                     </div>
                     {isService && (
                       <div className="purchase-seller-username">
-                        <strong>Username:</strong> @{purchase.sellerUsername || purchase.sellerName?.toLowerCase().replace(/\s+/g, '') || 'vendedor'}
+                        <strong>Username:</strong> @{sellerData[purchase.sellerId]?.username || purchase.sellerUsername || purchase.sellerName?.toLowerCase().replace(/\s+/g, '') || 'vendedor'}
                       </div>
                     )}
                     <div className="purchase-amount">
@@ -408,13 +439,15 @@ const MyPurchases = () => {
                   {isService && (
                     <>
                       <button 
-                        className="btn-primary"
-                        onClick={() => handleViewService(purchase)}
+                        className={`btn-primary ${isCompleted ? 'disabled' : ''}`}
+                        onClick={() => !isCompleted && handleViewService(purchase)}
+                        disabled={isCompleted}
+                        title={isCompleted ? 'Serviço concluído - Conversa finalizada' : 'Ver conversa do serviço'}
                       >
                         <i className="fas fa-comments"></i>
-                        Ver Serviço
+                        {isCompleted ? 'Serviço Concluído' : 'Ver Serviço'}
                       </button>
-                      {(purchase.status === 'CONFIRMED' || purchase.status === 'COMPLETED') && (
+                      {isCompleted && (
                         <button 
                           className="btn-rebuy"
                           onClick={() => handleRebuyService(purchase)}
