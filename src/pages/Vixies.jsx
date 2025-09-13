@@ -20,6 +20,20 @@ const Vixies = () => {
   const [activeTab, setActiveTab] = useState('main'); // main | following
   const [dismissedClientRestriction, setDismissedClientRestriction] = useState(false);
 
+  // Check KYC verification
+  const isKycVerified = userProfile?.kyc === true;
+
+  // Show notification and redirect if KYC not verified
+  useEffect(() => {
+    if (userProfile && !isKycVerified) {
+      showWarning('Acesso restrito: Você precisa completar a verificação de identidade (KYC) para acessar o Vixies.');
+      // Redirect to home after a short delay
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 3000);
+    }
+  }, [userProfile, isKycVerified, showWarning]);
+
 
   useEffect(() => {
     let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
@@ -244,6 +258,38 @@ const Vixies = () => {
     return (
       <div className="vixies-container">
         <div className="loading-spinner">Carregando posts...</div>
+      </div>
+    );
+  }
+
+  // Show KYC restriction message if user is not verified
+  if (!isKycVerified) {
+    return (
+      <div className="vixies-container">
+        <div className="kyc-restriction">
+          <div className="restriction-icon">
+            <i className="fas fa-shield-alt"></i>
+          </div>
+          <h2>Acesso Restrito</h2>
+          <p>
+            Para acessar o Vixies, você precisa completar a verificação de identidade (KYC).
+            Esta verificação garante a segurança da plataforma e permite que você prove sua maioridade.
+          </p>
+          <div className="restriction-actions">
+            <Link to="/settings" className="btn-primary">
+              <i className="fas fa-id-card"></i>
+              Completar Verificação
+            </Link>
+            <Link to="/" className="btn-secondary">
+              <i className="fas fa-home"></i>
+              Voltar ao Início
+            </Link>
+          </div>
+          <div className="restriction-info">
+            <i className="fas fa-info-circle"></i>
+            <span>Após a verificação ser aprovada, o Vixies será liberado para acesso.</span>
+          </div>
+        </div>
       </div>
     );
   }

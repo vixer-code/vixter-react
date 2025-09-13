@@ -55,6 +55,24 @@ const Settings = () => {
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  // KYC verification states
+  const [kycForm, setKycForm] = useState({
+    fullName: '',
+    cpf: '',
+    documents: {
+      front: null,
+      back: null,
+      selfie: null
+    }
+  });
+  const [kycLoading, setKycLoading] = useState(false);
+  const [cpfVerificationState, setCpfVerificationState] = useState({
+    isVerified: false,
+    isVerifying: false,
+    isValid: false,
+    message: ''
+  });
+
   // Get account type
   const accountType = userProfile?.accountType || 'client';
   const isProvider = accountType === 'provider' || accountType === 'both';
@@ -275,6 +293,293 @@ const Settings = () => {
     }
   };
 
+  // KYC Functions
+  const handleKycChange = (field, value) => {
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      setKycForm(prev => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: value
+        }
+      }));
+    } else {
+      setKycForm(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
+  };
+
+  const handleKycDocumentChange = (documentType, file) => {
+    setKycForm(prev => ({
+      ...prev,
+      documents: {
+        ...prev.documents,
+        [documentType]: file
+      }
+    }));
+  };
+
+  // CPF validation function
+  const validateCPF = (cpf) => {
+    const cleanCpf = cpf.replace(/\D/g, '');
+    
+    if (cleanCpf.length !== 11) {
+      return { isValid: false, message: 'CPF deve ter 11 dígitos' };
+    }
+    
+    if (/^(\d)\1{10}$/.test(cleanCpf)) {
+      return { isValid: false, message: 'CPF inválido (todos os dígitos são iguais)' };
+    }
+    
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      sum += parseInt(cleanCpf.charAt(i)) * (10 - i);
+    }
+    let remainder = sum % 11;
+    let digit1 = remainder < 2 ? 0 : 11 - remainder;
+    
+    if (digit1 !== parseInt(cleanCpf.charAt(9))) {
+      return { isValid: false, message: 'CPF inválido (primeiro dígito verificador)' };
+    }
+    
+    sum = 0;
+    for (let i = 0; i < 10; i++) {
+      sum += parseInt(cleanCpf.charAt(i)) * (11 - i);
+    }
+    remainder = sum % 11;
+    let digit2 = remainder < 2 ? 0 : 11 - remainder;
+    
+    if (digit2 !== parseInt(cleanCpf.charAt(10))) {
+      return { isValid: false, message: 'CPF inválido (segundo dígito verificador)' };
+    }
+    
+    return { isValid: true, message: 'CPF válido' };
+  };
+
+  // CPF verification with API
+  const verifyCPF = async () => {
+    const cpfRaw = kycForm.cpf.replace(/\D/g, '');
+    const name = kycForm.fullName.trim();
+    const birthDate = userProfile?.birthDate;
+
+    if (!cpfRaw || !name || !birthDate) {
+      setCpfVerificationState({
+        isVerified: false,
+        isVerifying: false,
+        isValid: false,
+        message: 'Preencha todos os campos obrigatórios antes de verificar.'
+      });
+      return;
+    }
+
+    const validation = validateCPF(kycForm.cpf);
+    if (!validation.isValid) {
+      setCpfVerificationState({
+        isVerified: false,
+        isVerifying: false,
+        isValid: false,
+        message: validation.message
+      });
+      return;
+    }
+
+    setCpfVerificationState(prev => ({ ...prev, isVerifying: true }));
+
+    try {
+      // Convert birthDate format if needed
+      let formattedBirthDate = birthDate;
+      if (birthDate.includes('/')) {
+        const [day, month, year] = birthDate.split('/');
+        formattedBirthDate = `${year}-${month}-${day}`;
+      }
+
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'https://vixter-react-llyd.vercel.app'}/api/verify-id`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cpf: cpfRaw,
+          name: name,
+          birthDate: formattedBirthDate
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.verified) {
+        setCpfVerificationState({
+          isVerified: true,
+          isVerifying: false,
+          isValid: true,
+          message: 'CPF verificado com sucesso!'
+        });
+      } else {
+        setCpfVerificationState({
+          isVerified: false,
+          isVerifying: false,
+          isValid: false,
+          message: data.message || 'Falha na verificação do CPF'
+        });
+      }
+    } catch (error) {
+      console.error('CPF verification error:', error);
+      setCpfVerificationState({
+        isVerified: false,
+        isVerifying: false,
+        isValid: false,
+        message: 'Erro na verificação. Tente novamente.'
+      });
+    }
+  };
+
+  // Upload KYC documents to R2
+  const uploadKycDocuments = async () => {
+    if (!cpfVerificationState.isVerified) {
+      showNotification('Verifique o CPF antes de enviar os documentos', 'error');
+      return;
+    }
+
+    setKycLoading(true);
+    try {
+      const documentURLs = {};
+      const uploadPromises = [];
+
+      // Upload front document
+      if (kycForm.documents.front) {
+        const frontKey = `KYC/${currentUser.uid}/doc-front-${Date.now()}.${kycForm.documents.front.name.split('.').pop()}`;
+        uploadPromises.push(
+          fetch('/api/media/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'kyc',
+              contentType: kycForm.documents.front.type,
+              originalName: kycForm.documents.front.name,
+              key: frontKey
+            })
+          }).then(async (response) => {
+            if (response.ok) {
+              const { data } = await response.json();
+              const uploadResponse = await fetch(data.uploadUrl, {
+                method: 'PUT',
+                body: kycForm.documents.front,
+                headers: { 'Content-Type': kycForm.documents.front.type }
+              });
+              
+              if (uploadResponse.ok) {
+                // For KYC documents, store only the key - no public URL
+                documentURLs.front = data.key;
+              }
+            }
+          })
+        );
+      }
+
+      // Upload back document
+      if (kycForm.documents.back) {
+        const backKey = `KYC/${currentUser.uid}/doc-back-${Date.now()}.${kycForm.documents.back.name.split('.').pop()}`;
+        uploadPromises.push(
+          fetch('/api/media/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'kyc',
+              contentType: kycForm.documents.back.type,
+              originalName: kycForm.documents.back.name,
+              key: backKey
+            })
+          }).then(async (response) => {
+            if (response.ok) {
+              const { data } = await response.json();
+              const uploadResponse = await fetch(data.uploadUrl, {
+                method: 'PUT',
+                body: kycForm.documents.back,
+                headers: { 'Content-Type': kycForm.documents.back.type }
+              });
+              
+              if (uploadResponse.ok) {
+                // For KYC documents, store only the key - no public URL
+                documentURLs.back = data.key;
+              }
+            }
+          })
+        );
+      }
+
+      // Upload selfie document
+      if (kycForm.documents.selfie) {
+        const selfieKey = `KYC/${currentUser.uid}/selfie-${Date.now()}.${kycForm.documents.selfie.name.split('.').pop()}`;
+        uploadPromises.push(
+          fetch('/api/media/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'kyc',
+              contentType: kycForm.documents.selfie.type,
+              originalName: kycForm.documents.selfie.name,
+              key: selfieKey
+            })
+          }).then(async (response) => {
+            if (response.ok) {
+              const { data } = await response.json();
+              const uploadResponse = await fetch(data.uploadUrl, {
+                method: 'PUT',
+                body: kycForm.documents.selfie,
+                headers: { 'Content-Type': kycForm.documents.selfie.type }
+              });
+              
+              if (uploadResponse.ok) {
+                // For KYC documents, store only the key - no public URL
+                documentURLs.selfie = data.key;
+              }
+            }
+          })
+        );
+      }
+
+      await Promise.all(uploadPromises);
+
+      // Update user profile with KYC data
+      const userRef = ref(database, `users/${currentUser.uid}`);
+      await update(userRef, {
+        verification: {
+          fullName: kycForm.fullName,
+          cpf: kycForm.cpf.replace(/\D/g, ''),
+          documents: documentURLs,
+          submittedAt: Date.now(),
+          verificationStatus: 'pending'
+        }
+      });
+
+      showNotification('Documentos enviados com sucesso! A verificação será realizada assim que possível.', 'success');
+      
+      // Reset form
+      setKycForm({
+        fullName: '',
+        cpf: '',
+        documents: {
+          front: null,
+          back: null,
+          selfie: null
+        }
+      });
+      setCpfVerificationState({
+        isVerified: false,
+        isVerifying: false,
+        isValid: false,
+        message: ''
+      });
+
+    } catch (error) {
+      console.error('Error uploading KYC documents:', error);
+      showNotification('Erro ao enviar documentos. Tente novamente.', 'error');
+    } finally {
+      setKycLoading(false);
+    }
+  };
+
   if (!currentUser) {
     return (
       <div className="settings-container">
@@ -356,6 +661,159 @@ const Settings = () => {
                     </a>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* KYC Verification Section */}
+        {!userProfile?.kyc && (
+          <div className="settings-section">
+            <h2>Verificação de Identidade (KYC)</h2>
+            <div className="settings-grid">
+              <div className="setting-group full-width">
+                <div className="kyc-info">
+                  <div className="kyc-status">
+                    <i className="fas fa-exclamation-triangle"></i>
+                    <span>Verificação Pendente</span>
+                  </div>
+                  <p className="kyc-description">
+                    Complete a verificação de identidade para acessar todas as funcionalidades da plataforma, incluindo o Vixies.
+                    Uma vez validada a identidade que comprove sua maioridade, o Vixies será liberado para acesso.
+                  </p>
+                </div>
+              </div>
+
+              <div className="setting-group">
+                <label htmlFor="kyc-fullName">Nome Completo</label>
+                <input
+                  type="text"
+                  id="kyc-fullName"
+                  value={kycForm.fullName}
+                  onChange={(e) => handleKycChange('fullName', e.target.value)}
+                  placeholder="Digite seu nome completo conforme documento"
+                />
+                <small>Deve corresponder exatamente ao nome no documento de identificação</small>
+              </div>
+
+              <div className="setting-group">
+                <label htmlFor="kyc-cpf">CPF</label>
+                <div className="cpf-verification-container">
+                  <div className="cpf-wrapper">
+                    <input
+                      type="text"
+                      id="kyc-cpf"
+                      className="cpf-input"
+                      value={kycForm.cpf}
+                      onChange={(e) => handleKycChange('cpf', e.target.value)}
+                      placeholder="000.000.000-00"
+                      maxLength="14"
+                    />
+                    <span className={`status-icon ${cpfVerificationState.isVerified ? 'verified' : ''}`}></span>
+                  </div>
+                  <button 
+                    type="button" 
+                    className={`btn-verify-cpf ${cpfVerificationState.isVerified ? 'verified' : ''} ${cpfVerificationState.isVerifying ? 'verifying' : ''}`}
+                    onClick={verifyCPF}
+                    disabled={cpfVerificationState.isVerifying || cpfVerificationState.isVerified || !kycForm.fullName || !kycForm.cpf || !userProfile?.birthDate}
+                  >
+                    {cpfVerificationState.isVerifying ? (
+                      <>
+                        <span className="verify-loading">
+                          <svg className="loading-spinner" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="31.416" strokeDashoffset="31.416">
+                              <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
+                              <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
+                            </circle>
+                          </svg>
+                          Verificando...
+                        </span>
+                      </>
+                    ) : (
+                      <span className="verify-text">
+                        {cpfVerificationState.isVerified ? 'CPF Verificado' : 'Verificar CPF'}
+                      </span>
+                    )}
+                  </button>
+                </div>
+                <small>Informe apenas números, a formatação será aplicada automaticamente</small>
+                {cpfVerificationState.message && (
+                  <div className={`cpf-feedback ${cpfVerificationState.isValid ? 'success' : 'error'}`}>
+                    <div className="feedback-content">
+                      <span className="feedback-icon">
+                        {cpfVerificationState.isValid ? '✅' : '❌'}
+                      </span>
+                      <span className="feedback-message">{cpfVerificationState.message}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="setting-group full-width">
+                <label>Documentos de Verificação</label>
+                <p className="verification-description">
+                  Envie 3 fotos conforme especificado abaixo. Certifique-se de que todas as informações estejam legíveis e que as fotos estejam bem iluminadas.
+                </p>
+                
+                <div className="kyc-documents">
+                  <div className="document-upload-item">
+                    <input 
+                      type="file" 
+                      id="kyc-doc-front" 
+                      accept="image/*"
+                      onChange={(e) => handleKycDocumentChange('front', e.target.files[0])}
+                    />
+                    <div className="document-upload-icon">📄</div>
+                    <div className="document-upload-title">Frente do Documento</div>
+                    <div className="document-upload-description">
+                      Foto da frente do RG, CNH ou outro documento com foto que contenha seu CPF
+                    </div>
+                  </div>
+                  
+                  <div className="document-upload-item">
+                    <input 
+                      type="file" 
+                      id="kyc-doc-back" 
+                      accept="image/*"
+                      onChange={(e) => handleKycDocumentChange('back', e.target.files[0])}
+                    />
+                    <div className="document-upload-icon">📄</div>
+                    <div className="document-upload-title">Verso do Documento</div>
+                    <div className="document-upload-description">
+                      Foto do verso do mesmo documento usado na frente
+                    </div>
+                  </div>
+                  
+                  <div className="document-upload-item">
+                    <input 
+                      type="file" 
+                      id="kyc-selfie-doc" 
+                      accept="image/*"
+                      onChange={(e) => handleKycDocumentChange('selfie', e.target.files[0])}
+                    />
+                    <div className="document-upload-icon">🤳</div>
+                    <div className="document-upload-title">Selfie com Documento</div>
+                    <div className="document-upload-description">
+                      Foto sua segurando o documento ao lado do rosto, ambos devem estar visíveis
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  className="btn-primary kyc-submit-btn"
+                  onClick={uploadKycDocuments}
+                  disabled={kycLoading || !cpfVerificationState.isVerified || !kycForm.documents.front || !kycForm.documents.back || !kycForm.documents.selfie}
+                >
+                  {kycLoading ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i> Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-upload"></i> Enviar Documentos
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>

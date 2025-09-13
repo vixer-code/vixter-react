@@ -62,17 +62,21 @@ const Register = () => {
 
   // Check if user is minor based on birth date
   useEffect(() => {
-    if (formData.birthDate) {
-      const birthDate = new Date(formData.birthDate);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
+    if (formData.birthDate && formData.birthDate.length === 10) {
+      // Parse DD/MM/AAAA format
+      const [day, month, year] = formData.birthDate.split('/');
+      if (day && month && year && day.length === 2 && month.length === 2 && year.length === 4) {
+        const birthDate = new Date(year, month - 1, day); // month is 0-indexed
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        
+        setIsMinor(age < 18);
       }
-      
-      setIsMinor(age < 18);
     }
   }, [formData.birthDate]);
 
@@ -171,7 +175,7 @@ const Register = () => {
     const name = formData.fullName.trim();
     const birthDate = formData.birthDate;
 
-    if (!cpfRaw || !name || !birthDate) {
+    if (!cpfRaw || !name || !birthDate || birthDate.length !== 10) {
       setCpfVerificationState({
         isVerified: false,
         isVerifying: false,
@@ -180,6 +184,10 @@ const Register = () => {
       });
       return;
     }
+
+    // Convert DD/MM/AAAA to YYYY-MM-DD for API
+    const [day, month, year] = birthDate.split('/');
+    const formattedBirthDate = `${year}-${month}-${day}`;
 
     // First validate CPF mathematically
     const validation = validateCPF(formData.cpf);
@@ -202,7 +210,7 @@ const Register = () => {
         body: JSON.stringify({
           cpf: cpfRaw,
           name: name,
-          birthDate: birthDate
+          birthDate: formattedBirthDate
         })
       });
 
@@ -236,8 +244,15 @@ const Register = () => {
 
   // Calculate age
   const calculateAge = (birthDate) => {
+    if (!birthDate || birthDate.length !== 10) return 0;
+    
+    const [day, month, year] = birthDate.split('/');
+    if (!day || !month || !year || day.length !== 2 || month.length !== 2 || year.length !== 4) {
+      return 0;
+    }
+    
     const today = new Date();
-    const birth = new Date(birthDate);
+    const birth = new Date(year, month - 1, day); // month is 0-indexed
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
     
@@ -286,6 +301,25 @@ const Register = () => {
     };
   }, [currentStep]); // Re-run when step changes to handle new inputs
 
+  // Handle birth date formatting
+  const handleBirthDateKeyDown = (e) => {
+    // Allow only numbers, backspace, delete, tab, escape, enter
+    if ([8, 9, 27, 46, 110, 190].indexOf(e.keyCode) !== -1 ||
+        // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+        (e.keyCode === 65 && e.ctrlKey === true) ||
+        (e.keyCode === 67 && e.ctrlKey === true) ||
+        (e.keyCode === 86 && e.ctrlKey === true) ||
+        (e.keyCode === 88 && e.ctrlKey === true) ||
+        // Allow home, end, left, right
+        (e.keyCode >= 35 && e.keyCode <= 40)) {
+      return;
+    }
+    // Ensure that it is a number and stop the keypress
+    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+      e.preventDefault();
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
     
@@ -319,9 +353,30 @@ const Register = () => {
         }));
       }
     } else {
+      let formattedValue = value;
+      
+      // Format birth date as DD/MM/AAAA
+      if (name === 'birthDate') {
+        // Remove all non-numeric characters
+        const numericValue = value.replace(/\D/g, '');
+        
+        // Format with slashes
+        if (numericValue.length >= 2) {
+          formattedValue = numericValue.substring(0, 2) + '/' + numericValue.substring(2);
+        }
+        if (numericValue.length >= 4) {
+          formattedValue = numericValue.substring(0, 2) + '/' + numericValue.substring(2, 4) + '/' + numericValue.substring(4, 8);
+        }
+        
+        // Limit to 10 characters (DD/MM/AAAA)
+        if (formattedValue.length > 10) {
+          formattedValue = formattedValue.substring(0, 10);
+        }
+      }
+      
       setFormData(prev => ({
         ...prev,
-        [name]: value
+        [name]: formattedValue
       }));
     }
   };
@@ -431,6 +486,7 @@ const Register = () => {
         },
         avatarType: formData.avatarChoice || null,
         idVerified: false,
+        kyc: false, // KYC flag - will be set to true manually by admin
         profileComplete: true,
         accountRestrictions: isAdult ? [] : ['adult_content', 'unsupervised_transfers', 'unverified_chat'],
         registeredAt: Date.now(),
@@ -485,31 +541,107 @@ const Register = () => {
     }
   };
 
-  // Upload verification documents
+  // Upload verification documents to R2
   const uploadVerificationDocuments = async (userId) => {
     try {
-      console.log('[uploadVerificationDocuments] Uploading verification documents for user:', userId);
+      console.log('[uploadVerificationDocuments] Uploading verification documents to R2 for user:', userId);
       
-      const promises = [];
       const documentURLs = {};
+      const uploadPromises = [];
       
+      // Prepare uploads for all documents
       if (formData.documents.front) {
-        const docFrontRef = storageRef(storage, `verification/${userId}/doc-front`);
-        const snapshot = await uploadBytes(docFrontRef, formData.documents.front);
-        documentURLs.front = await getDownloadURL(snapshot.ref);
+        const frontKey = `KYC/${userId}/doc-front-${Date.now()}.${formData.documents.front.name.split('.').pop()}`;
+        uploadPromises.push(
+          fetch('/api/media/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'kyc',
+              contentType: formData.documents.front.type,
+              originalName: formData.documents.front.name,
+              key: frontKey
+            })
+          }).then(async (response) => {
+            if (response.ok) {
+              const { data } = await response.json();
+              const uploadResponse = await fetch(data.uploadUrl, {
+                method: 'PUT',
+                body: formData.documents.front,
+                headers: { 'Content-Type': formData.documents.front.type }
+              });
+              
+              if (uploadResponse.ok) {
+                // For KYC documents, store only the key - no public URL
+                documentURLs.front = data.key;
+              }
+            }
+          })
+        );
       }
       
       if (formData.documents.back) {
-        const docBackRef = storageRef(storage, `verification/${userId}/doc-back`);
-        const snapshot = await uploadBytes(docBackRef, formData.documents.back);
-        documentURLs.back = await getDownloadURL(snapshot.ref);
+        const backKey = `KYC/${userId}/doc-back-${Date.now()}.${formData.documents.back.name.split('.').pop()}`;
+        uploadPromises.push(
+          fetch('/api/media/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'kyc',
+              contentType: formData.documents.back.type,
+              originalName: formData.documents.back.name,
+              key: backKey
+            })
+          }).then(async (response) => {
+            if (response.ok) {
+              const { data } = await response.json();
+              const uploadResponse = await fetch(data.uploadUrl, {
+                method: 'PUT',
+                body: formData.documents.back,
+                headers: { 'Content-Type': formData.documents.back.type }
+              });
+              
+              if (uploadResponse.ok) {
+                // For KYC documents, store only the key - no public URL
+                documentURLs.back = data.key;
+              }
+            }
+          })
+        );
       }
       
       if (formData.documents.selfie) {
-        const selfieRef = storageRef(storage, `verification/${userId}/selfie`);
-        const snapshot = await uploadBytes(selfieRef, formData.documents.selfie);
-        documentURLs.selfie = await getDownloadURL(snapshot.ref);
+        const selfieKey = `KYC/${userId}/selfie-${Date.now()}.${formData.documents.selfie.name.split('.').pop()}`;
+        uploadPromises.push(
+          fetch('/api/media/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'kyc',
+              contentType: formData.documents.selfie.type,
+              originalName: formData.documents.selfie.name,
+              key: selfieKey
+            })
+          }).then(async (response) => {
+            if (response.ok) {
+              const { data } = await response.json();
+              const uploadResponse = await fetch(data.uploadUrl, {
+                method: 'PUT',
+                body: formData.documents.selfie,
+                headers: { 'Content-Type': formData.documents.selfie.type }
+              });
+              
+              if (uploadResponse.ok) {
+                // For KYC documents, store only the key - no public URL
+                documentURLs.selfie = data.key;
+              }
+            }
+          })
+        );
       }
+      
+      // Wait for all uploads to complete
+      await Promise.all(uploadPromises);
       
       // Update user profile with document URLs
       const userRef = ref(database, `users/${userId}/verification`);
@@ -518,10 +650,10 @@ const Register = () => {
         uploadedAt: Date.now()
       });
       
-      console.log('[uploadVerificationDocuments] Verification documents uploaded successfully');
+      console.log('[uploadVerificationDocuments] Verification documents uploaded to R2 successfully');
       return documentURLs;
     } catch (error) {
-      console.error('[uploadVerificationDocuments] Error uploading verification documents:', error);
+      console.error('[uploadVerificationDocuments] Error uploading verification documents to R2:', error);
       throw error;
     }
   };
@@ -626,7 +758,7 @@ const Register = () => {
       } else if (withVerification) {
         message = 'Registro realizado com sucesso! Seus documentos estão sendo analisados e você receberá uma notificação em breve.';
       } else {
-        message = 'Registro realizado com sucesso! Você pode completar a verificação de identidade a qualquer momento em suas configurações.';
+        message = 'Registro realizado com sucesso! Você pode completar a verificação de identidade a qualquer momento em suas configurações para acessar todas as funcionalidades.';
       }
       
       console.log('[handleSubmit] Registration completed successfully');
@@ -699,12 +831,16 @@ const Register = () => {
       <div className="form-group">
         <label htmlFor="birthDate">Data de Nascimento</label>
         <div className={`input-group ${formData.birthDate ? 'has-content' : ''}`}>
+          <Calendar className="input-icon" size={20} />
           <input
-            type="date"
+            type="text"
             id="birthDate"
             name="birthDate"
             value={formData.birthDate}
             onChange={handleChange}
+            onKeyDown={handleBirthDateKeyDown}
+            placeholder="     DD/MM/AAAA"
+            maxLength="10"
             required
           />
         </div>
@@ -1229,7 +1365,9 @@ const Register = () => {
       <div className="form-footer step4-footer-section">
         <button type="button" className="btn secondary" onClick={prevStep}>Voltar</button>
         <button type="button" className="skip-verification" onClick={() => {
+          // Skip verification and proceed with registration
           setCpfVerificationState(prev => ({ ...prev, isVerified: false }));
+          // Call handleSubmit directly without verification
           handleSubmit(new Event('submit'));
         }}>
           Pular Verificação (concluir depois)

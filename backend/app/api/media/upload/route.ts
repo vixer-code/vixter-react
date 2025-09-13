@@ -29,10 +29,10 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
     }
 
     // Validate type
-    const validTypes = ['pack', 'service', 'profile', 'message'];
+    const validTypes = ['pack', 'service', 'profile', 'message', 'kyc'];
     if (!validTypes.includes(type)) {
       return new Response(
-        JSON.stringify({ error: 'Invalid type. Must be one of: pack, service, profile, message' }),
+        JSON.stringify({ error: 'Invalid type. Must be one of: pack, service, profile, message, kyc' }),
         { 
           status: 400,
           headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
@@ -40,21 +40,29 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       );
     }
 
-    // Generate unique key for the media file
-    const key = generateMediaKey(user.uid, type, itemId, originalName);
+    // Use custom key if provided, otherwise generate one
+    const { key: customKey } = body;
+    const key = customKey || generateMediaKey(user.uid, type, itemId, originalName);
 
     // Generate signed URL for upload
     const signedUrlResult = await generateUploadSignedUrl(key, contentType, expiresIn);
 
+    // For KYC documents, don't return public URL - they should be private
+    const responseData: any = {
+      uploadUrl: signedUrlResult.uploadUrl,
+      key: signedUrlResult.key,
+      expiresIn,
+    };
+
+    // Only return publicUrl for non-KYC types
+    if (type !== 'kyc') {
+      responseData.publicUrl = signedUrlResult.publicUrl;
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        data: {
-          uploadUrl: signedUrlResult.uploadUrl,
-          key: signedUrlResult.key,
-          publicUrl: signedUrlResult.publicUrl,
-          expiresIn,
-        }
+        data: responseData
       }),
       {
         status: 200,

@@ -20,6 +20,7 @@
   background: var(--vixter-bg-primary);
   color: var(--vixter-text-primary);
   overflow: hidden;
+  position: relative;
 }
 
 .chat-interface.no-conversation {

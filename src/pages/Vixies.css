@@ -775,3 +775,128 @@
     min-width: 80px;
   }
 }
+
+/* ===== KYC Restriction ===== */
+.kyc-restriction {
+  text-align: center;
+  padding: 60px 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.restriction-icon {
+  font-size: 4rem;
+  color: #ffc107;
+  margin-bottom: 20px;
+}
+
+.kyc-restriction h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.kyc-restriction p {
+  font-size: 1.1rem;
+  color: #e0e0e0;
+  line-height: 1.6;
+  margin-bottom: 30px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.restriction-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.restriction-actions .btn-primary {
+  background: var(--accent-color);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.restriction-actions .btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
+}
+
+.restriction-actions .btn-secondary {
+  background: var(--bg-secondary);
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.restriction-actions .btn-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-color);
+}
+
+.restriction-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #d0d0d0;
+  font-size: 0.9rem;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.restriction-info i {
+  color: #ffc107;
+  font-size: 1rem;
+}
+
+/* Mobile styles for KYC restriction */
+@media (max-width: 768px) {
+  .kyc-restriction {
+    padding: 40px 15px;
+  }
+
+  .restriction-icon {
+    font-size: 3rem;
+  }
+
+  .kyc-restriction h2 {
+    font-size: 1.5rem;
+  }
+
+  .kyc-restriction p {
+    font-size: 1rem;
+  }
+
+  .restriction-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .restriction-actions .btn-primary,
+  .restriction-actions .btn-secondary {
+    width: 100%;
+    max-width: 250px;
+  }
+}
