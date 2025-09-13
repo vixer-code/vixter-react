@@ -114,8 +114,8 @@ const MyProducts = () => {
   const getFilteredOrders = () => {
     // Combine service and pack orders
     const allOrders = [
-      ...serviceOrders.map(order => ({ ...order, type: 'service' })),
-      ...packOrders.map(order => ({ ...order, type: 'pack' }))
+      ...(serviceOrders || []).map(order => ({ ...order, type: 'service' })),
+      ...(packOrders || []).map(order => ({ ...order, type: 'pack' }))
     ];
 
     // Filter by product type first
@@ -191,7 +191,7 @@ const MyProducts = () => {
     );
   }
 
-  if (serviceLoading || packLoading) {
+  if (serviceLoading || packLoading || serviceOrders === undefined || packOrders === undefined) {
     return (
       <div className="my-services-container">
         <div className="loading-spinner">
@@ -218,21 +218,21 @@ const MyProducts = () => {
           onClick={() => setProductType('all')}
         >
           <i className="fas fa-list"></i>
-          Todos ({serviceOrders.length + packOrders.length})
+          Todos ({(serviceOrders || []).length + (packOrders || []).length})
         </button>
         <button 
           className={`tab-btn ${productType === 'services' ? 'active' : ''}`}
           onClick={() => setProductType('services')}
         >
           <i className="fas fa-briefcase"></i>
-          Serviços ({serviceOrders.length})
+          Serviços ({(serviceOrders || []).length})
         </button>
         <button 
           className={`tab-btn ${productType === 'packs' ? 'active' : ''}`}
           onClick={() => setProductType('packs')}
         >
           <i className="fas fa-box-open"></i>
-          Packs ({packOrders.length})
+          Packs ({(packOrders || []).length})
         </button>
       </div>
 
