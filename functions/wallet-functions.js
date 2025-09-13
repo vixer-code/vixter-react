@@ -41,6 +41,12 @@ setGlobalOptions({
   cpu: 0.5,           // 0.5 vCPU per instance (Cloud Functions v2 on Cloud Run)
   maxInstances: 2,    // Cap instances per function to avoid quota overuse
   concurrency: 1,     // Required when cpu < 1 vCPU
+  cors: {
+    origin: true,     // Allow all origins
+    credentials: true,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }
 });
 
 const db = admin.firestore();

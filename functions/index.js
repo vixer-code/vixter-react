@@ -26,6 +26,10 @@ import {
   confirmServiceDeliveryStandalone,
   autoReleaseServicePayments,
   createConversation,
+
+  // Stripe Connect
+  createStripeConnectAccount,
+  getStripeConnectStatus,
 } from './wallet-functions.js';
 
 export {
@@ -55,4 +59,8 @@ export {
   confirmServiceDeliveryStandalone,
   autoReleaseServicePayments,
   createConversation,
+
+  // Stripe Connect
+  createStripeConnectAccount,
+  getStripeConnectStatus,
 };

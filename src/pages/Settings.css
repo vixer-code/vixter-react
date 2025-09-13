@@ -12,18 +12,16 @@
 .settings-header h1 {
   font-size: 2.5rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #ffffff;
   margin-bottom: 10px;
-  background: linear-gradient(135deg, var(--accent-color), #00ffca);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .settings-header p {
   font-size: 1.1rem;
-  color: var(--text-secondary);
+  color: #e0e0e0;
   margin: 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .settings-content {
@@ -43,11 +41,12 @@
 .settings-section h2 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #ffffff;
   margin: 0 0 25px 0;
   display: flex;
   align-items: center;
   gap: 10px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .settings-grid {
@@ -67,9 +66,10 @@
 
 .setting-group label {
   font-weight: 600;
-  color: var(--text-primary);
+  color: #ffffff;
   margin-bottom: 8px;
   font-size: 14px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .setting-group input,
@@ -106,8 +106,9 @@
 
 .setting-group small {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: #d0d0d0;
   margin-top: 4px;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 /* Checkbox Groups */
@@ -123,9 +124,10 @@
   gap: 12px;
   cursor: pointer;
   font-weight: 500;
-  color: var(--text-primary);
+  color: #ffffff;
   margin: 0;
   flex: 1;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .checkbox-label input[type="checkbox"] {
