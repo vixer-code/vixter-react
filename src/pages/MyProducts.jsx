@@ -2,29 +2,42 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useServiceOrder } from '../contexts/ServiceOrderContext';
+import { usePackOrder } from '../contexts/PackOrderContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { Link } from 'react-router-dom';
 import './MyServices.css';
 
-const MyServices = () => {
+const MyProducts = () => {
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
   const { 
-    receivedOrders, 
-    loading, 
-    processing,
+    receivedOrders: serviceOrders, 
+    loading: serviceLoading, 
+    processing: serviceProcessing,
     acceptServiceOrder,
     declineServiceOrder,
     markServiceDelivered,
-    getOrderStatusInfo,
-    ORDER_STATUS
+    getOrderStatusInfo: getServiceStatusInfo,
+    ORDER_STATUS: SERVICE_ORDER_STATUS
   } = useServiceOrder();
+  const { 
+    receivedOrders: packOrders, 
+    loading: packLoading, 
+    processing: packProcessing,
+    acceptPackOrder,
+    declinePackOrder,
+    markPackDelivered,
+    getOrderStatusInfo: getPackStatusInfo,
+    ORDER_STATUS: PACK_ORDER_STATUS
+  } = usePackOrder();
   const { showNotification } = useNotification();
   
   const [activeTab, setActiveTab] = useState('pending');
+  const [productType, setProductType] = useState('all'); // 'all', 'services', 'packs'
   const [declineReason, setDeclineReason] = useState('');
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [selectedOrderType, setSelectedOrderType] = useState(null); // 'service' or 'pack'
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
 
@@ -37,62 +50,113 @@ const MyServices = () => {
     }
   }, [userProfile, showNotification]);
 
-  const handleAcceptOrder = async (orderId) => {
-    const success = await acceptServiceOrder(orderId);
+  const handleAcceptOrder = async (orderId, orderType) => {
+    let success = false;
+    if (orderType === 'service') {
+      success = await acceptServiceOrder(orderId);
+    } else if (orderType === 'pack') {
+      success = await acceptPackOrder(orderId);
+    }
+    
     if (success) {
       showNotification('Pedido aceito com sucesso!', 'success');
     }
   };
 
   const handleDeclineOrder = async () => {
-    if (!selectedOrderId) return;
+    if (!selectedOrderId || !selectedOrderType) return;
     
-    const success = await declineServiceOrder(selectedOrderId, declineReason);
+    let success = false;
+    if (selectedOrderType === 'service') {
+      success = await declineServiceOrder(selectedOrderId, declineReason);
+    } else if (selectedOrderType === 'pack') {
+      success = await declinePackOrder(selectedOrderId, declineReason);
+    }
+    
     if (success) {
       setShowDeclineModal(false);
       setDeclineReason('');
       setSelectedOrderId(null);
+      setSelectedOrderType(null);
     }
   };
 
   const handleMarkDelivered = async () => {
-    if (!selectedOrderId) return;
+    if (!selectedOrderId || !selectedOrderType) return;
     
-    const success = await markServiceDelivered(selectedOrderId, deliveryNotes);
+    let success = false;
+    if (selectedOrderType === 'service') {
+      success = await markServiceDelivered(selectedOrderId, deliveryNotes);
+    } else if (selectedOrderType === 'pack') {
+      success = await markPackDelivered(selectedOrderId, deliveryNotes);
+    }
+    
     if (success) {
       setShowDeliveryModal(false);
       setDeliveryNotes('');
       setSelectedOrderId(null);
+      setSelectedOrderType(null);
     }
   };
 
-  const openDeclineModal = (orderId) => {
+  const openDeclineModal = (orderId, orderType) => {
     setSelectedOrderId(orderId);
+    setSelectedOrderType(orderType);
     setShowDeclineModal(true);
   };
 
-  const openDeliveryModal = (orderId) => {
+  const openDeliveryModal = (orderId, orderType) => {
     setSelectedOrderId(orderId);
+    setSelectedOrderType(orderType);
     setShowDeliveryModal(true);
   };
 
   const getFilteredOrders = () => {
+    // Combine service and pack orders
+    const allOrders = [
+      ...serviceOrders.map(order => ({ ...order, type: 'service' })),
+      ...packOrders.map(order => ({ ...order, type: 'pack' }))
+    ];
+
+    // Filter by product type first
+    let filteredByType = allOrders;
+    if (productType === 'services') {
+      filteredByType = allOrders.filter(order => order.type === 'service');
+    } else if (productType === 'packs') {
+      filteredByType = allOrders.filter(order => order.type === 'pack');
+    }
+
+    // Then filter by status
     switch (activeTab) {
       case 'pending':
-        return receivedOrders.filter(order => order.status === ORDER_STATUS.PENDING_ACCEPTANCE);
+        return filteredByType.filter(order => 
+          order.status === SERVICE_ORDER_STATUS.PENDING_ACCEPTANCE || 
+          order.status === PACK_ORDER_STATUS.PENDING_ACCEPTANCE
+        );
       case 'accepted':
-        return receivedOrders.filter(order => order.status === ORDER_STATUS.ACCEPTED);
+        return filteredByType.filter(order => 
+          order.status === SERVICE_ORDER_STATUS.ACCEPTED || 
+          order.status === PACK_ORDER_STATUS.ACCEPTED
+        );
       case 'delivered':
-        return receivedOrders.filter(order => order.status === ORDER_STATUS.DELIVERED);
+        return filteredByType.filter(order => 
+          order.status === SERVICE_ORDER_STATUS.DELIVERED || 
+          order.status === PACK_ORDER_STATUS.DELIVERED
+        );
       case 'completed':
-        return receivedOrders.filter(order => 
-          order.status === ORDER_STATUS.CONFIRMED || 
-          order.status === ORDER_STATUS.AUTO_RELEASED
+        return filteredByType.filter(order => 
+          order.status === SERVICE_ORDER_STATUS.CONFIRMED || 
+          order.status === SERVICE_ORDER_STATUS.AUTO_RELEASED ||
+          order.status === PACK_ORDER_STATUS.CONFIRMED || 
+          order.status === PACK_ORDER_STATUS.AUTO_RELEASED
         );
       case 'cancelled':
-        return receivedOrders.filter(order => order.status === ORDER_STATUS.CANCELLED);
+        return filteredByType.filter(order => 
+          order.status === SERVICE_ORDER_STATUS.CANCELLED || 
+          order.status === PACK_ORDER_STATUS.CANCELLED
+        );
       default:
-        return receivedOrders;
+        return filteredByType;
     }
   };
 
@@ -109,11 +173,9 @@ const MyServices = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 0
-    }).format(amount);
+    // Convert VP to VC for display (1 VC = 1.5 VP)
+    const vcAmount = Math.round(amount / 1.5);
+    return `${vcAmount} VC`;
   };
 
   if (userProfile && userProfile.accountType !== 'provider') {
@@ -129,12 +191,12 @@ const MyServices = () => {
     );
   }
 
-  if (loading) {
+  if (serviceLoading || packLoading) {
     return (
       <div className="my-services-container">
         <div className="loading-spinner">
           <i className="fas fa-spinner fa-spin"></i>
-          <span>Carregando serviços...</span>
+          <span>Carregando produtos...</span>
         </div>
       </div>
     );
@@ -145,39 +207,77 @@ const MyServices = () => {
   return (
     <div className="my-services-container">
       <div className="my-services-header">
-        <h1>Meus Serviços</h1>
-        <p>Gerencie seus pedidos de serviços</p>
+        <h1>Meus Produtos</h1>
+        <p>Gerencie seus pedidos de serviços e packs</p>
       </div>
 
+      {/* Product Type Tabs */}
+      <div className="product-type-tabs">
+        <button 
+          className={`tab-btn ${productType === 'all' ? 'active' : ''}`}
+          onClick={() => setProductType('all')}
+        >
+          <i className="fas fa-list"></i>
+          Todos ({serviceOrders.length + packOrders.length})
+        </button>
+        <button 
+          className={`tab-btn ${productType === 'services' ? 'active' : ''}`}
+          onClick={() => setProductType('services')}
+        >
+          <i className="fas fa-briefcase"></i>
+          Serviços ({serviceOrders.length})
+        </button>
+        <button 
+          className={`tab-btn ${productType === 'packs' ? 'active' : ''}`}
+          onClick={() => setProductType('packs')}
+        >
+          <i className="fas fa-box-open"></i>
+          Packs ({packOrders.length})
+        </button>
+      </div>
+
+      {/* Status Tabs */}
       <div className="services-tabs">
         <button 
           className={`tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
           onClick={() => setActiveTab('pending')}
         >
           <i className="fas fa-clock"></i>
-          Pendentes ({receivedOrders.filter(o => o.status === ORDER_STATUS.PENDING_ACCEPTANCE).length})
+          Pendentes ({filteredOrders.filter(o => 
+            o.status === SERVICE_ORDER_STATUS.PENDING_ACCEPTANCE || 
+            o.status === PACK_ORDER_STATUS.PENDING_ACCEPTANCE
+          ).length})
         </button>
         <button 
           className={`tab-btn ${activeTab === 'accepted' ? 'active' : ''}`}
           onClick={() => setActiveTab('accepted')}
         >
           <i className="fas fa-check"></i>
-          Aceitos ({receivedOrders.filter(o => o.status === ORDER_STATUS.ACCEPTED).length})
+          Aceitos ({filteredOrders.filter(o => 
+            o.status === SERVICE_ORDER_STATUS.ACCEPTED || 
+            o.status === PACK_ORDER_STATUS.ACCEPTED
+          ).length})
         </button>
         <button 
           className={`tab-btn ${activeTab === 'delivered' ? 'active' : ''}`}
           onClick={() => setActiveTab('delivered')}
         >
           <i className="fas fa-truck"></i>
-          Entregues ({receivedOrders.filter(o => o.status === ORDER_STATUS.DELIVERED).length})
+          Entregues ({filteredOrders.filter(o => 
+            o.status === SERVICE_ORDER_STATUS.DELIVERED || 
+            o.status === PACK_ORDER_STATUS.DELIVERED
+          ).length})
         </button>
         <button 
           className={`tab-btn ${activeTab === 'completed' ? 'active' : ''}`}
           onClick={() => setActiveTab('completed')}
         >
           <i className="fas fa-check-circle"></i>
-          Concluídos ({receivedOrders.filter(o => 
-            o.status === ORDER_STATUS.CONFIRMED || o.status === ORDER_STATUS.AUTO_RELEASED
+          Concluídos ({filteredOrders.filter(o => 
+            o.status === SERVICE_ORDER_STATUS.CONFIRMED || 
+            o.status === SERVICE_ORDER_STATUS.AUTO_RELEASED ||
+            o.status === PACK_ORDER_STATUS.CONFIRMED || 
+            o.status === PACK_ORDER_STATUS.AUTO_RELEASED
           ).length})
         </button>
         <button 
@@ -185,7 +285,10 @@ const MyServices = () => {
           onClick={() => setActiveTab('cancelled')}
         >
           <i className="fas fa-times-circle"></i>
-          Cancelados ({receivedOrders.filter(o => o.status === ORDER_STATUS.CANCELLED).length})
+          Cancelados ({filteredOrders.filter(o => 
+            o.status === SERVICE_ORDER_STATUS.CANCELLED || 
+            o.status === PACK_ORDER_STATUS.CANCELLED
+          ).length})
         </button>
       </div>
 
@@ -203,17 +306,35 @@ const MyServices = () => {
           </div>
         ) : (
           filteredOrders.map((order) => {
-            const statusInfo = getOrderStatusInfo(order.status);
-            const isPending = order.status === ORDER_STATUS.PENDING_ACCEPTANCE;
-            const isAccepted = order.status === ORDER_STATUS.ACCEPTED;
-            const isDelivered = order.status === ORDER_STATUS.DELIVERED;
+            const isService = order.type === 'service';
+            const isPack = order.type === 'pack';
+            
+            const statusInfo = isService ? 
+              getServiceStatusInfo(order.status) : 
+              getPackStatusInfo(order.status);
+              
+            const isPending = order.status === SERVICE_ORDER_STATUS.PENDING_ACCEPTANCE || 
+                             order.status === PACK_ORDER_STATUS.PENDING_ACCEPTANCE;
+            const isAccepted = order.status === SERVICE_ORDER_STATUS.ACCEPTED || 
+                              order.status === PACK_ORDER_STATUS.ACCEPTED;
+            const isDelivered = order.status === SERVICE_ORDER_STATUS.DELIVERED || 
+                               order.status === PACK_ORDER_STATUS.DELIVERED;
 
             return (
               <div key={order.id} className="order-card">
                 <div className="order-header">
                   <div className="order-info">
-                    <h3>{order.metadata?.serviceName || 'Serviço'}</h3>
+                    <h3>
+                      {isService 
+                        ? (order.metadata?.serviceName || 'Serviço')
+                        : (order.packData?.title || order.metadata?.packName || 'Pack')
+                      }
+                    </h3>
                     <div className="order-meta">
+                      <span className="order-type">
+                        <i className={`fas fa-${isService ? 'briefcase' : 'box-open'}`}></i>
+                        {isService ? 'Serviço' : 'Pack'}
+                      </span>
                       <span className="order-id">#{order.id.slice(-8)}</span>
                       <span className="order-date">{formatDate(order.timestamps?.createdAt)}</span>
                     </div>
@@ -226,10 +347,25 @@ const MyServices = () => {
 
                 <div className="order-details">
                   <div className="order-client">
-                    <strong>Cliente:</strong> {order.buyerName || 'Cliente'}
+                    <strong>Cliente:</strong> 
+                    <Link 
+                      to={`/profile/${order.buyerUsername || order.buyerName?.toLowerCase().replace(/\s+/g, '') || 'usuario'}`}
+                      className="client-link"
+                    >
+                      {order.buyerName || 'Cliente'}
+                    </Link>
+                  </div>
+                  <div className="order-client-username">
+                    <strong>Username:</strong> 
+                    <Link 
+                      to={`/profile/${order.buyerUsername || order.buyerName?.toLowerCase().replace(/\s+/g, '') || 'usuario'}`}
+                      className="username-link"
+                    >
+                      @{order.buyerUsername || order.buyerName?.toLowerCase().replace(/\s+/g, '') || 'usuario'}
+                    </Link>
                   </div>
                   <div className="order-amount">
-                    <strong>Valor:</strong> {formatCurrency(order.vpAmount)} VP
+                    <strong>Valor:</strong> {formatCurrency(order.vpAmount)}
                   </div>
                   {order.additionalFeatures && order.additionalFeatures.length > 0 && (
                     <div className="order-features">
@@ -262,16 +398,16 @@ const MyServices = () => {
                     <>
                       <button 
                         className="btn-success"
-                        onClick={() => handleAcceptOrder(order.id)}
-                        disabled={processing}
+                        onClick={() => handleAcceptOrder(order.id, order.type)}
+                        disabled={serviceProcessing || packProcessing}
                       >
                         <i className="fas fa-check"></i>
                         Aceitar
                       </button>
                       <button 
                         className="btn-danger"
-                        onClick={() => openDeclineModal(order.id)}
-                        disabled={processing}
+                        onClick={() => openDeclineModal(order.id, order.type)}
+                        disabled={serviceProcessing || packProcessing}
                       >
                         <i className="fas fa-times"></i>
                         Recusar
@@ -282,8 +418,8 @@ const MyServices = () => {
                   {isAccepted && (
                     <button 
                       className="btn-primary"
-                      onClick={() => openDeliveryModal(order.id)}
-                      disabled={processing}
+                      onClick={() => openDeliveryModal(order.id, order.type)}
+                      disabled={serviceProcessing || packProcessing}
                     >
                       <i className="fas fa-truck"></i>
                       Marcar como Entregue
@@ -291,7 +427,7 @@ const MyServices = () => {
                   )}
 
                   <Link 
-                    to={`/messages?service=${order.id}`}
+                    to={`/messages?${isService ? 'service' : 'pack'}=${order.id}`}
                     className="btn-secondary"
                   >
                     <i className="fas fa-comments"></i>
@@ -319,14 +455,18 @@ const MyServices = () => {
             <div className="modal-actions">
               <button 
                 className="btn-secondary"
-                onClick={() => setShowDeclineModal(false)}
+                onClick={() => {
+                  setShowDeclineModal(false);
+                  setSelectedOrderId(null);
+                  setSelectedOrderType(null);
+                }}
               >
                 Cancelar
               </button>
               <button 
                 className="btn-danger"
                 onClick={handleDeclineOrder}
-                disabled={processing}
+                disabled={serviceProcessing || packProcessing}
               >
                 Recusar Pedido
               </button>
@@ -350,14 +490,18 @@ const MyServices = () => {
             <div className="modal-actions">
               <button 
                 className="btn-secondary"
-                onClick={() => setShowDeliveryModal(false)}
+                onClick={() => {
+                  setShowDeliveryModal(false);
+                  setSelectedOrderId(null);
+                  setSelectedOrderType(null);
+                }}
               >
                 Cancelar
               </button>
               <button 
                 className="btn-primary"
                 onClick={handleMarkDelivered}
-                disabled={processing}
+                disabled={serviceProcessing || packProcessing}
               >
                 Marcar como Entregue
               </button>
@@ -369,4 +513,4 @@ const MyServices = () => {
   );
 };
 
-export default MyServices;
+export default MyProducts;

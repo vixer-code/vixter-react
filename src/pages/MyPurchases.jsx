@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
+import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import { collection, query as fsQuery, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { Link, useNavigate } from 'react-router-dom';
@@ -16,6 +17,7 @@ const MyPurchases = () => {
   const { userProfile, getUserById } = useUser();
   const { showError, showSuccess } = useNotification();
   const { createOrGetConversation } = useEnhancedMessaging();
+  const { confirmServiceDelivery, processing } = useServiceOrder();
   const navigate = useNavigate();
   
   const [purchasedPacks, setPurchasedPacks] = useState([]);
@@ -25,6 +27,8 @@ const MyPurchases = () => {
   const [sellerData, setSellerData] = useState({});
   const [viewingPack, setViewingPack] = useState(null);
   const [viewingService, setViewingService] = useState(null);
+  const [confirmingOrder, setConfirmingOrder] = useState(null);
+  const [feedback, setFeedback] = useState('');
 
   // Redirect if not a client
   useEffect(() => {
@@ -174,6 +178,33 @@ const MyPurchases = () => {
 
   const handleCloseServiceViewer = () => {
     setViewingService(null);
+  };
+
+  // Handle service delivery confirmation
+  const handleConfirmDelivery = async () => {
+    if (!confirmingOrder) return;
+    
+    try {
+      const success = await confirmServiceDelivery(confirmingOrder.id, feedback);
+      if (success) {
+        setConfirmingOrder(null);
+        setFeedback('');
+        // Reload purchases to update status
+        await loadPurchasedServices();
+      }
+    } catch (error) {
+      console.error('Error confirming delivery:', error);
+    }
+  };
+
+  const handleOpenConfirmation = (order) => {
+    setConfirmingOrder(order);
+    setFeedback('');
+  };
+
+  const handleCloseConfirmation = () => {
+    setConfirmingOrder(null);
+    setFeedback('');
   };
 
   const getFilteredPurchases = () => {
@@ -447,6 +478,15 @@ const MyPurchases = () => {
                         <i className="fas fa-comments"></i>
                         {isCompleted ? 'Serviço Concluído' : 'Ver Serviço'}
                       </button>
+                      {purchase.status === 'DELIVERED' && (
+                        <button 
+                          className="btn-confirm"
+                          onClick={() => handleOpenConfirmation(purchase)}
+                        >
+                          <i className="fas fa-check-circle"></i>
+                          Confirmar Recebimento
+                        </button>
+                      )}
                       {isCompleted && (
                         <button 
                           className="btn-rebuy"
@@ -504,6 +544,67 @@ const MyPurchases = () => {
           service={viewingService}
           onClose={handleCloseServiceViewer}
         />
+      )}
+
+      {/* Delivery Confirmation Modal */}
+      {confirmingOrder && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Confirmar Recebimento do Serviço</h3>
+              <button 
+                className="modal-close"
+                onClick={handleCloseConfirmation}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>
+                O vendedor marcou o serviço <strong>"{confirmingOrder.metadata?.serviceName || 'Serviço'}"</strong> como entregue.
+              </p>
+              <p>
+                Confirme que você recebeu o serviço conforme combinado para liberar o pagamento ao vendedor.
+              </p>
+              <div className="form-group">
+                <label htmlFor="feedback">Feedback (opcional):</label>
+                <textarea
+                  id="feedback"
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="Deixe um comentário sobre o serviço recebido..."
+                  rows={4}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="btn-secondary"
+                onClick={handleCloseConfirmation}
+                disabled={processing}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn-confirm"
+                onClick={handleConfirmDelivery}
+                disabled={processing}
+              >
+                {processing ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i>
+                    Confirmando...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-check-circle"></i>
+                    Confirmar Recebimento
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

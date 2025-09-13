@@ -46,6 +46,7 @@ export const WalletProvider = ({ children }) => {
   const claimDailyBonusFunc = httpsCallable(functions, 'claimDailyBonus');
   const processPackSaleFunc = httpsCallable(functions, 'processPackSale');
   const processServicePurchaseFunc = httpsCallable(functions, 'processServicePurchase');
+  const createPackOrderFunc = httpsCallable(functions, 'createPackOrder');
 
   // VP packages configuration
   const VP_PACKAGES = {
@@ -283,6 +284,33 @@ export const WalletProvider = ({ children }) => {
     }
   }, [currentUser, processServicePurchaseFunc, showSuccess, showError]);
 
+  // Create pack order (requires seller approval)
+  const createPackOrder = useCallback(async (buyerId, sellerId, packId, packName, vpAmount) => {
+    if (!currentUser) return false;
+
+    try {
+      const result = await createPackOrderFunc({
+        buyerId,
+        sellerId,
+        vpAmount,
+        packId,
+        packName
+      });
+
+      if (result.data.success) {
+        showSuccess(
+          `Pedido de pack enviado! A vendedora tem 24h para aprovar.`,
+          'Pedido Enviado'
+        );
+        return { success: true, packOrderId: result.data.packOrderId };
+      }
+      return false;
+    } catch (error) {
+      handleWalletError(error, 'createPackOrder');
+      return false;
+    }
+  }, [currentUser, createPackOrderFunc, showSuccess, showError]);
+
   // Format currency
   const formatCurrency = useCallback((amount, currency = '') => {
     if (amount === null || amount === undefined) return '0';
@@ -440,6 +468,7 @@ export const WalletProvider = ({ children }) => {
     canClaimDailyBonus,
     processPackSale,
     processServicePurchase,
+    createPackOrder,
     
     // Utilities
     formatCurrency,

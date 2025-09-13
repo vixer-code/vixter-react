@@ -17,6 +17,12 @@ import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import { useMessaging } from './EnhancedMessagingContext';
 import { useWallet } from './WalletContext';
+import { 
+  sendServiceAcceptedEmail, 
+  sendServiceDeliveredEmail, 
+  sendServiceCompletedEmail, 
+  sendServiceCancelledEmail 
+} from '../services/emailService';
 
 const ServiceOrderContext = createContext({});
 
@@ -271,6 +277,20 @@ export const ServiceOrderProvider = ({ children }) => {
           console.log('Creating service conversation...');
           const conversation = await createServiceConversation(order);
           console.log('Service conversation created:', conversation);
+
+          // Send email notification to buyer
+          try {
+            const buyerData = await loadUserDataForEmail(order.buyerId);
+            const sellerData = await loadUserDataForEmail(order.sellerId);
+            
+            if (buyerData && sellerData) {
+              await sendServiceAcceptedEmail(order, sellerData, buyerData);
+              console.log('Service accepted email sent to buyer');
+            }
+          } catch (emailError) {
+            console.error('Error sending service accepted email:', emailError);
+            // Don't fail the main operation if email fails
+          }
         } else {
           console.error('Order not found for conversation creation:', orderId);
         }
@@ -287,6 +307,25 @@ export const ServiceOrderProvider = ({ children }) => {
       setProcessing(false);
     }
   }, [currentUser, apiFunc, serviceOrders, sendServiceNotification, showSuccess, showError]);
+
+  // Helper function to load user data for email notifications
+  const loadUserDataForEmail = useCallback(async (userId) => {
+    try {
+      const userRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userRef);
+      
+      if (userSnap.exists()) {
+        return {
+          id: userSnap.id,
+          ...userSnap.data()
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error loading user data for email:', error);
+      return null;
+    }
+  }, []);
 
   // Decline service order
   const declineServiceOrder = useCallback(async (orderId, reason = '') => {
@@ -351,6 +390,20 @@ export const ServiceOrderProvider = ({ children }) => {
             status: ORDER_STATUS.DELIVERED,
             deliveryNotes
           });
+
+          // Send email notification to buyer
+          try {
+            const buyerData = await loadUserDataForEmail(order.buyerId);
+            const sellerData = await loadUserDataForEmail(order.sellerId);
+            
+            if (buyerData && sellerData) {
+              await sendServiceDeliveredEmail(order, sellerData, buyerData);
+              console.log('Service delivered email sent to buyer');
+            }
+          } catch (emailError) {
+            console.error('Error sending service delivered email:', emailError);
+            // Don't fail the main operation if email fails
+          }
         }
         
         return true;
@@ -393,6 +446,20 @@ export const ServiceOrderProvider = ({ children }) => {
           
           // Mark service conversation as completed
           await markServiceConversationCompleted(orderId);
+
+          // Send email notification to seller
+          try {
+            const buyerData = await loadUserDataForEmail(order.buyerId);
+            const sellerData = await loadUserDataForEmail(order.sellerId);
+            
+            if (buyerData && sellerData) {
+              await sendServiceCompletedEmail(order, sellerData, buyerData);
+              console.log('Service completed email sent to seller');
+            }
+          } catch (emailError) {
+            console.error('Error sending service completed email:', emailError);
+            // Don't fail the main operation if email fails
+          }
         }
         
         return true;

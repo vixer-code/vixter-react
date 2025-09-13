@@ -23,6 +23,14 @@
   font-size: 1.1rem;
 }
 
+.product-type-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 .services-tabs {
   display: flex;
   gap: 10px;
@@ -98,6 +106,18 @@
   gap: 16px;
   color: #888;
   font-size: 14px;
+  flex-wrap: wrap;
+}
+
+.order-type {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #333;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .order-id {
@@ -161,6 +181,24 @@
 .order-details strong {
   color: #007bff;
   margin-right: 8px;
+}
+
+.client-link,
+.username-link {
+  color: #007bff;
+  text-decoration: none;
+  margin-left: 4px;
+  transition: color 0.3s ease;
+}
+
+.client-link:hover,
+.username-link:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+.order-client-username {
+  margin-bottom: 8px;
 }
 
 .order-features ul {

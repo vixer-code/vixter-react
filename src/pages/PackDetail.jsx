@@ -15,7 +15,7 @@ const PackDetail = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
-  const { vpBalance, processPackSale } = useWallet();
+  const { vpBalance, createPackOrder } = useWallet();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   
   const [pack, setPack] = useState(null);
@@ -143,8 +143,8 @@ const PackDetail = () => {
     }
 
     try {
-      // Process pack purchase with direct VC transfer to seller
-      const result = await processPackSale(
+      // Create pack order that requires seller approval
+      const result = await createPackOrder(
         currentUser.uid, // buyerId
         pack.providerId, // sellerId
         packId, // packId
@@ -153,15 +153,15 @@ const PackDetail = () => {
       );
       
       if (result) {
-        showSuccess(`Pack comprado com sucesso! Redirecionando...`);
+        showSuccess(`Pedido de pack enviado! A vendedora tem 24h para aprovar.`);
         setShowPurchaseModal(false);
         
-        // Redirect to pack viewing page after successful purchase
+        // Redirect to my-purchases to see the pending order
         setTimeout(() => {
-          navigate(`/pack/${packId}/view`);
+          navigate('/my-purchases');
         }, 1500);
       } else {
-        showError('Erro ao processar compra do pack. Tente novamente.');
+        showError('Erro ao processar pedido do pack. Tente novamente.');
       }
       
     } catch (error) {
