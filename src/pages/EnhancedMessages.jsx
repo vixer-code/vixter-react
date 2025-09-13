@@ -42,6 +42,7 @@ const EnhancedMessages = () => {
   
   const [showUserSelector, setShowUserSelector] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   // Handle URL parameters for conversation selection
   useEffect(() => {
@@ -77,6 +78,22 @@ const EnhancedMessages = () => {
     debugLog('selectedConversation changed', selectedConversation?.id);
   }, [selectedConversation, debugMode]);
 
+  // Handle window resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      
+      // If switching to desktop, hide mobile chat
+      if (!mobile && showMobileChat) {
+        setShowMobileChat(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [showMobileChat]);
+
   // Handle user selection
   const handleUserSelected = (conversation) => {
     debugLog('User selected, conversation', conversation);
@@ -97,13 +114,17 @@ const EnhancedMessages = () => {
   // Handle conversation selection
   const handleConversationSelect = (conversation) => {
     setSelectedConversation(conversation);
-    setShowMobileChat(true);
+    // Only show mobile chat on mobile devices
+    if (isMobile) {
+      setShowMobileChat(true);
+    }
   };
 
-  // Close mobile chat and clear selected conversation
+  // Close mobile chat and return to conversations list
   const handleCloseMobileChat = () => {
     setShowMobileChat(false);
-    setSelectedConversation(null);
+    // Don't clear selected conversation - keep it for desktop view
+    // setSelectedConversation(null);
   };
 
   // Helper functions now use utility functions from conversation.js
@@ -340,6 +361,7 @@ const EnhancedMessages = () => {
               className="mobile-back-button" 
               onClick={handleCloseMobileChat}
               title="Voltar para conversas"
+              aria-label="Voltar para lista de conversas"
             >
               ←
             </button>

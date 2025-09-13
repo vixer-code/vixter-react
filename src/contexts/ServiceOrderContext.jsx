@@ -142,8 +142,27 @@ export const ServiceOrderProvider = ({ children }) => {
       return false;
     }
 
+    // Prevent multiple simultaneous calls
+    if (processing) {
+      console.log('Service order creation already in progress, ignoring duplicate call');
+      return false;
+    }
+
     try {
       setProcessing(true);
+
+      // Check for existing pending orders for the same service by the same user
+      const existingOrder = sentOrders.find(order => 
+        order.serviceId === serviceData.id && 
+        order.buyerId === currentUser.uid && 
+        (order.status === 'PENDING_ACCEPTANCE' || order.status === 'ACCEPTED')
+      );
+
+      if (existingOrder) {
+        showWarning('Você já possui um pedido pendente para este serviço. Aguarde a resposta do provedor.');
+        setProcessing(false);
+        return false;
+      }
 
       // Calculate total price including discount
       const basePrice = serviceData.price || 0;

@@ -46,6 +46,9 @@ const generateConversationId = (userA, userB, serviceOrderId = null) => {
   const cleanUserA = sorted[0].replace(/[.#$[\]]/g, '_');
   const cleanUserB = sorted[1].replace(/[.#$[\]]/g, '_');
   const baseId = `conv_${cleanUserA}_${cleanUserB}`;
+  
+  // For service orders, always include the serviceOrderId to ensure uniqueness
+  // This prevents conflicts when multiple orders exist between the same users
   return serviceOrderId ? `${baseId}_service_${serviceOrderId}` : baseId;
 };
 
@@ -1561,6 +1564,19 @@ export const EnhancedMessagingProvider = ({ children }) => {
         serviceOrder.id
       );
       console.log('Generated conversation ID:', conversationId);
+
+      // Check if conversation already exists to prevent duplicates
+      const existingConversation = serviceConversations.find(conv => 
+        conv.id === conversationId || 
+        (conv.serviceOrderId === serviceOrder.id && 
+         conv.participants[serviceOrder.buyerId] && 
+         conv.participants[serviceOrder.sellerId])
+      );
+
+      if (existingConversation) {
+        console.log('Service conversation already exists:', existingConversation.id);
+        return existingConversation;
+      }
 
       const conversationData = {
         id: conversationId,

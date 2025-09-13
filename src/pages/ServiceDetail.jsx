@@ -146,6 +146,12 @@ const ServiceDetail = () => {
   };
 
   const handleConfirmPurchase = async () => {
+    // Prevent multiple simultaneous calls
+    if (processing) {
+      console.log('Purchase already in progress, ignoring duplicate call');
+      return;
+    }
+
     if (!agreeToRefundPolicy) {
       showWarning('Você deve concordar com a política de reembolso para continuar');
       return;

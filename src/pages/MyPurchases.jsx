@@ -199,20 +199,33 @@ const MyPurchases = () => {
 
   const getStatusInfo = (status) => {
     switch (status) {
-      case 'COMPLETED':
-        return { label: 'Comprado', color: 'success', icon: 'check-circle' };
-      case 'PENDING':
-        return { label: 'Pendente', color: 'warning', icon: 'clock' };
+      // Status para Serviços
+      case 'PENDING_ACCEPTANCE':
+        return { label: 'Aguardando Aceitação', color: 'warning', icon: 'clock' };
       case 'ACCEPTED':
-        return { label: 'Em Andamento', color: 'info', icon: 'play-circle' };
+        return { label: 'Aceito - Em Andamento', color: 'info', icon: 'play-circle' };
       case 'DELIVERED':
         return { label: 'Entregue', color: 'primary', icon: 'truck' };
       case 'CONFIRMED':
         return { label: 'Finalizado', color: 'success', icon: 'check-circle' };
+      case 'AUTO_RELEASED':
+        return { label: 'Liberado Automaticamente', color: 'success', icon: 'check-circle' };
       case 'CANCELLED':
         return { label: 'Cancelado', color: 'danger', icon: 'times-circle' };
+      case 'DISPUTED':
+        return { label: 'Em Disputa', color: 'warning', icon: 'exclamation-triangle' };
+      
+      // Status para Packs (compra direta)
+      case 'COMPLETED':
+        return { label: 'Comprado', color: 'success', icon: 'check-circle' };
+      case 'PENDING':
+        return { label: 'Pendente', color: 'warning', icon: 'clock' };
+      
+      // Status de banimento
       case 'BANNED':
         return { label: 'Banido', color: 'danger', icon: 'ban' };
+      
+      // Status desconhecido
       default:
         return { label: status || 'Desconhecido', color: 'secondary', icon: 'question' };
     }
@@ -401,13 +414,6 @@ const MyPurchases = () => {
                         <i className="fas fa-comments"></i>
                         Ver Serviço
                       </button>
-                      <button 
-                        className="btn-secondary"
-                        onClick={() => handleViewServiceMedia(purchase.service)}
-                      >
-                        <i className="fas fa-images"></i>
-                        Ver Mídias
-                      </button>
                       {(purchase.status === 'CONFIRMED' || purchase.status === 'COMPLETED') && (
                         <button 
                           className="btn-rebuy"
@@ -422,11 +428,11 @@ const MyPurchases = () => {
                   
                   {isPack && (
                     <button 
-                      className="btn-secondary"
+                      className="btn-primary"
                       onClick={() => handleViewPackContent(purchase.pack)}
                     >
-                      <i className="fas fa-eye"></i>
-                      Ver Conteúdo
+                      <i className="fas fa-images"></i>
+                      Ver Mídias
                     </button>
                   )}
 

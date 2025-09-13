@@ -421,7 +421,7 @@ const PackDetail = () => {
               </button>
               <button 
                 className="btn-primary"
-                onClick={() => setShowRefundPolicyModal(true)}
+                onClick={handleConfirmPurchase}
               >
                 <i className="fas fa-check"></i>
                 Confirmar Compra
