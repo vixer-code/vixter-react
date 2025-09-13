@@ -191,7 +191,7 @@ const MyProducts = () => {
     );
   }
 
-  if (serviceLoading || packLoading || serviceOrders === undefined || packOrders === undefined) {
+  if (serviceLoading || packLoading) {
     return (
       <div className="my-services-container">
         <div className="loading-spinner">
