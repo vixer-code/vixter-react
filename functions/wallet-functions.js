@@ -2,6 +2,7 @@
 // VERSÃO LIMPA - Removido watermarking, mantido Stripe e funcionalidades essenciais
 
 /* eslint-env node */
+/* global process */
 import { onCall, HttpsError, onRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2";
 import admin from "firebase-admin";
@@ -20,7 +21,6 @@ const STRIPE_SECRET = defineSecret('STRIPE_SECRET_KEY');
 const STRIPE_WEBHOOK_SECRET = defineSecret('STRIPE_WEBHOOK_SECRET');
 
 // Environment configuration
-/* eslint-disable no-undef */
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const STRIPE_API_VERSION = '2023-10-16';
 
@@ -33,7 +33,6 @@ const getEnvironmentInfo = () => {
     timestamp: new Date().toISOString()
   };
 };
-/* eslint-enable no-undef */
 
 // Configurações globais
 setGlobalOptions({
@@ -41,12 +40,6 @@ setGlobalOptions({
   cpu: 0.5,           // 0.5 vCPU per instance (Cloud Functions v2 on Cloud Run)
   maxInstances: 2,    // Cap instances per function to avoid quota overuse
   concurrency: 1,     // Required when cpu < 1 vCPU
-  cors: {
-    origin: true,     // Allow all origins
-    credentials: true,
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }
 });
 
 const db = admin.firestore();

@@ -4,32 +4,18 @@ import {
   initializeWallet,
   createStripeSession,
   stripeWebhook,
-  processPackSale,
-  processServicePurchase,
-  claimDailyBonus,
-  autoReleaseServices,
 
   // Unified API for CRUD operations
   api,
 
-  // Post interactions (mantidos separados)
-  togglePostLike,
-  addComment,
-  
-  // Media watermarking - REMOVED (no longer needed without Firebase Storage)
-
-  // Messaging and Service Orders
-  createServiceOrderStandalone,
-  acceptServiceOrderStandalone,
-  declineServiceOrderStandalone,
-  markServiceDeliveredStandalone,
-  confirmServiceDeliveryStandalone,
-  autoReleaseServicePayments,
-  createConversation,
-
   // Stripe Connect
   createStripeConnectAccount,
   getStripeConnectStatus,
+  processVCWithdrawal,
+  calculateWithdrawalFee,
+  checkStripeConnectConfig,
+  checkEnvironment,
+  sendPurchaseConfirmationEmail,
 } from './wallet-functions.js';
 
 export {
@@ -37,30 +23,16 @@ export {
   initializeWallet,
   createStripeSession,
   stripeWebhook,
-  processPackSale,
-  processServicePurchase,
-  claimDailyBonus,
-  autoReleaseServices,
 
   // Unified API (substitui createPack, updatePack, deletePack, createService, updateService, deleteService, createPost, updatePost, deletePost)
   api,
 
-  // Post interactions (mantidos separados pois não são CRUD básico)
-  togglePostLike,
-  addComment,
-  
-  // Media watermarking - REMOVED (no longer needed without Firebase Storage)
-
-  // Messaging and Service Orders
-  createServiceOrderStandalone,
-  acceptServiceOrderStandalone,
-  declineServiceOrderStandalone,
-  markServiceDeliveredStandalone,
-  confirmServiceDeliveryStandalone,
-  autoReleaseServicePayments,
-  createConversation,
-
   // Stripe Connect
   createStripeConnectAccount,
   getStripeConnectStatus,
+  processVCWithdrawal,
+  calculateWithdrawalFee,
+  checkStripeConnectConfig,
+  checkEnvironment,
+  sendPurchaseConfirmationEmail,
 };
