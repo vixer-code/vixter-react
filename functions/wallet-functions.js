@@ -371,7 +371,7 @@ async function updateServiceInternal(serviceId, payload) {
 async function createPackInternal(userId, payload) {
   const { 
     title, description, category, subcategory, packType, price, discount, currency,
-    features, tags, licenseOptions, coverImage, sampleImages, sampleVideos, packContent
+    features, tags, licenseOptions, disableWatermark, coverImage, sampleImages, sampleVideos, packContent
   } = payload;
 
   if (!title || !description || !price || price <= 0) {
@@ -381,7 +381,8 @@ async function createPackInternal(userId, payload) {
   const packRef = db.collection('packs').doc();
   const packData = {
     id: packRef.id,
-    creatorId: userId,
+    authorId: userId, // Changed from creatorId to authorId to match frontend query
+    creatorId: userId, // Keep both for backward compatibility
     title: title.trim(),
     description: description.trim(),
     category,
@@ -393,6 +394,7 @@ async function createPackInternal(userId, payload) {
     features: Array.isArray(features) ? features : [],
     tags: Array.isArray(tags) ? tags : [],
     licenseOptions: Array.isArray(licenseOptions) ? licenseOptions : [],
+    disableWatermark: Boolean(disableWatermark),
     status: 'active',
     isActive: true,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -999,7 +1001,7 @@ export const createStripeConnectAccount = onCall({
       settings: {
         payouts: {
           schedule: {
-            interval: 'daily', // Pagamentos diários
+            interval: 'monthly', // Pagamentos mensais
           },
         },
       },
@@ -1114,8 +1116,8 @@ export const processVCWithdrawal = onCall({
     throw new HttpsError("invalid-argument", "Confirmação de taxa obrigatória");
   }
 
-  // Taxa percentual configurável (5% por padrão)
-  const WITHDRAWAL_FEE_PERCENTAGE = 0.05; // 5%
+  // Taxa percentual configurável (8% para novos payouts)
+  const WITHDRAWAL_FEE_PERCENTAGE = 0.08; // 8%
   const MINIMUM_WITHDRAWAL = 50; // 50 VC mínimo
 
   if (amount < MINIMUM_WITHDRAWAL) {
@@ -1212,7 +1214,7 @@ export const processVCWithdrawal = onCall({
       timestamp: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    logger.info(`✅ VC withdrawal processed for user ${userId}: ${amount} VC -> ${brlAmount} BRL (fee: ${feeAmount} VC)`);
+    logger.info(`✅ VC withdrawal processed for user ${userId}: ${amount} VC -> ${brlAmount} BRL (8% fee: ${feeAmount} VC)`);
 
     return {
       success: true,
@@ -1248,7 +1250,7 @@ export const calculateWithdrawalFee = onCall({
     throw new HttpsError("invalid-argument", "Valor inválido");
   }
 
-  const WITHDRAWAL_FEE_PERCENTAGE = 0.05; // 5%
+  const WITHDRAWAL_FEE_PERCENTAGE = 0.08; // 8%
   const MINIMUM_WITHDRAWAL = 50;
 
   if (amount < MINIMUM_WITHDRAWAL) {

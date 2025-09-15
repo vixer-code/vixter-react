@@ -192,7 +192,7 @@ export const PacksProviderR2 = ({ children }) => {
   }, []);
 
   // Create new pack with R2 media
-  const createPack = useCallback(async (packData) => {
+  const createPack = useCallback(async (packData, onProgress = null) => {
     if (!currentUser) {
       showError('Você precisa estar logado para criar um pack.', 'Erro');
       return false;
@@ -211,6 +211,16 @@ export const PacksProviderR2 = ({ children }) => {
       if (result.data.success) {
         const packId = result.data.packId;
         
+        // Calculate total files to upload
+        const totalFiles = [
+          packData.coverImageFile,
+          ...(packData.sampleImageFiles || []),
+          ...(packData.sampleVideoFiles || []),
+          ...(packData.packFiles || [])
+        ].filter(Boolean).length;
+
+        let uploadedFiles = 0;
+        
         // Upload media files to R2
         const mediaData = {
           coverImage: null,
@@ -221,6 +231,7 @@ export const PacksProviderR2 = ({ children }) => {
 
         // Upload cover image
         if (packData.coverImageFile) {
+          onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), 'Enviando imagem de capa...');
           const coverResult = await uploadPackMedia(packData.coverImageFile, packId);
           mediaData.coverImage = {
             key: coverResult.key,
@@ -228,11 +239,14 @@ export const PacksProviderR2 = ({ children }) => {
             size: coverResult.size,
             type: coverResult.type
           };
+          uploadedFiles++;
         }
 
         // Upload sample images
         if (packData.sampleImageFiles && packData.sampleImageFiles.length > 0) {
-          for (const file of packData.sampleImageFiles) {
+          for (let i = 0; i < packData.sampleImageFiles.length; i++) {
+            const file = packData.sampleImageFiles[i];
+            onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), `Enviando amostra ${i + 1}/${packData.sampleImageFiles.length}...`);
             const sampleResult = await uploadPackMedia(file, packId);
             mediaData.sampleImages.push({
               key: sampleResult.key,
@@ -240,12 +254,15 @@ export const PacksProviderR2 = ({ children }) => {
               size: sampleResult.size,
               type: sampleResult.type
             });
+            uploadedFiles++;
           }
         }
 
         // Upload sample videos
         if (packData.sampleVideoFiles && packData.sampleVideoFiles.length > 0) {
-          for (const file of packData.sampleVideoFiles) {
+          for (let i = 0; i < packData.sampleVideoFiles.length; i++) {
+            const file = packData.sampleVideoFiles[i];
+            onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), `Enviando vídeo de amostra ${i + 1}/${packData.sampleVideoFiles.length}...`);
             const sampleResult = await uploadPackMedia(file, packId);
             mediaData.sampleVideos.push({
               key: sampleResult.key,
@@ -253,12 +270,15 @@ export const PacksProviderR2 = ({ children }) => {
               size: sampleResult.size,
               type: sampleResult.type
             });
+            uploadedFiles++;
           }
         }
 
         // Upload pack content files
         if (packData.packFiles && packData.packFiles.length > 0) {
-          for (const file of packData.packFiles) {
+          for (let i = 0; i < packData.packFiles.length; i++) {
+            const file = packData.packFiles[i];
+            onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), `Enviando arquivo do pack ${i + 1}/${packData.packFiles.length}...`);
             const contentResult = await uploadPackMedia(file, packId);
             mediaData.packContent.push({
               key: contentResult.key,
@@ -267,8 +287,12 @@ export const PacksProviderR2 = ({ children }) => {
               type: contentResult.type,
               name: contentResult.name
             });
+            uploadedFiles++;
           }
         }
+
+        // Final progress update
+        onProgress && onProgress(100, 'Finalizando...');
 
         // Update pack with media data
         await apiFunc({

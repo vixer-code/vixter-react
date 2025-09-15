@@ -60,3 +60,124 @@
   font-size: 0.9rem;
   word-break: break-word;
 }
+
+/* Upload Progress Styles */
+.upload-progress-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.upload-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.upload-progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #00FFCA, #00D4AA);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.upload-status {
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Preview Section Styles */
+.preview-section-description {
+  color: #B8B8B8;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+  font-style: italic;
+}
+
+.preview-pack-content-section {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 20px;
+}
+
+.preview-pack-files {
+  margin-top: 15px;
+}
+
+.preview-pack-files h4 {
+  color: #00FFCA;
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.field-description {
+  color: #B8B8B8;
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+  display: block;
+  font-style: italic;
+}
+
+/* Checkbox Styles */
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin: 0;
+  width: 18px;
+  height: 18px;
+  accent-color: #00FFCA;
+}
+
+.checkbox-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+/* Watermark Info Styles */
+.preview-watermark-info {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 20px;
+}
+
+.watermark-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.watermark-status i {
+  color: #00FFCA;
+  font-size: 1.2rem;
+}
+
+.watermark-status span {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.watermark-description {
+  color: #B8B8B8;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}

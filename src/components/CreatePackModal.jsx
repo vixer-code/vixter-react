@@ -36,7 +36,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   const { userProfile } = useUser();
   const { createPack, updatePack } = usePacks();
   const { showSuccess, showError } = useNotification();
-  const { uploadPackMedia, uploading, uploadProgress } = useR2Media();
+  const { uploadPackMedia, uploading } = useR2Media();
   
   // Check account type
   const accountType = userProfile?.accountType || 'client';
@@ -46,6 +46,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState('');
 
   const featuresInputRef = useRef(null);
   const tagsInputRef = useRef(null);
@@ -69,6 +71,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     features: [],
     tags: [],
     licenseOptions: [], // ['personal','commercial','editorial','resale'] when packType == 'nao-download'
+    disableWatermark: false, // Option to disable watermark for download content
     coverImage: null, // URL when editing
     sampleImages: [], // existing URLs when editing
     sampleVideos: [], // existing URLs when editing
@@ -98,6 +101,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         features: editingPack.features || [],
         tags: editingPack.tags || [],
         licenseOptions: editingPack.licenseOptions || [],
+        disableWatermark: editingPack.disableWatermark || false,
         coverImage: editingPack.coverImage || null,
         sampleImages: editingPack.sampleImages || [],
         sampleVideos: editingPack.sampleVideos || [],
@@ -132,6 +136,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       features: [],
       tags: [],
       licenseOptions: [],
+      disableWatermark: false,
       coverImage: null,
       sampleImages: [],
       sampleVideos: [],
@@ -340,6 +345,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
 
     setIsSubmitting(true);
     setUploadingFiles(true);
+    setUploadProgress(0);
+    setUploadStatus('Preparando...');
 
     try {
       // Prepare pack data with file references for R2 upload
@@ -353,6 +360,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         discount: parseInt(formData.discount || 0, 10) || 0,
         features: formData.features,
         tags: formData.tags,
+        disableWatermark: formData.disableWatermark,
         createdAt: Date.now(),
         isActive: true,
         // Pass files for R2 upload
@@ -372,13 +380,16 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       if (editingPack) {
         await updatePack(packId, {}); // ensure pack exists; fields will be updated below
       } else {
-        const result = await createPack(packDataWithFiles);
+        const result = await createPack(packDataWithFiles, (progress, status) => {
+          setUploadProgress(progress);
+          setUploadStatus(status);
+        });
         if (!result || !result.success || !result.packId) throw new Error('Falha ao criar pack');
         packId = result.packId;
       }
 
-      // Pack creation/update is handled by the context with R2 upload
-      showSuccess(editingPack ? 'Pack atualizado com sucesso! As mídias estão sendo processadas em segundo plano.' : 'Pack criado com sucesso! As mídias estão sendo processadas em segundo plano.');
+      // Single success message after everything is complete
+      showSuccess(editingPack ? 'Pack atualizado com sucesso!' : 'Pack criado com sucesso!');
 
       onPackCreated && onPackCreated({ id: packId, ...packDataWithFiles });
       clearForm();
@@ -389,6 +400,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     } finally {
       setIsSubmitting(false);
       setUploadingFiles(false);
+      setUploadProgress(0);
+      setUploadStatus('');
     }
   };
 
@@ -554,6 +567,25 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                       </label>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {formData.packType === 'download' && (
+                <div className="form-group">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.disableWatermark}
+                      onChange={e => handleInputChange('disableWatermark', e.target.checked)}
+                    />
+                    <span className="checkbox-text">
+                      Desabilitar watermark no conteúdo de download
+                    </span>
+                  </label>
+                  <small className="field-description">
+                    Por padrão, todo conteúdo de download terá watermark único por usuário. 
+                    Marque esta opção apenas se desejar disponibilizar o conteúdo sem watermark.
+                  </small>
                 </div>
               )}
             </div>
@@ -759,7 +791,13 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
               </div>
 
               <div className="form-group">
-                <label>Arquivos do Pack (imagens/vídeos)</label>
+                <label>Conteúdo do Pack (imagens/vídeos)</label>
+                <small className="field-description">
+                  {formData.packType === 'download' 
+                    ? `Este conteúdo será disponibilizado para download após a compra ${formData.disableWatermark ? '(sem watermark)' : '(com URL assinada e watermark único)'}.`
+                    : 'Este conteúdo será disponibilizado para visualização após a compra (com watermark único por usuário, não para download).'
+                  }
+                </small>
                 <div className="image-upload-container">
                   <input
                     type="file"
@@ -771,7 +809,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                   />
                   <label htmlFor="pack-files-input" className="upload-placeholder">
                     <i className="upload-icon">+</i>
-                    <span>Adicionar Arquivos do Pack</span>
+                    <span>Adicionar Conteúdo do Pack</span>
                   </label>
                 </div>
 
@@ -898,11 +936,15 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                   </div>
                 )}
 
-                {(sampleImagePreviews.length > 0 || sampleVideoPreviews.length > 0) && (
+                {/* Conteúdo de Amostra (Vitrine) */}
+                {(sampleImagePreviews.length > 0 || sampleVideoPreviews.length > 0 || formData.sampleImages.length > 0 || formData.sampleVideos.length > 0) && (
                   <div className="preview-media-section">
+                    <h3>Conteúdo de Amostra (Vitrine)</h3>
+                    <p className="preview-section-description">Este conteúdo será exibido na vitrine para os clientes visualizarem antes da compra.</p>
+                    
                     {sampleImagePreviews.length > 0 && (
                       <div className="preview-photos">
-                        <h4>Fotos ({sampleImagePreviews.length})</h4>
+                        <h4>Fotos de Amostra ({sampleImagePreviews.length})</h4>
                         <div className="showcase-grid">
                           {sampleImagePreviews.map((src, idx) => (
                             <div key={idx} className="showcase-item">
@@ -912,9 +954,23 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                         </div>
                       </div>
                     )}
+                    
+                    {formData.sampleImages.length > 0 && (
+                      <div className="preview-photos">
+                        <h4>Fotos de Amostra Existentes ({formData.sampleImages.length})</h4>
+                        <div className="showcase-grid">
+                          {formData.sampleImages.map((url, idx) => (
+                            <div key={`existing-si-${idx}`} className="showcase-item">
+                              <img src={url} alt={`Amostra ${idx + 1}`} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     {sampleVideoPreviews.length > 0 && (
                       <div className="preview-videos">
-                        <h4>Vídeos ({sampleVideoPreviews.length})</h4>
+                        <h4>Vídeos de Amostra ({sampleVideoPreviews.length})</h4>
                         <div className="showcase-grid">
                           {sampleVideoPreviews.map((src, idx) => (
                             <div key={idx} className="showcase-item video-showcase">
@@ -922,6 +978,75 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                                 <source src={src} type="video/mp4" />
                                 Seu navegador não suporta vídeo.
                               </video>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {formData.sampleVideos.length > 0 && (
+                      <div className="preview-videos">
+                        <h4>Vídeos de Amostra Existentes ({formData.sampleVideos.length})</h4>
+                        <div className="showcase-grid">
+                          {formData.sampleVideos.map((url, idx) => (
+                            <div key={`existing-sv-${idx}`} className="showcase-item video-showcase">
+                              <video controls>
+                                <source src={url} type="video/mp4" />
+                                Seu navegador não suporta vídeo.
+                              </video>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Conteúdo do Pack (Visualização) */}
+                {(packFilePreviews.length > 0 || formData.packContent.length > 0) && (
+                  <div className="preview-pack-content-section">
+                    <h3>Conteúdo do Pack (Visualização)</h3>
+                    <p className="preview-section-description">
+                      {formData.packType === 'download' 
+                        ? `Este é o conteúdo que será disponibilizado para download após a compra ${formData.disableWatermark ? '(sem watermark)' : '(com URL assinada e watermark único)'}.`
+                        : 'Este é o conteúdo que será disponibilizado para visualização após a compra (com watermark único por usuário, não para download).'
+                      }
+                    </p>
+                    
+                    {packFilePreviews.length > 0 && (
+                      <div className="preview-pack-files">
+                        <h4>Conteúdo do Pack ({packFilePreviews.length})</h4>
+                        <div className="showcase-grid">
+                          {packFilePreviews.map((prev, idx) => (
+                            <div key={idx} className="showcase-item">
+                              {prev.isVideo ? (
+                                <video controls>
+                                  <source src={prev.src} type="video/mp4" />
+                                  Seu navegador não suporta vídeo.
+                                </video>
+                              ) : (
+                                <img src={prev.src} alt={`Arquivo ${idx + 1}`} />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {formData.packContent.length > 0 && (
+                      <div className="preview-pack-files">
+                        <h4>Conteúdo do Pack Existentes ({formData.packContent.length})</h4>
+                        <div className="showcase-grid">
+                          {formData.packContent.map((url, idx) => (
+                            <div key={`existing-pc-${idx}`} className="showcase-item">
+                              {/\.(mp4|mov|webm|ogg)(\?|$)/i.test(url) ? (
+                                <video controls>
+                                  <source src={url} type="video/mp4" />
+                                  Seu navegador não suporta vídeo.
+                                </video>
+                              ) : (
+                                <img src={url} alt={`Arquivo ${idx + 1}`} />
+                              )}
                             </div>
                           ))}
                         </div>
@@ -946,6 +1071,32 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                     </div>
                   </div>
                 )}
+
+                {/* Watermark Information */}
+                <div className="preview-watermark-info">
+                  <h3>Proteção de Conteúdo</h3>
+                  <div className="watermark-status">
+                    <i className={`fas fa-${formData.packType === 'download' && formData.disableWatermark ? 'unlock' : 'shield-alt'}`}></i>
+                    <span>
+                      {formData.packType === 'download' 
+                        ? (formData.disableWatermark 
+                            ? 'Conteúdo sem watermark (download direto)'
+                            : 'Conteúdo com watermark único por usuário (download seguro)'
+                          )
+                        : 'Conteúdo com watermark único por usuário (visualização segura)'
+                      }
+                    </span>
+                  </div>
+                  <p className="watermark-description">
+                    {formData.packType === 'download' 
+                      ? (formData.disableWatermark 
+                          ? 'O conteúdo será disponibilizado para download sem proteção adicional.'
+                          : 'Cada usuário receberá uma URL assinada única com watermark personalizado para download.'
+                        )
+                      : 'O conteúdo será visualizado dentro do site com watermark único por usuário para proteção.'
+                    }
+                  </p>
+                </div>
 
                 {formData.tags.length > 0 && (
                   <div className="preview-tags">
@@ -985,7 +1136,25 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                 disabled={isSubmitting || uploading}
                 onClick={handleSubmit}
               >
-                {isSubmitting ? (editingPack ? 'Atualizando...' : 'Criando...') : uploading ? `Fazendo upload... ${Math.round(uploadProgress)}%` : (editingPack ? 'Atualizar Pack' : 'Criar Pack')}
+                {isSubmitting ? (
+                  uploadingFiles ? (
+                    <div className="upload-progress-container">
+                      <div className="upload-progress-bar">
+                        <div 
+                          className="upload-progress-fill" 
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                      <span className="upload-status">
+                        {uploadStatus || `Fazendo upload... ${uploadProgress}%`}
+                      </span>
+                    </div>
+                  ) : (
+                    editingPack ? 'Atualizando...' : 'Criando...'
+                  )
+                ) : (
+                  editingPack ? 'Atualizar Pack' : 'Criar Pack'
+                )}
               </button>
             )}
           </div>
