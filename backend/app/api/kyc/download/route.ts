@@ -1,15 +1,15 @@
 import { NextRequest } from 'next/server';
 import { requireAuth, getCorsHeaders, handleCors, AuthenticatedUser } from '@/lib/auth';
-import { deleteMedia, deletePackContent, deleteKycDocument } from '@/lib/r2';
+import { generateKycDownloadSignedUrl } from '@/lib/r2';
 
 export async function OPTIONS(request: NextRequest) {
   return handleCors(request);
 }
 
-export const DELETE = requireAuth(async (request: NextRequest, user: AuthenticatedUser) => {
+export const POST = requireAuth(async (request: NextRequest, user: AuthenticatedUser) => {
   try {
     const body = await request.json();
-    const { key, type } = body;
+    const { key, expiresIn = 3600 } = body;
 
     // Validate required fields
     if (!key) {
@@ -22,32 +22,27 @@ export const DELETE = requireAuth(async (request: NextRequest, user: Authenticat
       );
     }
 
-    // Delete media from appropriate bucket based on type
-    let success;
-    if (type === 'pack-content') {
-      success = await deletePackContent(key);
-    } else if (type === 'kyc') {
-      success = await deleteKycDocument(key);
-    } else {
-      success = await deleteMedia(key);
-    }
-
-    if (!success) {
+    // Validate that the key belongs to the requesting user
+    if (!key.startsWith(`KYC/${user.uid}/`)) {
       return new Response(
-        JSON.stringify({ error: 'Failed to delete media' }),
+        JSON.stringify({ error: 'Unauthorized: You can only access your own KYC documents' }),
         { 
-          status: 500,
-          headers: { 'Content-Type': 'application/json', ...getCorsHeaders() }
+          status: 403,
+          headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
         }
       );
     }
+
+    // Generate signed URL for downloading KYC document
+    const downloadUrl = await generateKycDownloadSignedUrl(key, expiresIn);
 
     return new Response(
       JSON.stringify({
         success: true,
         data: {
+          downloadUrl,
           key,
-          deleted: true,
+          expiresIn,
         }
       }),
       {
@@ -56,9 +51,9 @@ export const DELETE = requireAuth(async (request: NextRequest, user: Authenticat
       }
     );
   } catch (error) {
-    console.error('Error deleting media:', error);
+    console.error('Error generating KYC download URL:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to delete media' }),
+      JSON.stringify({ error: 'Failed to generate download URL' }),
       { 
         status: 500,
         headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }

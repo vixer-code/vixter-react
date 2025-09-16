@@ -12,6 +12,8 @@ const r2Client = new S3Client({
 });
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
+const KYC_BUCKET_NAME = process.env.R2_KYC_BUCKET_NAME || 'vixter-kyc-private';
+const PACK_CONTENT_BUCKET_NAME = process.env.R2_PACK_CONTENT_BUCKET_NAME || 'vixter-pack-content-private';
 
 export interface MediaUploadResult {
   url: string;
@@ -38,16 +40,20 @@ export interface WatermarkUrlResult {
 export async function generateUploadSignedUrl(
   key: string,
   contentType: string,
-  expiresIn: number = 3600 // 1 hour
+  expiresIn: number = 3600, // 1 hour
+  bucketName?: string
 ): Promise<SignedUrlResult> {
+  const bucket = bucketName || BUCKET_NAME;
   const command = new PutObjectCommand({
-    Bucket: BUCKET_NAME,
+    Bucket: bucket,
     Key: key,
     ContentType: contentType,
   });
 
   const uploadUrl = await getSignedUrl(r2Client, command, { expiresIn });
-  const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+  
+  // Only generate public URL for public bucket
+  const publicUrl = bucket === BUCKET_NAME ? `${process.env.R2_PUBLIC_URL}/${key}` : '';
 
   return {
     uploadUrl,
@@ -61,10 +67,12 @@ export async function generateUploadSignedUrl(
  */
 export async function generateDownloadSignedUrl(
   key: string,
-  expiresIn: number = 3600 // 1 hour
+  expiresIn: number = 3600, // 1 hour
+  bucketName?: string
 ): Promise<string> {
+  const bucket = bucketName || BUCKET_NAME;
   const command = new GetObjectCommand({
-    Bucket: BUCKET_NAME,
+    Bucket: bucket,
     Key: key,
   });
 
@@ -79,11 +87,11 @@ export async function generateWatermarkUrl(
   userId: string,
   expiresIn: number = 3600 // 1 hour
 ): Promise<WatermarkUrlResult> {
-  // For now, we'll use the original key
+  // For now, we'll use the original key from pack content bucket
   // In the future, this could generate a watermarked version
   const watermarkedKey = `watermarked/${userId}/${originalKey}`;
   
-  const downloadUrl = await generateDownloadSignedUrl(watermarkedKey, expiresIn);
+  const downloadUrl = await generatePackContentDownloadSignedUrl(watermarkedKey, expiresIn);
   
   return {
     downloadUrl,
@@ -95,10 +103,11 @@ export async function generateWatermarkUrl(
 /**
  * Delete media from R2
  */
-export async function deleteMedia(key: string): Promise<boolean> {
+export async function deleteMedia(key: string, bucketName?: string): Promise<boolean> {
   try {
+    const bucket = bucketName || BUCKET_NAME;
     const command = new DeleteObjectCommand({
-      Bucket: BUCKET_NAME,
+      Bucket: bucket,
       Key: key,
     });
 
@@ -143,6 +152,103 @@ export function generatePackContentKey(
   const extension = originalName ? originalName.split('.').pop() : 'bin';
   
   return `packs/${packId}/content/${userId}/${timestamp}_${randomId}.${extension}`;
+}
+
+/**
+ * Generate a key for pack content with user/pack organization
+ * Structure: pack-content/{userId}/{packId}/{filename}
+ */
+export function generatePackContentKeyOrganized(
+  userId: string,
+  packId: string,
+  originalName?: string
+): string {
+  const timestamp = Date.now();
+  const randomId = Math.random().toString(36).substring(2, 15);
+  const extension = originalName ? originalName.split('.').pop() : 'bin';
+  const filename = originalName ? 
+    `${timestamp}_${randomId}_${originalName.replace(/[^a-zA-Z0-9.-]/g, '_')}` : 
+    `${timestamp}_${randomId}.${extension}`;
+  
+  return `pack-content/${userId}/${packId}/${filename}`;
+}
+
+/**
+ * Generate a signed URL for uploading KYC documents to private bucket
+ */
+export async function generateKycUploadSignedUrl(
+  key: string,
+  contentType: string,
+  expiresIn: number = 3600 // 1 hour
+): Promise<Omit<SignedUrlResult, 'publicUrl'>> {
+  const command = new PutObjectCommand({
+    Bucket: KYC_BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+  });
+
+  const uploadUrl = await getSignedUrl(r2Client, command, { expiresIn });
+
+  return {
+    uploadUrl,
+    key,
+  };
+}
+
+/**
+ * Generate a signed URL for downloading KYC documents from private bucket
+ */
+export async function generateKycDownloadSignedUrl(
+  key: string,
+  expiresIn: number = 3600 // 1 hour
+): Promise<string> {
+  return await generateDownloadSignedUrl(key, expiresIn, KYC_BUCKET_NAME);
+}
+
+/**
+ * Delete KYC document from private bucket
+ */
+export async function deleteKycDocument(key: string): Promise<boolean> {
+  return await deleteMedia(key, KYC_BUCKET_NAME);
+}
+
+/**
+ * Generate a signed URL for uploading pack content to private bucket
+ */
+export async function generatePackContentUploadSignedUrl(
+  key: string,
+  contentType: string,
+  expiresIn: number = 3600 // 1 hour
+): Promise<Omit<SignedUrlResult, 'publicUrl'>> {
+  const command = new PutObjectCommand({
+    Bucket: PACK_CONTENT_BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+  });
+
+  const uploadUrl = await getSignedUrl(r2Client, command, { expiresIn });
+
+  return {
+    uploadUrl,
+    key,
+  };
+}
+
+/**
+ * Generate a signed URL for downloading pack content from private bucket
+ */
+export async function generatePackContentDownloadSignedUrl(
+  key: string,
+  expiresIn: number = 3600 // 1 hour
+): Promise<string> {
+  return await generateDownloadSignedUrl(key, expiresIn, PACK_CONTENT_BUCKET_NAME);
+}
+
+/**
+ * Delete pack content from private bucket
+ */
+export async function deletePackContent(key: string): Promise<boolean> {
+  return await deleteMedia(key, PACK_CONTENT_BUCKET_NAME);
 }
 
 export default r2Client;

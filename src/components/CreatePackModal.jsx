@@ -7,23 +7,17 @@ import useR2Media from '../hooks/useR2Media';
 import './CreatePackModal.css';
 
 const subcategoriesMap = {
-  fotografia: ['Retratos', 'Paisagens', 'Eventos', 'Moda', 'Esportes', 'Outro Fotografia'],
-  videografia: ['Casamentos', 'Eventos', 'Promoções', 'Documentários', 'Animações', 'Outro Videografia'],
-  mista: ['Fotografia + Vídeo', 'Multimídia', 'Design', 'Arte Digital', 'Outro Mídia Mista'],
-  stock: ['Imagens', 'Vídeos', 'Vetores', 'Ícones', 'Outro Stock'],
-  modelos: ['Templates de Fotos', 'Templates de Vídeos', 'Layouts', 'Mockups', 'Outro Modelos'],
-  predefinicoes: ['LUTs', 'Filtros', 'Presets', 'Perfis', 'Outro Predefinições'],
-  outro: ['Outro']
+  'conteudo-artistico': ['Ilustração', 'Desenho', 'Modelagem 3D', 'Templates', 'Outros'],
+  'conteudo-educativo': ['Tutoriais', 'Cursos', 'Questionários', 'Outros'],
+  'conteudo-18': ['Fetiche', 'Conteúdo Acompanhada', 'Cosplay', 'BBW (Big Beautiful Woman)', 'Outros'],
+  'outros': []
 };
 
 const packCategories = [
-  { value: 'fotografia', label: 'Fotografia' },
-  { value: 'videografia', label: 'Videografia' },
-  { value: 'mista', label: 'Mídia Mista' },
-  { value: 'stock', label: 'Recursos de Stock' },
-  { value: 'modelos', label: 'Modelos' },
-  { value: 'predefinicoes', label: 'Predefinições/LUTs' },
-  { value: 'outro', label: 'Outro' }
+  { value: 'conteudo-artistico', label: 'Conteúdo artístico' },
+  { value: 'conteudo-educativo', label: 'Conteúdo educativo' },
+  { value: 'conteudo-18', label: 'Conteúdo +18 (Vixies)' },
+  { value: 'outros', label: 'Outros' }
 ];
 
 const packTypeOptions = [
@@ -171,7 +165,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   const addTag = () => {
     const el = tagsInputRef.current;
     if (el && el.value.trim()) {
-      setFormData(prev => ({ ...prev, tags: [...prev.tags, el.value.trim()] }));
+      const newTag = el.value.trim();
+      setFormData(prev => ({ ...prev, tags: [...prev.tags, newTag] }));
       el.value = '';
     }
   };

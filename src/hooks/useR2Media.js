@@ -96,10 +96,29 @@ export const useR2Media = () => {
   }, []);
 
   /**
-   * Upload de mídia de pack
+   * Deletar mídia de conteúdo de pack (bucket privado)
+   */
+  const deletePackContentMedia = useCallback(async (key) => {
+    try {
+      return await mediaService.deleteMedia(key, 'pack-content');
+    } catch (error) {
+      console.error('Error deleting pack content media:', error);
+      throw error;
+    }
+  }, []);
+
+  /**
+   * Upload de mídia de pack (capa e amostras - bucket público)
    */
   const uploadPackMedia = useCallback(async (file, packId) => {
     return await uploadFile(file, 'pack', packId);
+  }, [uploadFile]);
+
+  /**
+   * Upload de conteúdo de pack (bucket privado)
+   */
+  const uploadPackContentMedia = useCallback(async (file, packId) => {
+    return await uploadFile(file, 'pack-content', packId);
   }, [uploadFile]);
 
   /**
@@ -131,7 +150,9 @@ export const useR2Media = () => {
     getDownloadUrl,
     generateSecurePackContentUrl,
     deleteMedia,
+    deletePackContentMedia,
     uploadPackMedia,
+    uploadPackContentMedia,
     uploadServiceMedia,
     getPackContentUrl,
     getServiceMediaUrl,

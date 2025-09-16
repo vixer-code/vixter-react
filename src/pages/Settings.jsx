@@ -66,6 +66,7 @@ const Settings = () => {
     }
   });
   const [kycLoading, setKycLoading] = useState(false);
+  const [submittedKycDocuments, setSubmittedKycDocuments] = useState(null);
   const [cpfVerificationState, setCpfVerificationState] = useState({
     isVerified: false,
     isVerifying: false,
@@ -80,11 +81,12 @@ const Settings = () => {
   useEffect(() => {
     if (currentUser) {
       loadUserSettings();
+      loadSubmittedKycDocuments();
       if (isProvider) {
         checkStripeStatus();
       }
     }
-  }, [currentUser, isProvider]);
+  }, [currentUser, isProvider, userProfile]);
 
   const loadUserSettings = async () => {
     try {
@@ -577,6 +579,38 @@ const Settings = () => {
       showNotification('Erro ao enviar documentos. Tente novamente.', 'error');
     } finally {
       setKycLoading(false);
+    }
+  };
+
+  // View KYC document (for user's own documents)
+  const viewKycDocument = async (documentKey) => {
+    try {
+      const response = await fetch('/api/kyc/download', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await currentUser.getIdToken()}`
+        },
+        body: JSON.stringify({ key: documentKey })
+      });
+
+      if (response.ok) {
+        const { data } = await response.json();
+        window.open(data.downloadUrl, '_blank');
+      } else {
+        const error = await response.json();
+        showNotification(error.error || 'Erro ao visualizar documento', 'error');
+      }
+    } catch (error) {
+      console.error('Error viewing KYC document:', error);
+      showNotification('Erro ao visualizar documento', 'error');
+    }
+  };
+
+  // Load submitted KYC documents
+  const loadSubmittedKycDocuments = () => {
+    if (userProfile?.verification?.documents) {
+      setSubmittedKycDocuments(userProfile.verification.documents);
     }
   };
 

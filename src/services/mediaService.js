@@ -134,7 +134,7 @@ class MediaService {
     try {
       const token = await this.getAuthToken();
       
-      const response = await fetch(`${this.backendUrl}/api/media/pack-content`, {
+      const response = await fetch(`${this.backendUrl}/api/pack-content/download`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -146,7 +146,6 @@ class MediaService {
           packId,
           orderId,
           expiresIn: 7200, // 2 hours
-          singleUse: true, // URL expires after first use
         }),
       });
 
@@ -173,7 +172,7 @@ class MediaService {
   /**
    * Delete media from R2
    */
-  async deleteMedia(key) {
+  async deleteMedia(key, type = null) {
     try {
       const token = await this.getAuthToken();
       
@@ -183,7 +182,7 @@ class MediaService {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ key }),
+        body: JSON.stringify({ key, type }),
       });
 
       if (!response.ok) {

@@ -31,7 +31,7 @@ export const usePacksR2 = () => {
 export const PacksProviderR2 = ({ children }) => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showInfo } = useNotification();
-  const { uploadPackMedia, getPackContentUrl, deleteMedia } = useR2Media();
+  const { uploadPackMedia, uploadPackContentMedia, getPackContentUrl, deleteMedia, deletePackContentMedia } = useR2Media();
   
   // State
   const [packs, setPacks] = useState([]);
@@ -274,15 +274,15 @@ export const PacksProviderR2 = ({ children }) => {
           }
         }
 
-        // Upload pack content files
+        // Upload pack content files (to private bucket)
         if (packData.packFiles && packData.packFiles.length > 0) {
           for (let i = 0; i < packData.packFiles.length; i++) {
             const file = packData.packFiles[i];
             onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), `Enviando arquivo do pack ${i + 1}/${packData.packFiles.length}...`);
-            const contentResult = await uploadPackMedia(file, packId);
+            const contentResult = await uploadPackContentMedia(file, packId);
             mediaData.packContent.push({
               key: contentResult.key,
-              publicUrl: contentResult.publicUrl,
+              // No publicUrl for pack content (private bucket)
               size: contentResult.size,
               type: contentResult.type,
               name: contentResult.name
@@ -427,12 +427,12 @@ export const PacksProviderR2 = ({ children }) => {
           }
         }
 
-        // Delete pack content
+        // Delete pack content (from private bucket)
         if (pack.packContent && Array.isArray(pack.packContent)) {
           for (const content of pack.packContent) {
             if (content.key) {
               console.log('Deleting R2 pack content with key:', content.key);
-              await deleteMedia(content.key);
+              await deletePackContentMedia(content.key);
             }
           }
         }
