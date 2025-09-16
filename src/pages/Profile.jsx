@@ -40,9 +40,10 @@ const Profile = () => {
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const { createOrGetConversation } = useEnhancedMessaging();
   
-  // Calculate isOwner early to avoid hoisting issues
-  const isOwner = !username || currentUser?.uid === profile?.id;
   const [profile, setProfile] = useState(null);
+  
+  // Calculate isOwner after profile is declared
+  const isOwner = !username || currentUser?.uid === profile?.id;
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
