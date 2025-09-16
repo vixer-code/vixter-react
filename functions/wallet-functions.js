@@ -484,21 +484,50 @@ export const updatePack = onCall(async (request) => {
 // === UTILITY FUNCTIONS ===
 
 // Delete pack internal function
-async function deletePackInternal(packId) {
+async function deletePackInternal(packId, userId) {
+  logger.info(`🗑️ Starting pack deletion for ID: ${packId} by user: ${userId}`);
+  
   if (!packId) {
+    logger.error("❌ Pack ID is required");
     throw new HttpsError("invalid-argument", "Pack ID is required");
   }
 
+  if (!userId) {
+    logger.error("❌ User ID is required");
+    throw new HttpsError("invalid-argument", "User ID is required");
+  }
+
   const packRef = db.collection('packs').doc(packId);
+  logger.info(`📄 Getting pack document: ${packId}`);
+  
   const packDoc = await packRef.get();
   
   if (!packDoc.exists) {
+    logger.error(`❌ Pack not found: ${packId}`);
     throw new HttpsError("not-found", "Pack not found");
   }
 
+  const packData = packDoc.data();
+  logger.info(`📋 Pack found, data:`, packData);
+  
+  // Check if user owns the pack
+  if (packData.authorId !== userId && packData.creatorId !== userId) {
+    logger.error(`❌ User ${userId} does not own pack ${packId}. Pack owner: ${packData.authorId || packData.creatorId}`);
+    throw new HttpsError("permission-denied", "You can only delete your own packs");
+  }
+  
   // Delete the pack document
+  logger.info(`🗑️ Deleting pack document: ${packId}`);
   await packRef.delete();
-  logger.info(`✅ Pack deleted: ${packId}`);
+  
+  // Verify deletion
+  const verifyDoc = await packRef.get();
+  if (verifyDoc.exists) {
+    logger.error(`❌ Pack still exists after deletion: ${packId}`);
+    throw new HttpsError("internal", "Failed to delete pack");
+  }
+  
+  logger.info(`✅ Pack successfully deleted: ${packId}`);
   
   return { success: true };
 }
@@ -544,7 +573,7 @@ export const api = onCall(async (request) => {
             result = await updatePackInternal(payload.packId, payload.updates);
             break;
           case 'delete':
-            result = await deletePackInternal(payload.packId);
+            result = await deletePackInternal(payload.packId, userId);
             break;
           default:
             throw new HttpsError('invalid-argument', `Unknown action: ${action}`);

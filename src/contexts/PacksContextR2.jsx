@@ -461,25 +461,29 @@ export const PacksProviderR2 = ({ children }) => {
 
       // Delete from Firestore using Firebase Functions
       onProgress && onProgress(80, 'Removendo dados do banco de dados...');
-      console.log('Deleting pack from Firestore via Functions...');
-      console.log('Pack ID:', packId, 'Type:', typeof packId);
+      console.log('🗑️ Deleting pack from Firestore via Functions...');
+      console.log('📋 Pack ID:', packId, 'Type:', typeof packId);
       
       if (!packId || typeof packId !== 'string') {
         throw new Error('Invalid pack ID');
       }
       
+      console.log('📞 Calling Firebase Function with payload:', { packId });
       const result = await apiFunc({
         resource: 'pack',
         action: 'delete',
         payload: { packId }
       });
       
+      console.log('📥 Firebase Function response:', result);
+      
       if (!result.data.success) {
+        console.error('❌ Firebase Function failed:', result.data.error);
         throw new Error(result.data.error || 'Failed to delete pack');
       }
       
       onProgress && onProgress(90, 'Finalizando exclusão...');
-      console.log('Pack deleted from Firestore successfully');
+      console.log('✅ Pack deleted from Firestore successfully');
 
       onProgress && onProgress(100, 'Exclusão concluída!');
       showSuccess('Pack deletado com sucesso!', 'Pack Deletado');
@@ -517,6 +521,40 @@ export const PacksProviderR2 = ({ children }) => {
       setUserPacks([]);
     }
   }, [currentUser, loadUserPacks]);
+
+  // Real-time listener for user's packs
+  useEffect(() => {
+    if (!currentUser) {
+      setUserPacks([]);
+      return;
+    }
+
+    const packsRef = collection(db, 'packs');
+    const q = query(
+      packsRef,
+      where('authorId', '==', currentUser.uid),
+      where('isActive', '==', true),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const packsData = [];
+      
+      snapshot.forEach((doc) => {
+        packsData.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+
+      setUserPacks(packsData);
+    }, (error) => {
+      console.error('Error listening to user packs:', error);
+      showError('Erro ao carregar packs em tempo real.', 'Erro');
+    });
+
+    return () => unsubscribe();
+  }, [currentUser, showError]);
 
   // Format pack price
   const formatPackPrice = useCallback((price) => {
