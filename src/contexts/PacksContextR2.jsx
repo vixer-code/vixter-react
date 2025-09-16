@@ -81,11 +81,10 @@ export const PacksProviderR2 = ({ children }) => {
         });
       });
 
-      if (userId) {
-        return packsData; // Return for other users
-      } else {
-        setUserPacks(packsData); // Set for current user
-      }
+      // Always update userPacks state for Profile component to use
+      setUserPacks(packsData);
+      
+      return packsData;
       
     } catch (error) {
       console.error('Error loading user packs:', error);

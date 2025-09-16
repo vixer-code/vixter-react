@@ -198,6 +198,15 @@ const Profile = () => {
         setProfile(userProfile);
         setLoading(false);
       } else if (username) {
+        // Check if this is the current user's own profile by username
+        if (userProfile && userProfile.username === username) {
+          // This is the current user's own profile accessed via username
+          setProfile(userProfile);
+          loadFollowers(userProfile.id);
+          setLoading(false);
+          return;
+        }
+        
         // Other user profile from Firestore by username
         try {
           const userData = await getUserByUsername(username);
@@ -272,14 +281,14 @@ const Profile = () => {
     }
   }, [isClient, currentUser, loadPurchasedPacks]);
 
-  // Load followers, posts, and reviews for current user profile
+  // Load followers, posts, and reviews for any profile
   useEffect(() => {
-    if (profile && isOwner && currentUser) {
+    if (profile) {
       loadFollowers(profile.id);
       loadPosts(profile.id);
       loadReviews(profile.id);
     }
-  }, [profile, isOwner, currentUser]);
+  }, [profile]);
 
   // Handle URL hash navigation
   useEffect(() => {
