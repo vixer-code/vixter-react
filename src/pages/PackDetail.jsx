@@ -5,7 +5,8 @@ import { useUser } from '../contexts/UserContext';
 import { useWallet } from '../contexts/WalletContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { ref as rtdbRef, get as rtdbGet } from 'firebase/database';
+import { db, database } from '../../config/firebase';
 import CachedImage from '../components/CachedImage';
 import R2MediaViewer from '../components/R2MediaViewer';
 import './PackDetail.css';
@@ -65,19 +66,63 @@ const PackDetail = () => {
         
         // Load provider information
         let providerData = {};
-        if (packData.providerId) {
+        console.log('Pack data providerId:', packData.providerId);
+        console.log('Pack data authorId:', packData.authorId);
+        
+        // Try both providerId and authorId as fallback
+        const providerId = packData.providerId || packData.authorId;
+        
+        if (providerId) {
           try {
-            const providerRef = doc(db, 'users', packData.providerId);
-            const providerSnap = await getDoc(providerRef);
-            if (providerSnap.exists()) {
-              providerData = {
-                id: providerSnap.id,
-                ...providerSnap.data()
-              };
+            console.log('Loading provider data for ID:', providerId);
+            
+            // Try Firestore first
+            try {
+              const providerRef = doc(db, 'users', providerId);
+              const providerSnap = await getDoc(providerRef);
+              if (providerSnap.exists()) {
+                providerData = {
+                  id: providerSnap.id,
+                  ...providerSnap.data()
+                };
+                console.log('Provider data loaded from Firestore:', providerData);
+              } else {
+                console.warn('Provider document not found in Firestore, trying Realtime Database');
+                
+                // Try Realtime Database as fallback
+                const rtdbUserRef = rtdbRef(database, `users/${providerId}`);
+                const rtdbSnap = await rtdbGet(rtdbUserRef);
+                if (rtdbSnap.exists()) {
+                  providerData = {
+                    id: providerId,
+                    ...rtdbSnap.val()
+                  };
+                  console.log('Provider data loaded from Realtime Database:', providerData);
+                } else {
+                  console.warn('Provider not found in either database');
+                }
+              }
+            } catch (firestoreError) {
+              console.warn('Firestore error, trying Realtime Database:', firestoreError);
+              
+              // Try Realtime Database as fallback
+              const rtdbUserRef = rtdbRef(database, `users/${providerId}`);
+              const rtdbSnap = await rtdbGet(rtdbUserRef);
+              if (rtdbSnap.exists()) {
+                providerData = {
+                  id: providerId,
+                  ...rtdbSnap.val()
+                };
+                console.log('Provider data loaded from Realtime Database (fallback):', providerData);
+              } else {
+                console.warn('Provider not found in either database');
+              }
             }
           } catch (providerError) {
-            console.warn('Error loading provider data:', providerError);
+            console.error('Error loading provider data:', providerError);
           }
+        } else {
+          console.warn('No providerId or authorId found in pack data');
         }
         
         const packWithProvider = {
@@ -327,37 +372,6 @@ const PackDetail = () => {
             <p>{pack.description}</p>
           </div>
 
-          {/* Pack Content Showcase */}
-          {pack.content && Array.isArray(pack.content) && pack.content.length > 0 && (
-            <div className="pack-content-showcase">
-              <h3>Conteúdo do Pack</h3>
-              <div className="content-preview-grid">
-                {pack.content.map((item, index) => (
-                  <div key={index} className="content-preview-item">
-                    <div className="content-preview-icon">
-                      <i className="fas fa-file"></i>
-                    </div>
-                    <div className="content-preview-name">{item.name || `Item ${index + 1}`}</div>
-                    <div className="content-preview-type">{item.type || 'Arquivo'}</div>
-                    {item.description && (
-                      <div className="content-preview-description">{item.description}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Debug info for content */}
-          {process.env.NODE_ENV === 'development' && (
-            <div style={{ background: '#333', padding: '10px', margin: '10px 0', borderRadius: '5px', fontSize: '12px' }}>
-              <strong>Debug - Pack Content:</strong><br/>
-              Content exists: {pack.content ? 'Yes' : 'No'}<br/>
-              Content type: {typeof pack.content}<br/>
-              Content length: {pack.content ? pack.content.length : 'N/A'}<br/>
-              Content data: {JSON.stringify(pack.content, null, 2)}
-            </div>
-          )}
 
           {/* Sample Images */}
           {pack.sampleImages && pack.sampleImages.length > 0 && (
