@@ -672,7 +672,15 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                   />
                   <label htmlFor="cover-image" className="upload-placeholder">
                     {coverImagePreview ? (
-                      <img src={coverImagePreview} alt="Cover preview" className="image-preview" />
+                      <SmartMediaViewer 
+                        mediaData={coverImagePreview}
+                        type="pack"
+                        watermarked={false}
+                        isOwner={true}
+                        fallbackSrc="/images/default-pack.jpg"
+                        alt="Cover preview"
+                        className="image-preview"
+                      />
                     ) : (
                       <>
                         <i className="upload-icon">+</i>
@@ -712,10 +720,16 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                 {(sampleImagePreviews.length > 0 || formData.sampleImages.length > 0) && (
                   <div className="showcase-grid">
                     {formData.sampleImages.map((imageData, idx) => {
-                      const imageUrl = typeof imageData === 'string' ? imageData : imageData?.publicUrl || imageData;
                       return (
                         <div key={`si-url-${idx}`} className="showcase-item">
-                          <img src={imageUrl} alt={`Amostra ${idx + 1}`} />
+                          <SmartMediaViewer 
+                            mediaData={imageData}
+                            type="pack"
+                            watermarked={false}
+                            isOwner={true}
+                            fallbackSrc="/images/default-pack.jpg"
+                            alt={`Amostra ${idx + 1}`}
+                          />
                           <button className="remove-media" onClick={() => removeSampleImage(idx)}>×</button>
                         </div>
                       );
@@ -732,13 +746,16 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                 {(sampleVideoPreviews.length > 0 || formData.sampleVideos.length > 0) && (
                   <div className="showcase-grid">
                     {formData.sampleVideos.map((videoData, idx) => {
-                      const videoUrl = typeof videoData === 'string' ? videoData : videoData?.publicUrl || videoData;
                       return (
                         <div key={`sv-url-${idx}`} className="showcase-item video-showcase">
-                          <video controls>
-                            <source src={videoUrl} type="video/mp4" />
-                            Seu navegador não suporta vídeo.
-                          </video>
+                          <SmartMediaViewer 
+                            mediaData={videoData}
+                            type="pack"
+                            watermarked={false}
+                            isOwner={true}
+                            fallbackSrc="/images/default-pack.jpg"
+                            alt={`Amostra ${idx + 1}`}
+                          />
                           <button className="remove-media" onClick={() => removeSampleVideo(idx)}>×</button>
                         </div>
                       );
@@ -783,17 +800,16 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                 {formData.packContent && formData.packContent.length > 0 && (
                   <div className="showcase-grid">
                     {formData.packContent.map((contentData, idx) => {
-                      const contentUrl = typeof contentData === 'string' ? contentData : contentData?.publicUrl || contentData;
                       return (
                         <div key={`pc-url-${idx}`} className="showcase-item">
-                          {/\.(mp4|mov|webm|ogg)(\?|$)/i.test(contentUrl) ? (
-                            <video controls>
-                              <source src={contentUrl} type="video/mp4" />
-                              Seu navegador não suporta vídeo.
-                            </video>
-                          ) : (
-                            <img src={contentUrl} alt={`Arquivo ${idx + 1}`} />
-                          )}
+                          <SmartMediaViewer 
+                            mediaData={contentData}
+                            type="pack"
+                            watermarked={false}
+                            isOwner={true}
+                            fallbackSrc="/images/default-pack.jpg"
+                            alt={`Arquivo ${idx + 1}`}
+                          />
                           <button className="remove-media" onClick={() => removeExistingPackContent(idx)}>×</button>
                         </div>
                       );
@@ -919,10 +935,16 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                         <h4>Fotos de Amostra Existentes ({formData.sampleImages.length})</h4>
                         <div className="showcase-grid">
                           {formData.sampleImages.map((imageData, idx) => {
-                            const imageUrl = typeof imageData === 'string' ? imageData : imageData?.publicUrl || imageData;
                             return (
                               <div key={`existing-si-${idx}`} className="showcase-item">
-                                <img src={imageUrl} alt={`Amostra ${idx + 1}`} />
+                                <SmartMediaViewer 
+                                  mediaData={imageData}
+                                  type="pack"
+                                  watermarked={false}
+                                  isOwner={true}
+                                  fallbackSrc="/images/default-pack.jpg"
+                                  alt={`Amostra ${idx + 1}`}
+                                />
                               </div>
                             );
                           })}
@@ -951,13 +973,16 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                         <h4>Vídeos de Amostra Existentes ({formData.sampleVideos.length})</h4>
                         <div className="showcase-grid">
                           {formData.sampleVideos.map((videoData, idx) => {
-                            const videoUrl = typeof videoData === 'string' ? videoData : videoData?.publicUrl || videoData;
                             return (
                               <div key={`existing-sv-${idx}`} className="showcase-item video-showcase">
-                                <video controls>
-                                  <source src={videoUrl} type="video/mp4" />
-                                  Seu navegador não suporta vídeo.
-                                </video>
+                                <SmartMediaViewer 
+                                  mediaData={videoData}
+                                  type="pack"
+                                  watermarked={false}
+                                  isOwner={true}
+                                  fallbackSrc="/images/default-pack.jpg"
+                                  alt={`Amostra ${idx + 1}`}
+                                />
                               </div>
                             );
                           })}
@@ -1003,17 +1028,16 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                         <h4>Conteúdo do Pack Existentes ({formData.packContent.length})</h4>
                         <div className="showcase-grid">
                           {formData.packContent.map((contentData, idx) => {
-                            const contentUrl = typeof contentData === 'string' ? contentData : contentData?.publicUrl || contentData;
                             return (
                               <div key={`existing-pc-${idx}`} className="showcase-item">
-                                {/\.(mp4|mov|webm|ogg)(\?|$)/i.test(contentUrl) ? (
-                                  <video controls>
-                                    <source src={contentUrl} type="video/mp4" />
-                                    Seu navegador não suporta vídeo.
-                                  </video>
-                                ) : (
-                                  <img src={contentUrl} alt={`Arquivo ${idx + 1}`} />
-                                )}
+                                <SmartMediaViewer 
+                                  mediaData={contentData}
+                                  type="pack"
+                                  watermarked={false}
+                                  isOwner={true}
+                                  fallbackSrc="/images/default-pack.jpg"
+                                  alt={`Arquivo ${idx + 1}`}
+                                />
                               </div>
                             );
                           })}
