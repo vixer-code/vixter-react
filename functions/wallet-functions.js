@@ -482,7 +482,26 @@ export const updatePack = onCall(async (request) => {
 });
 
 // === UTILITY FUNCTIONS ===
-// (Utility functions can be added here as needed)
+
+// Delete pack internal function
+async function deletePackInternal(packId) {
+  if (!packId) {
+    throw new HttpsError("invalid-argument", "Pack ID is required");
+  }
+
+  const packRef = db.collection('packs').doc(packId);
+  const packDoc = await packRef.get();
+  
+  if (!packDoc.exists) {
+    throw new HttpsError("not-found", "Pack not found");
+  }
+
+  // Delete the pack document
+  await packRef.delete();
+  logger.info(`✅ Pack deleted: ${packId}`);
+  
+  return { success: true };
+}
 
 // === UNIFIED API FUNCTION ===
 
@@ -525,8 +544,7 @@ export const api = onCall(async (request) => {
             result = await updatePackInternal(payload.packId, payload.updates);
             break;
           case 'delete':
-            // Add delete logic if needed
-            result = { success: true };
+            result = await deletePackInternal(payload.packId);
             break;
           default:
             throw new HttpsError('invalid-argument', `Unknown action: ${action}`);

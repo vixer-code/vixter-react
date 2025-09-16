@@ -361,7 +361,7 @@ export const PacksProviderR2 = ({ children }) => {
   }, [currentUser, apiFunc, showSuccess, showError, loadUserPacks]);
 
   // Delete pack
-  const deletePack = useCallback(async (packId) => {
+  const deletePack = useCallback(async (packId, onProgress = null) => {
     if (!currentUser) {
       showError('Você precisa estar logado para deletar um pack.', 'Erro');
       return false;
@@ -369,6 +369,7 @@ export const PacksProviderR2 = ({ children }) => {
 
     try {
       console.log('Starting pack deletion for ID:', packId);
+      onProgress && onProgress(0, 'Iniciando exclusão do pack...');
       
       // Get pack data to delete media files
       const pack = await getPackById(packId);
@@ -388,6 +389,8 @@ export const PacksProviderR2 = ({ children }) => {
 
       // Delete R2 media files first
       try {
+        onProgress && onProgress(10, 'Deletando imagem de capa...');
+        
         // Delete cover image - handle both R2 key object and URL string
         if (pack.coverImage?.key) {
           console.log('Deleting R2 cover image with key:', pack.coverImage.key);
@@ -409,31 +412,46 @@ export const PacksProviderR2 = ({ children }) => {
 
         // Delete sample images
         if (pack.sampleImages && Array.isArray(pack.sampleImages)) {
-          for (const image of pack.sampleImages) {
+          onProgress && onProgress(20, 'Deletando imagens de amostra...');
+          for (let i = 0; i < pack.sampleImages.length; i++) {
+            const image = pack.sampleImages[i];
             if (image.key) {
               console.log('Deleting R2 sample image with key:', image.key);
               await deleteMedia(image.key);
             }
+            // Update progress for each image
+            const progress = 20 + Math.round((i + 1) / pack.sampleImages.length * 20);
+            onProgress && onProgress(progress, `Deletando imagens de amostra... (${i + 1}/${pack.sampleImages.length})`);
           }
         }
 
         // Delete sample videos
         if (pack.sampleVideos && Array.isArray(pack.sampleVideos)) {
-          for (const video of pack.sampleVideos) {
+          onProgress && onProgress(40, 'Deletando vídeos de amostra...');
+          for (let i = 0; i < pack.sampleVideos.length; i++) {
+            const video = pack.sampleVideos[i];
             if (video.key) {
               console.log('Deleting R2 sample video with key:', video.key);
               await deleteMedia(video.key);
             }
+            // Update progress for each video
+            const progress = 40 + Math.round((i + 1) / pack.sampleVideos.length * 20);
+            onProgress && onProgress(progress, `Deletando vídeos de amostra... (${i + 1}/${pack.sampleVideos.length})`);
           }
         }
 
         // Delete pack content (from private bucket)
         if (pack.packContent && Array.isArray(pack.packContent)) {
-          for (const content of pack.packContent) {
+          onProgress && onProgress(60, 'Deletando conteúdo do pack...');
+          for (let i = 0; i < pack.packContent.length; i++) {
+            const content = pack.packContent[i];
             if (content.key) {
               console.log('Deleting R2 pack content with key:', content.key);
               await deletePackContentMedia(content.key);
             }
+            // Update progress for each content
+            const progress = 60 + Math.round((i + 1) / pack.packContent.length * 20);
+            onProgress && onProgress(progress, `Deletando conteúdo do pack... (${i + 1}/${pack.packContent.length})`);
           }
         }
       } catch (mediaError) {
@@ -442,6 +460,7 @@ export const PacksProviderR2 = ({ children }) => {
       }
 
       // Delete from Firestore using Firebase Functions
+      onProgress && onProgress(80, 'Removendo dados do banco de dados...');
       console.log('Deleting pack from Firestore via Functions...');
       console.log('Pack ID:', packId, 'Type:', typeof packId);
       
@@ -459,9 +478,14 @@ export const PacksProviderR2 = ({ children }) => {
         throw new Error(result.data.error || 'Failed to delete pack');
       }
       
+      onProgress && onProgress(90, 'Finalizando exclusão...');
       console.log('Pack deleted from Firestore successfully');
 
+      onProgress && onProgress(100, 'Exclusão concluída!');
       showSuccess('Pack deletado com sucesso!', 'Pack Deletado');
+      
+      // Small delay to ensure Firestore has processed the deletion
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Reload user packs
       await loadUserPacks();

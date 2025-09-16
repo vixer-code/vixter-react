@@ -64,6 +64,8 @@ const Profile = () => {
   const [serviceToDelete, setServiceToDelete] = useState(null);
   const [showDeletePackModal, setShowDeletePackModal] = useState(false);
   const [packToDelete, setPackToDelete] = useState(null);
+  const [deleteProgress, setDeleteProgress] = useState(0);
+  const [deleteStatus, setDeleteStatus] = useState('');
 
   // Direct Firebase Storage uploads only
 
@@ -413,13 +415,20 @@ const [formData, setFormData] = useState({
     if (!packToDelete) return;
     
     try {
-      await deletePack(packToDelete.id);
+      await deletePack(packToDelete.id, (progress, status) => {
+        setDeleteProgress(progress);
+        setDeleteStatus(status);
+      });
       
       // Close modal and reset state
       setShowDeletePackModal(false);
       setPackToDelete(null);
+      setDeleteProgress(0);
+      setDeleteStatus('');
     } catch (error) {
       console.error('Error deleting pack:', error);
+      setDeleteProgress(0);
+      setDeleteStatus('');
       alert('Erro ao excluir pack. Tente novamente.');
     }
   };
@@ -2232,6 +2241,8 @@ const [formData, setFormData] = useState({
         onClose={cancelDeletePack}
         onConfirm={confirmDeletePack}
         packTitle={packToDelete?.title}
+        progress={deleteProgress}
+        status={deleteStatus}
       />
 
       {/* Pack Purchase Confirmation Modal */}
