@@ -217,6 +217,17 @@ const Profile = () => {
     loadProfileData();
   }, [username, currentUser, userProfile, getUserByUsername, showError, navigate]);
 
+  // Form state for editing
+  const [formData, setFormData] = useState({
+    displayName: '',
+    bio: '',
+    location: '',
+    interests: [],
+    languages: '',
+    hobbies: '',
+    aboutMe: ''
+  });
+
   // Initialize form data when profile changes
   useEffect(() => {
     if (profile) {
@@ -233,17 +244,6 @@ const Profile = () => {
   }, [profile]);
 
   // Services managed by ServicesContext - no need for separate hook
-
-  // Form state for editing
-const [formData, setFormData] = useState({
-  displayName: '',
-  bio: '',
-  location: '',
-  interests: [],
-  languages: '',
-  hobbies: '',
-  aboutMe: ''
-});
 
   // Load user services from Firestore
   useEffect(() => {
