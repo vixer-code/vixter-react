@@ -31,7 +31,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   const { userProfile } = useUser();
   const { createPack, updatePack } = usePacks();
   const { showSuccess, showError } = useNotification();
-  const { uploadPackMedia, uploading, deleteMedia, deletePackContentMedia } = useR2Media();
+  const { uploadPackMedia, uploadPackContentMedia, uploading, deleteMedia, deletePackContentMedia } = useR2Media();
   
   // Check account type
   const accountType = userProfile?.accountType || 'client';
