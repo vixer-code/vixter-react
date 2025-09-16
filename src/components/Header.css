@@ -777,6 +777,16 @@ header .vp-balance .vp-icon svg,
     height: 28px;
   }
   
+  /* Mobile logo hover - mais sutil */
+  .logo:hover {
+    transform: translateY(-50%) scale(1.01);
+  }
+  
+  .logo-icon:hover {
+    filter: drop-shadow(0 0 8px rgba(138, 43, 226, 0.6));
+    transform: scale(1.02);
+  }
+  
   .nav-links {
     display: none;
   }
@@ -865,6 +875,16 @@ header .vp-balance .vp-icon svg,
   .logo-icon {
     width: 24px;
     height: 24px;
+  }
+  
+  /* Mobile logo hover - mais sutil para telas menores */
+  .logo:hover {
+    transform: translateY(-50%) scale(1.01);
+  }
+  
+  .logo-icon:hover {
+    filter: drop-shadow(0 0 6px rgba(138, 43, 226, 0.5));
+    transform: scale(1.02);
   }
   
   .mobile-search-bar {

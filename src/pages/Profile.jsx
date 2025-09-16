@@ -251,19 +251,19 @@ const Profile = () => {
 
   // Load user services from Firestore
   useEffect(() => {
-    const targetUserId = profile?.id || currentUser?.uid;
-    if (targetUserId) {
-      loadUserServices(targetUserId);
+    // Only load services if we have a profile (either current user or visited user)
+    if (profile?.id) {
+      loadUserServices(profile.id);
     }
-  }, [profile?.id, currentUser, loadUserServices]);
+  }, [profile?.id, loadUserServices]);
 
   // Load user packs from Firestore
   useEffect(() => {
-    const targetUserId = profile?.id || currentUser?.uid;
-    if (targetUserId) {
-      loadUserPacks(targetUserId);
+    // Only load packs if we have a profile (either current user or visited user)
+    if (profile?.id) {
+      loadUserPacks(profile.id);
     }
-  }, [profile?.id, currentUser, loadUserPacks]);
+  }, [profile?.id, loadUserPacks]);
 
   // Load purchased packs for clients
   useEffect(() => {
@@ -1971,7 +1971,7 @@ const Profile = () => {
                   <div 
                     key={follower.id} 
                     className="modal-follower-item clickable"
-                    onClick={() => handleFollowerClick(follower.id)}
+                    onClick={() => handleFollowerClick(follower)}
                   >
                     <div className="modal-follower-avatar">
                       <CachedImage 
