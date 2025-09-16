@@ -22,12 +22,13 @@ nav {
   margin: 0 auto;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
-}
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+    justify-content: space-between;
+  }
 
 .logo {
   font-size: 1.8rem;
@@ -80,6 +81,7 @@ nav {
   display: none;
   flex: 1;
   max-width: 200px;
+  justify-content: center;
 }
 
 .mobile-search-container {
@@ -749,7 +751,7 @@ header .vp-balance .vp-icon svg,
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 1000px) {
   header {
     min-height: auto;
   }
@@ -775,6 +777,8 @@ header .vp-balance .vp-icon svg,
   
   .mobile-search-bar {
     display: flex !important;
+    justify-content: center;
+    max-width: 300px;
   }
   
   .mobile-menu-btn {
@@ -830,7 +834,13 @@ header .vp-balance .vp-icon svg,
   }
   
   .mobile-search-bar {
-    max-width: 150px;
+    max-width: 200px;
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .header-left {
+    justify-content: space-between;
   }
   
   .mobile-menu-btn {
@@ -866,7 +876,7 @@ header .vp-balance .vp-icon svg,
 }
 
 /* Tablet adjustments */
-@media (min-width: 769px) and (max-width: 1024px) {
+@media (min-width: 1001px) and (max-width: 1200px) {
   nav {
     padding: 14px 24px;
   }

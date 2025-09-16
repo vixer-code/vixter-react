@@ -1739,6 +1739,16 @@ const [formData, setFormData] = useState({
                       VP {(pack.price != null ? (pack.price * 1.5).toFixed(2) : '0.00')}
                       {pack.discount && <span className="pack-discount">(-{pack.discount}%)</span>}
                     </p>
+                    {pack.tags && pack.tags.length > 0 && (
+                      <div className="service-tags">
+                        {pack.tags.slice(0, 4).map((tag, index) => (
+                          <span key={index} className="service-tag">{tag}</span>
+                        ))}
+                        {pack.tags.length > 4 && (
+                          <span className="service-tag-more">+{pack.tags.length - 4}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   {isOwner && (
                     <div className="service-actions" onClick={(e) => e.stopPropagation()}>
