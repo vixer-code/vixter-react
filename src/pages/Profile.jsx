@@ -39,6 +39,9 @@ const Profile = () => {
   const { isVerified, isChecking } = useEmailVerification();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const { createOrGetConversation } = useEnhancedMessaging();
+  
+  // Calculate isOwner early to avoid hoisting issues
+  const isOwner = !username || currentUser?.uid === profile?.id;
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -927,8 +930,6 @@ const Profile = () => {
       </div>
     );
   };
-
-  const isOwner = !username || currentUser?.uid === profile?.id;
 
   // Optimized tab switching to prevent INP issues
   const handleTabClick = useCallback((event) => {
