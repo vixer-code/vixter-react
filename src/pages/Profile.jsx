@@ -1878,14 +1878,6 @@ const [formData, setFormData] = useState({
                       >
                         <i className="fa-solid fa-receipt"></i>
                       </button>
-                      {/* Pack buyers button */}
-                      <button
-                        className="action-btn buyers-btn"
-                        onClick={() => openPackBuyers(pack)}
-                        title="Ver Compradores"
-                      >
-                        <i className="fa-solid fa-users"></i>
-                      </button>
                       {/* Animated status switch */}
                       <button 
                         className={`action-btn status-btn ${switchingPackId === pack.id ? 'switching' : ''}`}

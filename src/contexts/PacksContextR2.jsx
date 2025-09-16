@@ -441,10 +441,24 @@ export const PacksProviderR2 = ({ children }) => {
         // Continue with Firestore deletion even if media deletion fails
       }
 
-      // Delete from Firestore directly
-      console.log('Deleting pack from Firestore...');
-      const packRef = doc(db, 'packs', packId);
-      await deleteDoc(packRef);
+      // Delete from Firestore using Firebase Functions
+      console.log('Deleting pack from Firestore via Functions...');
+      console.log('Pack ID:', packId, 'Type:', typeof packId);
+      
+      if (!packId || typeof packId !== 'string') {
+        throw new Error('Invalid pack ID');
+      }
+      
+      const result = await apiFunc({
+        resource: 'pack',
+        action: 'delete',
+        payload: { packId }
+      });
+      
+      if (!result.data.success) {
+        throw new Error(result.data.error || 'Failed to delete pack');
+      }
+      
       console.log('Pack deleted from Firestore successfully');
 
       showSuccess('Pack deletado com sucesso!', 'Pack Deletado');
