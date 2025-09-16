@@ -43,7 +43,6 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
 
-  const featuresInputRef = useRef(null);
   const tagsInputRef = useRef(null);
 
   const steps = [
@@ -62,7 +61,6 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     description: '',
     price: '',
     discount: '',
-    features: [],
     tags: [],
     licenseOptions: [], // ['personal','commercial','editorial','resale'] when packType == 'nao-download'
     disableWatermark: false, // Option to disable watermark for download content
@@ -92,7 +90,6 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         description: editingPack.description || '',
         price: editingPack.price != null ? String(editingPack.price) : '',
         discount: editingPack.discount != null ? String(editingPack.discount) : '',
-        features: editingPack.features || [],
         tags: editingPack.tags || [],
         licenseOptions: editingPack.licenseOptions || [],
         disableWatermark: editingPack.disableWatermark || false,
@@ -127,7 +124,6 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       description: '',
       price: '',
       discount: '',
-      features: [],
       tags: [],
       licenseOptions: [],
       disableWatermark: false,
@@ -151,16 +147,6 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const addFeature = () => {
-    const el = featuresInputRef.current;
-    if (el && el.value.trim()) {
-      setFormData(prev => ({ ...prev, features: [...prev.features, el.value.trim()] }));
-      el.value = '';
-    }
-  };
-  const removeFeature = (index) => {
-    setFormData(prev => ({ ...prev, features: prev.features.filter((_, i) => i !== index) }));
-  };
 
   const addTag = () => {
     const el = tagsInputRef.current;
@@ -353,7 +339,6 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         packType: formData.packType,
         price: parseFloat(formData.price),
         discount: parseInt(formData.discount || 0, 10) || 0,
-        features: formData.features,
         tags: formData.tags,
         disableWatermark: formData.disableWatermark,
         createdAt: Date.now(),
@@ -606,26 +591,6 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                 <small>Mínimo de 50 caracteres.</small>
               </div>
 
-              <div className="form-group">
-                <label>Recursos Incluídos</label>
-                <div className="tag-input-container">
-                  <input
-                    ref={featuresInputRef}
-                    type="text"
-                    placeholder="Adicione recursos e pressione Enter"
-                    onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addFeature())}
-                  />
-                  <button type="button" className="add-tag-btn" onClick={addFeature}>Adicionar</button>
-                </div>
-                <div className="tags-container">
-                  {formData.features.map((f, idx) => (
-                    <span key={idx} className="tag">
-                      {f}
-                      <button onClick={() => removeFeature(idx)}>&times;</button>
-                    </span>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
 
@@ -920,16 +885,6 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                   <p>{formData.description || 'Descrição do pack'}</p>
                 </div>
 
-                {formData.features.length > 0 && (
-                  <div className="preview-features">
-                    <h3>Recursos Incluídos</h3>
-                    <ul className="features-list">
-                      {formData.features.map((f, idx) => (
-                        <li key={idx}><span className="feature-check">✓</span> {f}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
 
                 {/* Conteúdo de Amostra (Vitrine) */}
                 {(sampleImagePreviews.length > 0 || sampleVideoPreviews.length > 0 || formData.sampleImages.length > 0 || formData.sampleVideos.length > 0) && (

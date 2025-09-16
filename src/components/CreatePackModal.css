@@ -1,6 +1,17 @@
 /* Reuse identical visual layout and components from CreateServiceModal */
 @import './CreateServiceModal.css';
 
+/* Fix for tag text display */
+.tag {
+  color: #00FFCA !important;
+}
+
+.tag-text {
+  color: #00FFCA !important;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
 /* Minimal additions for license pill styles and pack file rows */
 .license-options {
   display: flex;
