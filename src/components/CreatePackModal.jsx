@@ -4,6 +4,7 @@ import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { usePacksR2 as usePacks } from '../contexts/PacksContextR2';
 import useR2Media from '../hooks/useR2Media';
+import SmartMediaViewer from './SmartMediaViewer';
 import './CreatePackModal.css';
 
 const subcategoriesMap = {
