@@ -1549,145 +1549,6 @@ const [formData, setFormData] = useState({
       {/* Services Tab */}
       <div className={`tab-content ${activeTab === 'services' ? 'active' : ''}`}>
         <div className="services-tab-content">
-          {/* Client Dashboard Section - Only for clients and only on own profile */}
-          {isClient && isOwner && (
-            <div className="client-dashboard">
-              <div className="section-header">
-                <h2>
-                  <i className="fa-solid fa-shopping-cart"></i>
-                  Dashboard do Cliente
-                </h2>
-              </div>
-              
-              <div className="client-stats">
-                <div className="stat-card">
-                  <div className="stat-icon vp-icon">
-                    <i className="fas fa-coins"></i>
-                  </div>
-                  <div className="stat-content">
-                    <h3>VP Disponível</h3>
-                    <p className="stat-value">0 VP</p>
-                    <small>Para comprar serviços</small>
-                  </div>
-                </div>
-                
-                <div className="stat-card">
-                  <div className="stat-icon vbp-icon">
-                    <i className="fas fa-gem"></i>
-                  </div>
-                  <div className="stat-content">
-                    <h3>VBP Atual</h3>
-                    <p className="stat-value">0 VBP</p>
-                    <small>Para atividades</small>
-                  </div>
-                </div>
-                
-                <div className="stat-card">
-                  <div className="stat-icon purchases-icon">
-                    <i className="fas fa-shopping-bag"></i>
-                  </div>
-                  <div className="stat-content">
-                    <h3>Compras</h3>
-                    <p className="stat-value">0</p>
-                    <small>Serviços adquiridos</small>
-                  </div>
-                </div>
-                
-                <div className="stat-card">
-                  <div className="stat-icon favorites-icon">
-                    <i className="fas fa-heart"></i>
-                  </div>
-                  <div className="stat-content">
-                    <h3>Favoritos</h3>
-                    <p className="stat-value">0</p>
-                    <small>Serviços salvos</small>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="client-actions">
-                <button className="btn primary">
-                  <i className="fas fa-plus"></i> Comprar VP
-                </button>
-                <button className="btn secondary">
-                  <i className="fas fa-search"></i> Buscar Serviços
-                </button>
-                <button className="btn secondary">
-                  <i className="fas fa-heart"></i> Favoritos
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Provider Dashboard Section - Only for providers and only on own profile */}
-          {(isProvider || isBoth) && isOwner && (
-            <div className="provider-dashboard">
-              <div className="section-header">
-                <h2>
-                  <i className="fa-solid fa-chart-line"></i>
-                  Dashboard do Provedor
-                </h2>
-              </div>
-              
-              <div className="dashboard-stats">
-                <div className="stat-card">
-                  <div className="stat-icon vc-icon">
-                    <i className="fas fa-coins"></i>
-                  </div>
-                  <div className="stat-content">
-                    <h3>VC Ganhos</h3>
-                    <p className="stat-value">R$ 0,00</p>
-                    <small>Total de vendas</small>
-                  </div>
-                </div>
-                
-                <div className="stat-card">
-                  <div className="stat-icon pending-icon">
-                    <i className="fas fa-clock"></i>
-                  </div>
-                  <div className="stat-content">
-                    <h3>VC Pendente</h3>
-                    <p className="stat-value">R$ 0,00</p>
-                    <small>Aguardando confirmação</small>
-                  </div>
-                </div>
-                
-                <div className="stat-card">
-                  <div className="stat-icon orders-icon">
-                    <i className="fas fa-shopping-cart"></i>
-                  </div>
-                  <div className="stat-content">
-                    <h3>Pedidos</h3>
-                    <p className="stat-value">0</p>
-                    <small>Novos pedidos</small>
-                  </div>
-                </div>
-                
-                <div className="stat-card">
-                  <div className="stat-icon services-icon">
-                    <i className="fas fa-briefcase"></i>
-                  </div>
-                  <div className="stat-content">
-                    <h3>Serviços Ativos</h3>
-                    <p className="stat-value">{firestoreServices.filter(s => s.status === 'active').length}</p>
-                    <small>Disponíveis para compra</small>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="provider-actions">
-                <button className="btn secondary">
-                  <i className="fas fa-eye"></i> Ver Pedidos
-                </button>
-                <button className="btn secondary">
-                  <i className="fas fa-chart-bar"></i> Relatórios
-                </button>
-                <button className="btn secondary">
-                  <i className="fas fa-cog"></i> Configurações
-                </button>
-              </div>
-            </div>
-          )}
 
           <div className="services-header">
             <h3>
@@ -1757,17 +1618,19 @@ const [formData, setFormData] = useState({
                     <h3 className="service-title">{service.title}</h3>
                     <p className="service-price">VP {(service.price != null ? (service.price * 1.5).toFixed(2) : '0.00')}</p>
                     <p className="service-category">{service.category || 'Geral'}</p>
+                    {service.tags && service.tags.length > 0 && (
+                      <div className="service-tags">
+                        {service.tags.slice(0, 4).map((tag, index) => (
+                          <span key={index} className="service-tag">{tag}</span>
+                        ))}
+                        {service.tags.length > 4 && (
+                          <span className="service-tag-more">+{service.tags.length - 4}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   {isOwner && (
                     <div className="service-actions" onClick={(e) => e.stopPropagation()}>
-                      {/* Receipt button replaces edit */}
-                      <button
-                        className="action-btn view-btn"
-                        onClick={() => openServiceSales(service)}
-                        title="Recibos de Vendas"
-                      >
-                        <i className="fa-solid fa-receipt"></i>
-                      </button>
                       {/* Animated status switch */}
                       <button 
                         className={`action-btn status-btn ${switchingServiceId === service.id ? 'switching' : ''}`}
@@ -1879,14 +1742,6 @@ const [formData, setFormData] = useState({
                   </div>
                   {isOwner && (
                     <div className="service-actions" onClick={(e) => e.stopPropagation()}>
-                      {/* Receipt button for Pack sales */}
-                      <button
-                        className="action-btn view-btn"
-                        onClick={() => openPackSales(pack)}
-                        title="Recibos de Vendas (Pack)"
-                      >
-                        <i className="fa-solid fa-receipt"></i>
-                      </button>
                       {/* Animated status switch */}
                       <button 
                         className={`action-btn status-btn ${switchingPackId === pack.id ? 'switching' : ''}`}

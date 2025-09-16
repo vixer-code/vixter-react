@@ -2774,3 +2774,87 @@
   background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
   transform: translateY(-1px);
 }
+
+/* Service Tags Styles */
+.service-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  max-height: 48px; /* Limit to 2 lines (24px per line) */
+  overflow: hidden;
+}
+
+.service-tag {
+  background: rgba(138, 43, 226, 0.2);
+  color: #8A2BE2;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.service-tag:hover {
+  background: rgba(138, 43, 226, 0.3);
+  transform: translateY(-1px);
+}
+
+.service-tag-more {
+  background: rgba(0, 255, 202, 0.2);
+  color: #00FFCA;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid rgba(0, 255, 202, 0.3);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.service-tag-more:hover {
+  background: rgba(0, 255, 202, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Responsive adjustments for service tags */
+@media (max-width: 768px) {
+  .service-tags {
+    max-height: 40px; /* Slightly smaller on mobile */
+    gap: 4px;
+  }
+  
+  .service-tag {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+    max-width: 80px;
+  }
+  
+  .service-tag-more {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .service-tags {
+    max-height: 36px;
+    gap: 3px;
+  }
+  
+  .service-tag {
+    font-size: 0.65rem;
+    padding: 2px 5px;
+    max-width: 70px;
+  }
+  
+  .service-tag-more {
+    font-size: 0.65rem;
+    padding: 2px 5px;
+  }
+}
