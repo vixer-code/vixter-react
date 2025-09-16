@@ -220,25 +220,52 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   const handlePackFilesChange = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    setPackFiles(prev => [...prev, ...files]);
+    
+    console.log('Adding pack files:', files);
+    setPackFiles(prev => {
+      const newFiles = [...prev, ...files];
+      console.log('Updated packFiles:', newFiles);
+      return newFiles;
+    });
+    
     files.forEach(file => {
       const reader = new FileReader();
       reader.onload = ev => {
-        setPackFilePreviews(prev => [...prev, { src: ev.target.result, isVideo: file.type.startsWith('video/') }]);
+        const previewData = { src: ev.target.result, isVideo: file.type.startsWith('video/') };
+        console.log('Adding pack file preview:', previewData);
+        setPackFilePreviews(prev => {
+          const newPreviews = [...prev, previewData];
+          console.log('Updated packFilePreviews:', newPreviews);
+          return newPreviews;
+        });
       };
       reader.readAsDataURL(file);
     });
   };
   const removePackFile = (index) => {
-    setPackFiles(prev => prev.filter((_, i) => i !== index));
-    setPackFilePreviews(prev => prev.filter((_, i) => i !== index));
+    console.log('Removing pack file at index:', index);
+    setPackFiles(prev => {
+      const newFiles = prev.filter((_, i) => i !== index);
+      console.log('Updated packFiles after removal:', newFiles);
+      return newFiles;
+    });
+    setPackFilePreviews(prev => {
+      const newPreviews = prev.filter((_, i) => i !== index);
+      console.log('Updated packFilePreviews after removal:', newPreviews);
+      return newPreviews;
+    });
   };
 
   const removeExistingPackContent = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      packContent: (prev.packContent || []).filter((_, i) => i !== index)
-    }));
+    console.log('Removing pack content at index:', index);
+    setFormData(prev => {
+      const newPackContent = (prev.packContent || []).filter((_, i) => i !== index);
+      console.log('Updated packContent:', newPackContent);
+      return {
+        ...prev,
+        packContent: newPackContent
+      };
+    });
   };
 
   // Validation
@@ -355,6 +382,13 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         existingSampleVideos: formData.sampleVideos,
         existingPackContent: formData.packContent
       };
+
+      console.log('Submitting pack data:', {
+        packFiles: packFiles,
+        packFilePreviews: packFilePreviews,
+        existingPackContent: formData.packContent,
+        editingPack: editingPack
+      });
 
       // Create or update pack via Cloud Functions (Firestore) with R2 upload
       let packId = editingPack?.id;

@@ -1627,8 +1627,16 @@ const Profile = () => {
                   <div className="service-info">
                     <h3 className="service-title">{service.title}</h3>
                     <div className="service-price">
-                      <div className="price-original">VP {(service.price != null ? service.price.toFixed(2) : '0.00')}</div>
-                      <div className="price-discounted">VP {(service.price != null ? (service.price * 1.5).toFixed(2) : '0.00')}</div>
+                      <div className="price-original">VP {(service.price != null ? (service.price * 1.5).toFixed(2) : '0.00')}</div>
+                      <div className="price-discounted">
+                        VP {(() => {
+                          const basePrice = service.price || 0;
+                          const discount = service.discount || 0;
+                          const discountedPrice = discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
+                          return (discountedPrice * 1.5).toFixed(2);
+                        })()}
+                        {service.discount && <span className="service-discount">(-{service.discount}%)</span>}
+                      </div>
                     </div>
                     <p className="service-category">{service.category || 'Geral'}</p>
                     {service.tags && service.tags.length > 0 && (
@@ -1750,9 +1758,14 @@ const Profile = () => {
                   <div className="pack-info">
                     <h3 className="pack-title">{pack.title}</h3>
                     <div className="pack-price">
-                      <div className="price-original">VP {(pack.price != null ? pack.price.toFixed(2) : '0.00')}</div>
+                      <div className="price-original">VP {(pack.price != null ? (pack.price * 1.5).toFixed(2) : '0.00')}</div>
                       <div className="price-discounted">
-                        VP {(pack.price != null ? (pack.price * 1.5).toFixed(2) : '0.00')}
+                        VP {(() => {
+                          const basePrice = pack.price || 0;
+                          const discount = pack.discount || 0;
+                          const discountedPrice = discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
+                          return (discountedPrice * 1.5).toFixed(2);
+                        })()}
                         {pack.discount && <span className="pack-discount">(-{pack.discount}%)</span>}
                       </div>
                     </div>
@@ -2038,7 +2051,23 @@ const Profile = () => {
                     <span className="meta-item"><strong>Duração:</strong> {serviceToPreview.duration}</span>
                   )}
                 </div>
-                <div className="preview-price">VP {((typeof serviceToPreview.price === 'number' ? serviceToPreview.price : parseFloat(serviceToPreview.price) || 0) * 1.5).toFixed(2)}</div>
+                {(() => {
+                  const basePrice = typeof serviceToPreview.price === 'number' ? serviceToPreview.price : parseFloat(serviceToPreview.price) || 0;
+                  const discountPercent = typeof serviceToPreview.discount === 'number' ? serviceToPreview.discount : parseFloat(serviceToPreview.discount) || 0;
+                  const originalPrice = basePrice * 1.5;
+                  const discounted = basePrice * (1 - (discountPercent > 0 ? discountPercent / 100 : 0)) * 1.5;
+                  return (
+                    <div className="preview-price">
+                      <div className="price-original">VP {originalPrice.toFixed(2)}</div>
+                      <div className="price-discounted">
+                        VP {discounted.toFixed(2)}
+                        {discountPercent > 0 && (
+                          <span className="service-discount"> (-{discountPercent}%)</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
             <div className="modal-actions">
@@ -2082,13 +2111,17 @@ const Profile = () => {
                 {(() => {
                   const basePrice = typeof packToPreview.price === 'number' ? packToPreview.price : parseFloat(packToPreview.price) || 0;
                   const discountPercent = typeof packToPreview.discount === 'number' ? packToPreview.discount : parseFloat(packToPreview.discount) || 0;
-                  const discounted = basePrice * (1 - (discountPercent > 0 ? discountPercent / 100 : 0));
+                  const originalPrice = basePrice * 1.5;
+                  const discounted = basePrice * (1 - (discountPercent > 0 ? discountPercent / 100 : 0)) * 1.5;
                   return (
                     <div className="preview-price">
-                      VP {(discounted * 1.5).toFixed(2)}
-                      {discountPercent > 0 && (
-                        <span className="preview-discount"> (-{discountPercent}%)</span>
-                      )}
+                      <div className="price-original">VP {originalPrice.toFixed(2)}</div>
+                      <div className="price-discounted">
+                        VP {discounted.toFixed(2)}
+                        {discountPercent > 0 && (
+                          <span className="pack-discount"> (-{discountPercent}%)</span>
+                        )}
+                      </div>
                     </div>
                   );
                 })()}

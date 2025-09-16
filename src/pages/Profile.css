@@ -1521,7 +1521,8 @@
   text-transform: capitalize;
 }
 
-.pack-discount {
+.pack-discount,
+.service-discount {
   color: #FF2E63;
   font-size: 0.9rem;
   margin-left: 8px;

@@ -792,6 +792,19 @@ header .vp-balance .vp-icon svg,
     z-index: 10;
   }
   
+  .mobile-search-bar .search-input-container {
+    height: 36px !important;
+  }
+  
+  .mobile-search-bar .search-input {
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+  }
+  
+  .mobile-search-bar .search-button {
+    padding: 8px 12px !important;
+  }
+  
   .mobile-menu-btn {
     display: flex !important;
     font-size: 1.2rem;
@@ -861,6 +874,19 @@ header .vp-balance .vp-icon svg,
     top: 50%;
     transform: translate(-50%, -50%);
     z-index: 10;
+  }
+  
+  .mobile-search-bar .search-input-container {
+    height: 32px !important;
+  }
+  
+  .mobile-search-bar .search-input {
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+  }
+  
+  .mobile-search-bar .search-button {
+    padding: 6px 10px !important;
   }
   
   .header-left {
