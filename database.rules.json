@@ -289,6 +289,14 @@
           ".validate": "newData.isString()"
         }
       }
+    },
+    "reviews": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$userId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
     }
   }
 }

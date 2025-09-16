@@ -48,13 +48,23 @@ const SmartMediaViewer = ({
     // Check if this is from a private bucket (no publicUrl) or public bucket (has publicUrl)
     const hasPublicUrl = mediaData.publicUrl && mediaData.publicUrl.startsWith('http');
     
+    console.log('SmartMediaViewer: Processing R2 object:', {
+      mediaData,
+      hasPublicUrl,
+      type,
+      watermarked,
+      isOwner
+    });
+    
     if (hasPublicUrl) {
       // Content from public bucket - use publicUrl directly
+      console.log('SmartMediaViewer: Using publicUrl directly:', mediaData.publicUrl);
       setIsR2Media(false);
       setR2Key(null);
       setFallbackUrl(mediaData.publicUrl);
     } else {
       // Content from private bucket - needs R2MediaViewer for signed URLs
+      console.log('SmartMediaViewer: Using R2MediaViewer for private content:', mediaData.key);
       setIsR2Media(true);
       setR2Key(mediaData.key);
       setFallbackUrl(fallbackSrc);
