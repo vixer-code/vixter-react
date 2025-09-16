@@ -46,7 +46,7 @@ const SmartMediaViewer = ({
   // If mediaData is an object, check if it has a key (R2 media)
   if (typeof mediaData === 'object' && mediaData.key) {
     // Check if this is from a private bucket (no publicUrl) or public bucket (has publicUrl)
-    const hasPublicUrl = mediaData.publicUrl && mediaData.publicUrl.startsWith('http');
+    const hasPublicUrl = mediaData.publicUrl && (mediaData.publicUrl.startsWith('http') || mediaData.publicUrl.startsWith('media.vixter.com.br'));
     
     console.log('SmartMediaViewer: Processing R2 object:', {
       mediaData,
@@ -58,10 +58,12 @@ const SmartMediaViewer = ({
     
     if (hasPublicUrl) {
       // Content from public bucket - use publicUrl directly
-      console.log('SmartMediaViewer: Using publicUrl directly:', mediaData.publicUrl);
+      // Ensure URL has protocol
+      const publicUrl = mediaData.publicUrl.startsWith('http') ? mediaData.publicUrl : `https://${mediaData.publicUrl}`;
+      console.log('SmartMediaViewer: Using publicUrl directly:', publicUrl);
       setIsR2Media(false);
       setR2Key(null);
-      setFallbackUrl(mediaData.publicUrl);
+      setFallbackUrl(publicUrl);
     } else {
       // Content from private bucket - needs R2MediaViewer for signed URLs
       console.log('SmartMediaViewer: Using R2MediaViewer for private content:', mediaData.key);
@@ -74,9 +76,11 @@ const SmartMediaViewer = ({
 
     // If mediaData is an object but no key, use publicUrl as fallback
     if (typeof mediaData === 'object' && mediaData.publicUrl) {
+      // Ensure URL has protocol
+      const publicUrl = mediaData.publicUrl.startsWith('http') ? mediaData.publicUrl : `https://${mediaData.publicUrl}`;
       setIsR2Media(false);
       setR2Key(null);
-      setFallbackUrl(mediaData.publicUrl);
+      setFallbackUrl(publicUrl);
       return;
     }
 
