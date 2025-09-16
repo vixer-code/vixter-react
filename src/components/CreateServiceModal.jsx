@@ -4,6 +4,7 @@ import { useUser } from '../contexts/UserContext';
 import { useServicesR2 as useServices } from '../contexts/ServicesContextR2';
 import { useNotification } from '../contexts/NotificationContext';
 import useR2Media from '../hooks/useR2Media';
+import SmartMediaViewer from './SmartMediaViewer';
 import './CreateServiceModal.css';
 
 const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService = null }) => {
@@ -915,7 +916,15 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                   />
                   <label htmlFor="cover-image" className="upload-placeholder">
                     {coverImagePreview ? (
-                      <img src={coverImagePreview} alt="Cover preview" className="image-preview" />
+                      <SmartMediaViewer 
+                        mediaData={coverImagePreview}
+                        type="service"
+                        watermarked={false}
+                        isOwner={true}
+                        fallbackSrc="/images/default-service.jpg"
+                        alt="Cover preview"
+                        className="image-preview"
+                      />
                     ) : (
                       <>
                         <i className="upload-icon">+</i>
@@ -963,7 +972,14 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                 <div className="preview-header">
                   {coverImagePreview && (
                     <div className="preview-cover-image">
-                      <img src={coverImagePreview} alt={formData.title} />
+                      <SmartMediaViewer 
+                        mediaData={coverImagePreview}
+                        type="service"
+                        watermarked={false}
+                        isOwner={true}
+                        fallbackSrc="/images/default-service.jpg"
+                        alt={formData.title}
+                      />
                     </div>
                   )}
                   <div className="preview-service-info">
