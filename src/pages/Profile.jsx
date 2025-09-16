@@ -1715,10 +1715,6 @@ const Profile = () => {
             )}
           </div>
           
-          <div className="packs-description">
-            <p>Packs oferecem descontos especiais.</p>
-          </div>
-          
           <div className="packs-grid">
             {packsLoading ? (
               <div className="loading-state">
