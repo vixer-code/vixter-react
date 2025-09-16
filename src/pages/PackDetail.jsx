@@ -10,6 +10,21 @@ import CachedImage from '../components/CachedImage';
 import R2MediaViewer from '../components/R2MediaViewer';
 import './PackDetail.css';
 
+// Subcategories mapping (same as CreatePackModal)
+const subcategoriesMap = {
+  'conteudo-artistico': ['Ilustração', 'Desenho', 'Modelagem 3D', 'Templates', 'Outros'],
+  'conteudo-educativo': ['Tutoriais', 'Cursos', 'Questionários', 'Outros'],
+  'conteudo-18': ['Fetiche', 'Conteúdo Acompanhada', 'Cosplay', 'BBW (Big Beautiful Woman)', 'Outros'],
+  'outros': []
+};
+
+const packCategories = [
+  { value: 'conteudo-artistico', label: 'Conteúdo artístico' },
+  { value: 'conteudo-educativo', label: 'Conteúdo educativo' },
+  { value: 'conteudo-18', label: 'Conteúdo +18 (Vixies)' },
+  { value: 'outros', label: 'Outros' }
+];
+
 const PackDetail = () => {
   const { packId } = useParams();
   const navigate = useNavigate();
@@ -17,6 +32,19 @@ const PackDetail = () => {
   const { userProfile } = useUser();
   const { vpBalance, createPackOrder } = useWallet();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
+
+  // Helper functions for category and subcategory labels
+  const getCategoryLabel = (categoryValue) => {
+    return packCategories.find(c => c.value === categoryValue)?.label || categoryValue;
+  };
+
+  const getSubcategoryLabel = (categoryValue, subcategoryValue) => {
+    if (!subcategoryValue || !subcategoriesMap[categoryValue]) return '';
+    const match = subcategoriesMap[categoryValue]?.find(s => 
+      s.toLowerCase().replace(/\s+/g, '-') === subcategoryValue
+    );
+    return match || subcategoryValue;
+  };
   
   const [pack, setPack] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,23 +70,38 @@ const PackDetail = () => {
             const providerRef = doc(db, 'users', packData.providerId);
             const providerSnap = await getDoc(providerRef);
             if (providerSnap.exists()) {
-              providerData = providerSnap.data();
+              providerData = {
+                id: providerSnap.id,
+                ...providerSnap.data()
+              };
             }
           } catch (providerError) {
             console.warn('Error loading provider data:', providerError);
           }
         }
         
-        setPack({
+        const packWithProvider = {
           id: packSnap.id,
           ...packData,
-          // Add provider information
-          providerName: providerData.displayName || packData.providerName,
-          providerUsername: providerData.username || packData.providerUsername,
-          providerAvatar: providerData.profilePictureURL || packData.providerAvatar,
-          providerRating: providerData.rating || packData.providerRating,
-          providerCompletedOrders: providerData.completedOrders || packData.providerCompletedOrders
-        });
+          // Add provider information with better fallbacks
+          providerName: providerData.displayName || providerData.name || packData.providerName || packData.sellerName || 'Vendedor',
+          providerUsername: providerData.username || packData.providerUsername || packData.sellerUsername || 'usuario',
+          providerAvatar: providerData.profilePictureURL || providerData.avatar || packData.providerAvatar || packData.sellerAvatar || null,
+          providerRating: providerData.rating || providerData.averageRating || packData.providerRating || packData.sellerRating || 0,
+          providerCompletedOrders: providerData.completedOrders || providerData.totalSales || packData.providerCompletedOrders || packData.sellerCompletedOrders || 0,
+          // Also add legacy fields for compatibility
+          sellerName: providerData.displayName || providerData.name || packData.sellerName || 'Vendedor',
+          sellerUsername: providerData.username || packData.sellerUsername || 'usuario',
+          sellerAvatar: providerData.profilePictureURL || providerData.avatar || packData.sellerAvatar || null,
+          sellerRating: providerData.rating || providerData.averageRating || packData.sellerRating || 0,
+          sellerCompletedOrders: providerData.completedOrders || providerData.totalSales || packData.sellerCompletedOrders || 0
+        };
+        
+        console.log('Pack data loaded:', packWithProvider);
+        console.log('Provider data from Firestore:', providerData);
+        console.log('Pack content:', packWithProvider.content);
+        
+        setPack(packWithProvider);
       } else {
         showError('Pack não encontrado');
         navigate('/');
@@ -93,6 +136,11 @@ const PackDetail = () => {
 
     if (pack.providerId === currentUser.uid) {
       showWarning('Você não pode comprar seu próprio pack');
+      return;
+    }
+
+    if (pack.status && pack.status !== 'active') {
+      showWarning('Este pack está pausado e não está disponível para compra');
       return;
     }
 
@@ -211,9 +259,16 @@ const PackDetail = () => {
             <div className="pack-title-section">
               <h1>{pack.title}</h1>
               <div className="pack-meta">
-                <span className="pack-category">
-                  {pack.category === 'conteudo-18' ? 'Vixies (+18)' : pack.category}
-                </span>
+                <div className="pack-categories">
+                  <span className="pack-category">
+                    {pack.category === 'conteudo-18' ? 'Vixies (+18)' : getCategoryLabel(pack.category)}
+                  </span>
+                  {pack.subcategory && (
+                    <span className="pack-subcategory">
+                      {getSubcategoryLabel(pack.category, pack.subcategory)}
+                    </span>
+                  )}
+                </div>
                 <span className="pack-rating">
                   <i className="fas fa-star"></i>
                   {pack.rating || 'N/A'}
@@ -222,6 +277,12 @@ const PackDetail = () => {
             </div>
             <div className="pack-price">
               <span className="price-amount">{formatVP(calculateVpTotal())}</span>
+              {pack.status && pack.status !== 'active' && (
+                <div className="pack-status-badge paused">
+                  <i className="fas fa-pause"></i>
+                  Pausado
+                </div>
+              )}
             </div>
           </div>
 
@@ -267,7 +328,7 @@ const PackDetail = () => {
           </div>
 
           {/* Pack Content Showcase */}
-          {pack.content && pack.content.length > 0 && (
+          {pack.content && Array.isArray(pack.content) && pack.content.length > 0 && (
             <div className="pack-content-showcase">
               <h3>Conteúdo do Pack</h3>
               <div className="content-preview-grid">
@@ -276,14 +337,25 @@ const PackDetail = () => {
                     <div className="content-preview-icon">
                       <i className="fas fa-file"></i>
                     </div>
-                    <div className="content-preview-name">{item.name}</div>
-                    <div className="content-preview-type">{item.type}</div>
+                    <div className="content-preview-name">{item.name || `Item ${index + 1}`}</div>
+                    <div className="content-preview-type">{item.type || 'Arquivo'}</div>
                     {item.description && (
                       <div className="content-preview-description">{item.description}</div>
                     )}
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+          
+          {/* Debug info for content */}
+          {process.env.NODE_ENV === 'development' && (
+            <div style={{ background: '#333', padding: '10px', margin: '10px 0', borderRadius: '5px', fontSize: '12px' }}>
+              <strong>Debug - Pack Content:</strong><br/>
+              Content exists: {pack.content ? 'Yes' : 'No'}<br/>
+              Content type: {typeof pack.content}<br/>
+              Content length: {pack.content ? pack.content.length : 'N/A'}<br/>
+              Content data: {JSON.stringify(pack.content, null, 2)}
             </div>
           )}
 
@@ -360,13 +432,14 @@ const PackDetail = () => {
               {currentUser ? (
                 (userProfile?.accountType === 'client' || userProfile?.accountType === 'both') ? (
                   pack.providerId !== currentUser.uid ? (
-                    <button 
-                      className="btn-purchase"
-                      onClick={handlePurchase}
-                    >
-                      <i className="fas fa-shopping-cart"></i>
-                      Comprar Pack
-                    </button>
+            <button 
+              className={`btn-purchase ${pack.status && pack.status !== 'active' ? 'disabled' : ''}`}
+              onClick={handlePurchase}
+              disabled={pack.status && pack.status !== 'active'}
+            >
+              <i className="fas fa-shopping-cart"></i>
+              {pack.status && pack.status !== 'active' ? 'Pack Pausado' : 'Comprar Pack'}
+            </button>
                   ) : (
                     <div className="own-pack-notice">
                       <i className="fas fa-info-circle"></i>

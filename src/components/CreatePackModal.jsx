@@ -31,7 +31,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   const { userProfile } = useUser();
   const { createPack, updatePack } = usePacks();
   const { showSuccess, showError } = useNotification();
-  const { uploadPackMedia, uploading } = useR2Media();
+  const { uploadPackMedia, uploading, deleteMedia, deletePackContentMedia } = useR2Media();
   
   // Check account type
   const accountType = userProfile?.accountType || 'client';
@@ -171,6 +171,26 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     reader.readAsDataURL(file);
   };
 
+  const removeCoverImage = async () => {
+    // Delete from R2 if it's an existing image
+    if (editingPack && formData.coverImage?.key) {
+      try {
+        await deleteMedia(formData.coverImage.key);
+      } catch (error) {
+        console.error('Error deleting cover image from R2:', error);
+      }
+    }
+    
+    setCoverImageFile(null);
+    setCoverImagePreview('');
+    setFormData(prev => ({ ...prev, coverImage: null }));
+    
+    // If editing pack, update the database immediately
+    if (editingPack) {
+      updatePack(editingPack.id, { coverImage: null });
+    }
+  };
+
   // Sample content (limit 5 total as per create-pack.js)
   const MAX_SAMPLES = 5;
 
@@ -204,16 +224,46 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     });
   };
 
-  const removeSampleImage = (index) => {
+  const removeSampleImage = async (index) => {
+    // Delete from R2 if it's an existing image
+    if (editingPack && formData.sampleImages[index]?.key) {
+      try {
+        await deleteMedia(formData.sampleImages[index].key);
+      } catch (error) {
+        console.error('Error deleting sample image from R2:', error);
+      }
+    }
+    
     setSampleImageFiles(prev => prev.filter((_, i) => i !== index));
     setSampleImagePreviews(prev => prev.filter((_, i) => i !== index));
     setFormData(prev => ({ ...prev, sampleImages: prev.sampleImages.filter((_, i) => i !== index) }));
+    
+    // If editing pack, update the database immediately
+    if (editingPack) {
+      const updatedSampleImages = formData.sampleImages.filter((_, i) => i !== index);
+      updatePack(editingPack.id, { sampleImages: updatedSampleImages });
+    }
   };
 
-  const removeSampleVideo = (index) => {
+  const removeSampleVideo = async (index) => {
+    // Delete from R2 if it's an existing video
+    if (editingPack && formData.sampleVideos[index]?.key) {
+      try {
+        await deleteMedia(formData.sampleVideos[index].key);
+      } catch (error) {
+        console.error('Error deleting sample video from R2:', error);
+      }
+    }
+    
     setSampleVideoFiles(prev => prev.filter((_, i) => i !== index));
     setSampleVideoPreviews(prev => prev.filter((_, i) => i !== index));
     setFormData(prev => ({ ...prev, sampleVideos: prev.sampleVideos.filter((_, i) => i !== index) }));
+    
+    // If editing pack, update the database immediately
+    if (editingPack) {
+      const updatedSampleVideos = formData.sampleVideos.filter((_, i) => i !== index);
+      updatePack(editingPack.id, { sampleVideos: updatedSampleVideos });
+    }
   };
 
   // Pack files (downloadable content)
@@ -242,8 +292,18 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       reader.readAsDataURL(file);
     });
   };
-  const removePackFile = (index) => {
+  const removePackFile = async (index) => {
     console.log('Removing pack file at index:', index);
+    
+    // Delete from R2 if it's an existing file
+    if (editingPack && formData.packContent[index]?.key) {
+      try {
+        await deletePackContentMedia(formData.packContent[index].key);
+      } catch (error) {
+        console.error('Error deleting pack content from R2:', error);
+      }
+    }
+    
     setPackFiles(prev => {
       const newFiles = prev.filter((_, i) => i !== index);
       console.log('Updated packFiles after removal:', newFiles);
@@ -254,10 +314,26 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       console.log('Updated packFilePreviews after removal:', newPreviews);
       return newPreviews;
     });
+    
+    // If editing pack, update the database immediately
+    if (editingPack) {
+      const updatedPackContent = formData.packContent.filter((_, i) => i !== index);
+      updatePack(editingPack.id, { content: updatedPackContent });
+    }
   };
 
-  const removeExistingPackContent = (index) => {
+  const removeExistingPackContent = async (index) => {
     console.log('Removing pack content at index:', index);
+    
+    // Delete from R2 if it's an existing file
+    if (editingPack && formData.packContent[index]?.key) {
+      try {
+        await deletePackContentMedia(formData.packContent[index].key);
+      } catch (error) {
+        console.error('Error deleting pack content from R2:', error);
+      }
+    }
+    
     setFormData(prev => {
       const newPackContent = (prev.packContent || []).filter((_, i) => i !== index);
       console.log('Updated packContent:', newPackContent);
@@ -266,6 +342,12 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         packContent: newPackContent
       };
     });
+    
+    // If editing pack, update the database immediately
+    if (editingPack) {
+      const updatedPackContent = (formData.packContent || []).filter((_, i) => i !== index);
+      updatePack(editingPack.id, { content: updatedPackContent });
+    }
   };
 
   // Validation
@@ -393,7 +475,77 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       // Create or update pack via Cloud Functions (Firestore) with R2 upload
       let packId = editingPack?.id;
       if (editingPack) {
-        await updatePack(packId, {}); // ensure pack exists; fields will be updated below
+        // Update pack with new data
+        const updateData = {
+          title: formData.title.trim(),
+          description: formData.description.trim(),
+          category: formData.category,
+          subcategory: formData.subcategory || '',
+          packType: formData.packType,
+          price: parseFloat(formData.price),
+          discount: parseInt(formData.discount || 0, 10) || 0,
+          tags: formData.tags,
+          disableWatermark: formData.disableWatermark,
+          updatedAt: Date.now()
+        };
+        
+        // Update pack basic data first
+        await updatePack(packId, updateData);
+        
+        // Handle media updates
+        if (coverImageFile || sampleImageFiles.length > 0 || sampleVideoFiles.length > 0 || packFiles.length > 0) {
+          setUploadStatus('Atualizando mídia...');
+          
+          // Upload new cover image if provided
+          if (coverImageFile) {
+            const coverResult = await uploadPackMedia(coverImageFile, packId);
+            if (coverResult.success) {
+              await updatePack(packId, { coverImage: coverResult.mediaData });
+            }
+          }
+          
+          // Upload new sample images if provided
+          if (sampleImageFiles.length > 0) {
+            const sampleImages = [];
+            for (const file of sampleImageFiles) {
+              const result = await uploadPackMedia(file, packId);
+              if (result.success) {
+                sampleImages.push(result.mediaData);
+              }
+            }
+            if (sampleImages.length > 0) {
+              await updatePack(packId, { sampleImages });
+            }
+          }
+          
+          // Upload new sample videos if provided
+          if (sampleVideoFiles.length > 0) {
+            const sampleVideos = [];
+            for (const file of sampleVideoFiles) {
+              const result = await uploadPackMedia(file, packId);
+              if (result.success) {
+                sampleVideos.push(result.mediaData);
+              }
+            }
+            if (sampleVideos.length > 0) {
+              await updatePack(packId, { sampleVideos });
+            }
+          }
+          
+          // Upload new pack content files if provided
+          if (packFiles.length > 0) {
+            const packContent = [];
+            for (const file of packFiles) {
+              const result = await uploadPackContentMedia(packId, file);
+              if (result.success) {
+                packContent.push(result.mediaData);
+              }
+            }
+            if (packContent.length > 0) {
+              await updatePack(packId, { content: packContent });
+            }
+          }
+        }
       } else {
         const result = await createPack(packDataWithFiles, (progress, status) => {
           setUploadProgress(progress);
@@ -707,15 +859,27 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                   />
                   <label htmlFor="cover-image" className="upload-placeholder">
                     {coverImagePreview ? (
-                      <SmartMediaViewer 
-                        mediaData={coverImagePreview}
-                        type="pack"
-                        watermarked={false}
-                        isOwner={true}
-                        fallbackSrc="/images/default-pack.jpg"
-                        alt="Cover preview"
-                        className="image-preview"
-                      />
+                      <div className="cover-image-container">
+                        <SmartMediaViewer 
+                          mediaData={coverImagePreview}
+                          type="pack"
+                          watermarked={false}
+                          isOwner={true}
+                          fallbackSrc="/images/default-pack.jpg"
+                          alt="Cover preview"
+                          className="image-preview"
+                        />
+                        <button 
+                          type="button" 
+                          className="remove-cover-image" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            removeCoverImage();
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
                     ) : (
                       <>
                         <i className="upload-icon">+</i>

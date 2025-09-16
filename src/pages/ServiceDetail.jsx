@@ -116,6 +116,11 @@ const ServiceDetail = () => {
       return;
     }
 
+    if (service.status && service.status !== 'active') {
+      showWarning('Este serviço está pausado e não está disponível para compra');
+      return;
+    }
+
     if (service.providerId === currentUser.uid) {
       showWarning('Você não pode comprar seu próprio serviço');
       return;
@@ -257,6 +262,12 @@ const ServiceDetail = () => {
                 </>
               ) : (
                 <span className="price-amount">{formatVP(service.price * 1.5)}</span>
+              )}
+              {service.status && service.status !== 'active' && (
+                <div className="service-status-badge paused">
+                  <i className="fas fa-pause"></i>
+                  Pausado
+                </div>
               )}
             </div>
           </div>
@@ -410,12 +421,12 @@ const ServiceDetail = () => {
                 (userProfile?.accountType === 'client' || userProfile?.accountType === 'both') ? (
                   service.providerId !== currentUser.uid ? (
                     <button 
-                      className="btn-purchase"
+                      className={`btn-purchase ${service.status && service.status !== 'active' ? 'disabled' : ''}`}
                       onClick={() => setShowPurchaseModal(true)}
-                      disabled={processing}
+                      disabled={processing || (service.status && service.status !== 'active')}
                     >
                       <i className="fas fa-shopping-cart"></i>
-                      Comprar Serviço
+                      {service.status && service.status !== 'active' ? 'Serviço Pausado' : 'Comprar Serviço'}
                     </button>
                   ) : (
                     <div className="own-service-notice">

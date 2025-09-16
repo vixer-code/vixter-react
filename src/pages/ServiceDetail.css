@@ -73,6 +73,30 @@
   display: block;
 }
 
+.service-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 152, 0, 0.9);
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 8px;
+  width: fit-content;
+}
+
+.service-status-badge.paused {
+  background: rgba(255, 152, 0, 0.9);
+}
+
+.service-status-badge i {
+  font-size: 0.7rem;
+}
+
 .price-currency {
   font-size: 1.2rem;
   color: #888;
