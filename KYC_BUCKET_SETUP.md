@@ -130,3 +130,4 @@ Se houver documentos KYC já no bucket público:
 - ✅ **Auditoria**: Controle de acesso granular
 - ✅ **Escalabilidade**: Fácil gerenciamento de permissões
 - ✅ **Performance**: URLs assinadas eficientes
+
