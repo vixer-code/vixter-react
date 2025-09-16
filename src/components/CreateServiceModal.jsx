@@ -33,7 +33,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     description: '',
     price: '',
     discount: '',
-    features: [],
     complementaryOptions: [],
     coverImage: null,
     tags: []
@@ -48,7 +47,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   const [showcaseVideoPreviews, setShowcaseVideoPreviews] = useState([]);
 
   // Input refs
-  const featuresInputRef = useRef(null);
   const tagsInputRef = useRef(null);
   const autoSaveTimeoutRef = useRef(null);
 
@@ -162,7 +160,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
           category: draftData.category || '',
           description: draftData.description || '',
           price: draftData.price || '',
-          features: draftData.features || [],
           complementaryOptions: draftData.complementaryOptions || [],
           coverImage: draftData.coverImage || null,
           showcasePhotos: draftData.showcasePhotos || [],
@@ -208,7 +205,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       category: service.category || '',
       description: service.description || '',
       price: service.price || '',
-      features: service.features || [],
       complementaryOptions: service.complementaryOptions || [],
       coverImage: service.coverImageURL || service.coverImage || null,
       showcasePhotos: service.showcasePhotosURLs || service.showcasePhotos || [],
@@ -239,7 +235,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       description: '',
       price: '',
       discount: '',
-      features: [],
       complementaryOptions: [],
       coverImage: null,
       tags: []
@@ -260,23 +255,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     }));
   };
 
-  const addFeature = () => {
-    if (featuresInputRef.current && featuresInputRef.current.value.trim()) {
-      const newFeature = featuresInputRef.current.value.trim();
-      setFormData(prev => ({
-        ...prev,
-        features: [...prev.features, newFeature]
-      }));
-      featuresInputRef.current.value = '';
-    }
-  };
-
-  const removeFeature = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      features: prev.features.filter((_, i) => i !== index)
-    }));
-  };
 
   const addTag = () => {
     if (tagsInputRef.current && tagsInputRef.current.value.trim()) {
@@ -503,7 +481,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
         description: formData.description,
         price: parseFloat(formData.price), // Price in VC
         discount: parseInt(formData.discount || 0, 10) || 0,
-        features: formData.features,
         complementaryOptions: formData.complementaryOptions,
         tags: formData.tags,
         providerId: currentUser.uid,
@@ -707,29 +684,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                 <small>Mínimo de 50 caracteres. Descreva o que você oferece e para quem.</small>
               </div>
 
-              <div className="form-group">
-                <label>Recursos do Serviço</label>
-                <div className="tag-input-container">
-                  <input
-                    ref={featuresInputRef}
-                    type="text"
-                    placeholder="Adicione recursos e pressione Enter"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
-                  />
-                  <button type="button" onClick={addFeature} className="add-tag-btn">
-                    Adicionar
-                  </button>
-                </div>
-                <div className="tags-container">
-                  {formData.features.map((feature, index) => (
-                    <span key={index} className="tag">
-                      {feature}
-                      <button onClick={() => removeFeature(index)}>&times;</button>
-                    </span>
-                  ))}
-                </div>
-                <small>Liste os principais recursos do seu serviço para torná-lo mais atraente</small>
-              </div>
             </div>
           )}
 
@@ -1041,18 +995,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                   <p>{formData.description || 'Descrição do serviço'}</p>
                 </div>
                 
-                {formData.features.length > 0 && (
-                  <div className="preview-features">
-                    <h3>Recursos do Serviço</h3>
-                    <ul className="features-list">
-                      {formData.features.map((feature, index) => (
-                        <li key={index}>
-                          <span className="feature-check">✓</span> {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
                 
                 {formData.complementaryOptions.length > 0 && (
                   <div className="preview-options">

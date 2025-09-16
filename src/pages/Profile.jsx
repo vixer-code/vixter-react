@@ -1736,6 +1736,7 @@ const Profile = () => {
                       mediaData={pack.coverImage}
                       type="pack"
                       watermarked={false}
+                      isOwner={isOwner}
                       fallbackSrc="/images/default-pack.jpg"
                       alt={pack.title}
                       sizes={packCoverSizes}
@@ -1825,6 +1826,7 @@ const Profile = () => {
                         mediaData={order.packData?.coverImage}
                         type="pack"
                         watermarked={false}
+                        isOwner={isOwner}
                         fallbackSrc="/images/default-pack.jpg"
                         alt={order.packData?.title || 'Pack'}
                         sizes={packCoverSizes}
@@ -2062,6 +2064,7 @@ const Profile = () => {
                   mediaData={packToPreview.coverImage}
                   type="pack"
                   watermarked={false}
+                  isOwner={isOwner}
                   fallbackSrc="/images/default-pack.jpg"
                   alt={packToPreview.title}
                   sizes="(max-width: 480px) 90vw, (max-width: 768px) 85vw, 720px"

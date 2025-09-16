@@ -6,7 +6,8 @@ import './SmartMediaViewer.css';
 const SmartMediaViewer = ({ 
   mediaData, // Can be a string (URL) or object with { key, publicUrl }
   type = 'service', // 'service' or 'pack'
-  watermarked = false, // For pack content
+  watermarked = false, // For pack content - only when buyer is viewing
+  isOwner = false, // If true, owner can see their own content without watermarking
   fallbackSrc = null,
   className = '',
   sizes = null,
@@ -44,17 +45,19 @@ const SmartMediaViewer = ({
 
   // If mediaData is an object, check if it has a key (R2 media)
   if (typeof mediaData === 'object' && mediaData.key) {
-    // For pack cover images and sample content (public bucket), use publicUrl directly
-    // Only use R2MediaViewer for pack content that needs watermarking
-    if (type === 'pack' && watermarked) {
-      setIsR2Media(true);
-      setR2Key(mediaData.key);
-      setFallbackUrl(mediaData.publicUrl || fallbackSrc);
-    } else {
-      // Use publicUrl directly for public content
+    // Check if this is from a private bucket (no publicUrl) or public bucket (has publicUrl)
+    const hasPublicUrl = mediaData.publicUrl && mediaData.publicUrl.startsWith('http');
+    
+    if (hasPublicUrl) {
+      // Content from public bucket - use publicUrl directly
       setIsR2Media(false);
       setR2Key(null);
-      setFallbackUrl(mediaData.publicUrl || fallbackSrc);
+      setFallbackUrl(mediaData.publicUrl);
+    } else {
+      // Content from private bucket - needs R2MediaViewer for signed URLs
+      setIsR2Media(true);
+      setR2Key(mediaData.key);
+      setFallbackUrl(fallbackSrc);
     }
     return;
   }
@@ -80,6 +83,7 @@ const SmartMediaViewer = ({
         mediaKey={r2Key}
         type={type}
         watermarked={watermarked}
+        isOwner={isOwner}
         fallbackUrl={fallbackUrl}
         className={className}
         {...props}

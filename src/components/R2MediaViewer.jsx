@@ -6,6 +6,7 @@ const R2MediaViewer = ({
   mediaKey, 
   type = 'service', // 'service' or 'pack'
   watermarked = false, // For pack content
+  isOwner = false, // If true, owner sees content without watermark
   fallbackUrl = null,
   className = '',
   ...props 
@@ -27,12 +28,17 @@ const R2MediaViewer = ({
     try {
       let downloadUrl;
       
-      if (type === 'pack' && watermarked) {
-        // Get watermarked URL for pack content
-        const result = await mediaService.getPackContentUrl(mediaKey);
+      if (type === 'pack' && watermarked && !isOwner) {
+        // Get watermarked URL for pack content from private bucket (only for buyers)
+        // TODO: Pass actual userId when implementing purchase validation
+        const result = await mediaService.generatePackContentUrl(mediaKey, 'buyer-user-id', null, null);
+        downloadUrl = result.downloadUrl;
+      } else if (type === 'pack' && isOwner) {
+        // Owner sees pack content without watermark
+        const result = await mediaService.generatePackContentUrl(mediaKey, null, null, null);
         downloadUrl = result.downloadUrl;
       } else {
-        // Get regular download URL for service media
+        // Get regular download URL for service media from public bucket
         const result = await mediaService.getServiceMediaUrl(mediaKey);
         downloadUrl = result.downloadUrl;
       }
