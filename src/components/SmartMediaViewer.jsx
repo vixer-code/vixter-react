@@ -18,6 +18,12 @@ const SmartMediaViewer = ({
   const [r2Key, setR2Key] = useState(null);
   const [fallbackUrl, setFallbackUrl] = useState(null);
 
+  // Function to detect if media is a video
+  const isVideo = (url) => {
+    if (!url) return false;
+    return /\.(mp4|mov|webm|ogg|avi|mkv)(\?|$)/i.test(url);
+  };
+
   // Determine if this is R2 media or regular URL
   useEffect(() => {
     if (!mediaData) {
@@ -105,14 +111,32 @@ const SmartMediaViewer = ({
     );
   }
 
-  // Otherwise, use CachedImage with the URL
-  console.log('SmartMediaViewer: Using CachedImage with:', { 
+  // Check if this is a video
+  const isVideoFile = isVideo(fallbackUrl);
+  
+  console.log('SmartMediaViewer: Rendering media:', { 
     src: fallbackUrl, 
     fallbackSrc, 
     isR2Media, 
-    r2Key 
+    r2Key,
+    isVideoFile
   });
+
+  // If it's a video, render video element
+  if (isVideoFile) {
+    return (
+      <video 
+        controls 
+        className={`smart-media-viewer video ${className}`}
+        {...props}
+      >
+        <source src={fallbackUrl} type="video/mp4" />
+        Seu navegador não suporta vídeo.
+      </video>
+    );
+  }
   
+  // Otherwise, use CachedImage with the URL
   return (
     <CachedImage
       src={fallbackUrl}

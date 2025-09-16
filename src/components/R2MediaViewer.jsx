@@ -89,14 +89,33 @@ const R2MediaViewer = ({
     );
   }
 
+  // Check if this is a video
+  const isVideo = (url) => {
+    if (!url) return false;
+    return /\.(mp4|mov|webm|ogg|avi|mkv)(\?|$)/i.test(url);
+  };
+
+  const isVideoFile = isVideo(imageSrc);
+
   return (
     <div className={`r2-media-viewer ${className}`} {...props}>
-      <img
-        src={imageSrc}
-        alt="Media"
-        onError={handleError}
-        loading="lazy"
-      />
+      {isVideoFile ? (
+        <video 
+          controls 
+          onError={handleError}
+          className="r2-video"
+        >
+          <source src={imageSrc} type="video/mp4" />
+          Seu navegador não suporta vídeo.
+        </video>
+      ) : (
+        <img
+          src={imageSrc}
+          alt="Media"
+          onError={handleError}
+          loading="lazy"
+        />
+      )}
     </div>
   );
 };
