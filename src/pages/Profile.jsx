@@ -268,6 +268,15 @@ const [formData, setFormData] = useState({
     }
   }, [isClient, currentUser, loadPurchasedPacks]);
 
+  // Load followers, posts, and reviews for current user profile
+  useEffect(() => {
+    if (profile && isOwner && currentUser) {
+      loadFollowers(profile.id);
+      loadPosts(profile.id);
+      loadReviews(profile.id);
+    }
+  }, [profile, isOwner, currentUser]);
+
   // Handle URL hash navigation
   useEffect(() => {
     const hash = location.hash.replace('#', '');
@@ -1316,7 +1325,7 @@ const [formData, setFormData] = useState({
               <div className="create-post-card">
                 <div className="create-post-avatar">
                   <CachedImage 
-                    src={profile.profilePictureURL}
+                    src={userProfile?.profilePictureURL || profile?.profilePictureURL}
                     defaultType="PROFILE_3"
                     alt="Avatar"
                     className="create-post-avatar-img"
@@ -1616,7 +1625,10 @@ const [formData, setFormData] = useState({
                   </div>
                   <div className="service-info">
                     <h3 className="service-title">{service.title}</h3>
-                    <p className="service-price">VP {(service.price != null ? (service.price * 1.5).toFixed(2) : '0.00')}</p>
+                    <div className="service-price">
+                      <div className="price-original">VP {(service.price != null ? service.price.toFixed(2) : '0.00')}</div>
+                      <div className="price-discounted">VP {(service.price != null ? (service.price * 1.5).toFixed(2) : '0.00')}</div>
+                    </div>
                     <p className="service-category">{service.category || 'Geral'}</p>
                     {service.tags && service.tags.length > 0 && (
                       <div className="service-tags">
@@ -1735,10 +1747,13 @@ const [formData, setFormData] = useState({
                   </div>
                   <div className="pack-info">
                     <h3 className="pack-title">{pack.title}</h3>
-                    <p className="pack-price">
-                      VP {(pack.price != null ? (pack.price * 1.5).toFixed(2) : '0.00')}
-                      {pack.discount && <span className="pack-discount">(-{pack.discount}%)</span>}
-                    </p>
+                    <div className="pack-price">
+                      <div className="price-original">VP {(pack.price != null ? pack.price.toFixed(2) : '0.00')}</div>
+                      <div className="price-discounted">
+                        VP {(pack.price != null ? (pack.price * 1.5).toFixed(2) : '0.00')}
+                        {pack.discount && <span className="pack-discount">(-{pack.discount}%)</span>}
+                      </div>
+                    </div>
                     {pack.tags && pack.tags.length > 0 && (
                       <div className="service-tags">
                         {pack.tags.slice(0, 4).map((tag, index) => (

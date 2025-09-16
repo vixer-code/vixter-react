@@ -68,7 +68,10 @@ export const UserProvider = ({ children }) => {
       const unsubscribe = onSnapshot(userRef, async (doc) => {
         if (doc.exists()) {
           const userData = doc.data();
-          setUserProfile(userData);
+          setUserProfile({
+            id: doc.id,
+            ...userData
+          });
 
           // Backfill username once from RTDB if missing in Firestore
           if ((!userData.username || userData.username === '') && rtdb) {

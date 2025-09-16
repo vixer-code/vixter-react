@@ -759,11 +759,17 @@ header .vp-balance .vp-icon svg,
   nav {
     padding: 8px 12px;
     min-height: 50px;
+    position: relative;
   }
   
   .logo {
     font-size: 1.3rem;
     gap: 8px;
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
   }
   
   .logo-icon {
@@ -779,6 +785,11 @@ header .vp-balance .vp-icon svg,
     display: flex !important;
     justify-content: center;
     max-width: 300px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
   }
   
   .mobile-menu-btn {
@@ -787,6 +798,11 @@ header .vp-balance .vp-icon svg,
     padding: 6px;
     min-width: 36px;
     min-height: 36px;
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
   }
   
   .vp-balance {
@@ -826,6 +842,11 @@ header .vp-balance .vp-icon svg,
   .logo {
     font-size: 1.1rem;
     gap: 6px;
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
   }
   
   .logo-icon {
@@ -835,12 +856,17 @@ header .vp-balance .vp-icon svg,
   
   .mobile-search-bar {
     max-width: 200px;
-    flex: 1;
-    justify-content: center;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
   }
   
   .header-left {
-    justify-content: space-between;
+    justify-content: flex-start;
+    position: relative;
+    flex: 1;
   }
   
   .mobile-menu-btn {
@@ -848,6 +874,11 @@ header .vp-balance .vp-icon svg,
     padding: 5px;
     min-width: 32px;
     min-height: 32px;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
   }
   
   .profile-picture-container {

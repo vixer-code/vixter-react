@@ -106,7 +106,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       setSampleVideoFiles([]);
       setSampleImagePreviews([]);
       setSampleVideoPreviews([]);
-      setCoverImagePreview(editingPack.coverImage || '');
+      setCoverImagePreview(editingPack.coverImage?.publicUrl || editingPack.coverImage || '');
 
       setCurrentStep(0);
     } else {
@@ -245,7 +245,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     if (!formData.price) return 'Por favor, insira um preço';
     const value = parseFloat(formData.price);
     if (isNaN(value)) return 'Por favor, insira um valor numérico válido';
-    if (value < 5) return 'O preço mínimo é 5,00 VC';
+    if (value < 10) return 'O preço mínimo é 10,00 VC';
     if (value > 10000) return 'O preço máximo é 10.000,00 VC';
     return null;
   };
@@ -603,14 +603,14 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                 <input
                   id="pack-price"
                   type="number"
-                  min="5"
+                  min="10"
                   step="0.01"
                   value={formData.price}
                   onChange={e => handleInputChange('price', e.target.value)}
                   className={getPriceError() ? 'error' : ''}
-                  placeholder="5.00"
+                  placeholder="10.00"
                 />
-                 <small>Preço mínimo 5,00 VC</small>
+                 <small>Preço mínimo 10,00 VC</small>
                 {getPriceError() && (
                   <div className="validation-error">
                     <i className="fas fa-exclamation-triangle"></i>
@@ -711,12 +711,15 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
 
                 {(sampleImagePreviews.length > 0 || formData.sampleImages.length > 0) && (
                   <div className="showcase-grid">
-                    {formData.sampleImages.map((url, idx) => (
-                      <div key={`si-url-${idx}`} className="showcase-item">
-                        <img src={url} alt={`Amostra ${idx + 1}`} />
-                        <button className="remove-media" onClick={() => removeSampleImage(idx)}>×</button>
-                      </div>
-                    ))}
+                    {formData.sampleImages.map((imageData, idx) => {
+                      const imageUrl = typeof imageData === 'string' ? imageData : imageData?.publicUrl || imageData;
+                      return (
+                        <div key={`si-url-${idx}`} className="showcase-item">
+                          <img src={imageUrl} alt={`Amostra ${idx + 1}`} />
+                          <button className="remove-media" onClick={() => removeSampleImage(idx)}>×</button>
+                        </div>
+                      );
+                    })}
                     {sampleImagePreviews.map((src, idx) => (
                       <div key={`si-${idx}`} className="showcase-item">
                         <img src={src} alt={`Amostra ${idx + 1}`} />
@@ -728,15 +731,18 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
 
                 {(sampleVideoPreviews.length > 0 || formData.sampleVideos.length > 0) && (
                   <div className="showcase-grid">
-                    {formData.sampleVideos.map((url, idx) => (
-                      <div key={`sv-url-${idx}`} className="showcase-item video-showcase">
-                        <video controls>
-                          <source src={url} type="video/mp4" />
-                          Seu navegador não suporta vídeo.
-                        </video>
-                        <button className="remove-media" onClick={() => removeSampleVideo(idx)}>×</button>
-                      </div>
-                    ))}
+                    {formData.sampleVideos.map((videoData, idx) => {
+                      const videoUrl = typeof videoData === 'string' ? videoData : videoData?.publicUrl || videoData;
+                      return (
+                        <div key={`sv-url-${idx}`} className="showcase-item video-showcase">
+                          <video controls>
+                            <source src={videoUrl} type="video/mp4" />
+                            Seu navegador não suporta vídeo.
+                          </video>
+                          <button className="remove-media" onClick={() => removeSampleVideo(idx)}>×</button>
+                        </div>
+                      );
+                    })}
                     {sampleVideoPreviews.map((src, idx) => (
                       <div key={`sv-${idx}`} className="showcase-item video-showcase">
                         <video controls>
@@ -776,19 +782,22 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                 {/* Existing pack content (URLs) when editing */}
                 {formData.packContent && formData.packContent.length > 0 && (
                   <div className="showcase-grid">
-                    {formData.packContent.map((url, idx) => (
-                      <div key={`pc-url-${idx}`} className="showcase-item">
-                        {/\.(mp4|mov|webm|ogg)(\?|$)/i.test(url) ? (
-                          <video controls>
-                            <source src={url} type="video/mp4" />
-                            Seu navegador não suporta vídeo.
-                          </video>
-                        ) : (
-                          <img src={url} alt={`Arquivo ${idx + 1}`} />
-                        )}
-                        <button className="remove-media" onClick={() => removeExistingPackContent(idx)}>×</button>
-                      </div>
-                    ))}
+                    {formData.packContent.map((contentData, idx) => {
+                      const contentUrl = typeof contentData === 'string' ? contentData : contentData?.publicUrl || contentData;
+                      return (
+                        <div key={`pc-url-${idx}`} className="showcase-item">
+                          {/\.(mp4|mov|webm|ogg)(\?|$)/i.test(contentUrl) ? (
+                            <video controls>
+                              <source src={contentUrl} type="video/mp4" />
+                              Seu navegador não suporta vídeo.
+                            </video>
+                          ) : (
+                            <img src={contentUrl} alt={`Arquivo ${idx + 1}`} />
+                          )}
+                          <button className="remove-media" onClick={() => removeExistingPackContent(idx)}>×</button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -909,11 +918,14 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                       <div className="preview-photos">
                         <h4>Fotos de Amostra Existentes ({formData.sampleImages.length})</h4>
                         <div className="showcase-grid">
-                          {formData.sampleImages.map((url, idx) => (
-                            <div key={`existing-si-${idx}`} className="showcase-item">
-                              <img src={url} alt={`Amostra ${idx + 1}`} />
-                            </div>
-                          ))}
+                          {formData.sampleImages.map((imageData, idx) => {
+                            const imageUrl = typeof imageData === 'string' ? imageData : imageData?.publicUrl || imageData;
+                            return (
+                              <div key={`existing-si-${idx}`} className="showcase-item">
+                                <img src={imageUrl} alt={`Amostra ${idx + 1}`} />
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -938,14 +950,17 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                       <div className="preview-videos">
                         <h4>Vídeos de Amostra Existentes ({formData.sampleVideos.length})</h4>
                         <div className="showcase-grid">
-                          {formData.sampleVideos.map((url, idx) => (
-                            <div key={`existing-sv-${idx}`} className="showcase-item video-showcase">
-                              <video controls>
-                                <source src={url} type="video/mp4" />
-                                Seu navegador não suporta vídeo.
-                              </video>
-                            </div>
-                          ))}
+                          {formData.sampleVideos.map((videoData, idx) => {
+                            const videoUrl = typeof videoData === 'string' ? videoData : videoData?.publicUrl || videoData;
+                            return (
+                              <div key={`existing-sv-${idx}`} className="showcase-item video-showcase">
+                                <video controls>
+                                  <source src={videoUrl} type="video/mp4" />
+                                  Seu navegador não suporta vídeo.
+                                </video>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -987,18 +1002,21 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                       <div className="preview-pack-files">
                         <h4>Conteúdo do Pack Existentes ({formData.packContent.length})</h4>
                         <div className="showcase-grid">
-                          {formData.packContent.map((url, idx) => (
-                            <div key={`existing-pc-${idx}`} className="showcase-item">
-                              {/\.(mp4|mov|webm|ogg)(\?|$)/i.test(url) ? (
-                                <video controls>
-                                  <source src={url} type="video/mp4" />
-                                  Seu navegador não suporta vídeo.
-                                </video>
-                              ) : (
-                                <img src={url} alt={`Arquivo ${idx + 1}`} />
-                              )}
-                            </div>
-                          ))}
+                          {formData.packContent.map((contentData, idx) => {
+                            const contentUrl = typeof contentData === 'string' ? contentData : contentData?.publicUrl || contentData;
+                            return (
+                              <div key={`existing-pc-${idx}`} className="showcase-item">
+                                {/\.(mp4|mov|webm|ogg)(\?|$)/i.test(contentUrl) ? (
+                                  <video controls>
+                                    <source src={contentUrl} type="video/mp4" />
+                                    Seu navegador não suporta vídeo.
+                                  </video>
+                                ) : (
+                                  <img src={contentUrl} alt={`Arquivo ${idx + 1}`} />
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}

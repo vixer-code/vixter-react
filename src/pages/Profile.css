@@ -1492,6 +1492,26 @@
   font-weight: 700;
   color: #00FFCA;
   margin: 0 0 5px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.price-original {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #888;
+  text-decoration: line-through;
+  margin-bottom: 2px;
+}
+
+.price-discounted {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #00FFCA;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .service-category {
@@ -2089,6 +2109,14 @@
     font-size: 1.1rem;
   }
   
+  .price-original {
+    font-size: 0.8rem;
+  }
+  
+  .price-discounted {
+    font-size: 1.1rem;
+  }
+  
   .service-actions {
     padding: 8px 12px;
     gap: 6px;
@@ -2295,6 +2323,14 @@
   .service-price,
   .pack-price,
   .subscription-price {
+    font-size: 1rem;
+  }
+  
+  .price-original {
+    font-size: 0.75rem;
+  }
+  
+  .price-discounted {
     font-size: 1rem;
   }
   
@@ -2662,8 +2698,9 @@
   color: #00FFCA;
   margin-bottom: 8px;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 
 .vc-badge {

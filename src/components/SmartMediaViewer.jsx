@@ -42,13 +42,22 @@ const SmartMediaViewer = ({
       return;
     }
 
-    // If mediaData is an object, check if it has a key (R2 media)
-    if (typeof mediaData === 'object' && mediaData.key) {
+  // If mediaData is an object, check if it has a key (R2 media)
+  if (typeof mediaData === 'object' && mediaData.key) {
+    // For pack cover images and sample content (public bucket), use publicUrl directly
+    // Only use R2MediaViewer for pack content that needs watermarking
+    if (type === 'pack' && watermarked) {
       setIsR2Media(true);
       setR2Key(mediaData.key);
       setFallbackUrl(mediaData.publicUrl || fallbackSrc);
-      return;
+    } else {
+      // Use publicUrl directly for public content
+      setIsR2Media(false);
+      setR2Key(null);
+      setFallbackUrl(mediaData.publicUrl || fallbackSrc);
     }
+    return;
+  }
 
     // If mediaData is an object but no key, use publicUrl as fallback
     if (typeof mediaData === 'object' && mediaData.publicUrl) {
