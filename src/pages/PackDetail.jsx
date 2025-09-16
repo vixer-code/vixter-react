@@ -211,7 +211,9 @@ const PackDetail = () => {
             <div className="pack-title-section">
               <h1>{pack.title}</h1>
               <div className="pack-meta">
-                <span className="pack-category">{pack.category}</span>
+                <span className="pack-category">
+                  {pack.category === 'conteudo-18' ? 'Vixies (+18)' : pack.category}
+                </span>
                 <span className="pack-rating">
                   <i className="fas fa-star"></i>
                   {pack.rating || 'N/A'}
@@ -219,19 +221,12 @@ const PackDetail = () => {
               </div>
             </div>
             <div className="pack-price">
-              {pack.discount && pack.discount > 0 ? (
-                <>
-                  <span className="price-amount">{formatVP(calculateVpTotal())}</span>
-                  <span className="price-currency">VP</span>
-                </>
-              ) : (
-                <span className="price-amount">{formatVP(pack.price * 1.5)}</span>
-              )}
+              <span className="price-amount">{formatVP(calculateVpTotal())}</span>
             </div>
           </div>
 
+          {/* Cover Image */}
           <div className="pack-images">
-            {/* Cover Image */}
             {pack.coverImage?.key && (
               <div className="image-gallery">
                 <R2MediaViewer
@@ -244,39 +239,20 @@ const PackDetail = () => {
               </div>
             )}
             
-            {/* Sample Images */}
-            {pack.sampleImages && pack.sampleImages.length > 0 && (
-              <div className="image-gallery">
-                {pack.sampleImages.map((image, index) => (
-                  <R2MediaViewer
-                    key={index}
-                    mediaKey={image.key}
-                    type="pack"
-                    watermarked={false}
-                    alt={`${pack.title} - Imagem ${index + 1}`}
-                    className="pack-image"
-                  />
-                ))}
-              </div>
-            )}
-            
             {/* Fallback for old structure */}
-            {pack.images && pack.images.length > 0 && !pack.coverImage && !pack.sampleImages && (
+            {pack.images && pack.images.length > 0 && !pack.coverImage && (
               <div className="image-gallery">
-                {pack.images.map((image, index) => (
-                  <CachedImage
-                    key={index}
-                    src={image}
-                    alt={`${pack.title} - Imagem ${index + 1}`}
-                    className="pack-image"
-                    showLoading={true}
-                  />
-                ))}
+                <CachedImage
+                  src={pack.images[0]}
+                  alt={`${pack.title} - Imagem principal`}
+                  className="pack-image"
+                  showLoading={true}
+                />
               </div>
             )}
             
             {/* No images fallback */}
-            {!pack.coverImage && !pack.sampleImages && (!pack.images || pack.images.length === 0) && (
+            {!pack.coverImage && (!pack.images || pack.images.length === 0) && (
               <div className="no-image">
                 <i className="fas fa-image"></i>
                 <span>Nenhuma imagem disponível</span>
@@ -284,6 +260,7 @@ const PackDetail = () => {
             )}
           </div>
 
+          {/* Description */}
           <div className="pack-description">
             <h3>Descrição</h3>
             <p>{pack.description}</p>
@@ -310,18 +287,38 @@ const PackDetail = () => {
             </div>
           )}
 
+          {/* Sample Images */}
+          {pack.sampleImages && pack.sampleImages.length > 0 && (
+            <div className="pack-sample-images">
+              <h3>Imagens de Amostra</h3>
+              <div className="image-gallery">
+                {pack.sampleImages.map((image, index) => (
+                  <R2MediaViewer
+                    key={index}
+                    mediaKey={image.key}
+                    type="pack"
+                    watermarked={false}
+                    alt={`${pack.title} - Amostra ${index + 1}`}
+                    className="pack-image"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="pack-provider">
             <h3>Vendedor(a)</h3>
             <div className="provider-info">
               <CachedImage
-                src={pack.providerAvatar || pack.providerPhotoURL}
-                alt={pack.providerName || pack.sellerName}
+                src={pack.providerAvatar || pack.providerPhotoURL || pack.sellerAvatar || pack.sellerPhotoURL}
+                defaultType="PROFILE_1"
+                alt={pack.providerName || pack.sellerName || 'Vendedor'}
                 className="provider-avatar"
                 showLoading={false}
               />
               <div className="provider-details">
-                <h4>{pack.providerName || pack.sellerName}</h4>
-                <p>@{pack.providerUsername || pack.sellerUsername || 'usuário'}</p>
+                <h4>{pack.providerName || pack.sellerName || 'Vendedor'}</h4>
+                <p>@{pack.providerUsername || pack.sellerUsername || 'usuario'}</p>
                 <div className="provider-stats">
                   <span>
                     <i className="fas fa-star"></i>
