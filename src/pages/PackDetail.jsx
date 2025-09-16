@@ -221,9 +221,8 @@ const PackDetail = () => {
             <div className="pack-price">
               {pack.discount && pack.discount > 0 ? (
                 <>
-                  <span className="price-original">{formatVP(pack.price * 1.5)}</span>
                   <span className="price-amount">{formatVP(calculateVpTotal())}</span>
-                  <span className="discount-badge">-{pack.discount}%</span>
+                  <span className="price-currency">VP</span>
                 </>
               ) : (
                 <span className="price-amount">{formatVP(pack.price * 1.5)}</span>
@@ -289,6 +288,27 @@ const PackDetail = () => {
             <h3>Descrição</h3>
             <p>{pack.description}</p>
           </div>
+
+          {/* Pack Content Showcase */}
+          {pack.content && pack.content.length > 0 && (
+            <div className="pack-content-showcase">
+              <h3>Conteúdo do Pack</h3>
+              <div className="content-preview-grid">
+                {pack.content.map((item, index) => (
+                  <div key={index} className="content-preview-item">
+                    <div className="content-preview-icon">
+                      <i className="fas fa-file"></i>
+                    </div>
+                    <div className="content-preview-name">{item.name}</div>
+                    <div className="content-preview-type">{item.type}</div>
+                    {item.description && (
+                      <div className="content-preview-description">{item.description}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="pack-provider">
             <h3>Vendedor(a)</h3>
@@ -414,13 +434,13 @@ const PackDetail = () => {
 
             <div className="modal-actions">
               <button 
-                className="btn-secondary"
+                className="btn-cancel"
                 onClick={() => setShowPurchaseModal(false)}
               >
                 Cancelar
               </button>
               <button 
-                className="btn-primary"
+                className="btn-confirm"
                 onClick={handleConfirmPurchase}
               >
                 <i className="fas fa-check"></i>
