@@ -44,18 +44,19 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
 
   // Generate URLs for all content items
   const generateAllUrls = useCallback(async () => {
-    if (!pack?.packContent || !Array.isArray(pack.packContent)) {
+    const contentItems = pack?.packContent || pack?.content || [];
+    if (!Array.isArray(contentItems) || contentItems.length === 0) {
       return;
     }
 
-    const promises = pack.packContent.map(async (contentItem) => {
+    const promises = contentItems.map(async (contentItem) => {
       if (contentItem.key) {
         await generateContentUrl(contentItem);
       }
     });
 
     await Promise.all(promises);
-  }, [pack?.packContent, generateContentUrl]);
+  }, [pack?.packContent, pack?.content, generateContentUrl]);
 
   useEffect(() => {
     generateAllUrls();
@@ -187,7 +188,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
         )}
 
         <div className="content-grid">
-          {pack.packContent?.map((contentItem, index) => (
+          {(pack.packContent || pack.content || [])?.map((contentItem, index) => (
             <div
               key={contentItem.key || index}
               className="content-item"
@@ -232,7 +233,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
           ))}
         </div>
 
-        {(!pack.packContent || pack.packContent.length === 0) && (
+        {(!pack.packContent || pack.packContent.length === 0) && (!pack.content || pack.content.length === 0) && (
           <div className="empty-state">
             <i className="fas fa-folder-open"></i>
             <h3>Nenhum conteúdo disponível</h3>
@@ -241,6 +242,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
               <p><strong>Debug Info:</strong></p>
               <p>Pack ID: {pack.id}</p>
               <p>packContent: {JSON.stringify(pack.packContent)}</p>
+              <p>content: {JSON.stringify(pack.content)}</p>
               <p>Se você vê este pack no R2 mas não aqui, o problema é que o campo packContent não está populado no Firestore.</p>
             </div>
           </div>

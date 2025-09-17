@@ -33,52 +33,25 @@ export const useSecurePackContent = () => {
       // Get Firebase ID token for authentication
       const token = await currentUser.getIdToken();
 
-      // Use existing backend API for download URLs with watermark
-      const response = await fetch('/api/pack-content/download', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          key: contentKey,
-          userId: currentUser.uid,
-          packId,
-          orderId,
-          watermarked: true,
-          expiresIn: 3600
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate download URL');
-      }
-
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to generate download URL');
-      }
-
-      // For watermarked content, we'll use the Cloud Function URL
-      // which will handle the watermarking on-the-fly
+      // Use Cloud Function for secure pack content access with watermark
       const cloudFunctionUrl = 'https://packcontentaccess-6twxbx5ima-ue.a.run.app';
       
+      // Build query parameters
       const params = new URLSearchParams({
         packId,
-        contentKey,
-        watermark: watermark || currentUser.email?.split('@')[0] || 'user',
-        username: currentUser.email?.split('@')[0] || 'user',
         orderId,
+        contentKey,
+        username: watermark || currentUser.email?.split('@')[0] || 'user',
         token: token
       });
-
+      
       const secureUrl = `${cloudFunctionUrl}?${params.toString()}`;
-
+      
+      // Return the secure URL directly (the Cloud Function will handle watermarking)
       return {
         url: secureUrl,
         watermark: watermark || currentUser.email?.split('@')[0] || 'user',
-        downloadUrl: result.data.downloadUrl // Keep original for fallback
+        downloadUrl: secureUrl
       };
 
     } catch (err) {
