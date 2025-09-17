@@ -1,6 +1,23 @@
 import { NextRequest } from 'next/server';
 import { requireAuth, getCorsHeaders, handleCors, AuthenticatedUser } from '@/lib/auth';
-import { db } from '@/lib/firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+
+// Initialize Firebase Admin if not already initialized
+if (getApps().length === 0) {
+  const serviceAccount = {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  };
+
+  initializeApp({
+    credential: cert(serviceAccount),
+    projectId: process.env.FIREBASE_PROJECT_ID,
+  });
+}
+
+const db = getFirestore();
 
 export async function OPTIONS(request: NextRequest) {
   return handleCors(request);
@@ -33,6 +50,10 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       );
     }
 
+    // Get the Firebase ID token from the request
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.split('Bearer ')[1] || '';
+
     // Verify pack order exists and user has access
     const orderRef = db.collection('packOrders').doc(orderId);
     const orderSnap = await orderRef.get();
@@ -48,6 +69,15 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
     }
 
     const orderData = orderSnap.data();
+    if (!orderData) {
+      return new Response(
+        JSON.stringify({ error: 'Pack order data not found' }),
+        { 
+          status: 404,
+          headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
+        }
+      );
+    }
 
     // Verify order belongs to user and is for the correct pack
     if (orderData.buyerId !== userId || orderData.packId !== packId) {
@@ -86,6 +116,15 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
     }
 
     const packData = packSnap.data();
+    if (!packData) {
+      return new Response(
+        JSON.stringify({ error: 'Pack data not found' }),
+        { 
+          status: 404,
+          headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
+        }
+      );
+    }
 
     // Get vendor info for watermarking
     const vendorId = packData.authorId || packData.creatorId;
@@ -100,7 +139,9 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
         const vendorSnap = await vendorRef.get();
         if (vendorSnap.exists) {
           const vendorData = vendorSnap.data();
-          vendorInfo.vendorUsername = vendorData.username || 'vendor';
+          if (vendorData) {
+            vendorInfo.vendorUsername = vendorData.username || 'vendor';
+          }
         }
       } catch (error) {
         console.warn('Error loading vendor info:', error);
@@ -120,7 +161,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
             orderId,
             contentKey: contentItem.key,
             username: user.email?.split('@')[0] || 'user',
-            token: await user.getIdToken()
+            token: token
           });
           
           contentWithUrls.push({
@@ -140,7 +181,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
             orderId,
             contentKey: contentItem.key,
             username: user.email?.split('@')[0] || 'user',
-            token: await user.getIdToken()
+            token: token
           });
           
           contentWithUrls.push({
