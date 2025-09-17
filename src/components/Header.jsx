@@ -11,7 +11,7 @@ import './Header.css';
 
 const Header = () => {
   const { currentUser, logout } = useAuth();
-  const { vpBalance, formatCurrency } = useWallet();
+  const { vpBalance, vcBalance, formatCurrency } = useWallet();
   const { userProfile, formatUserDisplayName, getUserAvatarUrl } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
@@ -293,7 +293,12 @@ const Header = () => {
                        </path>
                      </svg>
                     )}
-                    <span id="vp-amount">{formatCurrency(vpBalance || 0)}</span>
+                    <span id="vp-amount">
+                      {userProfile?.accountType === 'provider' 
+                        ? formatCurrency(vcBalance || 0, 'VC') 
+                        : formatCurrency(vpBalance || 0, 'VP')
+                      }
+                    </span>
                   </div>
                 </li>
                 

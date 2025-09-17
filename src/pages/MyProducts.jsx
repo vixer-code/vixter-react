@@ -74,8 +74,16 @@ const MyProducts = () => {
     let success = false;
     if (orderType === 'service') {
       success = await acceptServiceOrder(orderId);
+      if (success) {
+        // Services go to "accepted" tab (need delivery)
+        setActiveTab('accepted');
+      }
     } else if (orderType === 'pack') {
       success = await acceptPackOrder(orderId);
+      if (success) {
+        // Packs go directly to "completed" tab (no delivery needed)
+        setActiveTab('completed');
+      }
     }
     
     if (success) {
@@ -292,6 +300,10 @@ const MyProducts = () => {
   if (filteredOrders.length > 0) {
     console.log('Sample order structure:', filteredOrders[0]);
   }
+  
+  // Debug: Log all pack orders to see their statuses
+  console.log('All pack orders:', packOrders);
+  console.log('Received pack orders:', packOrders.filter(o => o.type === 'pack'));
 
   return (
     <div className="my-services-container">

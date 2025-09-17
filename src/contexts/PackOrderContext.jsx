@@ -149,22 +149,28 @@ export const PackOrderProvider = ({ children }) => {
       });
 
       if (result.data.success) {
-        showSuccess('Pedido de pack aceito com sucesso! Uma conversa foi criada para comunicação com o cliente.');
+        showSuccess('Pedido de pack aceito com sucesso!');
         
         // Update the order in messaging and create conversation
-        const order = packOrders.find(o => o.id === orderId);
+        const order = receivedOrders.find(o => o.id === orderId) || sentOrders.find(o => o.id === orderId);
         console.log('Found pack order for conversation creation:', order);
         
         if (order) {
-          await sendPackNotification({
-            ...order,
-            status: ORDER_STATUS.ACCEPTED
-          });
-          
-          // Create pack conversation
-          console.log('Creating pack conversation...');
-          const conversation = await createPackConversation(order);
-          console.log('Pack conversation created:', conversation);
+          try {
+            // For packs, when accepted they should be CONFIRMED (completed immediately)
+            await sendPackNotification({
+              ...order,
+              status: ORDER_STATUS.CONFIRMED
+            });
+            
+            // Create pack conversation
+            console.log('Creating pack conversation...');
+            const conversation = await createPackConversation(order);
+            console.log('Pack conversation created:', conversation);
+          } catch (notificationError) {
+            console.warn('Error with pack notification/conversation:', notificationError);
+            // Don't fail the whole operation if notification fails
+          }
         } else {
           console.error('Pack order not found for conversation creation:', orderId);
         }
@@ -180,7 +186,7 @@ export const PackOrderProvider = ({ children }) => {
     } finally {
       setProcessing(false);
     }
-  }, [currentUser, apiFunc, packOrders, sendPackNotification, showSuccess, showError]);
+  }, [currentUser, apiFunc, receivedOrders, sentOrders, sendPackNotification, createPackConversation, showSuccess, showError]);
 
   // Decline pack order
   const declinePackOrder = useCallback(async (orderId, reason = '') => {
