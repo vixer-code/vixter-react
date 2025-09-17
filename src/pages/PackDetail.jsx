@@ -182,7 +182,7 @@ const PackDetail = () => {
       return;
     }
 
-    if (pack.providerId === currentUser.uid) {
+    if (pack.authorId === currentUser.uid) {
       showWarning('Você não pode comprar seu próprio pack');
       return;
     }
@@ -247,7 +247,7 @@ const PackDetail = () => {
       // Create pack order that requires seller approval
       const result = await createPackOrder(
         currentUser.uid, // buyerId
-        pack.providerId, // sellerId
+        pack.authorId, // sellerId - use authorId as this is the field used when packs are created
         packId, // packId
         pack.title, // packName
         totalCost // vpAmount
@@ -488,7 +488,7 @@ const PackDetail = () => {
             <div className="purchase-actions">
               {currentUser ? (
                 (userProfile?.accountType === 'client' || userProfile?.accountType === 'both') ? (
-                  pack.providerId !== currentUser.uid ? (
+                  pack.authorId !== currentUser.uid ? (
             <button 
               className={`btn-purchase ${pack.status && pack.status !== 'active' ? 'disabled' : ''}`}
               onClick={handlePurchase}
