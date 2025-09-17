@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
 // Initialize Firebase Admin if not already initialized
-if (!getFirestore()) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
+if (getApps().length === 0) {
+  const serviceAccount = {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  };
+
   initializeApp({
-    credential: cert(serviceAccount)
+    credential: cert(serviceAccount),
+    projectId: process.env.FIREBASE_PROJECT_ID,
   });
 }
 
@@ -14,12 +20,16 @@ const db = getFirestore();
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('Stream endpoint called:', request.url);
+    
     const { searchParams } = new URL(request.url);
     const packId = searchParams.get('packId');
     const orderId = searchParams.get('orderId');
     const contentKey = searchParams.get('contentKey');
     const username = searchParams.get('username');
     const token = searchParams.get('token');
+
+    console.log('Parameters:', { packId, orderId, contentKey, username, token: token ? 'present' : 'missing' });
 
     if (!packId || !orderId || !contentKey || !username || !token) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
@@ -33,20 +43,30 @@ export async function GET(request: NextRequest) {
 
     // Call Cloud Function to get watermarked content
     const cloudFunctionUrl = 'https://packcontentaccess-6twxbx5ima-ue.a.run.app';
+    
+    // Ensure contentKey has the correct format for R2
+    const formattedContentKey = contentKey.startsWith('pack-content/') 
+      ? contentKey 
+      : `pack-content/${contentKey}`;
+    
     const params = new URLSearchParams({
       packId,
       orderId,
-      contentKey,
+      contentKey: formattedContentKey,
       username,
       token
     });
 
+    console.log('Calling Cloud Function:', `${cloudFunctionUrl}?${params.toString()}`);
+    
     const cloudFunctionResponse = await fetch(`${cloudFunctionUrl}?${params.toString()}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
+
+    console.log('Cloud Function response status:', cloudFunctionResponse.status);
 
     if (!cloudFunctionResponse.ok) {
       throw new Error(`Cloud Function error: ${cloudFunctionResponse.status}`);

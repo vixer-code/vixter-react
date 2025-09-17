@@ -166,7 +166,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
           
           contentWithUrls.push({
             ...contentItem,
-            secureUrl: `${backendUrl}/api/pack-content/stream?${params.toString()}`
+            secureUrl: `${backendUrl}/api/pack-content/stream?${params.toString()}&t=${Date.now()}`
           });
         }
       }
@@ -186,7 +186,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
           
           contentWithUrls.push({
             ...contentItem,
-            secureUrl: `${backendUrl}/api/pack-content/stream?${params.toString()}`
+            secureUrl: `${backendUrl}/api/pack-content/stream?${params.toString()}&t=${Date.now()}`
           });
         }
       }
