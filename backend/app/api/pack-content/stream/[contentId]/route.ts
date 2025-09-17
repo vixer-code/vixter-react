@@ -191,9 +191,9 @@ export async function GET(
       const authClient = new GoogleAuth({
         credentials: {
           type: 'service_account',
-          project_id: credentials.projectId,
-          private_key: credentials.privateKey,
-          client_email: credentials.clientEmail,
+          project_id: credentials.project_id,
+          private_key: credentials.private_key,
+          client_email: credentials.client_email,
         },
         scopes: ['https://www.googleapis.com/auth/cloud-platform']
       });
