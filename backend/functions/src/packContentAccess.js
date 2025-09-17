@@ -122,18 +122,34 @@ async function verifyUserAccess(token, packId, orderId, username) {
     // Check if user has a valid pack order for this pack
     const packOrderQuery = db.collection('packOrders')
       .where('buyerId', '==', userId)
-      .where('packId', '==', packId)
-      .where('status', 'in', ['COMPLETED', 'CONFIRMED', 'AUTO_RELEASED']);
+      .where('packId', '==', packId);
 
     const packOrders = await packOrderQuery.get();
 
+    console.log('Pack orders found:', packOrders.size);
+    packOrders.forEach(doc => {
+      console.log('Order:', doc.id, 'Status:', doc.data().status);
+    });
+
     if (packOrders.empty) {
-      console.log('No valid pack order found for user:', userId);
+      console.log('No pack order found for user:', userId, 'pack:', packId);
+      return null;
+    }
+
+    // Check if any order has valid status
+    const validOrders = packOrders.docs.filter(doc => {
+      const status = doc.data().status;
+      return ['COMPLETED', 'CONFIRMED', 'AUTO_RELEASED', 'APPROVED'].includes(status);
+    });
+
+    if (validOrders.length === 0) {
+      console.log('No valid pack order status found. Available statuses:', 
+        packOrders.docs.map(doc => doc.data().status));
       return null;
     }
 
     // Verify the order is valid and not expired
-    const packOrder = packOrders.docs[0].data();
+    const packOrder = validOrders[0].data();
     const orderTimestamp = packOrder.timestamps?.createdAt;
     
     if (orderTimestamp) {

@@ -166,7 +166,8 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
           
           contentWithUrls.push({
             ...contentItem,
-            secureUrl: `${cloudFunctionUrl}?${params.toString()}`
+            secureUrl: `${cloudFunctionUrl}?${params.toString()}`,
+            authToken: token
           });
         }
       }
@@ -186,7 +187,8 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
           
           contentWithUrls.push({
             ...contentItem,
-            secureUrl: `${cloudFunctionUrl}?${params.toString()}`
+            secureUrl: `${cloudFunctionUrl}?${params.toString()}`,
+            authToken: token
           });
         }
       }

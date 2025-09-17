@@ -24,15 +24,43 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
     }
   }, [pack?.contentWithUrls]);
 
-  const handleContentClick = (contentItem) => {
+  const handleContentClick = async (contentItem) => {
     if (!contentItem.key) return;
 
-    // Use pre-generated secure URL
-    const secureUrl = contentItem.secureUrl || contentUrls[contentItem.key];
-    if (secureUrl) {
-      window.open(secureUrl, '_blank', 'noopener,noreferrer,resizable=yes,scrollbars=yes');
-    } else {
-      setError(`URL não disponível para ${contentItem.name}`);
+    try {
+      // Get the secure URL and auth token
+      const secureUrl = contentItem.secureUrl || contentUrls[contentItem.key];
+      const authToken = contentItem.authToken;
+      
+      if (!secureUrl) {
+        setError(`URL não disponível para ${contentItem.name}`);
+        return;
+      }
+
+      // Create a new request with proper Authorization header
+      const response = await fetch(secureUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Get the blob URL and open it
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      window.open(blobUrl, '_blank', 'noopener,noreferrer,resizable=yes,scrollbars=yes');
+      
+      // Clean up the blob URL after a delay
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      
+    } catch (error) {
+      console.error('Error opening secure content:', error);
+      setError(`Erro ao abrir ${contentItem.name}: ${error.message}`);
     }
   };
 
