@@ -90,7 +90,9 @@ const MyPurchases = () => {
             title: pack.title || 'Pack',
             coverImage: pack.coverImage,
             description: pack.description,
-            price: pack.price
+            price: pack.price,
+            packContent: pack.packContent || [],
+            content: pack.content || []
           };
         }
       } catch (error) {
@@ -215,6 +217,35 @@ const MyPurchases = () => {
     }
   };
 
+  // Load secure pack data only when user has confirmed access
+  const loadSecurePackData = useCallback(async (packId, orderId) => {
+    try {
+      // Call secure API endpoint that validates access before returning pack data
+      const response = await fetch('/api/pack-content/secure-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await currentUser.getIdToken()}`
+        },
+        body: JSON.stringify({
+          packId,
+          orderId,
+          userId: currentUser.uid
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load secure pack data');
+      }
+
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('Error loading secure pack data:', error);
+      throw error;
+    }
+  }, [currentUser]);
+
   const handleViewPackContent = async (pack) => {
     // Check if pack is still pending acceptance
     if (pack.status === 'PENDING_ACCEPTANCE') {
@@ -222,31 +253,20 @@ const MyPurchases = () => {
       return;
     }
     
-    // Load pack data if not already loaded
-    if (!packData[pack.packId]) {
-      try {
-        const packDetails = await getPackById(pack.packId);
-        if (packDetails) {
-          setPackData(prev => ({
-            ...prev,
-            [pack.packId]: {
-              title: packDetails.title || 'Pack',
-              coverImage: packDetails.coverImage,
-              description: packDetails.description,
-              price: packDetails.price,
-              packContent: packDetails.packContent,
-              category: packDetails.category
-            }
-          }));
-        }
-      } catch (error) {
-        console.error('Error loading pack details:', error);
-        showError('Erro ao carregar detalhes do pack');
-        return;
-      }
+    try {
+      // Load secure pack data with access validation
+      const securePackData = await loadSecurePackData(pack.packId, pack.id);
+      
+      setPackData(prev => ({
+        ...prev,
+        [pack.packId]: securePackData
+      }));
+      
+      setViewingPack(pack);
+    } catch (error) {
+      console.error('Error loading secure pack data:', error);
+      showError('Erro ao carregar dados do pack. Verifique se você tem acesso.', 'Erro');
     }
-    
-    setViewingPack(pack);
   };
 
   const handleViewServiceMedia = (service) => {

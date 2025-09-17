@@ -11,71 +11,28 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
   const [loading, setLoading] = useState({});
   const [error, setError] = useState(null);
 
-  // Generate secure URL for a specific content item
-  const generateContentUrl = useCallback(async (contentItem) => {
-    if (!contentItem.key || !currentUser?.uid || !pack?.id) {
-      return null;
-    }
-
-    try {
-      setLoading(prev => ({ ...prev, [contentItem.key]: true }));
-      
-      const result = await generateSecurePackContentUrl(
-        contentItem.key,
-        pack.id,
-        orderId,
-        currentUser.email?.split('@')[0] || 'user'
-      );
-      
-      setContentUrls(prev => ({
-        ...prev,
-        [contentItem.key]: result.url
-      }));
-      
-      return result.url;
-    } catch (err) {
-      console.error('Error generating content URL:', err);
-      setError(`Erro ao carregar ${contentItem.name}: ${err.message}`);
-      return null;
-    } finally {
-      setLoading(prev => ({ ...prev, [contentItem.key]: false }));
-    }
-  }, [generateSecurePackContentUrl, currentUser?.uid, pack?.id, orderId]);
-
-  // Generate URLs for all content items
-  const generateAllUrls = useCallback(async () => {
-    const contentItems = pack?.packContent || pack?.content || [];
-    if (!Array.isArray(contentItems) || contentItems.length === 0) {
-      return;
-    }
-
-    const promises = contentItems.map(async (contentItem) => {
-      if (contentItem.key) {
-        await generateContentUrl(contentItem);
-      }
-    });
-
-    await Promise.all(promises);
-  }, [pack?.packContent, pack?.content, generateContentUrl]);
-
+  // Use pre-generated URLs from backend
   useEffect(() => {
-    generateAllUrls();
-  }, [generateAllUrls]);
+    if (pack?.contentWithUrls && Array.isArray(pack.contentWithUrls)) {
+      const urls = {};
+      pack.contentWithUrls.forEach(contentItem => {
+        if (contentItem.key && contentItem.secureUrl) {
+          urls[contentItem.key] = contentItem.secureUrl;
+        }
+      });
+      setContentUrls(urls);
+    }
+  }, [pack?.contentWithUrls]);
 
-  const handleContentClick = async (contentItem) => {
+  const handleContentClick = (contentItem) => {
     if (!contentItem.key) return;
 
-    try {
-      // Use the new secure content opening method
-      await openSecureContent(
-        contentItem.key,
-        pack.id,
-        orderId,
-        currentUser.email?.split('@')[0] || 'user'
-      );
-    } catch (err) {
-      console.error('Error opening secure content:', err);
-      setError(`Erro ao abrir ${contentItem.name}: ${err.message}`);
+    // Use pre-generated secure URL
+    const secureUrl = contentItem.secureUrl || contentUrls[contentItem.key];
+    if (secureUrl) {
+      window.open(secureUrl, '_blank', 'noopener,noreferrer,resizable=yes,scrollbars=yes');
+    } else {
+      setError(`URL não disponível para ${contentItem.name}`);
     }
   };
 
@@ -188,7 +145,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
         )}
 
         <div className="content-grid">
-          {(pack.packContent || pack.content || [])?.map((contentItem, index) => (
+          {(pack.contentWithUrls || pack.packContent || pack.content || [])?.map((contentItem, index) => (
             <div
               key={contentItem.key || index}
               className="content-item"
@@ -233,7 +190,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
           ))}
         </div>
 
-        {(!pack.packContent || pack.packContent.length === 0) && (!pack.content || pack.content.length === 0) && (
+        {(!pack.contentWithUrls || pack.contentWithUrls.length === 0) && (!pack.packContent || pack.packContent.length === 0) && (!pack.content || pack.content.length === 0) && (
           <div className="empty-state">
             <i className="fas fa-folder-open"></i>
             <h3>Nenhum conteúdo disponível</h3>
