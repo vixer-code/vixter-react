@@ -32,14 +32,18 @@ export async function GET(request: NextRequest) {
     const username = searchParams.get('username');
     const token = searchParams.get('token');
 
-    console.log('Parameters:', { packId, orderId, contentKey, username, token: token ? 'present' : 'missing' });
+    // Get token from Authorization header if available
+    const authHeader = request.headers.get('authorization');
+    const userToken = authHeader?.replace('Bearer ', '') || token;
 
-    if (!packId || !orderId || !contentKey || !username || !token) {
+    console.log('Parameters:', { packId, orderId, contentKey, username, token: userToken ? 'present' : 'missing' });
+
+    if (!packId || !orderId || !contentKey || !username || !userToken) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
     // Verify user access
-    const accessResult = await verifyUserAccess(token, packId, orderId, username);
+    const accessResult = await verifyUserAccess(userToken, packId, orderId, username);
     if (!accessResult) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
@@ -57,7 +61,7 @@ export async function GET(request: NextRequest) {
       orderId,
       contentKey: formattedContentKey,
       username,
-      token
+      token: userToken
     });
 
     console.log('Calling Cloud Function:', `${cloudFunctionUrl}?${params.toString()}`);
@@ -66,7 +70,7 @@ export async function GET(request: NextRequest) {
     const cloudFunctionResponse = await fetch(`${cloudFunctionUrl}?${params.toString()}`, {
       method: 'GET',
       headers: {
-        'X-Serverless-Authorization': `Bearer ${token}` // Pass user token for validation
+        'X-Serverless-Authorization': `Bearer ${userToken}` // Pass user token for validation
       }
     });
 
