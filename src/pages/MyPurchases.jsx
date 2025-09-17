@@ -221,7 +221,7 @@ const MyPurchases = () => {
   const loadSecurePackData = useCallback(async (packId, orderId) => {
     try {
       // Call secure API endpoint that validates access before returning pack data
-      const response = await fetch('/api/pack-content/secure-data', {
+      const response = await fetch('https://vixter-react-llyd.vercel.app/api/pack-content/secure-data', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
