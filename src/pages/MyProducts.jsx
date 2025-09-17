@@ -4,6 +4,7 @@ import { useUser } from '../contexts/UserContext';
 import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import { usePackOrder } from '../contexts/PackOrderContext';
 import { useNotification } from '../contexts/NotificationContext';
+import { useBuyerData } from '../hooks/useBuyerData';
 import { Link } from 'react-router-dom';
 import './MyProducts.css';
 
@@ -138,8 +139,28 @@ const MyProducts = () => {
     ];
   };
 
+  // Use the buyer data hook to enrich orders with buyer information
+  const { enrichedOrders: enrichedServiceOrders, loading: serviceBuyerLoading } = useBuyerData(
+    serviceOrders || [], 
+    true // auto-enrich
+  );
+  
+  const { enrichedOrders: enrichedPackOrders, loading: packBuyerLoading } = useBuyerData(
+    packOrders || [], 
+    true // auto-enrich
+  );
+
+  const getAllOrdersWithBuyerData = () => {
+    // Combine enriched service and pack orders
+    return [
+      ...(enrichedServiceOrders || []).map(order => ({ ...order, type: 'service' })),
+      ...(enrichedPackOrders || []).map(order => ({ ...order, type: 'pack' }))
+    ];
+  };
+
   const getFilteredOrders = () => {
-    const allOrders = getAllOrders();
+    // Use enriched orders with buyer data
+    const allOrders = getAllOrdersWithBuyerData();
 
     // Filter by product type first
     let filteredByType = allOrders;
@@ -185,7 +206,8 @@ const MyProducts = () => {
 
   // Get counts for each status tab
   const getStatusCounts = () => {
-    const allOrders = getAllOrders();
+    // Use enriched orders with buyer data
+    const allOrders = getAllOrdersWithBuyerData();
     
     // Filter by product type first
     let filteredByType = allOrders;
@@ -252,7 +274,7 @@ const MyProducts = () => {
     );
   }
 
-  if (serviceLoading || packLoading) {
+  if (serviceLoading || packLoading || serviceBuyerLoading || packBuyerLoading) {
     return (
       <div className="my-services-container">
         <div className="loading-spinner">
