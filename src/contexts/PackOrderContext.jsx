@@ -83,38 +83,52 @@ export const PackOrderProvider = ({ children }) => {
     const receivedOrdersRef = collection(db, 'packOrders');
     const receivedOrdersQuery = query(
       receivedOrdersRef,
-      where('sellerId', '==', currentUser.uid),
-      orderBy('timestamps.createdAt', 'desc')
+      where('sellerId', '==', currentUser.uid)
+      // Temporarily removed orderBy to debug
+      // orderBy('timestamps.createdAt', 'desc')
     );
 
     const unsubscribeReceived = onSnapshot(receivedOrdersQuery, (snapshot) => {
       const orders = [];
+      console.log('Received orders snapshot:', snapshot.size, 'documents');
       snapshot.forEach((doc) => {
+        const data = doc.data();
+        console.log('Received order:', doc.id, data);
         orders.push({
           id: doc.id,
-          ...doc.data()
+          ...data
         });
       });
+      console.log('All received orders:', orders);
       setReceivedOrders(orders);
+    }, (error) => {
+      console.error('Error loading received orders:', error);
     });
 
     // Load orders where user is the buyer (sent orders)
     const sentOrdersRef = collection(db, 'packOrders');
     const sentOrdersQuery = query(
       sentOrdersRef,
-      where('buyerId', '==', currentUser.uid),
-      orderBy('timestamps.createdAt', 'desc')
+      where('buyerId', '==', currentUser.uid)
+      // Temporarily removed orderBy to debug
+      // orderBy('timestamps.createdAt', 'desc')
     );
 
     const unsubscribeSent = onSnapshot(sentOrdersQuery, (snapshot) => {
       const orders = [];
+      console.log('Sent orders snapshot:', snapshot.size, 'documents');
       snapshot.forEach((doc) => {
+        const data = doc.data();
+        console.log('Sent order:', doc.id, data);
         orders.push({
           id: doc.id,
-          ...doc.data()
+          ...data
         });
       });
+      console.log('All sent orders:', orders);
       setSentOrders(orders);
+    }, (error) => {
+      console.error('Error loading sent orders:', error);
     });
 
     setLoading(false);

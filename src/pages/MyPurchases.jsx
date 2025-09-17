@@ -49,8 +49,9 @@ const MyPurchases = () => {
       const packOrdersRef = collection(db, 'packOrders');
       const queryRef = fsQuery(
         packOrdersRef,
-        where('buyerId', '==', currentUser.uid),
-        orderBy('timestamps.createdAt', 'desc')
+        where('buyerId', '==', currentUser.uid)
+        // Temporarily removed orderBy to debug
+        // orderBy('timestamps.createdAt', 'desc')
       );
       const snapshot = await getDocs(queryRef);
       
