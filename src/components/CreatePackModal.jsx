@@ -231,7 +231,9 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       // This is an existing image - delete from R2 and database
       if (editingPack && formData.sampleImages[index]?.key) {
         try {
-          await deleteMedia(formData.sampleImages[index].key);
+          console.log('Deleting sample image from R2:', formData.sampleImages[index].key);
+          const result = await deleteMedia(formData.sampleImages[index].key);
+          console.log('Sample image deletion result:', result);
         } catch (error) {
           console.error('Error deleting sample image from R2:', error);
         }
@@ -266,7 +268,9 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       // This is an existing video - delete from R2 and database
       if (editingPack && formData.sampleVideos[index]?.key) {
         try {
-          await deleteMedia(formData.sampleVideos[index].key);
+          console.log('Deleting sample video from R2:', formData.sampleVideos[index].key);
+          const result = await deleteMedia(formData.sampleVideos[index].key);
+          console.log('Sample video deletion result:', result);
         } catch (error) {
           console.error('Error deleting sample video from R2:', error);
         }
@@ -329,7 +333,9 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       // This is existing content - delete from R2 and database
       if (editingPack && formData.packContent[index]?.key) {
         try {
-          await deletePackContentMedia(formData.packContent[index].key);
+          console.log('Deleting pack content from R2:', formData.packContent[index].key);
+          const result = await deletePackContentMedia(formData.packContent[index].key);
+          console.log('Pack content deletion result:', result);
         } catch (error) {
           console.error('Error deleting pack content from R2:', error);
         }
@@ -371,7 +377,9 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     // Delete from R2 if it's an existing file
     if (editingPack && formData.packContent[index]?.key) {
       try {
-        await deletePackContentMedia(formData.packContent[index].key);
+        console.log('Deleting existing pack content from R2:', formData.packContent[index].key);
+        const result = await deletePackContentMedia(formData.packContent[index].key);
+        console.log('Existing pack content deletion result:', result);
       } catch (error) {
         console.error('Error deleting pack content from R2:', error);
       }
@@ -541,9 +549,11 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
           
           // Upload new cover image if provided
           if (coverImageFile) {
+            console.log('Uploading cover image:', coverImageFile.name);
             const coverResult = await uploadPackMedia(coverImageFile, packId);
-            if (coverResult.success) {
-              await updatePack(packId, { coverImage: coverResult.mediaData });
+            console.log('Cover image upload result:', coverResult);
+            if (coverResult && coverResult.key) {
+              await updatePack(packId, { coverImage: coverResult }, false);
             }
           }
           
@@ -551,9 +561,11 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
           if (sampleImageFiles.length > 0) {
             const newSampleImages = [];
             for (const file of sampleImageFiles) {
+              console.log('Uploading sample image:', file.name);
               const result = await uploadPackMedia(file, packId);
-              if (result.success) {
-                newSampleImages.push(result.mediaData);
+              console.log('Sample image upload result:', result);
+              if (result && result.key) {
+                newSampleImages.push(result);
               }
             }
             if (newSampleImages.length > 0) {
@@ -569,9 +581,11 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
           if (sampleVideoFiles.length > 0) {
             const newSampleVideos = [];
             for (const file of sampleVideoFiles) {
+              console.log('Uploading sample video:', file.name);
               const result = await uploadPackMedia(file, packId);
-              if (result.success) {
-                newSampleVideos.push(result.mediaData);
+              console.log('Sample video upload result:', result);
+              if (result && result.key) {
+                newSampleVideos.push(result);
               }
             }
             if (newSampleVideos.length > 0) {
@@ -587,9 +601,11 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
           if (packFiles.length > 0) {
             const newPackContent = [];
             for (const file of packFiles) {
+              console.log('Uploading pack content:', file.name);
               const result = await uploadPackContentMedia(file, packId);
-              if (result.success) {
-                newPackContent.push(result.mediaData);
+              console.log('Pack content upload result:', result);
+              if (result && result.key) {
+                newPackContent.push(result);
               }
             }
             if (newPackContent.length > 0) {
