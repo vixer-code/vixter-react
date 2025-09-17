@@ -498,13 +498,15 @@ const MyProducts = () => {
                     </button>
                   )}
 
-                  <Link 
-                    to={`/messages?${isService ? 'service' : 'pack'}=${order.id}`}
-                    className="btn-secondary"
-                  >
-                    <i className="fas fa-comments"></i>
-                    Conversa
-                  </Link>
+                  {isService && (
+                    <Link 
+                      to={`/messages?service=${order.id}`}
+                      className="btn-secondary"
+                    >
+                      <i className="fas fa-comments"></i>
+                      Conversa
+                    </Link>
+                  )}
                 </div>
               </div>
             );
