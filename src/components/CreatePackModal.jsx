@@ -225,44 +225,66 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   };
 
   const removeSampleImage = async (index) => {
-    // Delete from R2 if it's an existing image
-    if (editingPack && formData.sampleImages[index]?.key) {
-      try {
-        await deleteMedia(formData.sampleImages[index].key);
-      } catch (error) {
-        console.error('Error deleting sample image from R2:', error);
+    const totalExistingImages = formData.sampleImages?.length || 0;
+    
+    if (index < totalExistingImages) {
+      // This is an existing image - delete from R2 and database
+      if (editingPack && formData.sampleImages[index]?.key) {
+        try {
+          await deleteMedia(formData.sampleImages[index].key);
+        } catch (error) {
+          console.error('Error deleting sample image from R2:', error);
+        }
       }
-    }
-    
-    setSampleImageFiles(prev => prev.filter((_, i) => i !== index));
-    setSampleImagePreviews(prev => prev.filter((_, i) => i !== index));
-    setFormData(prev => ({ ...prev, sampleImages: prev.sampleImages.filter((_, i) => i !== index) }));
-    
-    // If editing pack, update the database immediately
-    if (editingPack) {
-      const updatedSampleImages = formData.sampleImages.filter((_, i) => i !== index);
-      updatePack(editingPack.id, { sampleImages: updatedSampleImages });
+      
+      // Remove from formData
+      setFormData(prev => ({ 
+        ...prev, 
+        sampleImages: prev.sampleImages.filter((_, i) => i !== index) 
+      }));
+      
+      // Update database immediately
+      if (editingPack) {
+        const updatedSampleImages = formData.sampleImages.filter((_, i) => i !== index);
+        updatePack(editingPack.id, { sampleImages: updatedSampleImages }, false);
+      }
+    } else {
+      // This is a new file - just remove from local state
+      const newFileIndex = index - totalExistingImages;
+      setSampleImageFiles(prev => prev.filter((_, i) => i !== newFileIndex));
+      setSampleImagePreviews(prev => prev.filter((_, i) => i !== newFileIndex));
     }
   };
 
   const removeSampleVideo = async (index) => {
-    // Delete from R2 if it's an existing video
-    if (editingPack && formData.sampleVideos[index]?.key) {
-      try {
-        await deleteMedia(formData.sampleVideos[index].key);
-      } catch (error) {
-        console.error('Error deleting sample video from R2:', error);
+    const totalExistingVideos = formData.sampleVideos?.length || 0;
+    
+    if (index < totalExistingVideos) {
+      // This is an existing video - delete from R2 and database
+      if (editingPack && formData.sampleVideos[index]?.key) {
+        try {
+          await deleteMedia(formData.sampleVideos[index].key);
+        } catch (error) {
+          console.error('Error deleting sample video from R2:', error);
+        }
       }
-    }
-    
-    setSampleVideoFiles(prev => prev.filter((_, i) => i !== index));
-    setSampleVideoPreviews(prev => prev.filter((_, i) => i !== index));
-    setFormData(prev => ({ ...prev, sampleVideos: prev.sampleVideos.filter((_, i) => i !== index) }));
-    
-    // If editing pack, update the database immediately
-    if (editingPack) {
-      const updatedSampleVideos = formData.sampleVideos.filter((_, i) => i !== index);
-      updatePack(editingPack.id, { sampleVideos: updatedSampleVideos });
+      
+      // Remove from formData
+      setFormData(prev => ({ 
+        ...prev, 
+        sampleVideos: prev.sampleVideos.filter((_, i) => i !== index) 
+      }));
+      
+      // Update database immediately
+      if (editingPack) {
+        const updatedSampleVideos = formData.sampleVideos.filter((_, i) => i !== index);
+        updatePack(editingPack.id, { sampleVideos: updatedSampleVideos }, false);
+      }
+    } else {
+      // This is a new file - just remove from local state
+      const newFileIndex = index - totalExistingVideos;
+      setSampleVideoFiles(prev => prev.filter((_, i) => i !== newFileIndex));
+      setSampleVideoPreviews(prev => prev.filter((_, i) => i !== newFileIndex));
     }
   };
 
@@ -295,35 +317,47 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   const removePackFile = async (index) => {
     console.log('Removing pack file at index:', index);
     
-    // Delete from R2 if it's an existing file
-    if (editingPack && formData.packContent[index]?.key) {
-      try {
-        await deletePackContentMedia(formData.packContent[index].key);
-      } catch (error) {
-        console.error('Error deleting pack content from R2:', error);
+    const totalExistingContent = formData.packContent?.length || 0;
+    
+    if (index < totalExistingContent) {
+      // This is existing content - delete from R2 and database
+      if (editingPack && formData.packContent[index]?.key) {
+        try {
+          await deletePackContentMedia(formData.packContent[index].key);
+        } catch (error) {
+          console.error('Error deleting pack content from R2:', error);
+        }
       }
-    }
-    
-    setPackFiles(prev => {
-      const newFiles = prev.filter((_, i) => i !== index);
-      console.log('Updated packFiles after removal:', newFiles);
-      return newFiles;
-    });
-    setPackFilePreviews(prev => {
-      const newPreviews = prev.filter((_, i) => i !== index);
-      console.log('Updated packFilePreviews after removal:', newPreviews);
-      return newPreviews;
-    });
-    
-    // If editing pack, update the database immediately
-    if (editingPack) {
-      const updatedPackContent = formData.packContent.filter((_, i) => i !== index);
-      updatePack(editingPack.id, { content: updatedPackContent });
+      
+      // Remove from formData
+      setFormData(prev => ({
+        ...prev,
+        packContent: prev.packContent.filter((_, i) => i !== index)
+      }));
+      
+      // Update database immediately
+      if (editingPack) {
+        const updatedPackContent = formData.packContent.filter((_, i) => i !== index);
+        updatePack(editingPack.id, { content: updatedPackContent }, false);
+      }
+    } else {
+      // This is a new file - just remove from local state
+      const newFileIndex = index - totalExistingContent;
+      setPackFiles(prev => {
+        const newFiles = prev.filter((_, i) => i !== newFileIndex);
+        console.log('Updated packFiles after removal:', newFiles);
+        return newFiles;
+      });
+      setPackFilePreviews(prev => {
+        const newPreviews = prev.filter((_, i) => i !== newFileIndex);
+        console.log('Updated packFilePreviews after removal:', newPreviews);
+        return newPreviews;
+      });
     }
   };
 
   const removeExistingPackContent = async (index) => {
-    console.log('Removing pack content at index:', index);
+    console.log('Removing existing pack content at index:', index);
     
     // Delete from R2 if it's an existing file
     if (editingPack && formData.packContent[index]?.key) {
@@ -346,7 +380,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     // If editing pack, update the database immediately
     if (editingPack) {
       const updatedPackContent = (formData.packContent || []).filter((_, i) => i !== index);
-      updatePack(editingPack.id, { content: updatedPackContent });
+      updatePack(editingPack.id, { content: updatedPackContent }, false);
     }
   };
 
@@ -506,43 +540,52 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
           
           // Upload new sample images if provided
           if (sampleImageFiles.length > 0) {
-            const sampleImages = [];
+            const newSampleImages = [];
             for (const file of sampleImageFiles) {
               const result = await uploadPackMedia(file, packId);
               if (result.success) {
-                sampleImages.push(result.mediaData);
+                newSampleImages.push(result.mediaData);
               }
             }
-            if (sampleImages.length > 0) {
-              await updatePack(packId, { sampleImages });
+            if (newSampleImages.length > 0) {
+              // Merge with existing sample images
+              const existingSampleImages = formData.sampleImages || [];
+              const updatedSampleImages = [...existingSampleImages, ...newSampleImages];
+              await updatePack(packId, { sampleImages: updatedSampleImages }, false);
             }
           }
           
           // Upload new sample videos if provided
           if (sampleVideoFiles.length > 0) {
-            const sampleVideos = [];
+            const newSampleVideos = [];
             for (const file of sampleVideoFiles) {
               const result = await uploadPackMedia(file, packId);
               if (result.success) {
-                sampleVideos.push(result.mediaData);
+                newSampleVideos.push(result.mediaData);
               }
             }
-            if (sampleVideos.length > 0) {
-              await updatePack(packId, { sampleVideos });
+            if (newSampleVideos.length > 0) {
+              // Merge with existing sample videos
+              const existingSampleVideos = formData.sampleVideos || [];
+              const updatedSampleVideos = [...existingSampleVideos, ...newSampleVideos];
+              await updatePack(packId, { sampleVideos: updatedSampleVideos }, false);
             }
           }
           
           // Upload new pack content files if provided
           if (packFiles.length > 0) {
-            const packContent = [];
+            const newPackContent = [];
             for (const file of packFiles) {
               const result = await uploadPackContentMedia(file, packId);
               if (result.success) {
-                packContent.push(result.mediaData);
+                newPackContent.push(result.mediaData);
               }
             }
-            if (packContent.length > 0) {
-              await updatePack(packId, { content: packContent });
+            if (newPackContent.length > 0) {
+              // Merge with existing pack content
+              const existingPackContent = formData.packContent || [];
+              const updatedPackContent = [...existingPackContent, ...newPackContent];
+              await updatePack(packId, { content: updatedPackContent }, false);
             }
           }
         }
@@ -933,12 +976,15 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                         </div>
                       );
                     })}
-                    {sampleImagePreviews.map((src, idx) => (
-                      <div key={`si-${idx}`} className="showcase-item">
-                        <img src={src} alt={`Amostra ${idx + 1}`} />
-                        <button className="remove-media" onClick={() => removeSampleImage(idx)}>×</button>
-                      </div>
-                    ))}
+                    {sampleImagePreviews.map((src, idx) => {
+                      const actualIndex = (formData.sampleImages?.length || 0) + idx;
+                      return (
+                        <div key={`si-${idx}`} className="showcase-item">
+                          <img src={src} alt={`Amostra ${actualIndex + 1}`} />
+                          <button className="remove-media" onClick={() => removeSampleImage(actualIndex)}>×</button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -959,15 +1005,18 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                         </div>
                       );
                     })}
-                    {sampleVideoPreviews.map((src, idx) => (
-                      <div key={`sv-${idx}`} className="showcase-item video-showcase">
-                        <video controls>
-                          <source src={src} type="video/mp4" />
-                          Seu navegador não suporta vídeo.
-                        </video>
-                        <button className="remove-media" onClick={() => removeSampleVideo(idx)}>×</button>
-                      </div>
-                    ))}
+                    {sampleVideoPreviews.map((src, idx) => {
+                      const actualIndex = (formData.sampleVideos?.length || 0) + idx;
+                      return (
+                        <div key={`sv-${idx}`} className="showcase-item video-showcase">
+                          <video controls>
+                            <source src={src} type="video/mp4" />
+                            Seu navegador não suporta vídeo.
+                          </video>
+                          <button className="remove-media" onClick={() => removeSampleVideo(actualIndex)}>×</button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1019,19 +1068,22 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                 {/* Newly selected pack files previews */}
                 {packFilePreviews.length > 0 && (
                   <div className="showcase-grid">
-                    {packFilePreviews.map((prev, idx) => (
-                      <div key={`pc-prev-${idx}`} className="showcase-item">
-                        {prev.isVideo ? (
-                          <video controls>
-                            <source src={prev.src} type="video/mp4" />
-                            Seu navegador não suporta vídeo.
-                          </video>
-                        ) : (
-                          <img src={prev.src} alt={`Arquivo ${idx + 1}`} />
-                        )}
-                        <button className="remove-media" onClick={() => removePackFile(idx)}>×</button>
-                      </div>
-                    ))}
+                    {packFilePreviews.map((prev, idx) => {
+                      const actualIndex = (formData.packContent?.length || 0) + idx;
+                      return (
+                        <div key={`pc-prev-${idx}`} className="showcase-item">
+                          {prev.isVideo ? (
+                            <video controls>
+                              <source src={prev.src} type="video/mp4" />
+                              Seu navegador não suporta vídeo.
+                            </video>
+                          ) : (
+                            <img src={prev.src} alt={`Arquivo ${actualIndex + 1}`} />
+                          )}
+                          <button className="remove-media" onClick={() => removePackFile(actualIndex)}>×</button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

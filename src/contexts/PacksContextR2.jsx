@@ -325,7 +325,7 @@ export const PacksProviderR2 = ({ children }) => {
   }, [currentUser, apiFunc, showSuccess, showError, loadUserPacks, uploadPackMedia]);
 
   // Update pack
-  const updatePack = useCallback(async (packId, updates) => {
+  const updatePack = useCallback(async (packId, updates, showSuccessMessage = true) => {
     if (!currentUser) {
       showError('Você precisa estar logado para atualizar um pack.', 'Erro');
       return false;
@@ -341,7 +341,9 @@ export const PacksProviderR2 = ({ children }) => {
       });
       
       if (result.data.success) {
-        showSuccess('Pack atualizado com sucesso!', 'Pack Atualizado');
+        if (showSuccessMessage) {
+          showSuccess('Pack atualizado com sucesso!', 'Pack Atualizado');
+        }
         
         // Reload user packs
         await loadUserPacks();
