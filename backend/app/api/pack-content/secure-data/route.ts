@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 import { requireAuth, getCorsHeaders, handleCors, AuthenticatedUser } from '@/lib/auth';
 import { db } from '@/lib/firebase-admin';
-import { doc, getDoc } from 'firebase/firestore';
 
 export async function OPTIONS(request: NextRequest) {
   return handleCors(request);
@@ -35,10 +34,10 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
     }
 
     // Verify pack order exists and user has access
-    const orderRef = doc(db, 'packOrders', orderId);
-    const orderSnap = await getDoc(orderRef);
+    const orderRef = db.collection('packOrders').doc(orderId);
+    const orderSnap = await orderRef.get();
 
-    if (!orderSnap.exists()) {
+    if (!orderSnap.exists) {
       return new Response(
         JSON.stringify({ error: 'Pack order not found' }),
         { 
@@ -73,10 +72,10 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
     }
 
     // Get pack data with full content
-    const packRef = doc(db, 'packs', packId);
-    const packSnap = await getDoc(packRef);
+    const packRef = db.collection('packs').doc(packId);
+    const packSnap = await packRef.get();
 
-    if (!packSnap.exists()) {
+    if (!packSnap.exists) {
       return new Response(
         JSON.stringify({ error: 'Pack not found' }),
         { 
@@ -97,9 +96,9 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
 
     if (vendorId) {
       try {
-        const vendorRef = doc(db, 'users', vendorId);
-        const vendorSnap = await getDoc(vendorRef);
-        if (vendorSnap.exists()) {
+        const vendorRef = db.collection('users').doc(vendorId);
+        const vendorSnap = await vendorRef.get();
+        if (vendorSnap.exists) {
           const vendorData = vendorSnap.data();
           vendorInfo.vendorUsername = vendorData.username || 'vendor';
         }
