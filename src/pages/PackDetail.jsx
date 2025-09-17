@@ -216,6 +216,39 @@ const PackDetail = () => {
     setShowPurchaseModal(true);
   };
 
+  // Function to get current user's username from Firebase
+  const getCurrentUserUsername = async () => {
+    try {
+      // Try Firestore first
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        if (userData.username && userData.username.trim() !== '') {
+          return userData.username;
+        }
+      }
+      
+      // Fallback to Realtime Database
+      if (database) {
+        const rtdbUserRef = rtdbRef(database, `users/${currentUser.uid}`);
+        const rtdbSnap = await rtdbGet(rtdbUserRef);
+        if (rtdbSnap.exists()) {
+          const rtdbUserData = rtdbSnap.val();
+          if (rtdbUserData.username && rtdbUserData.username.trim() !== '') {
+            return rtdbUserData.username;
+          }
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error getting current user username:', error);
+      return null;
+    }
+  };
+
   const handleConfirmPurchase = async () => {
     const totalCost = calculateVpTotal();
     
@@ -239,6 +272,20 @@ const PackDetail = () => {
     }
 
     try {
+      // Get current user's username from Firebase
+      const currentUsername = await getCurrentUserUsername();
+      console.log('Current user username from Firebase:', currentUsername);
+      
+      // Prepare buyer info with current data
+      const buyerInfo = {
+        ...userProfile,
+        username: currentUsername || userProfile?.username || '',
+        displayName: userProfile?.displayName || currentUser?.displayName || '',
+        name: userProfile?.displayName || currentUser?.displayName || ''
+      };
+      
+      console.log('Buyer info for pack order:', buyerInfo);
+      
       // Debug: Log pack object to see its structure
       console.log('Pack object before purchase:', pack);
       console.log('pack.providerId:', pack.providerId);
@@ -251,7 +298,7 @@ const PackDetail = () => {
         packId, // packId
         pack.title, // packName
         totalCost, // vpAmount
-        userProfile // buyerInfo - pass user profile information
+        buyerInfo // buyerInfo - pass user profile information with current username
       );
       
       if (result) {
