@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { GoogleAuth } from 'google-auth-library';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -28,7 +29,13 @@ if (getApps().length === 0) {
   }
 }
 
-const db = getFirestore();
+// Initialize Firestore only if Firebase Admin is initialized
+let db: any = null;
+try {
+  db = getFirestore();
+} catch (error) {
+  console.warn('Firestore not available:', error);
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -82,11 +89,19 @@ export async function GET(request: NextRequest) {
 
     console.log('Calling Cloud Function:', `${cloudFunctionUrl}?${params.toString()}`);
     
-    // For now, let's try without service-to-service auth since the function is public
+    // Get service-to-service authentication token
+    const auth = new GoogleAuth();
+    const client = await auth.getIdTokenClient(cloudFunctionUrl);
+    const serviceToken = await client.idTokenProvider.fetchIdToken(cloudFunctionUrl);
+    
+    console.log('Service token obtained:', serviceToken ? 'present' : 'missing');
+    
+    // Call Cloud Function with service-to-service authentication
     const cloudFunctionResponse = await fetch(`${cloudFunctionUrl}?${params.toString()}`, {
       method: 'GET',
       headers: {
-        'X-Serverless-Authorization': `Bearer ${userToken}` // Pass user token for validation
+        'Authorization': `Bearer ${serviceToken}`, // Service-to-service token
+        'X-Serverless-Authorization': `Bearer ${userToken}` // User token for validation
       }
     });
 
@@ -169,7 +184,7 @@ async function verifyUserAccess(token: string, packId: string, orderId: string, 
     }
 
     // Check if any order has valid status
-    const validOrders = packOrders.docs.filter(doc => {
+    const validOrders = packOrders.docs.filter((doc: any) => {
       const status = doc.data().status;
       return ['COMPLETED', 'CONFIRMED', 'AUTO_RELEASED', 'APPROVED'].includes(status);
     });
