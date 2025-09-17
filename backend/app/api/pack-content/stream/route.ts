@@ -91,8 +91,16 @@ export async function GET(request: NextRequest) {
     console.log('Calling Cloud Function:', `${cloudFunctionUrl}?${params.toString()}`);
     
     // Get service-to-service authentication token using secure configuration
+    const credentials = getServiceAccountCredentials();
+    console.log('Service account credentials loaded:', {
+      project_id: credentials.project_id,
+      client_email: credentials.client_email,
+      private_key_present: credentials.private_key ? 'yes' : 'no',
+      private_key_length: credentials.private_key?.length || 0
+    });
+    
     const auth = new GoogleAuth({
-      credentials: getServiceAccountCredentials()
+      credentials: credentials
     });
     
     const client = await auth.getIdTokenClient(cloudFunctionUrl);
