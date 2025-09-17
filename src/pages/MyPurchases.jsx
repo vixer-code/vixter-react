@@ -58,6 +58,7 @@ const MyPurchases = () => {
       snapshot.forEach((doc) => {
         const orderData = doc.data();
         console.log('Pack order found:', doc.id, orderData.status, orderData);
+        // Include all pack orders except cancelled and banned
         if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
           orders.push({
             id: doc.id,

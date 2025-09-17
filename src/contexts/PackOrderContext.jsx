@@ -63,6 +63,7 @@ export const PackOrderProvider = ({ children }) => {
     DELIVERED: 'DELIVERED',
     CONFIRMED: 'CONFIRMED',
     AUTO_RELEASED: 'AUTO_RELEASED',
+    COMPLETED: 'COMPLETED', // New status for completed packs
     CANCELLED: 'CANCELLED',
     DISPUTED: 'DISPUTED',
     TIMEOUT: 'TIMEOUT' // New status for 24h timeout
@@ -355,6 +356,11 @@ export const PackOrderProvider = ({ children }) => {
       },
       [ORDER_STATUS.AUTO_RELEASED]: {
         label: 'Liberado Automaticamente',
+        color: 'success',
+        icon: 'check-circle'
+      },
+      [ORDER_STATUS.COMPLETED]: {
+        label: 'Concluído',
         color: 'success',
         icon: 'check-circle'
       },

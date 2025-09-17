@@ -200,7 +200,8 @@ const MyProducts = () => {
           order.status === SERVICE_STATUS.CONFIRMED || 
           order.status === SERVICE_STATUS.AUTO_RELEASED ||
           order.status === PACK_STATUS.CONFIRMED || 
-          order.status === PACK_STATUS.AUTO_RELEASED
+          order.status === PACK_STATUS.AUTO_RELEASED ||
+          order.status === PACK_STATUS.COMPLETED
         );
       case 'cancelled':
         return filteredByType.filter(order => 
@@ -242,7 +243,8 @@ const MyProducts = () => {
         order.status === SERVICE_STATUS.CONFIRMED || 
         order.status === SERVICE_STATUS.AUTO_RELEASED ||
         order.status === PACK_STATUS.CONFIRMED || 
-        order.status === PACK_STATUS.AUTO_RELEASED
+        order.status === PACK_STATUS.AUTO_RELEASED ||
+        order.status === PACK_STATUS.COMPLETED
       ).length,
       cancelled: filteredByType.filter(order => 
         order.status === SERVICE_STATUS.CANCELLED || 
@@ -310,6 +312,7 @@ const MyProducts = () => {
     delivered: packOrders.filter(o => o.type === 'pack' && (o.status === PACK_STATUS.DELIVERED)),
     confirmed: packOrders.filter(o => o.type === 'pack' && (o.status === PACK_STATUS.CONFIRMED)),
     autoReleased: packOrders.filter(o => o.type === 'pack' && (o.status === PACK_STATUS.AUTO_RELEASED)),
+    completed: packOrders.filter(o => o.type === 'pack' && (o.status === PACK_STATUS.COMPLETED)),
     cancelled: packOrders.filter(o => o.type === 'pack' && (o.status === PACK_STATUS.CANCELLED))
   });
 
