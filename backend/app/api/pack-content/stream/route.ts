@@ -37,6 +37,9 @@ export async function GET(request: NextRequest) {
     const userToken = authHeader?.replace('Bearer ', '') || token;
 
     console.log('Parameters:', { packId, orderId, contentKey, username, token: userToken ? 'present' : 'missing' });
+    console.log('Token length:', userToken ? userToken.length : 0);
+    console.log('Token start:', userToken ? userToken.substring(0, 50) + '...' : 'missing');
+    console.log('Token end:', userToken ? '...' + userToken.substring(userToken.length - 50) : 'missing');
 
     if (!packId || !orderId || !contentKey || !username || !userToken) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });

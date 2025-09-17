@@ -61,7 +61,14 @@ exports.packContentAccess = onRequest({
       } = req.query;
 
       // Get user token from X-Serverless-Authorization header (preferred) or query param
-      const userToken = req.headers['x-serverless-authorization']?.replace('Bearer ', '') || token;
+      console.log('Headers:', Object.keys(req.headers));
+      console.log('X-Serverless-Authorization:', req.headers['x-serverless-authorization']);
+      console.log('Token from query:', token);
+      
+      const userToken = req.headers['x-serverless-authorization']?.replace(/^Bearer\s+/i, '') || token;
+      console.log('Final userToken length:', userToken ? userToken.length : 0);
+      console.log('Final userToken start:', userToken ? userToken.substring(0, 50) + '...' : 'missing');
+      console.log('Final userToken end:', userToken ? '...' + userToken.substring(userToken.length - 50) : 'missing');
 
       // Validate required parameters
       if (!packId || !contentKey || !username) {

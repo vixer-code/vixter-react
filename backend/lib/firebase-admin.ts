@@ -5,7 +5,7 @@ import { getAuth } from 'firebase-admin/auth';
 const initializeFirebaseAdmin = () => {
   if (getApps().length === 0) {
     const serviceAccount = {
-      projectId: process.env.FIREBASE_PROJECT_ID,
+      projectId: process.env.FIREBASE_PROJECT_ID || 'vixter-451b3',
       privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
     };
