@@ -428,6 +428,52 @@
   border: 1px solid rgba(255, 46, 99, 0.3);
 }
 
+.pack-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 15px;
+  padding: 15px;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 8px;
+  color: #ffc107;
+}
+
+.pack-warning i {
+  font-size: 1.2rem;
+  margin-top: 2px;
+  color: #ffc107;
+}
+
+.pack-warning .warning-content {
+  flex: 1;
+}
+
+.pack-warning .warning-content strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 1rem;
+  color: #ffc107;
+}
+
+.pack-warning .warning-content p {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #e0e0e0;
+}
+
+.pack-warning .warning-content p:last-child {
+  margin-bottom: 0;
+}
+
+.seller-username {
+  color: #00ffca;
+  font-weight: 500;
+  margin-left: 5px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .my-purchases-container {

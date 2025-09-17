@@ -1053,8 +1053,8 @@ async function createPackOrderInternal(buyerId, payload) {
     throw new HttpsError("failed-precondition", "Saldo VP insuficiente");
   }
 
-  // Calculate VC amount (1.5x conversion rate)
-  const vcAmount = Math.round(vpAmount * 1.5);
+  // Calculate VC amount (1.5x conversion rate - VP to VC)
+  const vcAmount = Math.round(vpAmount / 1.5);
 
   // Create pack order
   const orderRef = db.collection('packOrders').doc();

@@ -4,6 +4,7 @@ import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useServiceOrder } from '../contexts/ServiceOrderContext';
+import { usePacksR2 } from '../contexts/PacksContextR2';
 import { collection, query as fsQuery, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { Link, useNavigate } from 'react-router-dom';
@@ -18,6 +19,7 @@ const MyPurchases = () => {
   const { showError, showSuccess } = useNotification();
   const { createOrGetConversation } = useEnhancedMessaging();
   const { confirmServiceDelivery, processing } = useServiceOrder();
+  const { getPackById } = usePacksR2();
   const navigate = useNavigate();
   
   const [purchasedPacks, setPurchasedPacks] = useState([]);
@@ -25,6 +27,7 @@ const MyPurchases = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [sellerData, setSellerData] = useState({});
+  const [packData, setPackData] = useState({});
   const [viewingPack, setViewingPack] = useState(null);
   const [viewingService, setViewingService] = useState(null);
   const [confirmingOrder, setConfirmingOrder] = useState(null);
@@ -70,9 +73,43 @@ const MyPurchases = () => {
     }
   }, [currentUser, showError]);
 
-  // Load seller data for services
-  const loadSellerData = useCallback(async (services) => {
-    const sellerIds = [...new Set(services.map(service => service.sellerId).filter(Boolean))];
+  // Load pack data for purchased packs
+  const loadPackData = useCallback(async (packs) => {
+    const packIds = [...new Set(packs.map(pack => pack.packId).filter(Boolean))];
+    const packDataMap = {};
+    
+    for (const packId of packIds) {
+      try {
+        const pack = await getPackById(packId);
+        if (pack) {
+          packDataMap[packId] = {
+            title: pack.title || 'Pack',
+            coverImage: pack.coverImage,
+            description: pack.description,
+            price: pack.price
+          };
+        }
+      } catch (error) {
+        console.error('Error loading pack data:', error);
+        // Set fallback data
+        packDataMap[packId] = {
+          title: 'Pack',
+          coverImage: null,
+          description: '',
+          price: 0
+        };
+      }
+    }
+    
+    setPackData(packDataMap);
+  }, [getPackById]);
+
+  // Load seller data for services and packs
+  const loadSellerData = useCallback(async (services, packs = []) => {
+    const sellerIds = [...new Set([
+      ...services.map(service => service.sellerId).filter(Boolean),
+      ...packs.map(pack => pack.sellerId).filter(Boolean)
+    ])];
     const sellerDataMap = {};
     
     for (const sellerId of sellerIds) {
@@ -146,6 +183,16 @@ const MyPurchases = () => {
     }
   }, [currentUser, loadPurchasedPacks, loadPurchasedServices]);
 
+  // Load pack data and seller data when purchases change
+  useEffect(() => {
+    if (purchasedPacks.length > 0 || purchasedServices.length > 0) {
+      Promise.all([
+        loadPackData(purchasedPacks),
+        loadSellerData(purchasedServices, purchasedPacks)
+      ]);
+    }
+  }, [purchasedPacks, purchasedServices, loadPackData, loadSellerData]);
+
   const handleViewService = async (serviceOrder) => {
     if (!currentUser || !serviceOrder.sellerId) return;
     
@@ -165,6 +212,12 @@ const MyPurchases = () => {
   };
 
   const handleViewPackContent = (pack) => {
+    // Check if pack is still pending acceptance
+    if (pack.status === 'PENDING_ACCEPTANCE') {
+      showError('Você só poderá visualizar as mídias após a vendedora aceitar o pedido. Aguarde a aprovação!', 'Aguardando Aprovação');
+      return;
+    }
+    
     setViewingPack(pack);
   };
 
@@ -399,7 +452,7 @@ const MyPurchases = () => {
                     <h3>
                       {isService 
                         ? (purchase.metadata?.serviceName || 'Serviço')
-                        : (purchase.packData?.title || 'Pack')
+                        : (packData[purchase.packId]?.title || purchase.metadata?.packName || 'Pack')
                       }
                     </h3>
                     <div className="purchase-meta">
@@ -430,11 +483,11 @@ const MyPurchases = () => {
                       />
                     ) : (
                       <SmartMediaViewer
-                        mediaData={purchase.packData?.coverImage}
+                        mediaData={packData[purchase.packId]?.coverImage}
                         type="pack"
                         watermarked={false}
                         fallbackSrc="/images/default-pack.jpg"
-                        alt={purchase.packData?.title || 'Pack'}
+                        alt={packData[purchase.packId]?.title || 'Pack'}
                         sizes="(max-width: 768px) 100px, 150px"
                       />
                     )}
@@ -443,6 +496,9 @@ const MyPurchases = () => {
                   <div className="purchase-details">
                     <div className="purchase-seller">
                       <strong>Vendedor:</strong> {sellerData[purchase.sellerId]?.name || purchase.sellerName || 'Provedor'}
+                      {sellerData[purchase.sellerId]?.username && (
+                        <span className="seller-username">(@{sellerData[purchase.sellerId].username})</span>
+                      )}
                     </div>
                     {isService && (
                       <div className="purchase-seller-username">
@@ -512,13 +568,25 @@ const MyPurchases = () => {
                   )}
                   
                   {isPack && (
-                    <button 
-                      className="btn-primary"
-                      onClick={() => handleViewPackContent(purchase.pack)}
-                    >
-                      <i className="fas fa-images"></i>
-                      Ver Mídias
-                    </button>
+                    <>
+                      {purchase.status === 'PENDING_ACCEPTANCE' && (
+                        <div className="pack-warning">
+                          <i className="fas fa-exclamation-triangle"></i>
+                          <div className="warning-content">
+                            <strong>Pack pendente de aprovação</strong>
+                            <p>A vendedora tem até 24h para aceitar seu pedido. Você só poderá visualizar as mídias após a aprovação.</p>
+                            <p><strong>Política de Reembolso:</strong> Caso a vendedora recuse o pedido, você receberá reembolso automático.</p>
+                          </div>
+                        </div>
+                      )}
+                      <button 
+                        className="btn-primary"
+                        onClick={() => handleViewPackContent(purchase)}
+                      >
+                        <i className="fas fa-images"></i>
+                        Ver Mídias
+                      </button>
+                    </>
                   )}
 
                   {purchase.status === 'COMPLETED' && (
