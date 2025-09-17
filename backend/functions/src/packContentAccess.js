@@ -28,7 +28,16 @@ const r2Client = new S3Client({
 const PACK_CONTENT_BUCKET_NAME = process.env.R2_PACK_CONTENT_BUCKET_NAME || 'vixter-pack-content-private';
 
 // Initialize CORS
-const corsHandler = cors({ origin: true });
+const corsHandler = cors({ 
+  origin: [
+    'https://vixter-react.vercel.app',
+    'https://vixter.com.br',
+    'https://www.vixter.com.br',
+    'http://localhost:3000', // For development
+    'http://localhost:5173'  // For Vite dev server
+  ],
+  credentials: true
+});
 
 /**
  * Cloud Function to serve pack content with watermark and access control
