@@ -1014,9 +1014,24 @@ async function updateServiceOrderInternal(orderId, updates) {
 // Create pack order
 async function createPackOrderInternal(buyerId, payload) {
   const { packId, sellerId, vpAmount, metadata = {} } = payload;
+  
+  // Debug log to see what we're receiving
+  logger.info('createPackOrderInternal called', { buyerId, payload });
 
-  if (!packId || !sellerId || !vpAmount || vpAmount <= 0) {
-    throw new HttpsError("invalid-argument", "Dados do pedido são obrigatórios");
+  // Detailed validation with specific error messages
+  if (!packId) {
+    logger.error('Missing packId in payload', { payload });
+    throw new HttpsError("invalid-argument", "packId é obrigatório");
+  }
+  
+  if (!sellerId) {
+    logger.error('Missing sellerId in payload', { payload });
+    throw new HttpsError("invalid-argument", "sellerId é obrigatório");
+  }
+  
+  if (!vpAmount || vpAmount <= 0) {
+    logger.error('Invalid vpAmount in payload', { vpAmount, payload });
+    throw new HttpsError("invalid-argument", "vpAmount é obrigatório e deve ser maior que zero");
   }
 
   if (buyerId === sellerId) {

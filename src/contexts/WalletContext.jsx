@@ -289,18 +289,22 @@ export const WalletProvider = ({ children }) => {
     if (!currentUser) return false;
 
     try {
+      const payload = {
+        buyerId,
+        sellerId,
+        vpAmount,
+        packId,
+        metadata: {
+          packName
+        }
+      };
+      
+      console.log('Creating pack order with payload:', payload);
+      
       const result = await apiFunc({
         resource: 'packOrder',
         action: 'create',
-        payload: {
-          buyerId,
-          sellerId,
-          vpAmount,
-          packId,
-          metadata: {
-            packName
-          }
-        }
+        payload
       });
 
       if (result.data.success) {
