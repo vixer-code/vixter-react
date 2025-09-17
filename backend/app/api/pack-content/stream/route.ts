@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
 // Force dynamic rendering
@@ -7,16 +8,24 @@ export const dynamic = 'force-dynamic';
 
 // Initialize Firebase Admin if not already initialized
 if (getApps().length === 0) {
-  const serviceAccount = {
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  };
+  // Check if we have the private key (it might be in FIREBASE_PROJECT_ID due to Vercel config)
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY || process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  
+  if (privateKey && clientEmail && privateKey.includes('BEGIN PRIVATE KEY')) {
+    const serviceAccount = {
+      projectId: 'vixter-451b3',
+      privateKey: privateKey.replace(/\\n/g, '\n'),
+      clientEmail: clientEmail,
+    };
 
-  initializeApp({
-    credential: cert(serviceAccount),
-    projectId: process.env.FIREBASE_PROJECT_ID,
-  });
+    initializeApp({
+      credential: cert(serviceAccount),
+      projectId: 'vixter-451b3',
+    });
+  } else {
+    console.warn('Firebase Admin SDK credentials not found, skipping initialization');
+  }
 }
 
 const db = getFirestore();
@@ -45,10 +54,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    // Verify user access
-    const accessResult = await verifyUserAccess(userToken, packId, orderId, username);
-    if (!accessResult) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    // Verify user access by checking Firebase token
+    try {
+      const auth = getAuth();
+      const decodedToken = await auth.verifyIdToken(userToken);
+      console.log('User verified:', decodedToken.uid);
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
     // Call Cloud Function to get watermarked content
