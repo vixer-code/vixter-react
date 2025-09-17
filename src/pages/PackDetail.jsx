@@ -68,9 +68,10 @@ const PackDetail = () => {
         let providerData = {};
         console.log('Pack data providerId:', packData.providerId);
         console.log('Pack data authorId:', packData.authorId);
+        console.log('Pack data creatorId:', packData.creatorId);
         
-        // Try both providerId and authorId as fallback
-        const providerId = packData.providerId || packData.authorId;
+        // Try providerId, authorId, or creatorId as fallback
+        const providerId = packData.providerId || packData.authorId || packData.creatorId;
         
         if (providerId) {
           try {
@@ -122,12 +123,14 @@ const PackDetail = () => {
             console.error('Error loading provider data:', providerError);
           }
         } else {
-          console.warn('No providerId or authorId found in pack data');
+          console.warn('No providerId, authorId, or creatorId found in pack data');
         }
         
         const packWithProvider = {
           id: packSnap.id,
           ...packData,
+          // Add provider ID (this is crucial for purchases)
+          providerId: providerId,
           // Add provider information with better fallbacks
           providerName: providerData.displayName || providerData.name || packData.providerName || packData.sellerName || 'Vendedor',
           providerUsername: providerData.username || packData.providerUsername || packData.sellerUsername || 'usuario',
@@ -236,6 +239,11 @@ const PackDetail = () => {
     }
 
     try {
+      // Debug: Log pack object to see its structure
+      console.log('Pack object before purchase:', pack);
+      console.log('pack.providerId:', pack.providerId);
+      console.log('pack.authorId:', pack.authorId);
+      
       // Create pack order that requires seller approval
       const result = await createPackOrder(
         currentUser.uid, // buyerId
