@@ -215,11 +215,35 @@ const MyPurchases = () => {
     }
   };
 
-  const handleViewPackContent = (pack) => {
+  const handleViewPackContent = async (pack) => {
     // Check if pack is still pending acceptance
     if (pack.status === 'PENDING_ACCEPTANCE') {
       showError('Você só poderá visualizar as mídias após a vendedora aceitar o pedido. Aguarde a aprovação!', 'Aguardando Aprovação');
       return;
+    }
+    
+    // Load pack data if not already loaded
+    if (!packData[pack.packId]) {
+      try {
+        const packDetails = await getPackById(pack.packId);
+        if (packDetails) {
+          setPackData(prev => ({
+            ...prev,
+            [pack.packId]: {
+              title: packDetails.title || 'Pack',
+              coverImage: packDetails.coverImage,
+              description: packDetails.description,
+              price: packDetails.price,
+              packContent: packDetails.packContent,
+              category: packDetails.category
+            }
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading pack details:', error);
+        showError('Erro ao carregar detalhes do pack');
+        return;
+      }
     }
     
     setViewingPack(pack);
@@ -616,8 +640,15 @@ const MyPurchases = () => {
       {/* Pack Content Viewer */}
       {viewingPack && (
         <PackContentViewer
-          pack={viewingPack}
-          orderId={viewingPack.orderId}
+          pack={{
+            ...packData[viewingPack.packId],
+            id: viewingPack.packId
+          }}
+          orderId={viewingPack.id}
+          vendorInfo={{
+            name: sellerData[viewingPack.sellerId]?.name || 'Provedor',
+            username: sellerData[viewingPack.sellerId]?.username || 'provedor'
+          }}
           onClose={handleClosePackViewer}
         />
       )}

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import useR2Media from '../hooks/useR2Media';
+import { useSecurePackContent } from '../hooks/useSecurePackContent';
 import './PackContentViewer.css';
 
-const PackContentViewer = ({ pack, orderId, onClose }) => {
+const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
   const { currentUser } = useAuth();
-  const { generateSecurePackContentUrl } = useR2Media();
+  const { generateSecurePackContentUrl, openSecureContent } = useSecurePackContent();
   
   const [contentUrls, setContentUrls] = useState({});
   const [loading, setLoading] = useState({});
@@ -22,9 +22,9 @@ const PackContentViewer = ({ pack, orderId, onClose }) => {
       
       const result = await generateSecurePackContentUrl(
         contentItem.key,
-        currentUser.uid,
         pack.id,
-        orderId
+        orderId,
+        currentUser.email?.split('@')[0] || 'user'
       );
       
       setContentUrls(prev => ({
@@ -64,14 +64,17 @@ const PackContentViewer = ({ pack, orderId, onClose }) => {
   const handleContentClick = async (contentItem) => {
     if (!contentItem.key) return;
 
-    let url = contentUrls[contentItem.key];
-    if (!url) {
-      url = await generateContentUrl(contentItem);
-    }
-
-    if (url) {
-      // Open in new tab for viewing
-      window.open(url, '_blank', 'noopener,noreferrer');
+    try {
+      // Use the new secure content opening method
+      await openSecureContent(
+        contentItem.key,
+        pack.id,
+        orderId,
+        currentUser.email?.split('@')[0] || 'user'
+      );
+    } catch (err) {
+      console.error('Error opening secure content:', err);
+      setError(`Erro ao abrir ${contentItem.name}: ${err.message}`);
     }
   };
 
@@ -86,6 +89,20 @@ const PackContentViewer = ({ pack, orderId, onClose }) => {
       return 'fas fa-file-archive';
     } else {
       return 'fas fa-file';
+    }
+  };
+
+  const getFileTypeLabel = (type) => {
+    if (type.startsWith('image/')) {
+      return 'Imagem';
+    } else if (type.startsWith('video/')) {
+      return 'Vídeo';
+    } else if (type.includes('pdf')) {
+      return 'PDF';
+    } else if (type.includes('zip') || type.includes('rar')) {
+      return 'Arquivo';
+    } else {
+      return 'Arquivo';
     }
   };
 
@@ -120,6 +137,20 @@ const PackContentViewer = ({ pack, orderId, onClose }) => {
             <span className="item-count">
               {pack.packContent?.length || 0} itens
             </span>
+            {vendorInfo && (
+              <span className="vendor-info">
+                <i className="fas fa-user"></i>
+                Vendido por: 
+                <a 
+                  href={`https://vixter.com.br/profile/${vendorInfo.username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="vendor-link"
+                >
+                  {vendorInfo.name} (@{vendorInfo.username})
+                </a>
+              </span>
+            )}
           </div>
         </div>
         <button className="close-btn" onClick={onClose}>
@@ -128,13 +159,25 @@ const PackContentViewer = ({ pack, orderId, onClose }) => {
       </div>
 
       <div className="viewer-content">
-        <div className="content-warning">
-          <i className="fas fa-shield-alt"></i>
-          <p>
-            <strong>Visualização Segura:</strong> Este conteúdo é protegido por watermark 
-            personalizado. Compartilhar URLs resultará em acesso negado.
-          </p>
-        </div>
+            <div className="content-warning">
+              <i className="fas fa-shield-alt"></i>
+              <div className="warning-content">
+                <p>
+                  <strong>Visualização Segura:</strong> Este conteúdo é protegido por watermark 
+                  personalizado com seu username. Compartilhar URLs resultará em acesso negado.
+                </p>
+                <p className="watermark-info">
+                  <i className="fas fa-info-circle"></i>
+                  <strong>Watermark:</strong> Todas as mídias (imagens e vídeos) exibem seu username ({currentUser?.email?.split('@')[0] || 'usuário'}) 
+                  para proteção contra compartilhamento não autorizado.
+                </p>
+                <p className="video-info">
+                  <i className="fas fa-video"></i>
+                  <strong>Vídeos:</strong> O processamento de vídeos pode levar alguns segundos para aplicar o watermark. 
+                  Por favor, aguarde o carregamento.
+                </p>
+              </div>
+            </div>
 
         {error && (
           <div className="error-message">

@@ -50,6 +50,26 @@
   color: #999;
 }
 
+.vendor-info {
+  color: #00ffca;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+}
+
+.vendor-link {
+  color: #00ffca;
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 5px;
+}
+
+.vendor-link:hover {
+  color: #00d4aa;
+  text-decoration: underline;
+}
+
 .close-btn {
   background: none;
   border: none;
@@ -78,7 +98,7 @@
   padding: 15px;
   margin-bottom: 20px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
 }
 
@@ -87,10 +107,45 @@
   font-size: 1.2rem;
 }
 
-.content-warning p {
-  margin: 0;
+.warning-content {
+  flex: 1;
+}
+
+.warning-content p {
+  margin: 0 0 10px 0;
   color: #ffc107;
   font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.warning-content p:last-child {
+  margin-bottom: 0;
+}
+
+.watermark-info,
+.video-info {
+  background: rgba(0, 255, 202, 0.1);
+  border: 1px solid rgba(0, 255, 202, 0.3);
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 10px;
+  color: #00ffca;
+  font-size: 0.9rem;
+}
+
+.watermark-info i,
+.video-info i {
+  margin-right: 5px;
+}
+
+.video-info {
+  background: rgba(255, 193, 7, 0.1);
+  border-color: rgba(255, 193, 7, 0.3);
+  color: #ffc107;
+}
+
+.video-info i {
+  color: #ffc107;
 }
 
 .error-message {

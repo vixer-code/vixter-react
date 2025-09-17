@@ -21,6 +21,10 @@ service cloud.firestore {
       return request.auth.uid in ['admin_uid_1', 'admin_uid_2']; // Replace with actual admin UIDs
     }
     
+    // Check if request is from Cloud Functions (for watermarking)
+    function isCloudFunction() {
+      return request.auth != null && request.auth.token.firebase.sign_in_provider == 'custom';
+    }
     
     // =====================================================
     // WALLET COLLECTION RULES
@@ -45,7 +49,8 @@ service cloud.firestore {
     match /transactions/{transactionId} {
       // Users can only read their own transactions
       allow read: if isAuthenticated() && 
-                    isOwner(resource.data.userId);
+                    (isOwner(resource.data.fromUserId) || 
+                     isOwner(resource.data.toUserId));
       
       // Only Cloud Functions can create transactions (no direct client writes)
       // This ensures transaction integrity and prevents fraud
@@ -72,33 +77,6 @@ service cloud.firestore {
     }
     
     // =====================================================
-    // SERVICE ORDERS COLLECTION RULES
-    // =====================================================
-    
-    match /serviceOrders/{orderId} {
-      // Buyers and sellers can read their orders
-      allow read: if isAuthenticated() && 
-                    (isOwner(resource.data.buyerId) || 
-                     isOwner(resource.data.sellerId));
-      
-      // Only specific order updates are allowed (status, delivery notes, etc.)
-      // Most writes should go through Cloud Functions for validation
-      allow update: if isAuthenticated() && 
-                      (isOwner(resource.data.buyerId) || 
-                       isOwner(resource.data.sellerId)) &&
-                      // Only allow specific fields to be updated
-                      request.resource.data.diff(resource.data).affectedKeys()
-                        .hasOnly(['status', 'metadata', 'timestamps']);
-      
-      // Order creation only via Cloud Functions
-      allow create: if false;
-      allow delete: if false;
-      
-      // Admin access
-      allow read, write: if isAdmin();
-    }
-    
-    // =====================================================
     // USERS COLLECTION RULES
     // =====================================================
     
@@ -106,9 +84,12 @@ service cloud.firestore {
       // Users can read/write their own profile
       allow read, write: if isAuthenticated() && isOwner(userId);
       
-      // Users can read other users' public profile fields for messaging
-      // This allows reading displayName, username, photoURL, status for conversations
+      // Users can read other users' public profile fields for messaging and watermarking
+      // This allows reading displayName, username, photoURL, status for conversations and pack content
       allow read: if isAuthenticated();
+      
+      // Cloud Functions need read access for watermarking (vendor info)
+      allow read: if isCloudFunction();
       
       // Allow users to update followersCount and followingCount for follow/unfollow operations
       allow update: if isAuthenticated() && 
@@ -157,13 +138,16 @@ service cloud.firestore {
       // Anyone can read packs (public content)
       allow read: if true;
       
+      // Cloud Functions need read access for watermarking (pack metadata)
+      allow read: if isCloudFunction();
+      
       // Only pack owners can create/update their packs
       allow create, update: if isAuthenticated() && 
-                              isOwner(request.resource.data.creatorId);
+                              isOwner(request.resource.data.vendorId);
       
       // Only pack owners can delete their packs
       allow delete: if isAuthenticated() && 
-                      isOwner(resource.data.creatorId);
+                      isOwner(resource.data.vendorId);
       
       // Admin access
       allow read, write: if isAdmin();
@@ -210,7 +194,7 @@ service cloud.firestore {
     }
     
     // =====================================================
-    // SERVICE ORDERS COLLECTION RULES (UPDATED)
+    // SERVICE ORDERS COLLECTION RULES
     // =====================================================
     
     match /serviceOrders/{orderId} {
@@ -280,6 +264,9 @@ service cloud.firestore {
                     (isOwner(resource.data.buyerId) || 
                      isOwner(resource.data.sellerId));
       
+      // Cloud Functions need read access for watermarking (order validation)
+      allow read: if isCloudFunction();
+      
       // Pack order creation via Cloud Functions only (but allow client reads)
       allow create: if isAuthenticated() && 
                       isOwner(request.resource.data.buyerId) &&
@@ -330,7 +317,7 @@ service cloud.firestore {
          newStatus == 'AUTO_RELEASED')
       );
     }
-    
+
     // =====================================================
     // DEFAULT DENY RULE
     // =====================================================
