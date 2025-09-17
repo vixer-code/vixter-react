@@ -148,8 +148,8 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       }
     }
 
-    // Generate secure URLs for each content item via Cloud Function
-    const cloudFunctionUrl = 'https://packcontentaccess-6twxbx5ima-ue.a.run.app';
+    // Generate secure URLs for each content item via Backend Proxy
+    const backendUrl = 'https://vixter-react-llyd.vercel.app';
     const contentWithUrls = [];
 
     // Process packContent
@@ -166,8 +166,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
           
           contentWithUrls.push({
             ...contentItem,
-            secureUrl: `${cloudFunctionUrl}?${params.toString()}`,
-            authToken: token
+            secureUrl: `${backendUrl}/api/pack-content/stream?${params.toString()}`
           });
         }
       }
@@ -187,8 +186,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
           
           contentWithUrls.push({
             ...contentItem,
-            secureUrl: `${cloudFunctionUrl}?${params.toString()}`,
-            authToken: token
+            secureUrl: `${backendUrl}/api/pack-content/stream?${params.toString()}`
           });
         }
       }
