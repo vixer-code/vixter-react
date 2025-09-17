@@ -3,6 +3,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { GoogleAuth } from 'google-auth-library';
+import { getServiceAccountCredentials } from '../../../../config/service-account';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -89,8 +90,11 @@ export async function GET(request: NextRequest) {
 
     console.log('Calling Cloud Function:', `${cloudFunctionUrl}?${params.toString()}`);
     
-    // Get service-to-service authentication token
-    const auth = new GoogleAuth();
+    // Get service-to-service authentication token using secure configuration
+    const auth = new GoogleAuth({
+      credentials: getServiceAccountCredentials()
+    });
+    
     const client = await auth.getIdTokenClient(cloudFunctionUrl);
     const serviceToken = await client.idTokenProvider.fetchIdToken(cloudFunctionUrl);
     
