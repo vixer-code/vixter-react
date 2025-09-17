@@ -83,22 +83,72 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
 
   useEffect(() => {
     if (editingPack) {
-      setFormData({
-        title: editingPack.title || '',
-        category: editingPack.category || '',
-        subcategory: editingPack.subcategory || '',
-        packType: editingPack.packType || '',
-        description: editingPack.description || '',
-        price: editingPack.price != null ? String(editingPack.price) : '',
-        discount: editingPack.discount != null ? String(editingPack.discount) : '',
-        tags: editingPack.tags || [],
-        licenseOptions: editingPack.licenseOptions || [],
-        disableWatermark: editingPack.disableWatermark || false,
-        coverImage: editingPack.coverImage || null,
-        sampleImages: editingPack.sampleImages || [],
-        sampleVideos: editingPack.sampleVideos || [],
-        packContent: editingPack.packContent || []
-      });
+      // Load fresh pack data from database to get latest changes
+      const loadPackData = async () => {
+        try {
+          const freshPackData = await getPackById(editingPack.id);
+          if (freshPackData) {
+            setFormData({
+              title: freshPackData.title || '',
+              category: freshPackData.category || '',
+              subcategory: freshPackData.subcategory || '',
+              packType: freshPackData.packType || '',
+              description: freshPackData.description || '',
+              price: freshPackData.price != null ? String(freshPackData.price) : '',
+              discount: freshPackData.discount != null ? String(freshPackData.discount) : '',
+              tags: freshPackData.tags || [],
+              licenseOptions: freshPackData.licenseOptions || [],
+              disableWatermark: freshPackData.disableWatermark || false,
+              coverImage: freshPackData.coverImage || null,
+              sampleImages: freshPackData.sampleImages || [],
+              sampleVideos: freshPackData.sampleVideos || [],
+              packContent: freshPackData.content || []
+            });
+            setCoverImagePreview(freshPackData.coverImage?.publicUrl || freshPackData.coverImage || '');
+          } else {
+            // Fallback to editingPack if fresh data not available
+            setFormData({
+              title: editingPack.title || '',
+              category: editingPack.category || '',
+              subcategory: editingPack.subcategory || '',
+              packType: editingPack.packType || '',
+              description: editingPack.description || '',
+              price: editingPack.price != null ? String(editingPack.price) : '',
+              discount: editingPack.discount != null ? String(editingPack.discount) : '',
+              tags: editingPack.tags || [],
+              licenseOptions: editingPack.licenseOptions || [],
+              disableWatermark: editingPack.disableWatermark || false,
+              coverImage: editingPack.coverImage || null,
+              sampleImages: editingPack.sampleImages || [],
+              sampleVideos: editingPack.sampleVideos || [],
+              packContent: editingPack.packContent || []
+            });
+            setCoverImagePreview(editingPack.coverImage?.publicUrl || editingPack.coverImage || '');
+          }
+        } catch (error) {
+          console.error('Error loading fresh pack data:', error);
+          // Fallback to editingPack data
+          setFormData({
+            title: editingPack.title || '',
+            category: editingPack.category || '',
+            subcategory: editingPack.subcategory || '',
+            packType: editingPack.packType || '',
+            description: editingPack.description || '',
+            price: editingPack.price != null ? String(editingPack.price) : '',
+            discount: editingPack.discount != null ? String(editingPack.discount) : '',
+            tags: editingPack.tags || [],
+            licenseOptions: editingPack.licenseOptions || [],
+            disableWatermark: editingPack.disableWatermark || false,
+            coverImage: editingPack.coverImage || null,
+            sampleImages: editingPack.sampleImages || [],
+            sampleVideos: editingPack.sampleVideos || [],
+            packContent: editingPack.packContent || []
+          });
+          setCoverImagePreview(editingPack.coverImage?.publicUrl || editingPack.coverImage || '');
+        }
+      };
+      
+      loadPackData();
 
       setCoverImageFile(null);
       setPackFiles([]);
@@ -107,7 +157,6 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       setSampleVideoFiles([]);
       setSampleImagePreviews([]);
       setSampleVideoPreviews([]);
-      setCoverImagePreview(editingPack.coverImage?.publicUrl || editingPack.coverImage || '');
 
       setCurrentStep(0);
     } else {
@@ -240,19 +289,21 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       }
       
       // Remove from formData and update database immediately
+      let updatedSampleImages;
       setFormData(prev => {
-        const updatedSampleImages = prev.sampleImages.filter((_, i) => i !== index);
-        
-        // Update database immediately
-        if (editingPack) {
-          updatePack(editingPack.id, { sampleImages: updatedSampleImages }, false);
-        }
-        
+        updatedSampleImages = prev.sampleImages.filter((_, i) => i !== index);
         return { 
           ...prev, 
           sampleImages: updatedSampleImages 
         };
       });
+      
+      // Update database immediately
+      if (editingPack) {
+        console.log('Updating pack in database with sample images:', updatedSampleImages);
+        const updateResult = await updatePack(editingPack.id, { sampleImages: updatedSampleImages }, false);
+        console.log('Pack update result:', updateResult);
+      }
     } else {
       // This is a new file - just remove from local state
       const newFileIndex = index - totalExistingImages;
@@ -277,19 +328,21 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       }
       
       // Remove from formData and update database immediately
+      let updatedSampleVideos;
       setFormData(prev => {
-        const updatedSampleVideos = prev.sampleVideos.filter((_, i) => i !== index);
-        
-        // Update database immediately
-        if (editingPack) {
-          updatePack(editingPack.id, { sampleVideos: updatedSampleVideos }, false);
-        }
-        
+        updatedSampleVideos = prev.sampleVideos.filter((_, i) => i !== index);
         return { 
           ...prev, 
           sampleVideos: updatedSampleVideos 
         };
       });
+      
+      // Update database immediately
+      if (editingPack) {
+        console.log('Updating pack in database with sample videos:', updatedSampleVideos);
+        const updateResult = await updatePack(editingPack.id, { sampleVideos: updatedSampleVideos }, false);
+        console.log('Pack update result:', updateResult);
+      }
     } else {
       // This is a new file - just remove from local state
       const newFileIndex = index - totalExistingVideos;
@@ -342,19 +395,21 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       }
       
       // Remove from formData and update database immediately
+      let updatedPackContent;
       setFormData(prev => {
-        const updatedPackContent = prev.packContent.filter((_, i) => i !== index);
-        
-        // Update database immediately
-        if (editingPack) {
-          updatePack(editingPack.id, { content: updatedPackContent }, false);
-        }
-        
+        updatedPackContent = prev.packContent.filter((_, i) => i !== index);
         return {
           ...prev,
           packContent: updatedPackContent
         };
       });
+      
+      // Update database immediately
+      if (editingPack) {
+        console.log('Updating pack in database with pack content:', updatedPackContent);
+        const updateResult = await updatePack(editingPack.id, { content: updatedPackContent }, false);
+        console.log('Pack update result:', updateResult);
+      }
     } else {
       // This is a new file - just remove from local state
       const newFileIndex = index - totalExistingContent;
@@ -385,20 +440,22 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       }
     }
     
+    let newPackContent;
     setFormData(prev => {
-      const newPackContent = (prev.packContent || []).filter((_, i) => i !== index);
+      newPackContent = (prev.packContent || []).filter((_, i) => i !== index);
       console.log('Updated packContent:', newPackContent);
-      
-      // If editing pack, update the database immediately
-      if (editingPack) {
-        updatePack(editingPack.id, { content: newPackContent }, false);
-      }
-      
       return {
         ...prev,
         packContent: newPackContent
       };
     });
+    
+    // If editing pack, update the database immediately
+    if (editingPack) {
+      console.log('Updating pack in database with content:', newPackContent);
+      const updateResult = await updatePack(editingPack.id, { content: newPackContent }, false);
+      console.log('Pack update result:', updateResult);
+    }
   };
 
   // Validation
