@@ -159,17 +159,13 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
     if (packData.packContent && Array.isArray(packData.packContent)) {
       for (const contentItem of packData.packContent) {
         if (contentItem.key) {
-          const params = new URLSearchParams({
-            packId,
-            orderId,
-            contentKey: contentItem.key,
-            username: user.email?.split('@')[0] || 'user',
-            token: token
-          });
+          // Generate secure URL with only content ID (no sensitive parameters)
+          const contentId = Buffer.from(`${packId}-${orderId}-${contentItem.key}`).toString('base64url');
           
           contentWithUrls.push({
             ...contentItem,
-            secureUrl: `${backendUrl}/api/pack-content/stream?${params.toString()}&t=${Date.now()}`
+            secureUrl: `${backendUrl}/api/pack-content/stream/${contentId}`,
+            contentId: contentId
           });
         }
       }
@@ -179,17 +175,13 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
     if (packData.content && Array.isArray(packData.content)) {
       for (const contentItem of packData.content) {
         if (contentItem.key) {
-          const params = new URLSearchParams({
-            packId,
-            orderId,
-            contentKey: contentItem.key,
-            username: user.email?.split('@')[0] || 'user',
-            token: token
-          });
+          // Generate secure URL with only content ID (no sensitive parameters)
+          const contentId = Buffer.from(`${packId}-${orderId}-${contentItem.key}`).toString('base64url');
           
           contentWithUrls.push({
             ...contentItem,
-            secureUrl: `${backendUrl}/api/pack-content/stream?${params.toString()}&t=${Date.now()}`
+            secureUrl: `${backendUrl}/api/pack-content/stream/${contentId}`,
+            contentId: contentId
           });
         }
       }
@@ -205,7 +197,8 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
             type: sampleImage.type || 'image/jpeg',
             size: sampleImage.size || 0,
             secureUrl: sampleImage.publicUrl || sampleImage.url, // Use direct public URL
-            isSample: true
+            isSample: true,
+            contentId: `sample-${sampleImage.key || Date.now()}` // Add contentId for consistency
           });
         }
       }
@@ -221,7 +214,8 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
             type: sampleVideo.type || 'video/mp4',
             size: sampleVideo.size || 0,
             secureUrl: sampleVideo.publicUrl || sampleVideo.url, // Use direct public URL
-            isSample: true
+            isSample: true,
+            contentId: `sample-video-${sampleVideo.key || Date.now()}` // Add contentId for consistency
           });
         }
       }

@@ -57,7 +57,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
         setGalleryOpen(true);
       }
     } else {
-      // Use pre-generated secure URL from backend for non-media files
+      // For non-media files, open in new tab
       const secureUrl = contentItem.secureUrl || contentUrls[contentItem.key];
       if (secureUrl) {
         // Open directly since backend handles authentication and streaming
@@ -312,6 +312,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
                     controls
                     autoPlay
                     className="gallery-video"
+                    crossOrigin="anonymous"
                   />
                 ) : (
                   <img
@@ -319,6 +320,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
                     src={mediaItems[selectedMediaIndex]?.secureUrl}
                     alt={mediaItems[selectedMediaIndex]?.name}
                     className="gallery-image"
+                    crossOrigin="anonymous"
                   />
                 )}
               </div>
