@@ -62,15 +62,15 @@ export const useSecurePackContent = () => {
 
       // For watermarked content, we'll use the Cloud Function URL
       // which will handle the watermarking on-the-fly
-      const cloudFunctionUrl = `${process.env.REACT_APP_FUNCTIONS_URL || 'https://us-central1-your-project.cloudfunctions.net'}/packContentAccess`;
+      const cloudFunctionUrl = 'https://packcontentaccess-6twxbx5ima-ue.a.run.app';
       
       const params = new URLSearchParams({
         packId,
         contentKey,
         watermark: watermark || currentUser.email?.split('@')[0] || 'user',
-        username: currentUser.uid,
+        username: currentUser.email?.split('@')[0] || 'user',
         orderId,
-        token
+        token: token
       });
 
       const secureUrl = `${cloudFunctionUrl}?${params.toString()}`;
