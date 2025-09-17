@@ -46,7 +46,7 @@ export const WalletProvider = ({ children }) => {
   const claimDailyBonusFunc = httpsCallable(functions, 'claimDailyBonus');
   const processPackSaleFunc = httpsCallable(functions, 'processPackSale');
   const processServicePurchaseFunc = httpsCallable(functions, 'processServicePurchase');
-  const createPackOrderFunc = httpsCallable(functions, 'createPackOrder');
+  const apiFunc = httpsCallable(functions, 'api');
 
   // VP packages configuration
   const VP_PACKAGES = {
@@ -289,12 +289,18 @@ export const WalletProvider = ({ children }) => {
     if (!currentUser) return false;
 
     try {
-      const result = await createPackOrderFunc({
-        buyerId,
-        sellerId,
-        vpAmount,
-        packId,
-        packName
+      const result = await apiFunc({
+        resource: 'packOrder',
+        action: 'create',
+        payload: {
+          buyerId,
+          sellerId,
+          vpAmount,
+          packId,
+          metadata: {
+            packName
+          }
+        }
       });
 
       if (result.data.success) {
@@ -309,7 +315,7 @@ export const WalletProvider = ({ children }) => {
       handleWalletError(error, 'createPackOrder');
       return false;
     }
-  }, [currentUser, createPackOrderFunc, showSuccess, showError]);
+  }, [currentUser, apiFunc, showSuccess, showError]);
 
   // Format currency
   const formatCurrency = useCallback((amount, currency = '') => {

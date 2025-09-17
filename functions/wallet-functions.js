@@ -605,6 +605,25 @@ export const api = onCall(async (request) => {
         }
         break;
       
+      case 'packOrder':
+        switch (action) {
+          case 'create':
+            result = await createPackOrderInternal(userId, payload);
+            break;
+          case 'update':
+            result = await updatePackOrderInternal(payload.orderId, payload.updates);
+            break;
+          case 'accept':
+            result = await acceptPackOrderInternal(userId, payload.orderId);
+            break;
+          case 'decline':
+            result = await declinePackOrderInternal(userId, payload.orderId);
+            break;
+          default:
+            throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
+        }
+        break;
+      
       default:
         throw new HttpsError('invalid-argument', `Unknown resource: ${resource}`);
     }
@@ -987,6 +1006,296 @@ async function updateServiceOrderInternal(orderId, updates) {
 
   await orderRef.update(updateData);
   logger.info(`✅ Service order updated: ${orderId}`);
+  return { success: true };
+}
+
+// === PACK ORDER FUNCTIONS ===
+
+// Create pack order
+async function createPackOrderInternal(buyerId, payload) {
+  const { packId, sellerId, vpAmount, metadata = {} } = payload;
+
+  if (!packId || !sellerId || !vpAmount || vpAmount <= 0) {
+    throw new HttpsError("invalid-argument", "Dados do pedido são obrigatórios");
+  }
+
+  if (buyerId === sellerId) {
+    throw new HttpsError("invalid-argument", "Você não pode comprar seu próprio pack");
+  }
+
+  // Get buyer wallet
+  const buyerWalletRef = db.collection('wallets').doc(buyerId);
+  const buyerWalletSnap = await buyerWalletRef.get();
+  
+  if (!buyerWalletSnap.exists) {
+    throw new HttpsError("failed-precondition", "Carteira do comprador não encontrada");
+  }
+
+  const buyerWallet = buyerWalletSnap.data();
+  const vpNeeded = vpAmount;
+
+  if (buyerWallet.vp < vpNeeded) {
+    throw new HttpsError("failed-precondition", "Saldo VP insuficiente");
+  }
+
+  // Calculate VC amount (1.5x conversion rate)
+  const vcAmount = Math.round(vpAmount * 1.5);
+
+  // Create pack order
+  const orderRef = db.collection('packOrders').doc();
+  const orderData = {
+    id: orderRef.id,
+    packId,
+    buyerId,
+    sellerId,
+    vpAmount,
+    vcAmount,
+    status: 'PENDING_ACCEPTANCE',
+    paymentStatus: 'RESERVED',
+    metadata: {
+      packName: metadata.packName || 'Pack',
+      ...metadata
+    },
+    timestamps: {
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }
+  };
+
+  const batch = db.batch();
+
+  // Create order
+  batch.set(orderRef, orderData);
+
+  // Deduct VP from buyer
+  batch.update(buyerWalletRef, {
+    vp: admin.firestore.FieldValue.increment(-vpNeeded),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  // Create buyer transaction
+  const buyerTransactionRef = db.collection('transactions').doc();
+  batch.set(buyerTransactionRef, {
+    id: buyerTransactionRef.id,
+    userId: buyerId,
+    type: 'PACK_PURCHASE',
+    amount: -vpAmount,
+    currency: 'VP',
+    description: `Compra de pack: ${metadata.packName || 'Pack'}`,
+    metadata: {
+      orderId: orderRef.id,
+      packId,
+      sellerId,
+      vcAmount
+    },
+    status: 'COMPLETED',
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  // Get seller wallet and add VC Pending
+  const sellerWalletRef = db.collection('wallets').doc(sellerId);
+  batch.update(sellerWalletRef, {
+    vcPending: admin.firestore.FieldValue.increment(vcAmount),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  // Create seller pending transaction
+  const sellerTransactionRef = db.collection('transactions').doc();
+  batch.set(sellerTransactionRef, {
+    id: sellerTransactionRef.id,
+    userId: sellerId,
+    type: 'PACK_SALE_PENDING',
+    amount: vcAmount,
+    currency: 'VC',
+    description: `Venda de pack (pendente): ${metadata.packName || 'Pack'}`,
+    metadata: {
+      orderId: orderRef.id,
+      packId,
+      buyerId,
+      vpAmount
+    },
+    status: 'PENDING',
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  await batch.commit();
+
+  logger.info(`✅ Pack order created: ${orderRef.id}`);
+  return { success: true, packOrderId: orderRef.id };
+}
+
+// Accept pack order
+async function acceptPackOrderInternal(sellerId, orderId) {
+  const orderRef = db.collection('packOrders').doc(orderId);
+  const orderSnap = await orderRef.get();
+
+  if (!orderSnap.exists) {
+    throw new HttpsError("not-found", "Pedido não encontrado");
+  }
+
+  const order = orderSnap.data();
+
+  if (order.sellerId !== sellerId) {
+    throw new HttpsError("permission-denied", "Você não pode aceitar este pedido");
+  }
+
+  if (order.status !== 'PENDING_ACCEPTANCE') {
+    throw new HttpsError("invalid-argument", "Pedido não está pendente de aceitação");
+  }
+
+  // Start transaction to complete the sale
+  const batch = db.batch();
+
+  // Update order status
+  batch.update(orderRef, {
+    status: 'COMPLETED',
+    paymentStatus: 'COMPLETED',
+    timestamps: {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }
+  });
+
+  // Get seller wallet
+  const sellerWalletRef = db.collection('wallets').doc(sellerId);
+  const sellerWalletSnap = await sellerWalletRef.get();
+  
+  if (sellerWalletSnap.exists) {
+    // Move VC from Pending to Available
+    batch.update(sellerWalletRef, {
+      vcPending: admin.firestore.FieldValue.increment(-order.vcAmount),
+      vc: admin.firestore.FieldValue.increment(order.vcAmount),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  }
+
+  // Update seller pending transaction to completed
+  const sellerTransactionsRef = db.collection('transactions').where('metadata.orderId', '==', orderId).where('userId', '==', sellerId);
+  const sellerTransactionsSnap = await sellerTransactionsRef.get();
+  
+  sellerTransactionsSnap.docs.forEach(doc => {
+    batch.update(doc.ref, {
+      status: 'COMPLETED',
+      type: 'PACK_SALE_COMPLETED'
+    });
+  });
+
+  // Create completion transaction
+  const completionTransactionRef = db.collection('transactions').doc();
+  batch.set(completionTransactionRef, {
+    id: completionTransactionRef.id,
+    userId: order.sellerId,
+    type: 'PACK_SALE_COMPLETED',
+    amount: order.vcAmount,
+    currency: 'VC',
+    description: `Venda de pack concluída: ${order.metadata.packName || 'Pack'}`,
+    metadata: {
+      orderId: orderId,
+      packId: order.packId,
+      buyerId: order.buyerId,
+      vpAmount: order.vpAmount
+    },
+    status: 'COMPLETED',
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  await batch.commit();
+
+  logger.info(`✅ Pack order accepted: ${orderId}`);
+  return { success: true };
+}
+
+// Decline pack order
+async function declinePackOrderInternal(sellerId, orderId) {
+  const orderRef = db.collection('packOrders').doc(orderId);
+  const orderSnap = await orderRef.get();
+
+  if (!orderSnap.exists) {
+    throw new HttpsError("not-found", "Pedido não encontrado");
+  }
+
+  const order = orderSnap.data();
+
+  if (order.sellerId !== sellerId) {
+    throw new HttpsError("permission-denied", "Você não pode recusar este pedido");
+  }
+
+  if (order.status !== 'PENDING_ACCEPTANCE') {
+    throw new HttpsError("invalid-argument", "Pedido não está pendente de aceitação");
+  }
+
+  // Start transaction to refund buyer
+  const batch = db.batch();
+
+  // Update order status
+  batch.update(orderRef, {
+    status: 'CANCELLED',
+    refundStatus: 'PROCESSING',
+    timestamps: {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }
+  });
+
+  // Get buyer wallet
+  const buyerWalletRef = db.collection('wallets').doc(order.buyerId);
+  const buyerWalletSnap = await buyerWalletRef.get();
+  
+  if (buyerWalletSnap.exists) {
+    // Refund VP to buyer
+    batch.update(buyerWalletRef, {
+      vp: admin.firestore.FieldValue.increment(order.vpAmount),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  }
+
+  // Get seller wallet
+  const sellerWalletRef = db.collection('wallets').doc(sellerId);
+  const sellerWalletSnap = await sellerWalletRef.get();
+  
+  if (sellerWalletSnap.exists) {
+    // Remove VC Pending from seller
+    batch.update(sellerWalletRef, {
+      vcPending: admin.firestore.FieldValue.increment(-order.vcAmount),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  }
+
+  // Create refund transaction
+  const refundTransactionRef = db.collection('transactions').doc();
+  batch.set(refundTransactionRef, {
+    id: refundTransactionRef.id,
+    userId: order.buyerId,
+    type: 'PACK_REFUND',
+    amount: order.vpAmount,
+    currency: 'VP',
+    description: `Reembolso de pack: ${order.metadata.packName || 'Pack'}`,
+    metadata: {
+      orderId: orderId,
+      packId: order.packId,
+      sellerId: order.sellerId
+    },
+    status: 'COMPLETED',
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  await batch.commit();
+
+  logger.info(`✅ Pack order declined: ${orderId}`);
+  return { success: true };
+}
+
+// Update pack order
+async function updatePackOrderInternal(orderId, updates) {
+  const orderRef = db.collection('packOrders').doc(orderId);
+  
+  const updateData = {
+    ...updates,
+    timestamps: {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }
+  };
+
+  await orderRef.update(updateData);
+  logger.info(`✅ Pack order updated: ${orderId}`);
   return { success: true };
 }
 
