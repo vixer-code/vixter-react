@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 // Initialize Firebase Admin if not already initialized
 if (getApps().length === 0) {
   const serviceAccount = {

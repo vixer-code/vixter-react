@@ -45,7 +45,8 @@ const corsHandler = cors({
  */
 exports.packContentAccess = onRequest({
   region: 'us-east1',
-  cors: true
+  cors: true,
+  invoker: 'public'
 }, async (req, res) => {
   return corsHandler(req, res, async () => {
     try {
