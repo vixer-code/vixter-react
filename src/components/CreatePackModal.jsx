@@ -29,7 +29,7 @@ const packTypeOptions = [
 const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null }) => {
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
-  const { createPack, updatePack } = usePacks();
+  const { createPack, updatePack, getPackById } = usePacks();
   const { showSuccess, showError } = useNotification();
   const { uploadPackMedia, uploadPackContentMedia, uploading, deleteMedia, deletePackContentMedia } = useR2Media();
   
@@ -237,17 +237,20 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         }
       }
       
-      // Remove from formData
-      setFormData(prev => ({ 
-        ...prev, 
-        sampleImages: prev.sampleImages.filter((_, i) => i !== index) 
-      }));
-      
-      // Update database immediately
-      if (editingPack) {
-        const updatedSampleImages = formData.sampleImages.filter((_, i) => i !== index);
-        updatePack(editingPack.id, { sampleImages: updatedSampleImages }, false);
-      }
+      // Remove from formData and update database immediately
+      setFormData(prev => {
+        const updatedSampleImages = prev.sampleImages.filter((_, i) => i !== index);
+        
+        // Update database immediately
+        if (editingPack) {
+          updatePack(editingPack.id, { sampleImages: updatedSampleImages }, false);
+        }
+        
+        return { 
+          ...prev, 
+          sampleImages: updatedSampleImages 
+        };
+      });
     } else {
       // This is a new file - just remove from local state
       const newFileIndex = index - totalExistingImages;
@@ -269,17 +272,20 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         }
       }
       
-      // Remove from formData
-      setFormData(prev => ({ 
-        ...prev, 
-        sampleVideos: prev.sampleVideos.filter((_, i) => i !== index) 
-      }));
-      
-      // Update database immediately
-      if (editingPack) {
-        const updatedSampleVideos = formData.sampleVideos.filter((_, i) => i !== index);
-        updatePack(editingPack.id, { sampleVideos: updatedSampleVideos }, false);
-      }
+      // Remove from formData and update database immediately
+      setFormData(prev => {
+        const updatedSampleVideos = prev.sampleVideos.filter((_, i) => i !== index);
+        
+        // Update database immediately
+        if (editingPack) {
+          updatePack(editingPack.id, { sampleVideos: updatedSampleVideos }, false);
+        }
+        
+        return { 
+          ...prev, 
+          sampleVideos: updatedSampleVideos 
+        };
+      });
     } else {
       // This is a new file - just remove from local state
       const newFileIndex = index - totalExistingVideos;
@@ -329,17 +335,20 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         }
       }
       
-      // Remove from formData
-      setFormData(prev => ({
-        ...prev,
-        packContent: prev.packContent.filter((_, i) => i !== index)
-      }));
-      
-      // Update database immediately
-      if (editingPack) {
-        const updatedPackContent = formData.packContent.filter((_, i) => i !== index);
-        updatePack(editingPack.id, { content: updatedPackContent }, false);
-      }
+      // Remove from formData and update database immediately
+      setFormData(prev => {
+        const updatedPackContent = prev.packContent.filter((_, i) => i !== index);
+        
+        // Update database immediately
+        if (editingPack) {
+          updatePack(editingPack.id, { content: updatedPackContent }, false);
+        }
+        
+        return {
+          ...prev,
+          packContent: updatedPackContent
+        };
+      });
     } else {
       // This is a new file - just remove from local state
       const newFileIndex = index - totalExistingContent;
@@ -371,17 +380,17 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     setFormData(prev => {
       const newPackContent = (prev.packContent || []).filter((_, i) => i !== index);
       console.log('Updated packContent:', newPackContent);
+      
+      // If editing pack, update the database immediately
+      if (editingPack) {
+        updatePack(editingPack.id, { content: newPackContent }, false);
+      }
+      
       return {
         ...prev,
         packContent: newPackContent
       };
     });
-    
-    // If editing pack, update the database immediately
-    if (editingPack) {
-      const updatedPackContent = (formData.packContent || []).filter((_, i) => i !== index);
-      updatePack(editingPack.id, { content: updatedPackContent }, false);
-    }
   };
 
   // Validation
@@ -523,8 +532,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
           updatedAt: Date.now()
         };
         
-        // Update pack basic data first
-        await updatePack(packId, updateData);
+        // Update pack basic data first (without success message)
+        await updatePack(packId, updateData, false);
         
         // Handle media updates
         if (coverImageFile || sampleImageFiles.length > 0 || sampleVideoFiles.length > 0 || packFiles.length > 0) {
@@ -548,8 +557,9 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
               }
             }
             if (newSampleImages.length > 0) {
-              // Merge with existing sample images
-              const existingSampleImages = formData.sampleImages || [];
+              // Get current pack data to merge with existing sample images
+              const currentPack = await getPackById(packId);
+              const existingSampleImages = currentPack?.sampleImages || [];
               const updatedSampleImages = [...existingSampleImages, ...newSampleImages];
               await updatePack(packId, { sampleImages: updatedSampleImages }, false);
             }
@@ -565,8 +575,9 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
               }
             }
             if (newSampleVideos.length > 0) {
-              // Merge with existing sample videos
-              const existingSampleVideos = formData.sampleVideos || [];
+              // Get current pack data to merge with existing sample videos
+              const currentPack = await getPackById(packId);
+              const existingSampleVideos = currentPack?.sampleVideos || [];
               const updatedSampleVideos = [...existingSampleVideos, ...newSampleVideos];
               await updatePack(packId, { sampleVideos: updatedSampleVideos }, false);
             }
@@ -582,8 +593,9 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
               }
             }
             if (newPackContent.length > 0) {
-              // Merge with existing pack content
-              const existingPackContent = formData.packContent || [];
+              // Get current pack data to merge with existing pack content
+              const currentPack = await getPackById(packId);
+              const existingPackContent = currentPack?.content || [];
               const updatedPackContent = [...existingPackContent, ...newPackContent];
               await updatePack(packId, { content: updatedPackContent }, false);
             }
