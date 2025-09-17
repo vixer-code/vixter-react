@@ -304,6 +304,14 @@ const MyProducts = () => {
   // Debug: Log all pack orders to see their statuses
   console.log('All pack orders:', packOrders);
   console.log('Received pack orders:', packOrders.filter(o => o.type === 'pack'));
+  console.log('Pack orders by status:', {
+    pending: packOrders.filter(o => o.type === 'pack' && (o.status === PACK_STATUS.PENDING_ACCEPTANCE)),
+    accepted: packOrders.filter(o => o.type === 'pack' && (o.status === PACK_STATUS.ACCEPTED)),
+    delivered: packOrders.filter(o => o.type === 'pack' && (o.status === PACK_STATUS.DELIVERED)),
+    confirmed: packOrders.filter(o => o.type === 'pack' && (o.status === PACK_STATUS.CONFIRMED)),
+    autoReleased: packOrders.filter(o => o.type === 'pack' && (o.status === PACK_STATUS.AUTO_RELEASED)),
+    cancelled: packOrders.filter(o => o.type === 'pack' && (o.status === PACK_STATUS.CANCELLED))
+  });
 
   return (
     <div className="my-services-container">

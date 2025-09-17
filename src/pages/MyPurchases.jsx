@@ -57,6 +57,7 @@ const MyPurchases = () => {
       const orders = [];
       snapshot.forEach((doc) => {
         const orderData = doc.data();
+        console.log('Pack order found:', doc.id, orderData.status, orderData);
         if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
           orders.push({
             id: doc.id,
@@ -66,6 +67,7 @@ const MyPurchases = () => {
         }
       });
       
+      console.log('All pack orders loaded:', orders);
       setPurchasedPacks(orders);
     } catch (error) {
       console.error('Error loading purchased packs:', error);

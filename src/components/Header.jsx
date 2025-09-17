@@ -295,8 +295,8 @@ const Header = () => {
                     )}
                     <span id="vp-amount">
                       {userProfile?.accountType === 'provider' 
-                        ? formatCurrency(vcBalance || 0, 'VC') 
-                        : formatCurrency(vpBalance || 0, 'VP')
+                        ? formatCurrency(vcBalance || 0) 
+                        : formatCurrency(vpBalance || 0)
                       }
                     </span>
                   </div>
