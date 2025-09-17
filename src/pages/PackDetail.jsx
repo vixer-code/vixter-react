@@ -254,7 +254,6 @@ const PackDetail = () => {
       );
       
       if (result) {
-        showSuccess(`Pedido de pack enviado! A vendedora tem 24h para aprovar.`);
         setShowPurchaseModal(false);
         
         // Redirect to my-purchases to see the pending order

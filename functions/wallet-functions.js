@@ -1135,6 +1135,32 @@ async function createPackOrderInternal(buyerId, payload) {
 
   await batch.commit();
 
+  // Create notification for seller
+  try {
+    const notificationRef = db.collection('notifications').doc();
+    await notificationRef.set({
+      id: notificationRef.id,
+      userId: sellerId,
+      type: 'PACK_ORDER_RECEIVED',
+      title: 'Novo Pedido de Pack!',
+      message: `Você recebeu um novo pedido de pack: ${metadata.packName || 'Pack'}`,
+      data: {
+        orderId: orderRef.id,
+        packId,
+        buyerId,
+        vpAmount,
+        vcAmount
+      },
+      read: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    logger.info(`✅ Notification created for seller: ${sellerId}`);
+  } catch (notificationError) {
+    logger.error('Error creating seller notification:', notificationError);
+    // Don't fail the order creation if notification fails
+  }
+
   logger.info(`✅ Pack order created: ${orderRef.id}`);
   return { success: true, packOrderId: orderRef.id };
 }

@@ -10,6 +10,7 @@ import { ServicesProviderR2 as ServicesProvider } from './contexts/ServicesConte
 import { CentrifugoProvider } from './contexts/CentrifugoContext';
 import { EnhancedMessagingProvider as MessagingProvider } from './contexts/EnhancedMessagingContext';
 import { ServiceOrderProvider } from './contexts/ServiceOrderContext';
+import { PackOrderProvider } from './contexts/PackOrderContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import NotificationContainer from './components/NotificationContainer';
@@ -66,8 +67,9 @@ function App() {
               <PacksProvider>
                 <ServicesProvider>
                   <ServiceOrderProvider>
-                    <CentrifugoProvider>
-                      <MessagingProvider>
+                    <PackOrderProvider>
+                      <CentrifugoProvider>
+                        <MessagingProvider>
                       <Router>
                         <div className="App">
                           <Header />
@@ -107,8 +109,9 @@ function App() {
                           <NotificationContainer />
                         </div>
                       </Router>
-                      </MessagingProvider>
-                    </CentrifugoProvider>
+                        </MessagingProvider>
+                      </CentrifugoProvider>
+                    </PackOrderProvider>
                   </ServiceOrderProvider>
                 </ServicesProvider>
               </PacksProvider>

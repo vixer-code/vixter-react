@@ -31,7 +31,6 @@ export const usePackOrder = () => {
 export const PackOrderProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showInfo } = useNotification();
-  const { processPackSale } = useWallet();
   
   // Safely get messaging functions with fallbacks
   let sendPackNotification, createPackConversation, markPackConversationCompleted;
