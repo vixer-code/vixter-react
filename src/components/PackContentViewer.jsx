@@ -10,38 +10,69 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
   const [contentUrls, setContentUrls] = useState({});
   const [loading, setLoading] = useState({});
   const [error, setError] = useState(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+  const [mediaItems, setMediaItems] = useState([]);
 
   // Use pre-generated URLs from backend
   useEffect(() => {
     if (pack?.contentWithUrls && Array.isArray(pack.contentWithUrls)) {
       const urls = {};
-      pack.contentWithUrls.forEach(contentItem => {
+      const media = [];
+      
+      pack.contentWithUrls.forEach((contentItem, index) => {
         if (contentItem.key && contentItem.secureUrl) {
           urls[contentItem.key] = contentItem.secureUrl;
+          
+          // Check if it's a media item (image or video)
+          if (contentItem.type.startsWith('image/') || contentItem.type.startsWith('video/') || 
+              (contentItem.type === 'image/webp' && contentItem.name.toLowerCase().includes('video'))) {
+            media.push({
+              ...contentItem,
+              index,
+              isVideo: contentItem.type.startsWith('video/') || 
+                      (contentItem.type === 'image/webp' && contentItem.name.toLowerCase().includes('video'))
+            });
+          }
         }
       });
+      
       setContentUrls(urls);
+      setMediaItems(media);
     }
   }, [pack?.contentWithUrls]);
 
   const handleContentClick = (contentItem) => {
     if (!contentItem.key) return;
 
-    // Use pre-generated secure URL from backend
-    const secureUrl = contentItem.secureUrl || contentUrls[contentItem.key];
-    if (secureUrl) {
-      // Open directly since backend handles authentication and streaming
-      window.open(secureUrl, '_blank', 'noopener,noreferrer,resizable=yes,scrollbars=yes');
+    // Check if it's a media item (image or video)
+    const isMedia = contentItem.type.startsWith('image/') || contentItem.type.startsWith('video/') || 
+                   (contentItem.type === 'image/webp' && contentItem.name.toLowerCase().includes('video'));
+
+    if (isMedia && mediaItems.length > 0) {
+      // Open gallery for media items
+      const mediaIndex = mediaItems.findIndex(item => item.key === contentItem.key);
+      if (mediaIndex >= 0) {
+        setSelectedMediaIndex(mediaIndex);
+        setGalleryOpen(true);
+      }
     } else {
-      setError(`URL não disponível para ${contentItem.name}`);
+      // Use pre-generated secure URL from backend for non-media files
+      const secureUrl = contentItem.secureUrl || contentUrls[contentItem.key];
+      if (secureUrl) {
+        // Open directly since backend handles authentication and streaming
+        window.open(secureUrl, '_blank', 'noopener,noreferrer,resizable=yes,scrollbars=yes');
+      } else {
+        setError(`URL não disponível para ${contentItem.name}`);
+      }
     }
   };
 
-  const getFileIcon = (type) => {
-    if (type.startsWith('image/')) {
-      return 'fas fa-image';
-    } else if (type.startsWith('video/')) {
+  const getFileIcon = (type, name = '') => {
+    if (type.startsWith('video/') || (type === 'image/webp' && name.toLowerCase().includes('video'))) {
       return 'fas fa-video';
+    } else if (type.startsWith('image/')) {
+      return 'fas fa-image';
     } else if (type.includes('pdf')) {
       return 'fas fa-file-pdf';
     } else if (type.includes('zip') || type.includes('rar')) {
@@ -51,11 +82,11 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
     }
   };
 
-  const getFileTypeLabel = (type) => {
-    if (type.startsWith('image/')) {
-      return 'Imagem';
-    } else if (type.startsWith('video/')) {
+  const getFileTypeLabel = (type, name = '') => {
+    if (type.startsWith('video/') || (type === 'image/webp' && name.toLowerCase().includes('video'))) {
       return 'Vídeo';
+    } else if (type.startsWith('image/')) {
+      return 'Imagem';
     } else if (type.includes('pdf')) {
       return 'PDF';
     } else if (type.includes('zip') || type.includes('rar')) {
@@ -72,6 +103,44 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
+
+  // Gallery navigation functions
+  const nextMedia = () => {
+    setSelectedMediaIndex((prev) => (prev + 1) % mediaItems.length);
+  };
+
+  const prevMedia = () => {
+    setSelectedMediaIndex((prev) => (prev - 1 + mediaItems.length) % mediaItems.length);
+  };
+
+  const closeGallery = () => {
+    setGalleryOpen(false);
+  };
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!galleryOpen) return;
+      
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          prevMedia();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          nextMedia();
+          break;
+        case 'Escape':
+          e.preventDefault();
+          closeGallery();
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [galleryOpen]);
 
   if (!pack) {
     return (
@@ -159,19 +228,24 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
                   </div>
                 ) : contentUrls[contentItem.key] ? (
                   <div className="preview-loaded">
-                    <i className={getFileIcon(contentItem.type)}></i>
+                    <i className={getFileIcon(contentItem.type, contentItem.name)}></i>
                   </div>
                 ) : (
                   <div className="preview-placeholder">
-                    <i className={getFileIcon(contentItem.type)}></i>
+                    <i className={getFileIcon(contentItem.type, contentItem.name)}></i>
                   </div>
                 )}
               </div>
               
               <div className="content-info">
-                <h4 className="content-name">{contentItem.name}</h4>
+                <h4 className="content-name">
+                  {contentItem.name}
+                  {contentItem.isSample && (
+                    <span className="sample-badge">AMOSTRA</span>
+                  )}
+                </h4>
                 <div className="content-meta">
-                  <span className="file-type">{contentItem.type}</span>
+                  <span className="file-type">{getFileTypeLabel(contentItem.type, contentItem.name)}</span>
                   {contentItem.size && (
                     <span className="file-size">{formatFileSize(contentItem.size)}</span>
                   )}
@@ -206,6 +280,82 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
           </div>
         )}
       </div>
+
+      {/* Media Gallery Modal */}
+      {galleryOpen && mediaItems.length > 0 && (
+        <div className="media-gallery-overlay" onClick={closeGallery}>
+          <div className="media-gallery-container" onClick={(e) => e.stopPropagation()}>
+            <div className="gallery-header">
+              <div className="gallery-info">
+                <h3>{mediaItems[selectedMediaIndex]?.name}</h3>
+                <span className="gallery-counter">
+                  {selectedMediaIndex + 1} de {mediaItems.length}
+                </span>
+              </div>
+              <button className="gallery-close-btn" onClick={closeGallery}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div className="gallery-content">
+              {mediaItems.length > 1 && (
+                <button className="gallery-nav-btn gallery-prev" onClick={prevMedia}>
+                  <i className="fas fa-chevron-left"></i>
+                </button>
+              )}
+
+              <div className="gallery-media">
+                {mediaItems[selectedMediaIndex]?.isVideo ? (
+                  <video
+                    key={mediaItems[selectedMediaIndex]?.key}
+                    src={mediaItems[selectedMediaIndex]?.secureUrl}
+                    controls
+                    autoPlay
+                    className="gallery-video"
+                  />
+                ) : (
+                  <img
+                    key={mediaItems[selectedMediaIndex]?.key}
+                    src={mediaItems[selectedMediaIndex]?.secureUrl}
+                    alt={mediaItems[selectedMediaIndex]?.name}
+                    className="gallery-image"
+                  />
+                )}
+              </div>
+
+              {mediaItems.length > 1 && (
+                <button className="gallery-nav-btn gallery-next" onClick={nextMedia}>
+                  <i className="fas fa-chevron-right"></i>
+                </button>
+              )}
+            </div>
+
+            {mediaItems.length > 1 && (
+              <div className="gallery-thumbnails">
+                {mediaItems.map((item, index) => (
+                  <div
+                    key={item.key}
+                    className={`gallery-thumbnail ${index === selectedMediaIndex ? 'active' : ''}`}
+                    onClick={() => setSelectedMediaIndex(index)}
+                  >
+                    <div className="thumbnail-icon">
+                      <i className={item.isVideo ? 'fas fa-video' : 'fas fa-image'}></i>
+                    </div>
+                    <span className="thumbnail-name">{item.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="gallery-controls">
+              <span className="watermark-notice">
+                <i className="fas fa-shield-alt"></i>
+                Conteúdo protegido com watermark personalizado
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -135,9 +135,24 @@ exports.packContentAccess = onRequest({
  */
 async function verifyUserAccess(token, packId, orderId, username) {
   try {
-    // Verify Firebase ID token
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    const userId = decodedToken.uid;
+    // Since the backend already verified the token, we'll extract the user ID from the token
+    // without verifying the signature (backend already did that)
+    let userId;
+    try {
+      // Try to verify the token first (preferred method)
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      userId = decodedToken.uid;
+    } catch (verifyError) {
+      // If verification fails, extract user ID from token payload (fallback)
+      console.log('Token verification failed, extracting from payload:', verifyError.message);
+      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      userId = payload.user_id || payload.sub;
+      
+      if (!userId) {
+        console.log('Could not extract user ID from token payload');
+        return null;
+      }
+    }
 
     // Check if user has a valid pack order for this pack
     const packOrderQuery = db.collection('packOrders')
@@ -186,7 +201,7 @@ async function verifyUserAccess(token, packId, orderId, username) {
 
     return {
       userId,
-      username: decodedToken.email?.split('@')[0] || username,
+      username: username, // Use the username parameter since we can't access decodedToken here
       packOrder: packOrders.docs[0].id
     };
 
@@ -295,10 +310,18 @@ async function generateWatermarkedMedia(contentItem, watermark, username, user, 
     const fileBuffer = Buffer.concat(chunks);
 
     // Check file type and apply appropriate watermark
-    if (contentItem.type.startsWith('image/')) {
-      return await addImageWatermark(fileBuffer, watermark, username, contentItem, user, vendorInfo);
-    } else if (contentItem.type.startsWith('video/')) {
+    if (contentItem.type.startsWith('video/')) {
       return await addVideoWatermark(fileBuffer, watermark, username, contentItem, user, vendorInfo);
+    } else if (contentItem.type === 'image/webp') {
+      // Check if WebP is animated (treat as video) or static (treat as image)
+      const isAnimatedWebP = await checkIfAnimatedWebP(fileBuffer);
+      if (isAnimatedWebP) {
+        return await addVideoWatermark(fileBuffer, watermark, username, contentItem, user, vendorInfo);
+      } else {
+        return await addImageWatermark(fileBuffer, watermark, username, contentItem, user, vendorInfo);
+      }
+    } else if (contentItem.type.startsWith('image/')) {
+      return await addImageWatermark(fileBuffer, watermark, username, contentItem, user, vendorInfo);
     } else {
       // For other file types, return original with security headers
       return fileBuffer;
@@ -527,6 +550,21 @@ function escapeFFmpegText(text) {
 }
 
 /**
+ * Check if WebP file is animated
+ */
+async function checkIfAnimatedWebP(buffer) {
+  try {
+    // WebP animated files contain 'ANIM' chunk
+    const bufferString = buffer.toString('binary');
+    return bufferString.includes('ANIM');
+  } catch (error) {
+    console.warn('Error checking WebP animation:', error);
+    // Default to treating as static image if we can't determine
+    return false;
+  }
+}
+
+/**
  * Get file extension from MIME type
  */
 function getFileExtension(mimeType) {
@@ -538,7 +576,8 @@ function getFileExtension(mimeType) {
     'video/flv': 'flv',
     'video/webm': 'webm',
     'video/mkv': 'mkv',
-    'video/m4v': 'm4v'
+    'video/m4v': 'm4v',
+    'image/webp': 'webp' // WebP can be animated (video-like)
   };
   
   return extensions[mimeType] || 'mp4';

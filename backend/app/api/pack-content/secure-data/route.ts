@@ -195,6 +195,38 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       }
     }
 
+    // Add sample images with direct public URLs (they're in public bucket)
+    if (packData.sampleImages && Array.isArray(packData.sampleImages)) {
+      for (const sampleImage of packData.sampleImages) {
+        if (sampleImage.publicUrl || sampleImage.url) {
+          contentWithUrls.push({
+            key: sampleImage.key || `sample-${Date.now()}`,
+            name: sampleImage.name || 'Imagem de Amostra',
+            type: sampleImage.type || 'image/jpeg',
+            size: sampleImage.size || 0,
+            secureUrl: sampleImage.publicUrl || sampleImage.url, // Use direct public URL
+            isSample: true
+          });
+        }
+      }
+    }
+
+    // Add sample videos with direct public URLs (they're in public bucket)
+    if (packData.sampleVideos && Array.isArray(packData.sampleVideos)) {
+      for (const sampleVideo of packData.sampleVideos) {
+        if (sampleVideo.publicUrl || sampleVideo.url) {
+          contentWithUrls.push({
+            key: sampleVideo.key || `sample-video-${Date.now()}`,
+            name: sampleVideo.name || 'Vídeo de Amostra',
+            type: sampleVideo.type || 'video/mp4',
+            size: sampleVideo.size || 0,
+            secureUrl: sampleVideo.publicUrl || sampleVideo.url, // Use direct public URL
+            isSample: true
+          });
+        }
+      }
+    }
+
     // Return secure pack data with pre-generated URLs
     return new Response(
       JSON.stringify({
@@ -206,7 +238,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
           description: packData.description,
           price: packData.price,
           category: packData.category,
-          contentWithUrls, // Pre-generated secure URLs
+          contentWithUrls, // Pre-generated secure URLs + sample content with public URLs
           vendorInfo
         }
       }),
