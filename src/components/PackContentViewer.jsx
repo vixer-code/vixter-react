@@ -237,6 +237,12 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
             <i className="fas fa-folder-open"></i>
             <h3>Nenhum conteúdo disponível</h3>
             <p>Este pack não possui conteúdo para visualização.</p>
+            <div style={{ marginTop: '20px', padding: '10px', background: '#f0f0f0', borderRadius: '5px' }}>
+              <p><strong>Debug Info:</strong></p>
+              <p>Pack ID: {pack.id}</p>
+              <p>packContent: {JSON.stringify(pack.packContent)}</p>
+              <p>Se você vê este pack no R2 mas não aqui, o problema é que o campo packContent não está populado no Firestore.</p>
+            </div>
           </div>
         )}
       </div>

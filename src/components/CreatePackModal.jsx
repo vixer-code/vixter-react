@@ -102,7 +102,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
               coverImage: freshPackData.coverImage || null,
               sampleImages: freshPackData.sampleImages || [],
               sampleVideos: freshPackData.sampleVideos || [],
-              packContent: freshPackData.content || []
+              packContent: freshPackData.packContent || []
             });
             setCoverImagePreview(freshPackData.coverImage?.publicUrl || freshPackData.coverImage || '');
           } else {
@@ -407,7 +407,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       // Update database immediately
       if (editingPack) {
         console.log('Updating pack in database with pack content:', updatedPackContent);
-        const updateResult = await updatePack(editingPack.id, { content: updatedPackContent }, false);
+        const updateResult = await updatePack(editingPack.id, { packContent: updatedPackContent }, false);
         console.log('Pack update result:', updateResult);
       }
     } else {
@@ -453,7 +453,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     // If editing pack, update the database immediately
     if (editingPack) {
       console.log('Updating pack in database with content:', newPackContent);
-      const updateResult = await updatePack(editingPack.id, { content: newPackContent }, false);
+      const updateResult = await updatePack(editingPack.id, { packContent: newPackContent }, false);
       console.log('Pack update result:', updateResult);
     }
   };
@@ -668,9 +668,9 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
             if (newPackContent.length > 0) {
               // Get current pack data to merge with existing pack content
               const currentPack = await getPackById(packId);
-              const existingPackContent = currentPack?.content || [];
+              const existingPackContent = currentPack?.packContent || [];
               const updatedPackContent = [...existingPackContent, ...newPackContent];
-              await updatePack(packId, { content: updatedPackContent }, false);
+              await updatePack(packId, { packContent: updatedPackContent }, false);
             }
           }
         }
