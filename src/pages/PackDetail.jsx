@@ -373,21 +373,57 @@ const PackDetail = () => {
           </div>
 
 
-          {/* Sample Images */}
-          {pack.sampleImages && pack.sampleImages.length > 0 && (
-            <div className="pack-sample-images">
-              <h3>Imagens de Amostra</h3>
-              <div className="image-gallery">
-                {pack.sampleImages.map((image, index) => (
-                  <R2MediaViewer
-                    key={index}
-                    mediaKey={image.key}
-                    type="pack"
-                    watermarked={false}
-                    alt={`${pack.title} - Amostra ${index + 1}`}
-                    className="pack-image"
-                  />
-                ))}
+          {/* Sample Files Showcase (Vitrine) */}
+          {((pack.sampleImages && pack.sampleImages.length > 0) || (pack.sampleVideos && pack.sampleVideos.length > 0)) && (
+            <div className="pack-showcase">
+              <h3>Vitrine - Arquivos de Amostra</h3>
+              <p className="showcase-description">
+                Visualize uma prévia do conteúdo antes de comprar
+              </p>
+              
+              <div className="showcase-content">
+                {/* Sample Images */}
+                {pack.sampleImages && pack.sampleImages.length > 0 && (
+                  <div className="showcase-section">
+                    <h4>Fotos ({pack.sampleImages.length})</h4>
+                    <div className="showcase-grid">
+                      {pack.sampleImages.map((image, index) => (
+                        <div key={`sample-image-${index}`} className="showcase-item">
+                          <R2MediaViewer
+                            mediaKey={image.key}
+                            type="pack"
+                            watermarked={false}
+                            alt={`${pack.title} - Amostra ${index + 1}`}
+                            className="showcase-media"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sample Videos */}
+                {pack.sampleVideos && pack.sampleVideos.length > 0 && (
+                  <div className="showcase-section">
+                    <h4>Vídeos ({pack.sampleVideos.length})</h4>
+                    <div className="showcase-grid">
+                      {pack.sampleVideos.map((video, index) => (
+                        <div key={`sample-video-${index}`} className="showcase-item video-showcase">
+                          <R2MediaViewer
+                            mediaKey={video.key}
+                            type="pack"
+                            watermarked={false}
+                            alt={`${pack.title} - Vídeo Amostra ${index + 1}`}
+                            className="showcase-media"
+                          />
+                          <div className="video-overlay">
+                            <i className="fas fa-play"></i>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
