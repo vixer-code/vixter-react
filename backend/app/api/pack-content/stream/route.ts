@@ -62,10 +62,20 @@ export async function GET(request: NextRequest) {
 
     console.log('Calling Cloud Function:', `${cloudFunctionUrl}?${params.toString()}`);
     
+    // Get access token for service-to-service authentication
+    const { GoogleAuth } = await import('google-auth-library');
+    const auth = new GoogleAuth({
+      scopes: ['https://www.googleapis.com/auth/cloud-platform']
+    });
+    
+    const client = await auth.getClient();
+    const accessToken = await client.getAccessToken();
+    
     const cloudFunctionResponse = await fetch(`${cloudFunctionUrl}?${params.toString()}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${accessToken.token}`,
+        'X-Serverless-Authorization': `Bearer ${token}` // Pass user token for validation
       }
     });
 

@@ -60,6 +60,9 @@ exports.packContentAccess = onRequest({
         token
       } = req.query;
 
+      // Get user token from X-Serverless-Authorization header (preferred) or query param
+      const userToken = req.headers['x-serverless-authorization']?.replace('Bearer ', '') || token;
+
       // Validate required parameters
       if (!packId || !contentKey || !username) {
         return res.status(400).json({
@@ -68,7 +71,7 @@ exports.packContentAccess = onRequest({
       }
 
       // Verify user authentication and authorization
-      const user = await verifyUserAccess(token, packId, orderId, username);
+      const user = await verifyUserAccess(userToken, packId, orderId, username);
       if (!user) {
         return res.status(403).json({
           error: 'Access denied: Invalid authentication or authorization'
