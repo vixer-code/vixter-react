@@ -250,7 +250,8 @@ const PackDetail = () => {
         pack.authorId, // sellerId - use authorId as this is the field used when packs are created
         packId, // packId
         pack.title, // packName
-        totalCost // vpAmount
+        totalCost, // vpAmount
+        userProfile // buyerInfo - pass user profile information
       );
       
       if (result) {

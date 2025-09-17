@@ -285,7 +285,7 @@ export const WalletProvider = ({ children }) => {
   }, [currentUser, processServicePurchaseFunc, showSuccess, showError]);
 
   // Create pack order (requires seller approval)
-  const createPackOrder = useCallback(async (buyerId, sellerId, packId, packName, vpAmount) => {
+  const createPackOrder = useCallback(async (buyerId, sellerId, packId, packName, vpAmount, buyerInfo = {}) => {
     if (!currentUser) return false;
 
     try {
@@ -296,7 +296,12 @@ export const WalletProvider = ({ children }) => {
         packId,
         metadata: {
           packName
-        }
+        },
+        // Add buyer information for display in seller's orders
+        buyerName: buyerInfo.displayName || buyerInfo.name || '',
+        buyerDisplayName: buyerInfo.displayName || buyerInfo.name || '',
+        buyerUsername: buyerInfo.username || '',
+        buyerProfilePictureURL: buyerInfo.profilePictureURL || buyerInfo.photoURL || ''
       };
       
       console.log('Creating pack order with payload:', payload);
