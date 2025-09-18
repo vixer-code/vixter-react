@@ -900,3 +900,8 @@
     max-width: 250px;
   }
 }
+
+/* Delete button styling */
+.post-actions { display: flex; align-items: center; gap: 8px; }
+.delete-btn { background: transparent; border: none; color: #ff4757; cursor: pointer; padding: 4px 6px; border-radius: 4px; font-size: 14px; font-weight: 600; transition: all 0.2s ease; }
+.delete-btn:hover { background: rgba(255, 71, 87, 0.1); color: #ff4757; }

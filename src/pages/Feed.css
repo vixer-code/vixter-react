@@ -900,3 +900,11 @@
     max-width: 250px;
   }
 }
+
+/* Delete button styling */
+.post-actions { display: flex; align-items: center; gap: 8px; }
+.delete-btn { background: transparent; border: none; color: #ff4757; cursor: pointer; padding: 4px 6px; border-radius: 4px; font-size: 14px; font-weight: 600; transition: all 0.2s ease; }
+.delete-btn:hover { background: rgba(255, 71, 87, 0.1); color: #ff4757; }
+.follow-btn { background: rgba(138, 43, 226, 0.2); border: 1px solid rgba(138, 43, 226, 0.3); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+.follow-btn:hover { background: rgba(138, 43, 226, 0.3); }
+.follow-btn.following { background: rgba(0, 255, 202, 0.2); border-color: rgba(0, 255, 202, 0.3); color: #00ffca; }

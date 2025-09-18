@@ -158,6 +158,27 @@ const Vixink = () => {
     showNotification('Funcionalidade de gorjeta será integrada em breve.', 'info');
   };
 
+  const handleDeletePost = async (postId) => {
+    if (!currentUser) return;
+    try {
+      const postRef = ref(database, `vixink_posts/${postId}`);
+      await get(postRef).then(async (snapshot) => {
+        if (snapshot.exists()) {
+          const post = snapshot.val();
+          if (post.authorId === currentUser.uid) {
+            await set(postRef, null);
+            showNotification('Post deletado', 'success');
+          } else {
+            showNotification('Você só pode deletar seus próprios posts', 'error');
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      showNotification('Erro ao deletar post', 'error');
+    }
+  };
+
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -415,6 +436,11 @@ const Vixink = () => {
                     <button className="action-btn tip-btn" onClick={() => tipPost(post)}>
                       <i className="fas fa-hand-holding-usd"></i>
                     </button>
+                    {isCurrentUser && (
+                      <button className="delete-btn" onClick={() => handleDeletePost(post.id)}>
+                        ✕
+                      </button>
+                    )}
                   </div>
                 </div>
               );

@@ -424,7 +424,7 @@ const Feed = () => {
             )}
             {isOwnPost && (
               <button className="delete-btn" onClick={() => handleDeletePost(post.id)}>
-                🗑️
+                ✕
               </button>
             )}
           </div>

@@ -23,14 +23,10 @@ const Vixies = () => {
   // Check KYC verification
   const isKycVerified = userProfile?.kyc === true;
 
-  // Show notification and redirect if KYC not verified
+  // Show notification if KYC not verified (no redirect)
   useEffect(() => {
     if (userProfile && !isKycVerified) {
       showWarning('Acesso restrito: Você precisa completar a verificação de identidade (KYC) para acessar o Vixies.');
-      // Redirect to home after a short delay
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 3000);
     }
   }, [userProfile, isKycVerified, showWarning]);
 
@@ -176,6 +172,27 @@ const Vixies = () => {
     }
     // Placeholder integration point to VC credit (1.5 VP = 1 VC)
     showInfo('Funcionalidade de gorjeta será integrada em breve.');
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!currentUser) return;
+    try {
+      const postRef = ref(database, `vixies_posts/${postId}`);
+      await get(postRef).then(async (snapshot) => {
+        if (snapshot.exists()) {
+          const post = snapshot.val();
+          if (post.authorId === currentUser.uid) {
+            await set(postRef, null);
+            showSuccess('Post deletado');
+          } else {
+            showError('Você só pode deletar seus próprios posts');
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      showError('Erro ao deletar post');
+    }
   };
 
   const formatTime = (timestamp) => {
@@ -477,6 +494,11 @@ const Vixies = () => {
                     <button className="action-btn tip-btn" onClick={() => tipPost(post)}>
                       <i className="fas fa-hand-holding-usd"></i>
                     </button>
+                    {isCurrentUser && (
+                      <button className="delete-btn" onClick={() => handleDeletePost(post.id)}>
+                        ✕
+                      </button>
+                    )}
                   </div>
                 </div>
               );
