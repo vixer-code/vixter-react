@@ -26,8 +26,8 @@ const Feed = () => {
   useEffect(() => {
     let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
 
-    // Load posts from general feed
-    const postsRef = ref(database, 'general_feed_posts');
+    // Load posts from RTDB /posts
+    const postsRef = ref(database, 'posts');
     const postsQuery = query(postsRef, orderByChild('timestamp'));
     postsUnsubscribe = onValue(postsQuery, (snapshot) => {
       const postsData = [];
@@ -81,7 +81,7 @@ const Feed = () => {
     if (!currentUser?.uid) return;
 
     try {
-      const postRef = ref(database, `general_feed_posts/${postId}`);
+      const postRef = ref(database, `posts/${postId}`);
       const postSnapshot = await get(postRef);
       
       if (!postSnapshot.exists()) return;
@@ -143,7 +143,7 @@ const Feed = () => {
     if (!currentUser?.uid) return;
 
     try {
-      const postRef = ref(database, `general_feed_posts/${postId}`);
+      const postRef = ref(database, `posts/${postId}`);
       await get(postRef).then(async (snapshot) => {
         if (snapshot.exists()) {
           const post = snapshot.val();
@@ -189,13 +189,13 @@ const Feed = () => {
         repostCount: 0
       };
 
-      const repostRef = ref(database, 'general_feed_posts');
+      const repostRef = ref(database, 'posts');
       await push(repostRef, repostData);
       await set(postRepostsRef, Date.now());
       const userRepostsRef = ref(database, `userReposts/${currentUser.uid}/${post.id}`);
       await set(userRepostsRef, Date.now());
 
-      const originalPostRef = ref(database, `general_feed_posts/${post.id}`);
+      const originalPostRef = ref(database, `posts/${post.id}`);
       const originalPostSnap = await get(originalPostRef);
       if (originalPostSnap.exists()) {
         const originalData = originalPostSnap.val();

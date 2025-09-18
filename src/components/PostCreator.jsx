@@ -276,15 +276,25 @@ const PostCreator = ({
       });
 
       // Create post data based on mode
+      const isGeneralFeed = mode === 'general_feed';
+      const baseTimestamp = Date.now();
+      const firstImageUrl = Array.isArray(mediaData) && mediaData[0]?.type === 'image' ? mediaData[0].url : null;
       const postData = {
         content,
         authorId: currentUser.uid,
         authorName: userName,
         authorPhotoURL: userPhotoURL,
         authorUsername: userProfile?.username || '',
-        timestamp: Date.now(),
+        timestamp: baseTimestamp,
         media: mediaData,
-        attachment: attachment || null
+        attachment: isGeneralFeed ? null : (attachment || null),
+        // Compatibility fields for /posts consumed by Profile.jsx
+        ...(isGeneralFeed ? {
+          userId: currentUser.uid,
+          text: content,
+          imageUrl: firstImageUrl,
+          createdAt: baseTimestamp
+        } : {})
       };
 
       // Add mode-specific fields
@@ -293,7 +303,7 @@ const PostCreator = ({
       }
 
       console.log('Post data to be sent:', postData);
-      console.log('Database path:', `${mode}_posts`);
+      console.log('Database path:', mode === 'general_feed' ? 'posts' : `${mode}_posts`);
       console.log('Attachment data:', attachment);
       console.log('Media data:', mediaData);
       console.log('Attachment coverUrl:', attachment?.coverUrl);
@@ -301,7 +311,7 @@ const PostCreator = ({
       console.log('Attachment image:', attachment?.image);
 
       // Publish to appropriate database location
-      const postsRef = ref(database, `${mode}_posts`);
+      const postsRef = ref(database, mode === 'general_feed' ? 'posts' : `${mode}_posts`);
       await push(postsRef, postData);
 
       // Reset form
