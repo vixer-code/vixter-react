@@ -326,6 +326,17 @@
           }
         }
       }
+    },
+    "generalReposts": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$postId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$userId": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 600000"
+        }
+      }
     }
   }
 }

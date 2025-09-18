@@ -22,6 +22,7 @@ const Feed = () => {
   const [commentsByPost, setCommentsByPost] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
+  const [showReplyInputs, setShowReplyInputs] = useState({});
 
   useEffect(() => {
     let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
@@ -169,8 +170,13 @@ const Feed = () => {
   }, [currentUser?.uid, showSuccess, showError]);
 
   const repostPost = useCallback(async (post) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      showWarning('Você precisa estar logado para repostar');
+      return;
+    }
+
     try {
+      // Check if user already reposted this post
       const postRepostsRef = ref(database, `generalReposts/${post.id}/${currentUser.uid}`);
       const snap = await get(postRepostsRef).catch(() => null);
       if (snap && snap.exists()) {
@@ -178,30 +184,32 @@ const Feed = () => {
         return;
       }
 
+      // Create repost data
       const repostData = {
-        authorId: currentUser.uid,
-        authorName: userProfile?.displayName || userProfile?.name || 'Usuário',
-        authorPhotoURL: userProfile?.profilePictureURL || userProfile?.photoURL || '/images/defpfp1.png',
-        authorUsername: userProfile?.username || '',
-        content: post.content || post.text || '',
+        userId: currentUser.uid,
+        text: '', // Empty content for repost
+        createdAt: Date.now(),
         timestamp: Date.now(),
-        media: post.media || (post.imageUrl ? [{ type: 'image', url: post.imageUrl }] : null),
-        attachment: post.attachment || null,
-        likes: 0,
-        likedBy: [],
         isRepost: true,
         originalPostId: post.id,
         originalAuthorId: post.userId || post.authorId,
-        originalAuthorName: post.userName || post.authorName,
+        originalAuthorName: post.authorName || post.userName,
+        originalAuthorPhotoURL: post.authorPhotoURL || post.userPhotoURL,
+        originalAuthorUsername: post.authorUsername || post.username,
+        originalContent: post.content || post.text || '',
+        originalMedia: post.media || (post.imageUrl ? [{ type: 'image', url: post.imageUrl }] : null),
+        originalTimestamp: post.timestamp || post.createdAt,
         repostCount: 0
       };
 
+      // Save repost to posts collection
       const repostRef = ref(database, 'posts');
       await push(repostRef, repostData);
+      
+      // Mark as reposted by this user
       await set(postRepostsRef, Date.now());
-      const userRepostsRef = ref(database, `userReposts/${currentUser.uid}/${post.id}`);
-      await set(userRepostsRef, Date.now());
-
+      
+      // Update original post repost count
       const originalPostRef = ref(database, `posts/${post.id}`);
       const originalPostSnap = await get(originalPostRef);
       if (originalPostSnap.exists()) {
@@ -213,9 +221,9 @@ const Feed = () => {
       showSuccess('Post repostado com sucesso!');
     } catch (error) {
       console.error('Error reposting:', error);
-      showError('Erro ao repostar conteúdo');
+      showError('Erro ao repostar conteúdo: ' + error.message);
     }
-  }, [currentUser, userProfile, showSuccess, showError, showInfo]);
+  }, [currentUser, showSuccess, showError, showInfo, showWarning]);
 
   const loadComments = useCallback(async (postId) => {
     setCommentsByPost(prev => ({ ...prev, [postId]: { ...(prev[postId] || {}), loading: true } }));
@@ -242,6 +250,14 @@ const Feed = () => {
       loadComments(postId);
     }
   }, [expandedComments, commentsByPost, loadComments]);
+
+  const toggleReplyInput = useCallback((postId, commentId) => {
+    const key = `${postId}:${commentId}`;
+    setShowReplyInputs(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  }, []);
 
   const updateInput = useCallback((key, text) => {
     setCommentInputs(prev => ({ ...prev, [key]: text }));
@@ -360,19 +376,21 @@ const Feed = () => {
             <i className="fas fa-heart"></i>
             <span>{comment.likes || 0}</span>
           </button>
-          <button className="comment-action-btn reply-btn" onClick={() => { /* keep input focused */ }}>
+          <button className="comment-action-btn reply-btn" onClick={() => toggleReplyInput(postId, comment.id)}>
             <i className="fas fa-reply"></i>
           </button>
         </div>
-        <div className="comment-reply">
-          <input
-            type="text"
-            placeholder="Responder..."
-            value={commentInputs[`${postId}:${comment.id}`] || ''}
-            onChange={(e) => setCommentInputs(prev => ({ ...prev, [`${postId}:${comment.id}`]: e.target.value }))}
-          />
-          <button className="btn small" onClick={() => addComment(postId, comment.id)}>Enviar</button>
-        </div>
+        {showReplyInputs[`${postId}:${comment.id}`] && (
+          <div className="comment-reply">
+            <input
+              type="text"
+              placeholder="Responder..."
+              value={commentInputs[`${postId}:${comment.id}`] || ''}
+              onChange={(e) => setCommentInputs(prev => ({ ...prev, [`${postId}:${comment.id}`]: e.target.value }))}
+            />
+            <button className="btn small" onClick={() => addComment(postId, comment.id)}>Enviar</button>
+          </div>
+        )}
         {(tree.get(comment.id) || []).map(child => renderNode(child, depth + 1))}
       </div>
     );
@@ -407,32 +425,63 @@ const Feed = () => {
     const user = users[post.userId || post.authorId];
     if (!user && !post.authorName) return null;
 
-    const isLiked = post.likes && post.likes[currentUser?.uid];
-    const isFollowing = following.includes(post.userId || post.authorId);
+    // For reposts, use original post data for interactions
+    const isRepost = post.isRepost;
+    const originalPostId = isRepost ? post.originalPostId : post.id;
+    const displayPost = isRepost ? {
+      ...post,
+      id: originalPostId,
+      authorId: post.originalAuthorId,
+      authorName: post.originalAuthorName,
+      authorPhotoURL: post.originalAuthorPhotoURL,
+      authorUsername: post.originalAuthorUsername,
+      content: post.originalContent,
+      text: post.originalContent,
+      media: post.originalMedia,
+      imageUrl: post.originalMedia?.[0]?.url,
+      timestamp: post.originalTimestamp,
+      likes: post.likes,
+      likeCount: post.likeCount,
+      repostCount: post.repostCount
+    } : post;
+
+    const isLiked = displayPost.likes && displayPost.likes[currentUser?.uid];
+    const isFollowing = following.includes(displayPost.userId || displayPost.authorId);
     const isOwnPost = (post.userId || post.authorId) === currentUser?.uid;
-    const contentText = post.content || post.text || '';
-    const mediaArray = Array.isArray(post.media) ? post.media : (post.imageUrl ? [{ type: 'image', url: post.imageUrl }] : []);
+    const contentText = displayPost.content || displayPost.text || '';
+    const mediaArray = Array.isArray(displayPost.media) ? displayPost.media : (displayPost.imageUrl ? [{ type: 'image', url: displayPost.imageUrl }] : []);
 
     return (
       <div key={post.id} className="post-card">
+        {isRepost && (
+          <div className="repost-indicator">
+            <i className="fas fa-retweet"></i>
+            <span>
+              <Link to={isOwnPost ? '/profile' : getProfileUrlById(post.userId || post.authorId, post.authorUsername)}>
+                {post.authorName || user?.displayName || user?.email}
+              </Link> repostou
+            </span>
+          </div>
+        )}
+
         <div className="post-header">
           <div className="post-author">
             <img
-              src={post.authorPhotoURL || user?.profilePictureURL || '/images/defpfp1.png'}
-              alt={post.authorName || user?.displayName || user?.email}
+              src={displayPost.authorPhotoURL || user?.profilePictureURL || '/images/defpfp1.png'}
+              alt={displayPost.authorName || user?.displayName || user?.email}
               className="author-avatar"
               onError={(e) => { e.target.src = '/images/defpfp1.png'; }}
             />
             <div className="author-info">
-              <Link to={isOwnPost ? '/profile' : getProfileUrlById(post.userId || post.authorId, post.authorUsername)} className="author-name">
-                {post.authorName || user?.displayName || user?.email}
+              <Link to={isOwnPost ? '/profile' : getProfileUrlById(displayPost.userId || displayPost.authorId, displayPost.authorUsername)} className="author-name">
+                {displayPost.authorName || user?.displayName || user?.email}
               </Link>
-              <span className="post-time">{formatTimeAgo(post.timestamp)}</span>
+              <span className="post-time">{formatTimeAgo(displayPost.timestamp)}</span>
             </div>
           </div>
           <div className="post-actions">
             {!isOwnPost && (
-              <button className={`follow-btn ${isFollowing ? 'following' : ''}`} onClick={() => handleFollow(post.userId || post.authorId)}>
+              <button className={`follow-btn ${isFollowing ? 'following' : ''}`} onClick={() => handleFollow(displayPost.userId || displayPost.authorId)}>
                 {isFollowing ? 'Seguindo' : 'Seguir'}
               </button>
             )}
@@ -444,26 +493,36 @@ const Feed = () => {
           </div>
         </div>
 
-        {post.isRepost && (
-          <div className="repost-indicator">
-            <i className="fas fa-retweet"></i>
-            <span>
-              <Link to={isOwnPost ? '/profile' : getProfileUrlById(post.userId || post.authorId, post.authorUsername)}>
-                {post.authorName || user?.displayName || user?.email}
-              </Link> repostou
-            </span>
-          </div>
-        )}
-
         <div className="post-content">
           {contentText && <p>{contentText}</p>}
           {mediaArray.length > 0 && (
             <div className="post-media">
               {mediaArray.map((m, idx) => (
                 <React.Fragment key={idx}>
-                  {m.type === 'image' && (<img src={m.url} alt="conteúdo" />)}
-                  {m.type === 'video' && (<video src={m.url} controls />)}
-                  {m.type === 'audio' && (<audio src={m.url} controls />)}
+                  {m.type === 'image' && (
+                    <img
+                      src={m.url}
+                      alt="Post content"
+                      className="post-image"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  )}
+                  {m.type === 'video' && (
+                    <video
+                      src={m.url}
+                      controls
+                      className="post-video"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  )}
+                  {m.type === 'audio' && (
+                    <audio
+                      src={m.url}
+                      controls
+                      className="post-audio"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  )}
                 </React.Fragment>
               ))}
             </div>
@@ -471,20 +530,20 @@ const Feed = () => {
         </div>
 
         <div className="post-actions">
-          <button onClick={() => handleLike(post.id)} className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}>
+          <button onClick={() => handleLike(originalPostId)} className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}>
             <i className={`fas fa-heart ${isLiked ? 'fas' : 'far'}`}></i>
-            <span>{post.likeCount || Object.keys(post.likes || {}).length || 0}</span>
+            <span>{displayPost.likeCount || Object.keys(displayPost.likes || {}).length || 0}</span>
           </button>
-          <button className="action-btn share-btn" onClick={() => repostPost(post)}>
+          <button className="action-btn share-btn" onClick={() => repostPost(displayPost)}>
             <i className="fas fa-retweet"></i>
-            <span>{post.repostCount || 0}</span>
+            <span>{displayPost.repostCount || 0}</span>
           </button>
-          <button className="action-btn comment-toggle" onClick={() => toggleComments(post.id)}>
+          <button className="action-btn comment-toggle" onClick={() => toggleComments(originalPostId)}>
             <i className="fas fa-comment"></i>
           </button>
         </div>
 
-        {expandedComments[post.id] && renderComments(post.id)}
+        {expandedComments[originalPostId] && renderComments(originalPostId)}
       </div>
     );
   };
