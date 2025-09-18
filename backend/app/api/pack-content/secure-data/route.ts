@@ -231,12 +231,17 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
     if (packData.sampleImages && Array.isArray(packData.sampleImages)) {
       for (const sampleImage of packData.sampleImages) {
         if (sampleImage.publicUrl || sampleImage.url) {
+          // Ensure absolute URL with protocol
+          const rawUrl = (sampleImage.publicUrl || sampleImage.url) as string;
+          const absoluteUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+            ? rawUrl
+            : `https://${rawUrl.replace(/^\/+/, '')}`;
           contentWithUrls.push({
             key: sampleImage.key || `sample-${Date.now()}`,
             name: sampleImage.name || 'Imagem de Amostra',
             type: sampleImage.type || 'image/jpeg',
             size: sampleImage.size || 0,
-            secureUrl: sampleImage.publicUrl || sampleImage.url, // Use direct public URL
+            secureUrl: absoluteUrl, // Use direct public URL
             isSample: true,
             contentId: `sample-${sampleImage.key || Date.now()}` // Add contentId for consistency
           });
@@ -248,12 +253,17 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
     if (packData.sampleVideos && Array.isArray(packData.sampleVideos)) {
       for (const sampleVideo of packData.sampleVideos) {
         if (sampleVideo.publicUrl || sampleVideo.url) {
+          // Ensure absolute URL with protocol
+          const rawUrl = (sampleVideo.publicUrl || sampleVideo.url) as string;
+          const absoluteUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+            ? rawUrl
+            : `https://${rawUrl.replace(/^\/+/, '')}`;
           contentWithUrls.push({
             key: sampleVideo.key || `sample-video-${Date.now()}`,
             name: sampleVideo.name || 'Vídeo de Amostra',
             type: sampleVideo.type || 'video/mp4',
             size: sampleVideo.size || 0,
-            secureUrl: sampleVideo.publicUrl || sampleVideo.url, // Use direct public URL
+            secureUrl: absoluteUrl, // Use direct public URL
             isSample: true,
             contentId: `sample-video-${sampleVideo.key || Date.now()}` // Add contentId for consistency
           });
