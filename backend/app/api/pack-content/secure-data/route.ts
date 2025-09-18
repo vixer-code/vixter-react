@@ -152,16 +152,17 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       }
     }
 
-    // Generate signed URLs for each content item (2min expiration)
+    // Generate JWT tokens and simple URLs for each content item
     const contentWithUrls = [];
     const username = user.email?.split('@')[0] || 'user';
+    const cloudFunctionUrl = 'https://packcontentaccess-6twxbx5ima-ue.a.run.app';
 
     // Process packContent
     if (packData.packContent && Array.isArray(packData.packContent)) {
       for (const contentItem of packData.packContent) {
         if (contentItem.key) {
           try {
-            const signedUrl = await generateSignedUrl(
+            const jwtToken = await generateSignedUrl(
               user.uid,
               username,
               packId,
@@ -174,16 +175,17 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
             
             contentWithUrls.push({
               ...contentItem,
-              secureUrl: signedUrl,
-              isSigned: true
+              secureUrl: cloudFunctionUrl, // Simple URL without token
+              jwtToken: jwtToken, // JWT token to send in Authorization header
+              requiresAuth: true
             });
           } catch (error) {
-            console.error('Error generating signed URL for content:', contentItem.key, error);
+            console.error('Error generating JWT token for content:', contentItem.key, error);
             // Fallback to direct content key (for debugging)
             contentWithUrls.push({
               ...contentItem,
               secureUrl: `#error-${contentItem.key}`,
-              isSigned: false
+              requiresAuth: false
             });
           }
         }
@@ -195,7 +197,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       for (const contentItem of packData.content) {
         if (contentItem.key) {
           try {
-            const signedUrl = await generateSignedUrl(
+            const jwtToken = await generateSignedUrl(
               user.uid,
               username,
               packId,
@@ -208,16 +210,17 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
             
             contentWithUrls.push({
               ...contentItem,
-              secureUrl: signedUrl,
-              isSigned: true
+              secureUrl: cloudFunctionUrl, // Simple URL without token
+              jwtToken: jwtToken, // JWT token to send in Authorization header
+              requiresAuth: true
             });
           } catch (error) {
-            console.error('Error generating signed URL for content:', contentItem.key, error);
+            console.error('Error generating JWT token for content:', contentItem.key, error);
             // Fallback to direct content key (for debugging)
             contentWithUrls.push({
               ...contentItem,
               secureUrl: `#error-${contentItem.key}`,
-              isSigned: false
+              requiresAuth: false
             });
           }
         }

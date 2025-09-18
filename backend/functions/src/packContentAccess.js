@@ -50,56 +50,45 @@ exports.packContentAccess = onRequest({
 }, async (req, res) => {
   return corsHandler(req, res, async () => {
     try {
-      // Extract parameters from query string or JWT token
-      const { token } = req.query;
+      // Extract JWT token from Authorization header (preferred) or query param (fallback)
+      const authHeader = req.headers.authorization;
+      const queryToken = req.query.token;
       
-      // If we have a JWT token, decode it to get all parameters
-      let packId, contentKey, username, orderId, vendorId, vendorUsername, userId;
-      
-      if (token) {
-        try {
-          // Decode JWT token to get parameters
-          const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-          packId = payload.packId;
-          contentKey = payload.contentKey;
-          username = payload.username;
-          orderId = payload.orderId;
-          vendorId = payload.vendorId;
-          vendorUsername = payload.vendorUsername;
-          userId = payload.userId;
-          
-          console.log('Decoded JWT payload:', { packId, contentKey, username, orderId, vendorId, vendorUsername, userId });
-        } catch (error) {
-          console.error('Error decoding JWT token:', error);
-          return res.status(400).json({
-            error: 'Invalid token format'
-          });
-        }
+      let token;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7); // Remove 'Bearer ' prefix
+        console.log('Using Authorization header token');
+      } else if (queryToken) {
+        token = queryToken;
+        console.log('Using query parameter token (fallback)');
       } else {
-        // Fallback to old query parameters for backward compatibility
-        const {
-          packId: queryPackId,
-          contentKey: queryContentKey,
-          watermark,
-          username: queryUsername,
-          orderId: queryOrderId
-        } = req.query;
-        
-        packId = queryPackId;
-        contentKey = queryContentKey;
-        username = queryUsername;
-        orderId = queryOrderId;
+        return res.status(401).json({
+          error: 'Authorization header with Bearer token required'
+        });
       }
-
-      // Get user token from X-Serverless-Authorization header (preferred) or query param
-      console.log('Headers:', Object.keys(req.headers));
-      console.log('X-Serverless-Authorization:', req.headers['x-serverless-authorization']);
-      console.log('Token from query:', token);
       
-      const userToken = req.headers['x-serverless-authorization']?.replace(/^Bearer\s+/i, '') || token;
-      console.log('Final userToken length:', userToken ? userToken.length : 0);
-      console.log('Final userToken start:', userToken ? userToken.substring(0, 50) + '...' : 'missing');
-      console.log('Final userToken end:', userToken ? '...' + userToken.substring(userToken.length - 50) : 'missing');
+      // Decode JWT token to get all parameters
+      let packId, contentKey, username, orderId, vendorId, vendorUsername, userId, watermark;
+      
+      try {
+        // Decode JWT token to get parameters
+        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        packId = payload.packId;
+        contentKey = payload.contentKey;
+        username = payload.username;
+        orderId = payload.orderId;
+        vendorId = payload.vendorId;
+        vendorUsername = payload.vendorUsername;
+        userId = payload.userId;
+        watermark = username; // Use username as watermark for JWT tokens
+        
+        console.log('Decoded JWT payload:', { packId, contentKey, username, orderId, vendorId, vendorUsername, userId, watermark });
+      } catch (error) {
+        console.error('Error decoding JWT token:', error);
+        return res.status(400).json({
+          error: 'Invalid token format'
+        });
+      }
 
       // Validate required parameters
       if (!packId || !contentKey || !username) {
@@ -108,24 +97,12 @@ exports.packContentAccess = onRequest({
         });
       }
 
-      // For JWT tokens, we trust the backend validation and use the data from the token
-      let user;
-      if (token) {
-        // JWT token contains all necessary data, no need for additional verification
-        user = {
-          userId: userId,
-          username: username
-        };
-        console.log('Using JWT token data for user:', user);
-      } else {
-        // Fallback to old verification method for backward compatibility
-        user = await verifyUserAccess(userToken, packId, orderId, username);
-        if (!user) {
-          return res.status(403).json({
-            error: 'Access denied: Invalid authentication or authorization'
-          });
-        }
-      }
+      // JWT token contains all necessary data, no need for additional verification
+      const user = {
+        userId: userId,
+        username: username
+      };
+      console.log('Using JWT token data for user:', user);
 
       // Get pack content metadata
       const packContent = await getPackContentMetadata(packId, contentKey);
@@ -135,19 +112,12 @@ exports.packContentAccess = onRequest({
         });
       }
 
-      // Get vendor information for watermark
-      let vendorInfo;
-      if (token && vendorId && vendorUsername) {
-        // Use vendor info from JWT token
-        vendorInfo = {
-          username: vendorUsername,
-          profileUrl: `vixter.com.br/profile/${vendorUsername}`
-        };
-        console.log('Using JWT vendor info:', vendorInfo);
-      } else {
-        // Fallback to database lookup
-        vendorInfo = await getVendorInfo(packContent.packId);
-      }
+      // Use vendor info from JWT token
+      const vendorInfo = {
+        username: vendorUsername,
+        profileUrl: `vixter.com.br/profile/${vendorUsername}`
+      };
+      console.log('Using JWT vendor info:', vendorInfo);
       
       // Generate watermarked media with profile links
       const watermarkedBuffer = await generateWatermarkedMedia(

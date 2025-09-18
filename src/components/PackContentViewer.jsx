@@ -42,7 +42,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
     }
   }, [pack?.contentWithUrls]);
 
-  const handleContentClick = (contentItem) => {
+  const handleContentClick = async (contentItem) => {
     if (!contentItem.key) return;
 
     // Check if it's a media item (image or video)
@@ -57,11 +57,29 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
         setGalleryOpen(true);
       }
     } else {
-      // For non-media files, open in new tab
-      const secureUrl = contentItem.secureUrl || contentUrls[contentItem.key];
-      if (secureUrl) {
-        // Open directly since backend handles authentication and streaming
-        window.open(secureUrl, '_blank', 'noopener,noreferrer,resizable=yes,scrollbars=yes');
+      // For non-media files, open in new tab with JWT authentication
+      if (contentItem.requiresAuth && contentItem.jwtToken) {
+        // Create a blob URL with JWT authentication
+        try {
+          const response = await fetch(contentItem.secureUrl, {
+            headers: {
+              'Authorization': `Bearer ${contentItem.jwtToken}`
+            }
+          });
+          
+          if (response.ok) {
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            window.open(blobUrl, '_blank', 'noopener,noreferrer,resizable=yes,scrollbars=yes');
+          } else {
+            setError(`Erro ao carregar ${contentItem.name}: ${response.status}`);
+          }
+        } catch (error) {
+          setError(`Erro ao carregar ${contentItem.name}: ${error.message}`);
+        }
+      } else if (contentItem.secureUrl) {
+        // For sample content or public URLs, open directly
+        window.open(contentItem.secureUrl, '_blank', 'noopener,noreferrer,resizable=yes,scrollbars=yes');
       } else {
         setError(`URL não disponível para ${contentItem.name}`);
       }
@@ -308,7 +326,9 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
                 {mediaItems[selectedMediaIndex]?.isVideo ? (
                   <video
                     key={mediaItems[selectedMediaIndex]?.key}
-                    src={mediaItems[selectedMediaIndex]?.secureUrl}
+                    src={mediaItems[selectedMediaIndex]?.requiresAuth ? 
+                      `${mediaItems[selectedMediaIndex]?.secureUrl}?token=${mediaItems[selectedMediaIndex]?.jwtToken}` : 
+                      mediaItems[selectedMediaIndex]?.secureUrl}
                     controls
                     autoPlay
                     className="gallery-video"
@@ -317,7 +337,9 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
                 ) : (
                   <img
                     key={mediaItems[selectedMediaIndex]?.key}
-                    src={mediaItems[selectedMediaIndex]?.secureUrl}
+                    src={mediaItems[selectedMediaIndex]?.requiresAuth ? 
+                      `${mediaItems[selectedMediaIndex]?.secureUrl}?token=${mediaItems[selectedMediaIndex]?.jwtToken}` : 
+                      mediaItems[selectedMediaIndex]?.secureUrl}
                     alt={mediaItems[selectedMediaIndex]?.name}
                     className="gallery-image"
                     crossOrigin="anonymous"
