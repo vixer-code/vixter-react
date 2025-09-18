@@ -1114,3 +1114,20 @@
 .repost-indicator a:hover { 
   text-decoration: underline; 
 }
+
+/* Action button feedback styling */
+.action-btn.like-btn.liked { 
+  color: #ff4757 !important; 
+}
+
+.action-btn.like-btn.liked i { 
+  color: #ff4757 !important; 
+}
+
+.action-btn.share-btn.reposted { 
+  color: #00ffca !important; 
+}
+
+.action-btn.share-btn.reposted i { 
+  color: #00ffca !important; 
+}

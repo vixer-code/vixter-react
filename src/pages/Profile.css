@@ -1,5 +1,29 @@
 /* Profile.css */
 
+/* Repost indicator styling */
+.repost-indicator { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  padding: 8px 12px; 
+  background: rgba(138, 43, 226, 0.1); 
+  border-left: 3px solid #8a2be2; 
+  margin-bottom: 8px; 
+  border-radius: 0 6px 6px 0; 
+  font-size: 0.85rem; 
+  color: #a8a8b3; 
+}
+
+.repost-indicator i { 
+  color: #8a2be2; 
+  font-size: 0.9rem; 
+}
+
+.repost-indicator strong { 
+  color: #8a2be2; 
+  font-weight: 600; 
+}
+
 .profile-container {
   max-width: 1080px;
   margin: 0 auto;

@@ -1365,30 +1365,49 @@ const Profile = () => {
                         </div>
                       )}
                     </div>
+                    {post.isRepost && (
+                      <div className="repost-indicator">
+                        <i className="fas fa-retweet"></i>
+                        <span>
+                          <strong>{post.authorName}</strong> repostou
+                        </span>
+                      </div>
+                    )}
+                    
                     <div className="post-content">
-                      {post._isRepost && (
-                        <div className="repost-banner" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#777', fontSize: 12, marginBottom: 6 }}>
-                          <i className="fas fa-retweet" aria-hidden="true"></i>
-                          <span>Repostado de <strong>@{post.originalAuthorUsername || 'usuario'}</strong></span>
-                          {post.repostedAt && (
-                            <span>· {new Date(post.repostedAt).toLocaleString('pt-BR')}</span>
-                          )}
-                        </div>
-                      )}
-                      <p>{post.content}</p>
-                          {post.images && post.images.length > 0 && (
-                        <div className="post-image-container">
-                          {post.images.map((image, index) => (
-                            <CachedImage
-                              key={index}
-                              src={image}
-                              alt="Post"
-                              className="post-image"
-                              sizes="(max-width: 768px) 100vw, 400px"
-                              showLoading={false}
-                            />
-                          ))}
-                        </div>
+                      <p>{post.isRepost ? (post.originalContent || post.content) : post.content}</p>
+                      {post.isRepost ? (
+                        // For reposts, use original media
+                        post.originalMedia && post.originalMedia.length > 0 && (
+                          <div className="post-image-container">
+                            {post.originalMedia.map((media, index) => (
+                              <CachedImage
+                                key={index}
+                                src={media.url}
+                                alt="Post"
+                                className="post-image"
+                                sizes="(max-width: 768px) 100vw, 400px"
+                                showLoading={false}
+                              />
+                            ))}
+                          </div>
+                        )
+                      ) : (
+                        // For regular posts, use images
+                        post.images && post.images.length > 0 && (
+                          <div className="post-image-container">
+                            {post.images.map((image, index) => (
+                              <CachedImage
+                                key={index}
+                                src={image}
+                                alt="Post"
+                                className="post-image"
+                                sizes="(max-width: 768px) 100vw, 400px"
+                                showLoading={false}
+                              />
+                            ))}
+                          </div>
+                        )
                       )}
                     </div>
                   </div>

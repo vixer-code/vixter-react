@@ -23,6 +23,7 @@ const Feed = () => {
   const [expandedComments, setExpandedComments] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
   const [showReplyInputs, setShowReplyInputs] = useState({});
+  const [repostStatus, setRepostStatus] = useState({});
 
   useEffect(() => {
     let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
@@ -184,12 +185,16 @@ const Feed = () => {
         return;
       }
 
-      // Create repost data
+      // Create repost data - compatible with profile page
       const repostData = {
+        // Profile-compatible fields
         userId: currentUser.uid,
-        text: '', // Empty content for repost
+        text: post.content || post.text || '', // Use original content for profile compatibility
+        imageUrl: post.imageUrl || (post.media?.[0]?.type === 'image' ? post.media[0].url : null),
         createdAt: Date.now(),
         timestamp: Date.now(),
+        
+        // Repost-specific fields
         isRepost: true,
         originalPostId: post.id,
         originalAuthorId: post.userId || post.authorId,
@@ -199,6 +204,10 @@ const Feed = () => {
         originalContent: post.content || post.text || '',
         originalMedia: post.media || (post.imageUrl ? [{ type: 'image', url: post.imageUrl }] : null),
         originalTimestamp: post.timestamp || post.createdAt,
+        
+        // Interaction fields
+        likes: {},
+        likeCount: 0,
         repostCount: 0
       };
 
@@ -208,6 +217,12 @@ const Feed = () => {
       
       // Mark as reposted by this user
       await set(postRepostsRef, Date.now());
+      
+      // Update repost status in state
+      setRepostStatus(prev => ({
+        ...prev,
+        [post.id]: true
+      }));
       
       // Update original post repost count
       const originalPostRef = ref(database, `posts/${post.id}`);
@@ -258,6 +273,41 @@ const Feed = () => {
       [key]: !prev[key]
     }));
   }, []);
+
+  const checkRepostStatus = useCallback(async (postId) => {
+    if (!currentUser?.uid) return false;
+    
+    try {
+      const repostRef = ref(database, `generalReposts/${postId}/${currentUser.uid}`);
+      const snapshot = await get(repostRef);
+      return snapshot.exists();
+    } catch (error) {
+      console.error('Error checking repost status:', error);
+      return false;
+    }
+  }, [currentUser?.uid]);
+
+  // Load repost status for all posts
+  useEffect(() => {
+    if (!currentUser?.uid || posts.length === 0) return;
+
+    const loadRepostStatus = async () => {
+      const statusPromises = posts.map(async (post) => {
+        const originalPostId = post.isRepost ? post.originalPostId : post.id;
+        const isReposted = await checkRepostStatus(originalPostId);
+        return { postId: originalPostId, isReposted };
+      });
+
+      const results = await Promise.all(statusPromises);
+      const newRepostStatus = {};
+      results.forEach(({ postId, isReposted }) => {
+        newRepostStatus[postId] = isReposted;
+      });
+      setRepostStatus(newRepostStatus);
+    };
+
+    loadRepostStatus();
+  }, [posts, currentUser?.uid, checkRepostStatus]);
 
   const updateInput = useCallback((key, text) => {
     setCommentInputs(prev => ({ ...prev, [key]: text }));
@@ -425,27 +475,32 @@ const Feed = () => {
     const user = users[post.userId || post.authorId];
     if (!user && !post.authorName) return null;
 
-    // For reposts, use original post data for interactions
     const isRepost = post.isRepost;
     const originalPostId = isRepost ? post.originalPostId : post.id;
+    
+    // For reposts, show as post from reposter but with original content
     const displayPost = isRepost ? {
       ...post,
-      id: originalPostId,
-      authorId: post.originalAuthorId,
-      authorName: post.originalAuthorName,
-      authorPhotoURL: post.originalAuthorPhotoURL,
-      authorUsername: post.originalAuthorUsername,
+      // Keep reposter info for header
+      authorId: post.userId,
+      authorName: post.authorName || user?.displayName || user?.email,
+      authorPhotoURL: post.authorPhotoURL || user?.profilePictureURL || '/images/defpfp1.png',
+      authorUsername: post.authorUsername || user?.username,
+      // Use original content for display (override the text field for profile compatibility)
       content: post.originalContent,
       text: post.originalContent,
       media: post.originalMedia,
       imageUrl: post.originalMedia?.[0]?.url,
-      timestamp: post.originalTimestamp,
+      // Use original timestamp for content
+      originalTimestamp: post.originalTimestamp,
+      // Use original post data for interactions
       likes: post.likes,
       likeCount: post.likeCount,
       repostCount: post.repostCount
     } : post;
 
     const isLiked = displayPost.likes && displayPost.likes[currentUser?.uid];
+    const isReposted = repostStatus[originalPostId] || false;
     const isFollowing = following.includes(displayPost.userId || displayPost.authorId);
     const isOwnPost = (post.userId || post.authorId) === currentUser?.uid;
     const contentText = displayPost.content || displayPost.text || '';
@@ -476,7 +531,7 @@ const Feed = () => {
               <Link to={isOwnPost ? '/profile' : getProfileUrlById(displayPost.userId || displayPost.authorId, displayPost.authorUsername)} className="author-name">
                 {displayPost.authorName || user?.displayName || user?.email}
               </Link>
-              <span className="post-time">{formatTimeAgo(displayPost.timestamp)}</span>
+              <span className="post-time">{formatTimeAgo(isRepost ? post.timestamp : displayPost.timestamp)}</span>
             </div>
           </div>
           <div className="post-actions">
@@ -534,12 +589,13 @@ const Feed = () => {
             <i className={`fas fa-heart ${isLiked ? 'fas' : 'far'}`}></i>
             <span>{displayPost.likeCount || Object.keys(displayPost.likes || {}).length || 0}</span>
           </button>
-          <button className="action-btn share-btn" onClick={() => repostPost(displayPost)}>
+          <button className={`action-btn share-btn ${isReposted ? 'reposted' : ''}`} onClick={() => repostPost(displayPost)}>
             <i className="fas fa-retweet"></i>
             <span>{displayPost.repostCount || 0}</span>
           </button>
           <button className="action-btn comment-toggle" onClick={() => toggleComments(originalPostId)}>
             <i className="fas fa-comment"></i>
+            <span>{commentsByPost[originalPostId]?.items?.length || 0}</span>
           </button>
         </div>
 
