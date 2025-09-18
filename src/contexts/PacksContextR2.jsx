@@ -12,8 +12,7 @@ import {
   deleteDoc,
   onSnapshot
 } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
-import { db, functions } from '../../config/firebase';
+import { db } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import useR2Media from '../hooks/useR2Media';
@@ -335,7 +334,7 @@ export const PacksProviderR2 = ({ children }) => {
     } finally {
       setCreating(false);
     }
-  }, [currentUser, apiFunc, showSuccess, showError, loadUserPacks, uploadPackMedia]);
+  }, [currentUser, showSuccess, showError, loadUserPacks, uploadPackMedia]);
 
   // Update pack
   const updatePack = useCallback(async (packId, updates, showSuccessMessage = true) => {
@@ -381,7 +380,7 @@ export const PacksProviderR2 = ({ children }) => {
     } finally {
       setUpdating(false);
     }
-  }, [currentUser, apiFunc, showSuccess, showError, loadUserPacks]);
+  }, [currentUser, showSuccess, showError, loadUserPacks]);
 
   // Delete pack
   const deletePack = useCallback(async (packId, onProgress = null) => {
