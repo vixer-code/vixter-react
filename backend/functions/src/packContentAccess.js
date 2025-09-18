@@ -50,22 +50,17 @@ exports.packContentAccess = onRequest({
 }, async (req, res) => {
   return corsHandler(req, res, async () => {
     try {
-      // Extract JWT token from Authorization header (preferred) or query param (fallback)
+      // Extract JWT token from Authorization header
       const authHeader = req.headers.authorization;
-      const queryToken = req.query.token;
       
-      let token;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7); // Remove 'Bearer ' prefix
-        console.log('Using Authorization header token');
-      } else if (queryToken) {
-        token = queryToken;
-        console.log('Using query parameter token (fallback)');
-      } else {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({
           error: 'Authorization header with Bearer token required'
         });
       }
+      
+      const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+      console.log('Using JWT token from Authorization header');
       
       // Decode JWT token to get all parameters
       let packId, contentKey, username, orderId, vendorId, vendorUsername, userId, watermark;

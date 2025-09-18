@@ -175,8 +175,8 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
             
             contentWithUrls.push({
               ...contentItem,
-              secureUrl: cloudFunctionUrl, // Simple URL without token
-              jwtToken: jwtToken, // JWT token to send in Authorization header
+              secureUrl: cloudFunctionUrl, // Cloud Function URL
+              jwtToken: jwtToken, // JWT token for Authorization header
               requiresAuth: true
             });
           } catch (error) {
@@ -210,8 +210,8 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
             
             contentWithUrls.push({
               ...contentItem,
-              secureUrl: cloudFunctionUrl, // Simple URL without token
-              jwtToken: jwtToken, // JWT token to send in Authorization header
+              secureUrl: cloudFunctionUrl, // Cloud Function URL
+              jwtToken: jwtToken, // JWT token for Authorization header
               requiresAuth: true
             });
           } catch (error) {

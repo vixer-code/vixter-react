@@ -13,6 +13,45 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [mediaItems, setMediaItems] = useState([]);
+  const [mediaBlobUrls, setMediaBlobUrls] = useState({});
+
+  // Load authenticated media using fetch with JWT token
+  const loadAuthenticatedMedia = useCallback(async (contentItem) => {
+    if (!contentItem.requiresAuth || !contentItem.jwtToken) {
+      return contentItem.secureUrl;
+    }
+
+    const cacheKey = contentItem.key;
+    if (mediaBlobUrls[cacheKey]) {
+      return mediaBlobUrls[cacheKey];
+    }
+
+    try {
+      setLoading(prev => ({ ...prev, [cacheKey]: true }));
+      
+      const response = await fetch(contentItem.secureUrl, {
+        headers: {
+          'Authorization': `Bearer ${contentItem.jwtToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      setMediaBlobUrls(prev => ({ ...prev, [cacheKey]: blobUrl }));
+      return blobUrl;
+    } catch (error) {
+      console.error('Error loading authenticated media:', error);
+      setError(`Erro ao carregar ${contentItem.name}: ${error.message}`);
+      return null;
+    } finally {
+      setLoading(prev => ({ ...prev, [cacheKey]: false }));
+    }
+  }, [mediaBlobUrls]);
 
   // Use pre-generated URLs from backend
   useEffect(() => {
@@ -134,6 +173,13 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
   const closeGallery = () => {
     setGalleryOpen(false);
   };
+
+  // Load authenticated media when gallery opens
+  useEffect(() => {
+    if (galleryOpen && mediaItems[selectedMediaIndex]) {
+      loadAuthenticatedMedia(mediaItems[selectedMediaIndex]);
+    }
+  }, [galleryOpen, selectedMediaIndex, mediaItems, loadAuthenticatedMedia]);
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -323,26 +369,49 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
               )}
 
               <div className="gallery-media">
-                {mediaItems[selectedMediaIndex]?.isVideo ? (
+                {loading[mediaItems[selectedMediaIndex]?.key] ? (
+                  <div className="gallery-loading">
+                    <i className="fas fa-spinner fa-spin"></i>
+                    <p>Carregando mídia...</p>
+                  </div>
+                ) : mediaItems[selectedMediaIndex]?.isVideo ? (
                   <video
                     key={mediaItems[selectedMediaIndex]?.key}
-                    src={mediaItems[selectedMediaIndex]?.requiresAuth ? 
-                      `/api/pack-content/proxy?url=${encodeURIComponent(mediaItems[selectedMediaIndex]?.secureUrl)}&token=${mediaItems[selectedMediaIndex]?.jwtToken}` : 
-                      mediaItems[selectedMediaIndex]?.secureUrl}
+                    src={mediaBlobUrls[mediaItems[selectedMediaIndex]?.key] || mediaItems[selectedMediaIndex]?.secureUrl}
                     controls
                     autoPlay
                     className="gallery-video"
                     crossOrigin="anonymous"
+                    onLoadStart={() => {
+                      console.log('=== VIDEO LOAD START ===');
+                      console.log('Video src:', mediaBlobUrls[mediaItems[selectedMediaIndex]?.key] || mediaItems[selectedMediaIndex]?.secureUrl);
+                      console.log('Requires auth:', mediaItems[selectedMediaIndex]?.requiresAuth);
+                      console.log('JWT token length:', mediaItems[selectedMediaIndex]?.jwtToken?.length);
+                    }}
+                    onError={(e) => {
+                      console.error('=== VIDEO LOAD ERROR ===');
+                      console.error('Error:', e);
+                      console.error('Video src:', e.target.src);
+                    }}
                   />
                 ) : (
                   <img
                     key={mediaItems[selectedMediaIndex]?.key}
-                    src={mediaItems[selectedMediaIndex]?.requiresAuth ? 
-                      `/api/pack-content/proxy?url=${encodeURIComponent(mediaItems[selectedMediaIndex]?.secureUrl)}&token=${mediaItems[selectedMediaIndex]?.jwtToken}` : 
-                      mediaItems[selectedMediaIndex]?.secureUrl}
+                    src={mediaBlobUrls[mediaItems[selectedMediaIndex]?.key] || mediaItems[selectedMediaIndex]?.secureUrl}
                     alt={mediaItems[selectedMediaIndex]?.name}
                     className="gallery-image"
                     crossOrigin="anonymous"
+                    onLoad={() => {
+                      console.log('=== IMAGE LOAD SUCCESS ===');
+                      console.log('Image src:', mediaBlobUrls[mediaItems[selectedMediaIndex]?.key] || mediaItems[selectedMediaIndex]?.secureUrl);
+                      console.log('Requires auth:', mediaItems[selectedMediaIndex]?.requiresAuth);
+                      console.log('JWT token length:', mediaItems[selectedMediaIndex]?.jwtToken?.length);
+                    }}
+                    onError={(e) => {
+                      console.error('=== IMAGE LOAD ERROR ===');
+                      console.error('Error:', e);
+                      console.error('Image src:', e.target.src);
+                    }}
                   />
                 )}
               </div>

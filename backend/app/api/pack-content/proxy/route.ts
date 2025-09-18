@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  console.log('=== PROXY ENDPOINT CALLED ===');
+  console.log('Request URL:', request.url);
+  console.log('Request method:', request.method);
+  console.log('Request headers:', Object.fromEntries(request.headers.entries()));
+  
   try {
     const { searchParams } = new URL(request.url);
     const targetUrl = searchParams.get('url');
