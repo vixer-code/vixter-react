@@ -26,6 +26,8 @@ const Feed = () => {
   const [commentInputs, setCommentInputs] = useState({});
   const [showReplyInputs, setShowReplyInputs] = useState({});
   const [repostStatus, setRepostStatus] = useState({});
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
 
   useEffect(() => {
     let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
@@ -221,11 +223,22 @@ const Feed = () => {
     }
   }, [currentUser?.uid, following, showSuccess, showError]);
 
-  const handleDeletePost = useCallback(async (postId) => {
+  const handleDeletePost = useCallback((postId) => {
     if (!currentUser?.uid) return;
+    
+    // Find the post to get its content for confirmation
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+      setPostToDelete({ id: postId, content: post.content });
+      setShowDeleteModal(true);
+    }
+  }, [currentUser?.uid, posts]);
 
+  const confirmDeletePost = useCallback(async () => {
+    if (!postToDelete || !currentUser?.uid) return;
+    
     try {
-      const postRef = ref(database, `posts/${postId}`);
+      const postRef = ref(database, `posts/${postToDelete.id}`);
       await get(postRef).then(async (snapshot) => {
         if (snapshot.exists()) {
           const post = snapshot.val();
@@ -240,8 +253,16 @@ const Feed = () => {
     } catch (error) {
       console.error('Error deleting post:', error);
       showError('Erro ao deletar post');
+    } finally {
+      setShowDeleteModal(false);
+      setPostToDelete(null);
     }
-  }, [currentUser?.uid, showSuccess, showError]);
+  }, [postToDelete, currentUser?.uid, showSuccess, showError]);
+
+  const cancelDeletePost = useCallback(() => {
+    setShowDeleteModal(false);
+    setPostToDelete(null);
+  }, []);
 
   const repostPost = useCallback(async (post) => {
     if (!currentUser) {
@@ -826,6 +847,38 @@ const Feed = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal-content delete-modal">
+            <div className="modal-header">
+              <h3>Confirmar Exclusão</h3>
+              <button className="modal-close" onClick={cancelDeletePost}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>Tem certeza que deseja deletar este post?</p>
+              {postToDelete?.content && (
+                <div className="post-preview">
+                  <p>"{postToDelete.content.substring(0, 100)}{postToDelete.content.length > 100 ? '...' : ''}"</p>
+                </div>
+              )}
+              <p className="warning-text">Esta ação não pode ser desfeita.</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-cancel" onClick={cancelDeletePost}>
+                Cancelar
+              </button>
+              <button className="btn-delete" onClick={confirmDeletePost}>
+                <i className="fas fa-trash"></i>
+                Deletar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

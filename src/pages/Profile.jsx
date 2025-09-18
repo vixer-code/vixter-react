@@ -1105,6 +1105,52 @@ const Profile = () => {
     }
   }, [currentUser, loadComments, showSuccess, showError]);
 
+  const likeComment = useCallback(async (postId, comment) => {
+    if (!currentUser) return;
+    
+    try {
+      const commentRef = ref(database, `comments/${postId}/${comment.id}`);
+      const commentSnap = await get(commentRef);
+      
+      if (!commentSnap.exists()) return;
+      
+      const commentData = commentSnap.val();
+      const likedBy = commentData.likedBy || [];
+      const isLiked = likedBy.includes(currentUser.uid);
+      
+      let newLikedBy;
+      let newLikes;
+      
+      if (isLiked) {
+        // Unlike
+        newLikedBy = likedBy.filter(uid => uid !== currentUser.uid);
+        newLikes = Math.max(0, (commentData.likes || 0) - 1);
+      } else {
+        // Like
+        newLikedBy = [...likedBy, currentUser.uid];
+        newLikes = (commentData.likes || 0) + 1;
+      }
+      
+      await update(commentRef, {
+        likedBy: newLikedBy,
+        likes: newLikes
+      });
+      
+      await loadComments(postId);
+    } catch (error) {
+      console.error('Error liking comment:', error);
+      showError('Erro ao curtir comentário');
+    }
+  }, [currentUser, loadComments, showError]);
+
+  const toggleReplyInput = useCallback((postId, commentId) => {
+    const key = `${postId}:${commentId}`;
+    setShowReplyInputs(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  }, []);
+
   // Load users and repost status when posts change
   useEffect(() => {
     if (posts.length === 0) return;
@@ -1444,7 +1490,19 @@ const Profile = () => {
               </span>
               <span className="profile-joined">
                 <i className="fa-solid fa-calendar"></i>
-                Entrou em {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : 'janeiro de 2025'}
+                Entrou em {profile.createdAt ? (() => {
+                  try {
+                    // Handle Firestore Timestamp
+                    if (profile.createdAt && typeof profile.createdAt.toDate === 'function') {
+                      return profile.createdAt.toDate().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                    }
+                    // Handle regular Date or timestamp
+                    return new Date(profile.createdAt).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                  } catch (error) {
+                    console.error('Error formatting date:', error);
+                    return 'janeiro de 2025';
+                  }
+                })() : 'janeiro de 2025'}
               </span>
             </div>
             
@@ -1812,39 +1870,83 @@ const Profile = () => {
                           
                           {commentsByPost[originalPostId]?.items?.length > 0 ? (
                             <div className="comments-list">
-                              {commentsByPost[originalPostId].items.map((comment) => (
-                                <div key={comment.id} className="comment-item">
-                                  <div className="comment-header">
-                                    <div className="comment-avatar">
-                                      <CachedImage
-                                        src={comment.authorPhotoURL}
-                                        fallbackSrc="/images/default-avatar.jpg"
-                                        alt={comment.authorName}
-                                        sizes="28px"
-                                        showLoading={false}
-                                      />
-                                    </div>
-                                    <div className="comment-info">
-                                      <div className="comment-author-name">{comment.authorName}</div>
-                                      <div className="comment-time">
-                                        {new Date(comment.timestamp).toLocaleDateString('pt-BR')}
+                              {commentsByPost[originalPostId].items.map((comment) => {
+                                const isCommentLiked = comment.likedBy && comment.likedBy.includes(currentUser?.uid);
+                                const replyKey = `${originalPostId}:${comment.id}`;
+                                
+                                return (
+                                  <div key={comment.id} className="comment-item">
+                                    <div className="comment-header">
+                                      <div className="comment-avatar">
+                                        <CachedImage
+                                          src={comment.authorPhotoURL}
+                                          fallbackSrc="/images/default-avatar.jpg"
+                                          alt={comment.authorName}
+                                          sizes="28px"
+                                          showLoading={false}
+                                        />
                                       </div>
+                                      <div className="comment-info">
+                                        <div className="comment-author-name">{comment.authorName}</div>
+                                        <div className="comment-time">
+                                          {new Date(comment.timestamp).toLocaleDateString('pt-BR')}
+                                        </div>
+                                      </div>
+                                      {comment.authorId === currentUser?.uid && (
+                                        <button 
+                                          className="comment-delete-btn"
+                                          onClick={() => handleDeleteComment(originalPostId, comment)}
+                                          title="Deletar comentário"
+                                        >
+                                          ✕
+                                        </button>
+                                      )}
                                     </div>
-                                    {comment.authorId === currentUser?.uid && (
+                                    <div className="comment-content">
+                                      <p>{comment.content}</p>
+                                    </div>
+                                    <div className="comment-actions">
                                       <button 
-                                        className="comment-delete-btn"
-                                        onClick={() => handleDeleteComment(originalPostId, comment)}
-                                        title="Deletar comentário"
+                                        className={`comment-action-btn like-btn ${isCommentLiked ? 'liked' : ''}`}
+                                        onClick={() => likeComment(originalPostId, comment)}
+                                        title={isCommentLiked ? 'Descurtir' : 'Curtir'}
                                       >
-                                        ✕
+                                        <i className={`fas fa-heart ${isCommentLiked ? 'fas' : 'far'}`}></i>
+                                        <span>{comment.likes || 0}</span>
                                       </button>
+                                      <button 
+                                        className="comment-action-btn reply-btn"
+                                        onClick={() => toggleReplyInput(originalPostId, comment.id)}
+                                        title="Responder"
+                                      >
+                                        <i className="fas fa-reply"></i>
+                                        <span>Responder</span>
+                                      </button>
+                                    </div>
+                                    
+                                    {showReplyInputs[replyKey] && (
+                                      <div className="comment-reply">
+                                        <div className="comment-input">
+                                          <input
+                                            type="text"
+                                            placeholder="Escreva uma resposta..."
+                                            value={commentInputs[replyKey] || ''}
+                                            onChange={(e) => setCommentInputs(prev => ({ ...prev, [replyKey]: e.target.value }))}
+                                            onKeyPress={(e) => e.key === 'Enter' && addComment(originalPostId, comment.id)}
+                                          />
+                                          <button 
+                                            className="btn small" 
+                                            onClick={() => addComment(originalPostId, comment.id)}
+                                            disabled={!commentInputs[replyKey]?.trim()}
+                                          >
+                                            Responder
+                                          </button>
+                                        </div>
+                                      </div>
                                     )}
                                   </div>
-                                  <div className="comment-content">
-                                    <p>{comment.content}</p>
-                                  </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           ) : (
                             <div className="no-comments">Nenhum comentário ainda</div>

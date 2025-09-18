@@ -72,6 +72,8 @@ const Vixies = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('main'); // main | following
   const [dismissedClientRestriction, setDismissedClientRestriction] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
 
   // Check KYC verification
   const isKycVerified = userProfile?.kyc === true;
@@ -227,10 +229,22 @@ const Vixies = () => {
     showInfo('Funcionalidade de gorjeta será integrada em breve.');
   };
 
-  const handleDeletePost = async (postId) => {
+  const handleDeletePost = (postId) => {
     if (!currentUser) return;
+    
+    // Find the post to get its content for confirmation
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+      setPostToDelete({ id: postId, content: post.content });
+      setShowDeleteModal(true);
+    }
+  };
+
+  const confirmDeletePost = async () => {
+    if (!postToDelete) return;
+    
     try {
-      const postRef = ref(database, `vixies_posts/${postId}`);
+      const postRef = ref(database, `vixies_posts/${postToDelete.id}`);
       await get(postRef).then(async (snapshot) => {
         if (snapshot.exists()) {
           const post = snapshot.val();
@@ -245,7 +259,15 @@ const Vixies = () => {
     } catch (error) {
       console.error('Error deleting post:', error);
       showError('Erro ao deletar post');
+    } finally {
+      setShowDeleteModal(false);
+      setPostToDelete(null);
     }
+  };
+
+  const cancelDeletePost = () => {
+    setShowDeleteModal(false);
+    setPostToDelete(null);
   };
 
   const handleFollow = async (userId) => {
@@ -583,6 +605,38 @@ const Vixies = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal-content delete-modal">
+            <div className="modal-header">
+              <h3>Confirmar Exclusão</h3>
+              <button className="modal-close" onClick={cancelDeletePost}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>Tem certeza que deseja deletar este post?</p>
+              {postToDelete?.content && (
+                <div className="post-preview">
+                  <p>"{postToDelete.content.substring(0, 100)}{postToDelete.content.length > 100 ? '...' : ''}"</p>
+                </div>
+              )}
+              <p className="warning-text">Esta ação não pode ser desfeita.</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-cancel" onClick={cancelDeletePost}>
+                Cancelar
+              </button>
+              <button className="btn-delete" onClick={confirmDeletePost}>
+                <i className="fas fa-trash"></i>
+                Deletar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
