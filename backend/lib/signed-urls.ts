@@ -65,9 +65,8 @@ export async function generateSignedUrl(
     .setExpirationTime(exp)
     .sign(secretKey);
 
-  // Return the signed URL pointing to Cloud Function
-  const cloudFunctionUrl = 'https://packcontentaccess-6twxbx5ima-ue.a.run.app';
-  return `${cloudFunctionUrl}?token=${jwt}`;
+  // Return only the JWT token (not the full URL)
+  return jwt;
 }
 
 /**
