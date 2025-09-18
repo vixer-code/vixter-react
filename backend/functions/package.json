@@ -15,13 +15,14 @@
   },
   "main": "index.js",
   "dependencies": {
-    "firebase-admin": "^12.0.0",
-    "firebase-functions": "^5.1.0",
-    "sharp": "^0.33.0",
-    "fluent-ffmpeg": "^2.1.2",
     "@aws-sdk/client-s3": "^3.490.0",
     "@aws-sdk/s3-request-presigner": "^3.490.0",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.1.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "jose": "^6.1.0",
+    "sharp": "^0.33.0"
   },
   "devDependencies": {
     "firebase-functions-test": "^3.1.0"

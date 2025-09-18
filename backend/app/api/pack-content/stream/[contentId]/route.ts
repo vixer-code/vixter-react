@@ -38,6 +38,7 @@ export async function GET(
 ) {
   try {
     console.log('Stream request for contentId:', params.contentId);
+    console.log('Request headers:', Object.fromEntries(request.headers.entries()));
 
     // Decode contentId to get packId, orderId, and contentKey
     let packId: string, orderId: string, contentKey: string;
@@ -57,7 +58,10 @@ export async function GET(
 
     // Verify user authentication
     const authHeader = request.headers.get('authorization');
+    console.log('Authorization header:', authHeader);
+    
     if (!authHeader?.startsWith('Bearer ')) {
+      console.log('No valid Bearer token found');
       return new Response('Unauthorized', { 
         status: 401,
         headers: getCorsHeaders(request.headers.get('origin'))
@@ -65,6 +69,8 @@ export async function GET(
     }
 
     const token = authHeader.split('Bearer ')[1];
+    console.log('Extracted token length:', token.length);
+    console.log('Token start:', token.substring(0, 50));
     let user;
     try {
       user = await auth.verifyIdToken(token);
@@ -72,7 +78,9 @@ export async function GET(
       console.error('Token verification failed, extracting from payload:', error);
       // Fallback: extract user ID from token payload
       try {
+        console.log('Attempting fallback token extraction...');
         const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        console.log('Token payload:', payload);
         user = {
           uid: payload.user_id || payload.sub,
           email: payload.email

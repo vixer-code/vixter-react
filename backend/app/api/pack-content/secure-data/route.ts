@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { requireAuth, getCorsHeaders, handleCors, AuthenticatedUser } from '@/lib/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { generateSignedUrl } from '@/lib/signed-urls';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -151,22 +152,40 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       }
     }
 
-    // Generate secure URLs for each content item via Backend Proxy
-    const backendUrl = 'https://vixter-react-llyd.vercel.app';
+    // Generate signed URLs for each content item (2min expiration)
     const contentWithUrls = [];
+    const username = user.email?.split('@')[0] || 'user';
 
     // Process packContent
     if (packData.packContent && Array.isArray(packData.packContent)) {
       for (const contentItem of packData.packContent) {
         if (contentItem.key) {
-          // Generate secure URL with only content ID (no sensitive parameters)
-          const contentId = Buffer.from(`${packId}-${orderId}-${contentItem.key}`).toString('base64url');
-          
-          contentWithUrls.push({
-            ...contentItem,
-            secureUrl: `${backendUrl}/api/pack-content/stream/${contentId}`,
-            contentId: contentId
-          });
+          try {
+            const signedUrl = await generateSignedUrl(
+              user.uid,
+              username,
+              packId,
+              orderId,
+              contentItem.key,
+              vendorInfo.vendorId || '',
+              vendorInfo.vendorUsername,
+              2 // 2 minutes expiration
+            );
+            
+            contentWithUrls.push({
+              ...contentItem,
+              secureUrl: signedUrl,
+              isSigned: true
+            });
+          } catch (error) {
+            console.error('Error generating signed URL for content:', contentItem.key, error);
+            // Fallback to direct content key (for debugging)
+            contentWithUrls.push({
+              ...contentItem,
+              secureUrl: `#error-${contentItem.key}`,
+              isSigned: false
+            });
+          }
         }
       }
     }
@@ -175,14 +194,32 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
     if (packData.content && Array.isArray(packData.content)) {
       for (const contentItem of packData.content) {
         if (contentItem.key) {
-          // Generate secure URL with only content ID (no sensitive parameters)
-          const contentId = Buffer.from(`${packId}-${orderId}-${contentItem.key}`).toString('base64url');
-          
-          contentWithUrls.push({
-            ...contentItem,
-            secureUrl: `${backendUrl}/api/pack-content/stream/${contentId}`,
-            contentId: contentId
-          });
+          try {
+            const signedUrl = await generateSignedUrl(
+              user.uid,
+              username,
+              packId,
+              orderId,
+              contentItem.key,
+              vendorInfo.vendorId || '',
+              vendorInfo.vendorUsername,
+              2 // 2 minutes expiration
+            );
+            
+            contentWithUrls.push({
+              ...contentItem,
+              secureUrl: signedUrl,
+              isSigned: true
+            });
+          } catch (error) {
+            console.error('Error generating signed URL for content:', contentItem.key, error);
+            // Fallback to direct content key (for debugging)
+            contentWithUrls.push({
+              ...contentItem,
+              secureUrl: `#error-${contentItem.key}`,
+              isSigned: false
+            });
+          }
         }
       }
     }

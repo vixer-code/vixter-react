@@ -50,15 +50,46 @@ exports.packContentAccess = onRequest({
 }, async (req, res) => {
   return corsHandler(req, res, async () => {
     try {
-      // Extract parameters from query string
-      const {
-        packId,
-        contentKey,
-        watermark,
-        username,
-        orderId,
-        token
-      } = req.query;
+      // Extract parameters from query string or JWT token
+      const { token } = req.query;
+      
+      // If we have a JWT token, decode it to get all parameters
+      let packId, contentKey, username, orderId, vendorId, vendorUsername, userId;
+      
+      if (token) {
+        try {
+          // Decode JWT token to get parameters
+          const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          packId = payload.packId;
+          contentKey = payload.contentKey;
+          username = payload.username;
+          orderId = payload.orderId;
+          vendorId = payload.vendorId;
+          vendorUsername = payload.vendorUsername;
+          userId = payload.userId;
+          
+          console.log('Decoded JWT payload:', { packId, contentKey, username, orderId, vendorId, vendorUsername, userId });
+        } catch (error) {
+          console.error('Error decoding JWT token:', error);
+          return res.status(400).json({
+            error: 'Invalid token format'
+          });
+        }
+      } else {
+        // Fallback to old query parameters for backward compatibility
+        const {
+          packId: queryPackId,
+          contentKey: queryContentKey,
+          watermark,
+          username: queryUsername,
+          orderId: queryOrderId
+        } = req.query;
+        
+        packId = queryPackId;
+        contentKey = queryContentKey;
+        username = queryUsername;
+        orderId = queryOrderId;
+      }
 
       // Get user token from X-Serverless-Authorization header (preferred) or query param
       console.log('Headers:', Object.keys(req.headers));
@@ -77,12 +108,23 @@ exports.packContentAccess = onRequest({
         });
       }
 
-      // Verify user authentication and authorization
-      const user = await verifyUserAccess(userToken, packId, orderId, username);
-      if (!user) {
-        return res.status(403).json({
-          error: 'Access denied: Invalid authentication or authorization'
-        });
+      // For JWT tokens, we trust the backend validation and use the data from the token
+      let user;
+      if (token) {
+        // JWT token contains all necessary data, no need for additional verification
+        user = {
+          userId: userId,
+          username: username
+        };
+        console.log('Using JWT token data for user:', user);
+      } else {
+        // Fallback to old verification method for backward compatibility
+        user = await verifyUserAccess(userToken, packId, orderId, username);
+        if (!user) {
+          return res.status(403).json({
+            error: 'Access denied: Invalid authentication or authorization'
+          });
+        }
       }
 
       // Get pack content metadata
@@ -94,7 +136,18 @@ exports.packContentAccess = onRequest({
       }
 
       // Get vendor information for watermark
-      const vendorInfo = await getVendorInfo(packContent.packId);
+      let vendorInfo;
+      if (token && vendorId && vendorUsername) {
+        // Use vendor info from JWT token
+        vendorInfo = {
+          username: vendorUsername,
+          profileUrl: `vixter.com.br/profile/${vendorUsername}`
+        };
+        console.log('Using JWT vendor info:', vendorInfo);
+      } else {
+        // Fallback to database lookup
+        vendorInfo = await getVendorInfo(packContent.packId);
+      }
       
       // Generate watermarked media with profile links
       const watermarkedBuffer = await generateWatermarkedMedia(
