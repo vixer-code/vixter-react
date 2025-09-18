@@ -29,18 +29,32 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
     try {
       setLoading(prev => ({ ...prev, [cacheKey]: true }));
       
+      console.log('=== LOADING AUTHENTICATED MEDIA ===');
+      console.log('Content item:', contentItem.name);
+      console.log('Secure URL:', contentItem.secureUrl);
+      console.log('JWT token length:', contentItem.jwtToken?.length);
+      console.log('JWT token start:', contentItem.jwtToken?.substring(0, 50));
+      
       const response = await fetch(contentItem.secureUrl, {
         headers: {
           'Authorization': `Bearer ${contentItem.jwtToken}`
         }
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Response error:', errorText);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
+      
+      console.log('Blob created, size:', blob.size);
+      console.log('Blob URL:', blobUrl);
       
       setMediaBlobUrls(prev => ({ ...prev, [cacheKey]: blobUrl }));
       return blobUrl;
