@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
         }
 
         function pump(): Promise<void> {
-          return reader.read().then(({ done, value }) => {
+          return reader!.read().then(({ done, value }) => {
             if (done) {
               controller.close();
               return;
