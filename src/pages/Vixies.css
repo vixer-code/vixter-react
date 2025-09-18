@@ -564,6 +564,42 @@
   border: 1px solid rgba(0, 255, 202, 0.3);
   border-radius: 6px;
   background: rgba(0, 255, 202, 0.1);
+}
+
+/* ===== Attachment States ===== */
+.attached-item.unavailable {
+  border-color: rgba(255, 71, 87, 0.3);
+  background: rgba(255, 71, 87, 0.05);
+}
+
+.unavailable-cover {
+  background-color: rgba(255, 71, 87, 0.1) !important;
+  color: #ff4757;
+  font-size: 2rem;
+}
+
+.unavailable-text {
+  color: #ff4757;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.attached-item.loading {
+  border-color: rgba(255, 193, 7, 0.3);
+  background: rgba(255, 193, 7, 0.05);
+}
+
+.loading-cover {
+  background-color: rgba(255, 193, 7, 0.1) !important;
+  color: #ffc107;
+  font-size: 1.5rem;
+}
+
+.loading-text {
+  color: #ffc107;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
   transition: all 0.3s ease;
 }
 
@@ -901,7 +937,49 @@
   }
 }
 
-/* Delete button styling */
-.post-actions { display: flex; align-items: center; gap: 8px; }
-.delete-btn { background: transparent; border: none; color: #ff4757; cursor: pointer; padding: 4px 6px; border-radius: 4px; font-size: 14px; font-weight: 600; transition: all 0.2s ease; }
-.delete-btn:hover { background: rgba(255, 71, 87, 0.1); color: #ff4757; }
+/* Post header actions styling */
+.post-header .post-actions { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  margin-left: auto;
+}
+
+.delete-btn { 
+  background: transparent; 
+  border: none; 
+  color: #ff4757; 
+  cursor: pointer; 
+  padding: 4px 6px; 
+  border-radius: 4px; 
+  font-size: 14px; 
+  font-weight: 600; 
+  transition: all 0.2s ease; 
+}
+
+.delete-btn:hover { 
+  background: rgba(255, 71, 87, 0.1); 
+  color: #ff4757; 
+}
+
+.follow-btn { 
+  background: rgba(138, 43, 226, 0.2); 
+  border: 1px solid rgba(138, 43, 226, 0.3); 
+  color: #fff; 
+  padding: 6px 12px; 
+  border-radius: 6px; 
+  font-size: 0.85rem; 
+  font-weight: 600; 
+  cursor: pointer; 
+  transition: all 0.3s ease; 
+}
+
+.follow-btn:hover { 
+  background: rgba(138, 43, 226, 0.3); 
+}
+
+.follow-btn.following { 
+  background: rgba(0, 255, 202, 0.2); 
+  border-color: rgba(0, 255, 202, 0.3); 
+  color: #00ffca; 
+}

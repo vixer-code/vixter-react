@@ -9,6 +9,59 @@ import { Link } from 'react-router-dom';
 import PostCreator from '../components/PostCreator';
 import './Vixies.css';
 
+// Component for displaying attachments with validation
+const AttachmentDisplay = ({ attachment, checkAttachmentExists, getImageUrl }) => {
+  const [attachmentExists, setAttachmentExists] = useState(null);
+  
+  useEffect(() => {
+    checkAttachmentExists(attachment).then(setAttachmentExists);
+  }, [attachment, checkAttachmentExists]);
+  
+  if (attachmentExists === false) {
+    return (
+      <div className="attached-item unavailable">
+        <div className="attached-cover unavailable-cover">
+          <i className="fas fa-exclamation-triangle"></i>
+        </div>
+        <div className="attached-info">
+          <span className="unavailable-text">Serviço não está mais disponível</span>
+        </div>
+      </div>
+    );
+  }
+  
+  if (attachmentExists === null) {
+    return (
+      <div className="attached-item loading">
+        <div className="attached-cover loading-cover">
+          <i className="fas fa-spinner fa-spin"></i>
+        </div>
+        <div className="attached-info">
+          <span className="loading-text">Verificando disponibilidade...</span>
+        </div>
+      </div>
+    );
+  }
+  
+  const imageUrl = getImageUrl(attachment.coverUrl || attachment.coverImage || attachment.image || '/images/default-service.jpg');
+  
+  return (
+    <div className="attached-item">
+      <div 
+        className="attached-cover" 
+        style={{ 
+          backgroundImage: `url(${imageUrl})` 
+        }}
+        onLoad={() => console.log('Vixink - Image loaded successfully')}
+        onError={() => console.log('Vixink - Image failed to load')}
+      ></div>
+      <div className="attached-info">
+        <Link to={`/${attachment.kind === 'service' ? 'service' : 'pack'}/${attachment.id}`} className="view-more">Ver mais</Link>
+      </div>
+    </div>
+  );
+};
+
 const Vixink = () => {
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
@@ -179,6 +232,29 @@ const Vixink = () => {
     }
   };
 
+  const handleFollow = async (userId) => {
+    if (!currentUser || !userId) return;
+    
+    try {
+      const isCurrentlyFollowing = following.includes(userId);
+      
+      if (isCurrentlyFollowing) {
+        // Unfollow
+        const followRef = ref(database, `users/${currentUser.uid}/following/${userId}`);
+        await set(followRef, null);
+        showNotification('Deixou de seguir', 'success');
+      } else {
+        // Follow
+        const followRef = ref(database, `users/${currentUser.uid}/following/${userId}`);
+        await set(followRef, Date.now());
+        showNotification('Agora você está seguindo', 'success');
+      }
+    } catch (error) {
+      console.error('Error following/unfollowing:', error);
+      showNotification('Erro ao seguir/deixar de seguir', 'error');
+    }
+  };
+
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -209,6 +285,21 @@ const Vixink = () => {
     }
     
     return url;
+  };
+
+  // Function to check if attachment service/pack exists
+  const checkAttachmentExists = async (attachment) => {
+    if (!attachment || !attachment.id || !attachment.kind) return false;
+    
+    try {
+      const refPath = attachment.kind === 'service' ? `services/${attachment.id}` : `packs/${attachment.id}`;
+      const attachmentRef = ref(database, refPath);
+      const snapshot = await get(attachmentRef);
+      return snapshot.exists();
+    } catch (error) {
+      console.error('Error checking attachment existence:', error);
+      return false;
+    }
   };
 
 
@@ -369,7 +460,18 @@ const Vixink = () => {
                         <span className="post-time">{formatTime(post.timestamp)}</span>
                       </div>
                     </div>
-                    
+                    <div className="post-actions">
+                      {!isCurrentUser && (
+                        <button className={`follow-btn ${following.includes(post.authorId) ? 'following' : ''}`} onClick={() => handleFollow(post.authorId)}>
+                          {following.includes(post.authorId) ? 'Seguindo' : 'Seguir'}
+                        </button>
+                      )}
+                      {isCurrentUser && (
+                        <button className="delete-btn" onClick={() => handleDeletePost(post.id)}>
+                          ✕
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Repost indicator */}
@@ -397,28 +499,7 @@ const Vixink = () => {
                         ))}
                       </div>
                     )}
-                    {post.attachment && (() => {
-                      const imageUrl = getImageUrl(post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image || '/images/default-service.jpg');
-                      
-                      console.log('Vixink - Attachment image URL (original):', post.attachment.coverUrl || post.attachment.coverImage || post.attachment.image);
-                      console.log('Vixink - Attachment image URL (fixed):', imageUrl);
-                      
-                      return (
-                        <div className="attached-item">
-                          <div 
-                            className="attached-cover" 
-                            style={{ 
-                              backgroundImage: `url(${imageUrl})` 
-                            }}
-                            onLoad={() => console.log('Vixink - Image loaded successfully')}
-                            onError={() => console.log('Vixink - Image failed to load')}
-                          ></div>
-                          <div className="attached-info">
-                            <Link to={`/${post.attachment.kind === 'service' ? 'service' : 'pack'}/${post.attachment.id}`} className="view-more">Ver mais</Link>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    {post.attachment && <AttachmentDisplay attachment={post.attachment} checkAttachmentExists={checkAttachmentExists} getImageUrl={getImageUrl} />}
                   </div>
 
                   <div className="post-actions">
@@ -436,11 +517,6 @@ const Vixink = () => {
                     <button className="action-btn tip-btn" onClick={() => tipPost(post)}>
                       <i className="fas fa-hand-holding-usd"></i>
                     </button>
-                    {isCurrentUser && (
-                      <button className="delete-btn" onClick={() => handleDeletePost(post.id)}>
-                        ✕
-                      </button>
-                    )}
                   </div>
                 </div>
               );

@@ -309,53 +309,20 @@ const Profile = () => {
 
   const loadPosts = async (userId) => {
     try {
-      // Load user's own posts
+      // Load user's own posts (including reposts they made)
       const postsRootRef = ref(database, 'posts');
       const postsByUserQuery = query(postsRootRef, orderByChild('userId'), equalTo(userId));
       const snapshot = await get(postsByUserQuery);
       const postsList = [];
       if (snapshot.exists()) {
         snapshot.forEach(child => {
-          postsList.push({ id: child.key, ...child.val(), _displayTimestamp: child.val()?.createdAt || child.val()?.timestamp || 0 });
-        });
-      }
-
-      // Load reposts made by this user
-      const userRepostsRef = ref(database, `userReposts/${userId}`);
-      const repostsSnap = await get(userRepostsRef);
-      if (repostsSnap.exists()) {
-        const repostEntries = Object.entries(repostsSnap.val()); // [postId, timestamp]
-        // Fetch each original post
-        const fetches = repostEntries.map(async ([postId, repostedAt]) => {
-          const postRef = ref(database, `posts/${postId}`);
-          const postSnap = await get(postRef);
-          if (postSnap.exists()) {
-            const val = postSnap.val();
-            return {
-              id: postId,
-              ...val,
-              repostedBy: userId,
-              repostedAt: Number(repostedAt) || Date.now(),
-              _displayTimestamp: Number(repostedAt) || val.createdAt || val.timestamp || 0,
-              _isRepost: true,
-              _originalAuthorId: val.userId
-            };
-          }
-          return null;
-        });
-        const reposts = (await Promise.all(fetches)).filter(Boolean);
-        // Resolve original author usernames for reposts
-        try {
-          const uniqueAuthorIds = Array.from(new Set(reposts.map(r => r._originalAuthorId).filter(Boolean)));
-          const authorProfiles = await Promise.all(uniqueAuthorIds.map(async (uid) => ({ uid, profile: await getUserById(uid) })));
-          const mapUsername = new Map(authorProfiles.map(({ uid, profile }) => [uid, profile?.username || '']));
-          reposts.forEach(r => {
-            r.originalAuthorUsername = mapUsername.get(r._originalAuthorId) || '';
+          const postData = child.val();
+          postsList.push({ 
+            id: child.key, 
+            ...postData, 
+            _displayTimestamp: postData?.createdAt || postData?.timestamp || 0 
           });
-        } catch (e) {
-          // ignore lookup errors
-        }
-        postsList.push(...reposts);
+        });
       }
 
       // Sort combined list by display timestamp desc
@@ -1688,14 +1655,40 @@ const Profile = () => {
                   // Determine if this is a repost and get the correct post data
                   const isRepost = post.isRepost || post._isRepost;
                   const originalPostId = isRepost ? post.originalPostId : post.id;
-                  const displayPost = isRepost ? {
-                    ...post,
-                    content: post.originalContent || post.content,
-                    media: post.originalMedia || post.media,
-                    likes: post.likes || {},
-                    likeCount: post.likeCount || 0,
-                    repostCount: post.repostCount || 0
-                  } : post;
+                  
+                  // For reposts, we need to get the original post data for interactions
+                  // but show the reposter's info in the header
+                  let displayPost, reposterInfo, originalPostData;
+                  
+                  if (isRepost) {
+                    // This is a repost - we need to fetch the original post data
+                    reposterInfo = {
+                      id: post.userId || post.authorId,
+                      name: post.authorName || post.userName,
+                      username: post.authorUsername || post.username,
+                      photo: post.authorPhotoURL || post.userPhotoURL
+                    };
+                    
+                    // For now, use the repost data as display post
+                    // In a real implementation, you'd fetch the original post
+                    displayPost = {
+                      id: originalPostId,
+                      content: post.originalContent || post.content,
+                      media: post.originalMedia || post.media,
+                      likes: post.likes || {},
+                      likeCount: post.likeCount || 0,
+                      repostCount: post.repostCount || 0,
+                      authorId: post.originalAuthorId || post.authorId,
+                      authorName: post.originalAuthorName || post.authorName,
+                      authorUsername: post.originalAuthorUsername || post.authorUsername,
+                      authorPhotoURL: post.originalAuthorPhotoURL || post.authorPhotoURL,
+                      timestamp: post.originalTimestamp || post.timestamp
+                    };
+                  } else {
+                    // This is a regular post
+                    displayPost = post;
+                    reposterInfo = null;
+                  }
 
                   // Get media array for display
                   const mediaArray = displayPost.media || (displayPost.imageUrl ? [{ type: 'image', url: displayPost.imageUrl }] : []);
@@ -1707,41 +1700,41 @@ const Profile = () => {
 
                   return (
                     <div key={post.id} className="post-card">
+                      {isRepost && (
+                        <div className="repost-indicator">
+                          <i className="fas fa-retweet"></i>
+                          <span>
+                            <strong>{reposterInfo?.name}</strong> repostou
+                          </span>
+                        </div>
+                      )}
+
                       <div className="post-header">
                         <div className="post-author">
                           <div className="post-author-avatar">
                             <CachedImage
-                              src={post.authorPhoto || post.authorPhotoURL}
+                              src={displayPost.authorPhotoURL || displayPost.authorPhoto}
                               fallbackSrc="/images/default-avatar.jpg"
-                              alt={post.authorName}
+                              alt={displayPost.authorName}
                               sizes="48px"
                               showLoading={false}
                             />
                           </div>
                           <div className="author-info">
-                            <div className="post-author-name">{post.authorName}</div>
+                            <div className="post-author-name">{displayPost.authorName}</div>
                             <div className="post-time">
-                              {(post.createdAt || post.timestamp)
-                                ? new Date(post.createdAt || post.timestamp).toLocaleDateString('pt-BR')
+                              {displayPost.timestamp
+                                ? new Date(displayPost.timestamp).toLocaleDateString('pt-BR')
                                 : 'Agora'}
                             </div>
                           </div>
                         </div>
-                        {isOwner && (
+                        {isOwner && !isRepost && (
                           <button className="delete-btn" onClick={() => handleDeletePost(post.id)}>
                             ✕
                           </button>
                         )}
                       </div>
-
-                      {isRepost && (
-                        <div className="repost-indicator">
-                          <i className="fas fa-retweet"></i>
-                          <span>
-                            <strong>{post.authorName}</strong> repostou
-                          </span>
-                        </div>
-                      )}
 
                       <div className="post-content">
                         {contentText && <p>{contentText}</p>}
