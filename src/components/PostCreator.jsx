@@ -9,7 +9,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import './PostCreator.css';
 
 const PostCreator = ({ 
-  mode = 'feed', // 'feed', 'vixies', 'vixink'
+  mode = 'general_feed', // 'general_feed', 'vixies', 'vixink'
   onPostCreated = () => {},
   placeholder = "O que você está pensando?",
   showAttachment = false,

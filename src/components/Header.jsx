@@ -6,6 +6,7 @@ import { useUser } from '../contexts/UserContext';
 import { getDefaultImage } from '../utils/defaultImages';
 import CachedImage from './CachedImage';
 import NotificationIcon from './NotificationIcon';
+import NotificationCenter from './NotificationCenter';
 import SearchBar from './SearchBar';
 import './Header.css';
 
@@ -302,9 +303,9 @@ const Header = () => {
                   </div>
                 </li>
                 
-                {/* Notification Icon */}
+                {/* Notification Center */}
                 <li className="auth-hide logged-in">
-                  <NotificationIcon />
+                  <NotificationCenter />
                 </li>
                 
                 {/* Profile Dropdown Menu */}
@@ -532,7 +533,7 @@ const Header = () => {
             </div>
             
             <div className="mobile-notification-section">
-              <NotificationIcon />
+              <NotificationCenter />
             </div>
             
             <div className="mobile-profile-section">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
+import { sendPostInteractionNotification } from '../services/notificationService';
 import { getProfileUrlById } from '../utils/profileUrls';
 import { database, firestore } from '../../config/firebase';
 import { ref, onValue, off, query, orderByChild, set, update, push, get, remove } from 'firebase/database';
@@ -90,6 +91,40 @@ const Feed = () => {
     };
   }, [currentUser?.uid]);
 
+  // Load comment counts for all posts automatically
+  useEffect(() => {
+    if (posts.length === 0) return;
+
+    const loadAllCommentCounts = async () => {
+      const commentPromises = posts.map(async (post) => {
+        const originalPostId = post.isRepost ? post.originalPostId : post.id;
+        try {
+          const commentsRef = ref(database, `comments/${originalPostId}`);
+          const snap = await get(commentsRef);
+          let items = [];
+          if (snap.exists()) {
+            const val = snap.val();
+            items = Object.entries(val).map(([id, c]) => ({ id, ...c }));
+            items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+          }
+          return { postId: originalPostId, items };
+        } catch (error) {
+          console.error(`Error loading comments for post ${originalPostId}:`, error);
+          return { postId: originalPostId, items: [] };
+        }
+      });
+
+      const commentResults = await Promise.all(commentPromises);
+      const newCommentsByPost = {};
+      commentResults.forEach(({ postId, items }) => {
+        newCommentsByPost[postId] = { items, loading: false };
+      });
+      setCommentsByPost(newCommentsByPost);
+    };
+
+    loadAllCommentCounts();
+  }, [posts]);
+
   const handleLike = useCallback(async (postId) => {
     if (!currentUser?.uid) {
       showWarning('Você precisa estar logado para curtir posts');
@@ -124,6 +159,21 @@ const Feed = () => {
           likes: newLikes,
           likeCount: (post.likeCount || 0) + 1
         });
+
+        // Send notification to post author
+        const userProfile = users[post.authorId];
+        const actorName = userProfile?.displayName || currentUser.displayName || 'Usuário';
+        const actorUsername = userProfile?.username || '';
+        
+        await sendPostInteractionNotification(
+          post.authorId,
+          currentUser.uid,
+          actorName,
+          actorUsername,
+          'like',
+          postId,
+          post.content || post.text || ''
+        );
       }
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -294,6 +344,21 @@ const Feed = () => {
         await update(originalPostRef, { repostCount: newRepostCount });
       }
 
+      // Send notification to original post author
+      const userProfile = users[currentUser.uid];
+      const actorName = userProfile?.displayName || currentUser.displayName || 'Usuário';
+      const actorUsername = userProfile?.username || '';
+      
+      await sendPostInteractionNotification(
+        post.userId || post.authorId,
+        currentUser.uid,
+        actorName,
+        actorUsername,
+        'repost',
+        post.id,
+        post.content || post.text || ''
+      );
+
       showSuccess('Post repostado com sucesso!');
     } catch (error) {
       console.error('Error reposting:', error);
@@ -395,6 +460,29 @@ const Feed = () => {
       await push(commentsRef, commentData);
       setCommentInputs(prev => ({ ...prev, [key]: '' }));
       await loadComments(postId);
+
+      // Send notification to post author (only for top-level comments, not replies)
+      if (!parentId) {
+        // Get post data to find the author
+        const postRef = ref(database, `posts/${postId}`);
+        const postSnap = await get(postRef);
+        if (postSnap.exists()) {
+          const postData = postSnap.val();
+          const actorName = userProfile?.displayName || userProfile?.name || 'Usuário';
+          const actorUsername = userProfile?.username || '';
+          
+          await sendPostInteractionNotification(
+            postData.userId || postData.authorId,
+            currentUser.uid,
+            actorName,
+            actorUsername,
+            'comment',
+            postId,
+            postData.content || postData.text || '',
+            text
+          );
+        }
+      }
     } catch (e) {
       console.error('Error adding comment', e);
       showError('Erro ao comentar');

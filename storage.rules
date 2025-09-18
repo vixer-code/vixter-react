@@ -199,8 +199,16 @@ service firebase.storage {
       allow read, write, delete: if isAdmin();
     }
 
-    // Feed posts media
+    // Feed posts media (DEPRECATED - use general_feed instead)
     match /feed/{authorId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(authorId) && (isImageFile() || isVideoFile()) && isValidFileSize();
+      allow delete: if isAuthenticated() && isOwner(authorId);
+      allow read, write, delete: if isAdmin();
+    }
+
+    // General feed posts media
+    match /general_feed/{authorId}/{fileName} {
       allow read: if true;
       allow write: if isAuthenticated() && isOwner(authorId) && (isImageFile() || isVideoFile()) && isValidFileSize();
       allow delete: if isAuthenticated() && isOwner(authorId);
