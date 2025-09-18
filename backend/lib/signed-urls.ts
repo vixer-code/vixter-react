@@ -17,6 +17,7 @@ export interface SignedUrlPayload {
   vendorUsername: string;
   exp: number;
   iat: number;
+  [key: string]: any; // Add index signature for JWT compatibility
 }
 
 /**
