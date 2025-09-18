@@ -3,8 +3,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { getProfileUrlById } from '../utils/profileUrls';
-import { database } from '../../config/firebase';
+import { database, firestore } from '../../config/firebase';
 import { ref, onValue, off, query, orderByChild, set, update, push, get, remove } from 'firebase/database';
+import { doc, getDoc, setDoc, deleteDoc, writeBatch, increment, collection, getDocs } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 import PostCreator from '../components/PostCreator';
 import './Feed.css';
@@ -60,16 +61,26 @@ const Feed = () => {
       setUsers(usersData);
     });
 
-    // Load following list
+    // Load following list from Firestore
     if (currentUser?.uid) {
-      const followingRef = ref(database, `users/${currentUser.uid}/following`);
-      followingUnsubscribe = onValue(followingRef, (snapshot) => {
-        const followingData = [];
-        snapshot.forEach((childSnapshot) => {
-          followingData.push(childSnapshot.key);
-        });
-        setFollowing(followingData);
-      });
+      const loadFollowing = async () => {
+        try {
+          const followingCollection = collection(firestore, 'users', currentUser.uid, 'following');
+          const followingSnapshot = await getDocs(followingCollection);
+          
+          const followingIds = [];
+          followingSnapshot.forEach((doc) => {
+            followingIds.push(doc.id);
+          });
+          
+          setFollowing(followingIds);
+        } catch (error) {
+          console.error('Error loading following:', error);
+          setFollowing([]);
+        }
+      };
+      
+      loadFollowing();
     }
 
     return () => {
@@ -124,21 +135,33 @@ const Feed = () => {
     if (!currentUser?.uid || userId === currentUser.uid) return;
 
     try {
-      const followingRef = ref(database, `users/${currentUser.uid}/following/${userId}`);
-      const followerRef = ref(database, `users/${userId}/followers/${currentUser.uid}`);
-      
       const isFollowing = following.includes(userId);
+      
+      const followerRef = doc(firestore, 'users', userId, 'followers', currentUser.uid);
+      const followingRef = doc(firestore, 'users', currentUser.uid, 'following', userId);
+      const targetUserDoc = doc(firestore, 'users', userId);
+      const currentUserDoc = doc(firestore, 'users', currentUser.uid);
+      
+      const batch = writeBatch(firestore);
       
       if (isFollowing) {
         // Unfollow
-        await set(followingRef, null);
-        await set(followerRef, null);
+        batch.delete(followerRef);
+        batch.delete(followingRef);
+        batch.update(targetUserDoc, { followersCount: increment(-1), updatedAt: new Date() });
+        batch.update(currentUserDoc, { followingCount: increment(-1), updatedAt: new Date() });
+        
+        await batch.commit();
         setFollowing(prevFollowing => prevFollowing.filter(id => id !== userId));
         showSuccess('Deixou de seguir');
       } else {
         // Follow
-        await set(followingRef, true);
-        await set(followerRef, true);
+        batch.set(followerRef, { followedAt: Date.now(), followerId: currentUser.uid });
+        batch.set(followingRef, { followedAt: Date.now(), followingId: userId });
+        batch.update(targetUserDoc, { followersCount: increment(1), updatedAt: new Date() });
+        batch.update(currentUserDoc, { followingCount: increment(1), updatedAt: new Date() });
+        
+        await batch.commit();
         setFollowing(prevFollowing => [...prevFollowing, userId]);
         showSuccess('Agora você está seguindo');
       }
@@ -180,8 +203,46 @@ const Feed = () => {
       // Check if user already reposted this post
       const postRepostsRef = ref(database, `generalReposts/${post.id}/${currentUser.uid}`);
       const snap = await get(postRepostsRef).catch(() => null);
+      
       if (snap && snap.exists()) {
-        showInfo('Você já repostou este conteúdo.');
+        // User already reposted - remove the repost (unrepost)
+        await remove(postRepostsRef);
+        
+        // Find and remove the repost from posts collection
+        const postsRef = ref(database, 'posts');
+        const postsSnapshot = await get(postsRef);
+        const posts = postsSnapshot.val() || {};
+        
+        let repostToDelete = null;
+        for (const [postId, postData] of Object.entries(posts)) {
+          if (postData.isRepost && 
+              postData.userId === currentUser.uid && 
+              postData.originalPostId === post.id) {
+            repostToDelete = postId;
+            break;
+          }
+        }
+        
+        if (repostToDelete) {
+          await remove(ref(database, `posts/${repostToDelete}`));
+        }
+        
+        // Update repost status in state
+        setRepostStatus(prev => ({
+          ...prev,
+          [post.id]: false
+        }));
+        
+        // Update original post repost count
+        const originalPostRef = ref(database, `posts/${post.id}`);
+        const originalPostSnap = await get(originalPostRef);
+        if (originalPostSnap.exists()) {
+          const originalData = originalPostSnap.val();
+          const newRepostCount = Math.max(0, (originalData.repostCount || 0) - 1);
+          await update(originalPostRef, { repostCount: newRepostCount });
+        }
+
+        showSuccess('Repost removido com sucesso!');
         return;
       }
 
@@ -589,7 +650,11 @@ const Feed = () => {
             <i className={`fas fa-heart ${isLiked ? 'fas' : 'far'}`}></i>
             <span>{displayPost.likeCount || Object.keys(displayPost.likes || {}).length || 0}</span>
           </button>
-          <button className={`action-btn share-btn ${isReposted ? 'reposted' : ''}`} onClick={() => repostPost(displayPost)}>
+          <button 
+            className={`action-btn share-btn ${isReposted ? 'reposted' : ''}`} 
+            onClick={() => repostPost(displayPost)}
+            title={isReposted ? 'Remover repost' : 'Repostar'}
+          >
             <i className="fas fa-retweet"></i>
             <span>{displayPost.repostCount || 0}</span>
           </button>
