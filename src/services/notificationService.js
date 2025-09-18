@@ -1,5 +1,5 @@
 import { ref, push, set } from 'firebase/database';
-import { database } from '../config/firebase';
+import { database } from '../../config/firebase';
 
 /**
  * Send notification to post author when there's a positive interaction
