@@ -79,7 +79,6 @@
   border: 2px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-secondary);
-  color: var(--text-primary);
   font-size: 14px;
   transition: all 0.3s ease;
 }

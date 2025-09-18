@@ -901,10 +901,57 @@
   }
 }
 
-/* Delete button styling */
+/* Post styling */
+.post-header { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.post-author { display: flex; align-items: center; gap: 10px; }
+.author-avatar { width: 40px; height: 40px; border-radius: 50%; }
+.author-info { display: flex; flex-direction: column; gap: 4px; }
+.author-name { font-size: 1.1rem; font-weight: 700; color: #d1d5db; text-decoration: none; }
+.post-time { font-size: .85rem; color: #f5f5f57d; }
 .post-actions { display: flex; align-items: center; gap: 8px; }
 .delete-btn { background: transparent; border: none; color: #ff4757; cursor: pointer; padding: 4px 6px; border-radius: 4px; font-size: 14px; font-weight: 600; transition: all 0.2s ease; }
 .delete-btn:hover { background: rgba(255, 71, 87, 0.1); color: #ff4757; }
 .follow-btn { background: rgba(138, 43, 226, 0.2); border: 1px solid rgba(138, 43, 226, 0.3); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
 .follow-btn:hover { background: rgba(138, 43, 226, 0.3); }
 .follow-btn.following { background: rgba(0, 255, 202, 0.2); border-color: rgba(0, 255, 202, 0.3); color: #00ffca; }
+.tab-btn::before { background: linear-gradient(135deg, var(--accent-color), #00ffca); opacity: 0; }
+.tab-btn::before { opacity: 0.1; }
+.no-comments { color: #f5f5f57d; text-align: center; padding: 20px; font-style: italic; }
+
+/* Comment input styling */
+.comment-input { 
+  display: flex; 
+  gap: 8px; 
+  margin-top: 12px; 
+  padding: 8px 0; 
+}
+
+.comment-input input { 
+  flex: 1; 
+  padding: 10px 12px; 
+  background: rgba(255, 255, 255, 0.05); 
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  border-radius: 8px; 
+  color: #fff; 
+  font-size: 0.9rem; 
+  transition: all 0.3s ease; 
+  min-height: 20px; 
+}
+
+.comment-input input:focus { 
+  outline: none; 
+  border-color: var(--accent-color); 
+  background: rgba(255, 255, 255, 0.08); 
+}
+
+.comment-input input::placeholder { 
+  color: #a8a8b3; 
+}
+
+.comment-input .btn.small { 
+  padding: 8px 16px; 
+  font-size: 0.85rem; 
+  min-width: auto; 
+  height: auto; 
+  line-height: 1.2; 
+}

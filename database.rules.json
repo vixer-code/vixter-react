@@ -297,6 +297,35 @@
         ".read": "auth != null",
         ".write": "auth != null"
       }
+    },
+    "comments": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$postId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$commentId": {
+          ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp'])",
+          "authorId": {
+            ".validate": "newData.isString() && newData.val() == auth.uid"
+          },
+          "content": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000"
+          },
+          "timestamp": {
+            ".validate": "newData.isNumber() && newData.val() <= now + 600000"
+          },
+          "parentId": {
+            ".validate": "newData.isString() || newData.val() == null"
+          },
+          "likes": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "likedBy": {
+            ".validate": "newData.hasChildren() || newData.val() == null"
+          }
+        }
+      }
     }
   }
 }
