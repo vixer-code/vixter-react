@@ -368,22 +368,24 @@ async function addImageWatermark(imageBuffer, watermark, username, contentItem, 
     const image = sharp(imageBuffer);
     const metadata = await image.metadata();
     
-    // Calculate watermark size based on image dimensions
+    // Calculate watermark size based on image dimensions (20% larger)
     const minDimension = Math.min(metadata.width, metadata.height);
     const watermarkSize = Math.max(24, minDimension / 25);
-    const fontSize = Math.max(14, watermarkSize * 0.8);
+    const fontSize = Math.max(14, watermarkSize * 0.8) * 1.2; // 20% larger
     
-    // Create watermark text with profile links
-    const buyerProfileUrl = `vixter.com.br/profile/${user.username}`;
-    const vendorProfileUrl = vendorInfo?.profileUrl || 'vixter.com.br';
+    // Create alternating watermark text with profile links
+    const buyerProfileUrl = `vixter.com.br/${user.username}`;
+    const vendorProfileUrl = `vixter.com.br/${vendorInfo?.username || 'vendor'}`;
     const watermarkText = `${watermark || username} - vixter.com.br`;
     
-    // Create a more sophisticated watermark with multiple positions and profile links
+    // Create alternating watermark pattern with buyer and vendor usernames
     const watermarkSvg = `
       <svg width="${metadata.width}" height="${metadata.height}" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <pattern id="watermark" patternUnits="userSpaceOnUse" width="${watermarkSize * 6}" height="${watermarkSize * 6}">
-            <text x="${watermarkSize * 3}" y="${watermarkSize * 3}" 
+          <!-- Alternating pattern with buyer and vendor usernames -->
+          <pattern id="watermark" patternUnits="userSpaceOnUse" width="${watermarkSize * 8}" height="${watermarkSize * 8}">
+            <!-- Buyer username -->
+            <text x="${watermarkSize * 2}" y="${watermarkSize * 2}" 
                   font-family="Arial, sans-serif" 
                   font-size="${fontSize}" 
                   font-weight="bold"
@@ -392,14 +394,27 @@ async function addImageWatermark(imageBuffer, watermark, username, contentItem, 
                   stroke-width="1"
                   text-anchor="middle" 
                   dominant-baseline="central"
-                  transform="rotate(-45 ${watermarkSize * 3} ${watermarkSize * 3})">
-              ${watermarkText}
+                  transform="rotate(-45 ${watermarkSize * 2} ${watermarkSize * 2})">
+              vixter.com.br/${user.username}
+            </text>
+            <!-- Vendor username -->
+            <text x="${watermarkSize * 6}" y="${watermarkSize * 6}" 
+                  font-family="Arial, sans-serif" 
+                  font-size="${fontSize}" 
+                  font-weight="bold"
+                  fill="rgba(255,255,255,0.4)" 
+                  stroke="rgba(0,0,0,0.6)"
+                  stroke-width="1"
+                  text-anchor="middle" 
+                  dominant-baseline="central"
+                  transform="rotate(-45 ${watermarkSize * 6} ${watermarkSize * 6})">
+              vixter.com.br/${vendorInfo?.username || 'vendor'}
             </text>
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#watermark)"/>
         
-        <!-- Additional corner watermarks for extra security with profile links -->
+        <!-- Corner watermarks for extra security -->
         <text x="20" y="30" 
               font-family="Arial, sans-serif" 
               font-size="${Math.max(10, fontSize * 0.6)}" 
@@ -472,9 +487,9 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
       // Write input buffer to temporary file
       fs.writeFileSync(inputPath, videoBuffer);
       
-      // Create watermark text with profile links (escape special characters)
-      const buyerProfileUrl = `vixter.com.br/profile/${user.username}`;
-      const vendorProfileUrl = vendorInfo?.profileUrl || 'vixter.com.br';
+      // Create alternating watermark text with profile links (escape special characters)
+      const buyerProfileUrl = `vixter.com.br/${user.username}`;
+      const vendorProfileUrl = `vixter.com.br/${vendorInfo?.username || 'vendor'}`;
       const watermarkText = escapeFFmpegText(`${watermark || username} - vixter.com.br`);
       const buyerText = escapeFFmpegText(`Comprador: ${buyerProfileUrl}`);
       const vendorText = escapeFFmpegText(`Vendedora: ${vendorProfileUrl}`);
@@ -502,12 +517,12 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
           '-bufsize 4M' // Buffer size
         ])
         .complexFilter([
-          // Main watermark with rotation
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.5:x=(w-text_w)/2:y=(h-text_h)/2`,
-          // Profile watermarks
-          `drawtext=text='${buyerText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=12:fontcolor=white@0.4:x=15:y=25`,
-          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=12:fontcolor=white@0.4:x=15:y=45`,
-          `drawtext=text='vixter.com.br':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=14:fontcolor=white@0.4:x=w-text_w-15:y=h-15`
+          // Main watermark with rotation (20% larger)
+          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=24:fontcolor=white@0.5:x=(w-text_w)/2:y=(h-text_h)/2`,
+          // Profile watermarks (20% larger)
+          `drawtext=text='${buyerText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=14:fontcolor=white@0.4:x=15:y=25`,
+          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=14:fontcolor=white@0.4:x=15:y=45`,
+          `drawtext=text='vixter.com.br':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=17:fontcolor=white@0.4:x=w-text_w-15:y=h-15`
         ])
         .on('start', (commandLine) => {
           console.log('FFmpeg process started:', commandLine);

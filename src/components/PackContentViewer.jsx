@@ -391,7 +391,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
                 ) : mediaItems[selectedMediaIndex]?.isVideo ? (
                   <video
                     key={mediaItems[selectedMediaIndex]?.key}
-                    src={mediaBlobUrls[mediaItems[selectedMediaIndex]?.key] || mediaItems[selectedMediaIndex]?.secureUrl}
+                    src={mediaBlobUrls[mediaItems[selectedMediaIndex]?.key] || (mediaItems[selectedMediaIndex]?.requiresAuth ? '' : mediaItems[selectedMediaIndex]?.secureUrl)}
                     controls
                     autoPlay
                     className="gallery-video"
@@ -411,7 +411,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
                 ) : (
                   <img
                     key={mediaItems[selectedMediaIndex]?.key}
-                    src={mediaBlobUrls[mediaItems[selectedMediaIndex]?.key] || mediaItems[selectedMediaIndex]?.secureUrl}
+                    src={mediaBlobUrls[mediaItems[selectedMediaIndex]?.key] || (mediaItems[selectedMediaIndex]?.requiresAuth ? '' : mediaItems[selectedMediaIndex]?.secureUrl)}
                     alt={mediaItems[selectedMediaIndex]?.name}
                     className="gallery-image"
                     crossOrigin="anonymous"
