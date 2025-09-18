@@ -78,13 +78,19 @@ const Feed = () => {
   }, [currentUser?.uid]);
 
   const handleLike = useCallback(async (postId) => {
-    if (!currentUser?.uid) return;
+    if (!currentUser?.uid) {
+      showWarning('Você precisa estar logado para curtir posts');
+      return;
+    }
 
     try {
       const postRef = ref(database, `posts/${postId}`);
       const postSnapshot = await get(postRef);
       
-      if (!postSnapshot.exists()) return;
+      if (!postSnapshot.exists()) {
+        showError('Post não encontrado');
+        return;
+      }
 
       const post = postSnapshot.val();
       const likes = post.likes || {};
@@ -92,24 +98,25 @@ const Feed = () => {
 
       if (isLiked) {
         // Unlike
-        delete likes[currentUser.uid];
+        const newLikes = { ...likes };
+        delete newLikes[currentUser.uid];
         await update(postRef, {
-          likes,
+          likes: newLikes,
           likeCount: Math.max(0, (post.likeCount || 0) - 1)
         });
       } else {
         // Like
-        likes[currentUser.uid] = true;
+        const newLikes = { ...likes, [currentUser.uid]: true };
         await update(postRef, {
-          likes,
+          likes: newLikes,
           likeCount: (post.likeCount || 0) + 1
         });
       }
     } catch (error) {
       console.error('Error toggling like:', error);
-      showError('Erro ao curtir post');
+      showError('Erro ao curtir post: ' + error.message);
     }
-  }, [currentUser?.uid, showError]);
+  }, [currentUser?.uid, showError, showWarning]);
 
   const handleFollow = useCallback(async (userId) => {
     if (!currentUser?.uid || userId === currentUser.uid) return;
@@ -400,7 +407,7 @@ const Feed = () => {
     const user = users[post.userId || post.authorId];
     if (!user && !post.authorName) return null;
 
-    const isLiked = (Array.isArray(post.likedBy) ? post.likedBy : []).includes(currentUser?.uid);
+    const isLiked = post.likes && post.likes[currentUser?.uid];
     const isFollowing = following.includes(post.userId || post.authorId);
     const isOwnPost = (post.userId || post.authorId) === currentUser?.uid;
     const contentText = post.content || post.text || '';
@@ -466,7 +473,7 @@ const Feed = () => {
         <div className="post-actions">
           <button onClick={() => handleLike(post.id)} className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}>
             <i className={`fas fa-heart ${isLiked ? 'fas' : 'far'}`}></i>
-            <span>{post.likes || post.likeCount || 0}</span>
+            <span>{post.likeCount || Object.keys(post.likes || {}).length || 0}</span>
           </button>
           <button className="action-btn share-btn" onClick={() => repostPost(post)}>
             <i className="fas fa-retweet"></i>
