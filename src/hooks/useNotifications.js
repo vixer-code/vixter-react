@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ref, onValue, off } from 'firebase/database';
-import { database } from '../config/firebase';
+import { database } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 
 export const useNotifications = () => {
