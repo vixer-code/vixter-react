@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
  * Hook for secure pack content access with watermarking
  */
 export const useSecurePackContent = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, getIdToken } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -30,8 +30,8 @@ export const useSecurePackContent = () => {
     setError(null);
 
     try {
-      // Get Firebase ID token for authentication
-      const token = await currentUser.getIdToken();
+      // Get Firebase ID token for authentication (force refresh)
+      const token = await getIdToken();
 
       // Use Cloud Function for secure pack content access with watermark
       const cloudFunctionUrl = 'https://packcontentaccess-6twxbx5ima-ue.a.run.app';
