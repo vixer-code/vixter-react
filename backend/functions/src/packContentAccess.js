@@ -469,6 +469,18 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
   return new Promise((resolve, reject) => {
     let ffmpegProcess = null;
     let timeoutId = null;
+    let inputPath = null;
+    let outputPath = null;
+    
+    // Define cleanup function with proper scope
+    const cleanup = () => {
+      try {
+        if (inputPath && fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+        if (outputPath && fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+      } catch (cleanupError) {
+        console.error('Error cleaning up temp files:', cleanupError);
+      }
+    };
     
     try {
       // Check video size - if too large, return original with warning
@@ -481,8 +493,8 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
       
       // Create temporary files for processing
       const tempDir = os.tmpdir();
-      const inputPath = path.join(tempDir, `input_${Date.now()}.${getFileExtension(contentItem.type)}`);
-      const outputPath = path.join(tempDir, `output_${Date.now()}.mp4`);
+      inputPath = path.join(tempDir, `input_${Date.now()}.${getFileExtension(contentItem.type)}`);
+      outputPath = path.join(tempDir, `output_${Date.now()}.mp4`);
       
       // Write input buffer to temporary file
       fs.writeFileSync(inputPath, videoBuffer);
@@ -503,7 +515,7 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
         reject(new Error('Video processing timeout'));
       }, 300000); // 5 minutes
       
-      // FFmpeg command to add watermark
+      // FFmpeg command to add watermark - use simpler filter approach
       ffmpegProcess = ffmpeg(inputPath)
         .videoCodec('libx264')
         .audioCodec('aac')
@@ -516,7 +528,7 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
           '-maxrate 2M', // Limit bitrate
           '-bufsize 4M' // Buffer size
         ])
-        .complexFilter([
+        .videoFilters([
           // Main watermark with rotation (20% larger)
           `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=24:fontcolor=white@0.5:x=(w-text_w)/2:y=(h-text_h)/2`,
           // Profile watermarks (20% larger)
@@ -562,15 +574,6 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
       if (timeoutId) clearTimeout(timeoutId);
       cleanup();
       reject(error);
-    }
-    
-    function cleanup() {
-      try {
-        if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-        if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-      } catch (cleanupError) {
-        console.error('Error cleaning up temp files:', cleanupError);
-      }
     }
   });
 }

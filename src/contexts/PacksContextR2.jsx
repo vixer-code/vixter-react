@@ -40,8 +40,8 @@ export const PacksProviderR2 = ({ children }) => {
   const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);
 
-  // Firebase Functions - API unificada
-  const apiFunc = httpsCallable(functions, 'api');
+  // Backend API URL
+  const BACKEND_URL = 'https://vixter-react-llyd.vercel.app';
 
   // Categories for filtering
   const PACK_CATEGORIES = [
@@ -200,15 +200,24 @@ export const PacksProviderR2 = ({ children }) => {
     try {
       setCreating(true);
       
-      // First create the pack in Firestore
-      const result = await apiFunc({
-        resource: 'pack',
-        action: 'create',
-        payload: packData
+      // First create the pack in Firestore via backend
+      const response = await fetch(`${BACKEND_URL}/api/packs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await currentUser.getIdToken()}`
+        },
+        body: JSON.stringify(packData)
       });
       
-      if (result.data.success) {
-        const packId = result.data.packId;
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        const packId = result.packId;
         
         // Calculate total files to upload
         const totalFiles = [
@@ -293,18 +302,22 @@ export const PacksProviderR2 = ({ children }) => {
         // Final progress update
         onProgress && onProgress(100, 'Finalizando...');
 
-        // Update pack with media data
-        await apiFunc({
-          resource: 'pack',
-          action: 'update',
-          payload: { 
-            packId, 
-            updates: { 
-              ...mediaData,
-              mediaStorage: 'r2' // Flag to indicate R2 storage
-            } 
-          }
+        // Update pack with media data via backend
+        const updateResponse = await fetch(`${BACKEND_URL}/api/packs/${packId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await currentUser.getIdToken()}`
+          },
+          body: JSON.stringify({ 
+            ...mediaData,
+            mediaStorage: 'r2' // Flag to indicate R2 storage
+          })
         });
+        
+        if (!updateResponse.ok) {
+          throw new Error(`HTTP ${updateResponse.status}: ${updateResponse.statusText}`);
+        }
 
         showSuccess('Pack criado com sucesso!', 'Pack Criado');
         
@@ -334,13 +347,22 @@ export const PacksProviderR2 = ({ children }) => {
     try {
       setUpdating(true);
       
-      const result = await apiFunc({
-        resource: 'pack',
-        action: 'update',
-        payload: { packId, updates }
+      const response = await fetch(`${BACKEND_URL}/api/packs/${packId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await currentUser.getIdToken()}`
+        },
+        body: JSON.stringify(updates)
       });
       
-      if (result.data.success) {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
         if (showSuccessMessage) {
           showSuccess('Pack atualizado com sucesso!', 'Pack Atualizado');
         }
@@ -469,18 +491,26 @@ export const PacksProviderR2 = ({ children }) => {
         throw new Error('Invalid pack ID');
       }
       
-      console.log('📞 Calling Firebase Function with payload:', { packId });
-      const result = await apiFunc({
-        resource: 'pack',
-        action: 'delete',
-        payload: { packId }
+      console.log('📞 Calling backend API with payload:', { packId });
+      const response = await fetch(`${BACKEND_URL}/api/packs/${packId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await currentUser.getIdToken()}`
+        }
       });
       
-      console.log('📥 Firebase Function response:', result);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
       
-      if (!result.data.success) {
-        console.error('❌ Firebase Function failed:', result.data.error);
-        throw new Error(result.data.error || 'Failed to delete pack');
+      const result = await response.json();
+      
+      console.log('📥 Backend API response:', result);
+      
+      if (!result.success) {
+        console.error('❌ Backend API failed:', result.error);
+        throw new Error(result.error || 'Failed to delete pack');
       }
       
       onProgress && onProgress(90, 'Finalizando exclusão...');
