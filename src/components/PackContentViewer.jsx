@@ -327,7 +327,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
                   <video
                     key={mediaItems[selectedMediaIndex]?.key}
                     src={mediaItems[selectedMediaIndex]?.requiresAuth ? 
-                      `${mediaItems[selectedMediaIndex]?.secureUrl}?token=${mediaItems[selectedMediaIndex]?.jwtToken}` : 
+                      `/api/pack-content/proxy?url=${encodeURIComponent(mediaItems[selectedMediaIndex]?.secureUrl)}&token=${mediaItems[selectedMediaIndex]?.jwtToken}` : 
                       mediaItems[selectedMediaIndex]?.secureUrl}
                     controls
                     autoPlay
@@ -338,7 +338,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
                   <img
                     key={mediaItems[selectedMediaIndex]?.key}
                     src={mediaItems[selectedMediaIndex]?.requiresAuth ? 
-                      `${mediaItems[selectedMediaIndex]?.secureUrl}?token=${mediaItems[selectedMediaIndex]?.jwtToken}` : 
+                      `/api/pack-content/proxy?url=${encodeURIComponent(mediaItems[selectedMediaIndex]?.secureUrl)}&token=${mediaItems[selectedMediaIndex]?.jwtToken}` : 
                       mediaItems[selectedMediaIndex]?.secureUrl}
                     alt={mediaItems[selectedMediaIndex]?.name}
                     className="gallery-image"

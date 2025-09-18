@@ -71,8 +71,14 @@ exports.packContentAccess = onRequest({
       let packId, contentKey, username, orderId, vendorId, vendorUsername, userId, watermark;
       
       try {
+        // Validate token format (should have 3 parts separated by dots)
+        const tokenParts = token.split('.');
+        if (tokenParts.length !== 3) {
+          throw new Error('Invalid JWT format - expected 3 parts');
+        }
+        
         // Decode JWT token to get parameters
-        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
         packId = payload.packId;
         contentKey = payload.contentKey;
         username = payload.username;
@@ -85,8 +91,10 @@ exports.packContentAccess = onRequest({
         console.log('Decoded JWT payload:', { packId, contentKey, username, orderId, vendorId, vendorUsername, userId, watermark });
       } catch (error) {
         console.error('Error decoding JWT token:', error);
+        console.error('Token received:', token.substring(0, 50) + '...');
         return res.status(400).json({
-          error: 'Invalid token format'
+          error: 'Invalid token format',
+          details: error.message
         });
       }
 
