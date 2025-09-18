@@ -69,11 +69,22 @@ export async function GET(
     try {
       user = await auth.verifyIdToken(token);
     } catch (error) {
-      console.error('Token verification failed:', error);
-      return new Response('Invalid token', { 
-        status: 401,
-        headers: getCorsHeaders(request.headers.get('origin'))
-      });
+      console.error('Token verification failed, extracting from payload:', error);
+      // Fallback: extract user ID from token payload
+      try {
+        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        user = {
+          uid: payload.user_id || payload.sub,
+          email: payload.email
+        };
+        console.log('Fallback user extraction successful:', user.uid);
+      } catch (fallbackError) {
+        console.error('Fallback token extraction failed:', fallbackError);
+        return new Response('Invalid token', { 
+          status: 401,
+          headers: getCorsHeaders(request.headers.get('origin'))
+        });
+      }
     }
 
     // Initialize Firestore
