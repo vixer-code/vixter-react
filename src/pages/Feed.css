@@ -955,3 +955,133 @@
   height: auto; 
   line-height: 1.2; 
 }
+
+/* Comment structure styling */
+.comment-item { 
+  margin-bottom: 12px; 
+  padding: 8px 0; 
+}
+
+.comment-header { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  justify-content: space-between; 
+  margin-bottom: 6px; 
+}
+
+.comment-author { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+}
+
+.comment-avatar { 
+  width: 28px; 
+  height: 28px; 
+  border-radius: 50%; 
+  object-fit: cover; 
+}
+
+.comment-info { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 2px; 
+}
+
+.comment-author-name { 
+  font-size: 0.9rem; 
+  font-weight: 600; 
+  color: #d1d5db; 
+}
+
+.comment-time { 
+  font-size: 0.75rem; 
+  color: #f5f5f57d; 
+}
+
+.comment-content { 
+  margin: 6px 0; 
+  color: #e5e7eb; 
+  font-size: 0.9rem; 
+  line-height: 1.4; 
+}
+
+.comment-actions { 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+  margin: 6px 0; 
+}
+
+.comment-action-btn { 
+  background: transparent; 
+  border: none; 
+  color: #a8a8b3; 
+  cursor: pointer; 
+  padding: 4px 6px; 
+  border-radius: 4px; 
+  font-size: 0.8rem; 
+  transition: all 0.2s ease; 
+  display: flex; 
+  align-items: center; 
+  gap: 4px; 
+}
+
+.comment-action-btn:hover { 
+  color: #fff; 
+  background: rgba(255, 255, 255, 0.1); 
+}
+
+.comment-action-btn.liked { 
+  color: #ff4757; 
+}
+
+.comment-delete-btn { 
+  background: transparent; 
+  border: none; 
+  color: #ff4757; 
+  cursor: pointer; 
+  padding: 2px 4px; 
+  border-radius: 3px; 
+  font-size: 12px; 
+  font-weight: 600; 
+  transition: all 0.2s ease; 
+}
+
+.comment-delete-btn:hover { 
+  background: rgba(255, 71, 87, 0.1); 
+  color: #ff4757; 
+}
+
+.comment-reply { 
+  display: flex; 
+  gap: 6px; 
+  margin-top: 8px; 
+}
+
+.comment-reply input { 
+  flex: 1; 
+  padding: 6px 8px; 
+  background: rgba(255, 255, 255, 0.05); 
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  border-radius: 6px; 
+  color: #fff; 
+  font-size: 0.8rem; 
+  transition: all 0.3s ease; 
+}
+
+.comment-reply input:focus { 
+  outline: none; 
+  border-color: var(--accent-color); 
+  background: rgba(255, 255, 255, 0.08); 
+}
+
+.comment-reply input::placeholder { 
+  color: #a8a8b3; 
+}
+
+.comment-reply .btn.small { 
+  padding: 6px 12px; 
+  font-size: 0.75rem; 
+}

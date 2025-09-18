@@ -329,26 +329,33 @@ const Feed = () => {
     const renderNode = (comment, depth = 0) => (
       <div key={comment.id} className="comment-item" style={{ marginLeft: depth * 16 }}>
         <div className="comment-header">
-          <img src={comment.authorPhotoURL || '/images/defpfp1.png'} alt={comment.authorName} className="comment-avatar" />
-          <div className="comment-meta">
-            <span className="comment-author">{comment.authorName}</span>
-            <span className="comment-time">{formatTimeAgo(comment.timestamp)}</span>
+          <div className="comment-author">
+            <img 
+              src={comment.authorPhotoURL || '/images/defpfp1.png'} 
+              alt={comment.authorName} 
+              className="comment-avatar"
+              onError={(e) => { e.target.src = '/images/defpfp1.png'; }}
+            />
+            <div className="comment-info">
+              <span className="comment-author-name">{comment.authorName}</span>
+              <span className="comment-time">{formatTimeAgo(comment.timestamp)}</span>
+            </div>
           </div>
+          {comment.authorId === currentUser?.uid && (
+            <button className="comment-delete-btn" onClick={() => deleteComment(postId, comment)}>
+              ✕
+            </button>
+          )}
         </div>
         <div className="comment-content">{comment.content}</div>
         <div className="comment-actions">
-          <button className={`action-btn like-btn ${comment.likedBy?.includes(currentUser?.uid) ? 'liked' : ''}`} onClick={() => likeComment(postId, comment)}>
+          <button className={`comment-action-btn like-btn ${comment.likedBy?.includes(currentUser?.uid) ? 'liked' : ''}`} onClick={() => likeComment(postId, comment)}>
             <i className="fas fa-heart"></i>
             <span>{comment.likes || 0}</span>
           </button>
-          <button className="action-btn reply-btn" onClick={() => { /* keep input focused */ }}>
+          <button className="comment-action-btn reply-btn" onClick={() => { /* keep input focused */ }}>
             <i className="fas fa-reply"></i>
           </button>
-          {comment.authorId === currentUser?.uid && (
-            <button className="action-btn delete-btn" onClick={() => deleteComment(postId, comment)}>
-              <i className="fas fa-trash"></i>
-            </button>
-          )}
         </div>
         <div className="comment-reply">
           <input
