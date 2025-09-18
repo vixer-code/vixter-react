@@ -70,7 +70,7 @@ const Vixink = () => {
   const [users, setUsers] = useState({});
   const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('main'); // main | following
+  const [activeTab, setActiveTab] = useState('main'); // main | following | myposts
   const [dismissedClientRestriction, setDismissedClientRestriction] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
@@ -343,6 +343,11 @@ const Vixink = () => {
       return following.includes(post.authorId);
     }
     
+    // My posts filter
+    if (activeTab === 'myposts') {
+      return post.authorId === currentUser?.uid;
+    }
+    
     return true;
   }).sort((a, b) => {
     if (activeTab === 'following') {
@@ -385,6 +390,12 @@ const Vixink = () => {
             onClick={() => setActiveTab('following')}
           >
             Seguindo
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'myposts' ? 'active' : ''}`}
+            onClick={() => setActiveTab('myposts')}
+          >
+            Meus posts
           </button>
         </div>
 
@@ -452,6 +463,8 @@ const Vixink = () => {
               <p>
                 {activeTab === 'following'
                   ? 'Você não está seguindo ninguém ainda'
+                  : activeTab === 'myposts'
+                  ? 'Você ainda não fez nenhum post'
                   : 'Seja o primeiro a compartilhar algo!'
                 }
               </p>

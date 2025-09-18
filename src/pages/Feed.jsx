@@ -19,7 +19,7 @@ const Feed = () => {
   const [users, setUsers] = useState({});
   const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('main'); // main | following
+  const [activeTab, setActiveTab] = useState('main'); // main | following | myposts
   const [dismissedClientRestriction, setDismissedClientRestriction] = useState(false);
   const [commentsByPost, setCommentsByPost] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
@@ -551,6 +551,9 @@ const Feed = () => {
     if (activeTab === 'following') {
       return posts.filter(post => following.includes(post.userId || post.authorId));
     }
+    if (activeTab === 'myposts') {
+      return posts.filter(post => (post.userId || post.authorId) === currentUser?.uid);
+    }
     return posts;
   };
 
@@ -808,6 +811,12 @@ const Feed = () => {
           >
             Seguindo
           </button>
+          <button 
+            className={`tab-btn ${activeTab === 'myposts' ? 'active' : ''}`}
+            onClick={() => setActiveTab('myposts')}
+          >
+            Meus posts
+          </button>
         </div>
 
         <div className="vixies-sidebar">
@@ -839,6 +848,8 @@ const Feed = () => {
               <p>
                 {activeTab === 'following'
                   ? 'Você não está seguindo ninguém ainda'
+                  : activeTab === 'myposts'
+                  ? 'Você ainda não fez nenhum post'
                   : 'Seja o primeiro a compartilhar algo!'}
               </p>
             </div>

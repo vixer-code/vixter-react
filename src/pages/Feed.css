@@ -47,7 +47,7 @@
   gap: 20px;
 }
 
-/* ===== Tabs (Principal / Seguindo) ===== */
+/* ===== Tabs (Principal / Seguindo / Meus posts) ===== */
 .vixies-tabs {
   display: flex;
   justify-content: center;
@@ -58,7 +58,7 @@
   padding: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border-color);
-  max-width: 400px;
+  max-width: 500px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -959,7 +959,11 @@
 /* Comment structure styling */
 .comment-item { 
   margin-bottom: 12px; 
-  padding: 8px 0; 
+  padding: 12px; 
+  background: rgba(26, 26, 46, 0.3);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .comment-header { 
