@@ -529,7 +529,10 @@ const Header = () => {
                       fontWeight="bold">VP</text>
               </svg>
               )}
-              <span>{formatCurrency(vpBalance || 0)}</span>
+              <span>{userProfile?.accountType === 'provider' 
+                ? formatCurrency(vcBalance || 0) 
+                : formatCurrency(vpBalance || 0)
+              }</span>
             </div>
             
             <div className="mobile-notification-section">

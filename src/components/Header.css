@@ -569,6 +569,11 @@ header .vp-balance .vp-icon svg,
   padding: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background: rgba(15, 15, 26, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 10;
 }
 
 .mobile-nav-close {
@@ -821,11 +826,14 @@ header .vp-balance .vp-icon svg,
     padding: 6px;
     min-width: 36px;
     min-height: 36px;
-    position: absolute;
+    position: fixed;
     right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 20;
+    top: 12px;
+    z-index: 150;
+    background: rgba(15, 15, 26, 0.9);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
   
   .vp-balance {
@@ -920,11 +928,14 @@ header .vp-balance .vp-icon svg,
     padding: 5px;
     min-width: 32px;
     min-height: 32px;
-    position: absolute;
+    position: fixed;
     right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 20;
+    top: 10px;
+    z-index: 150;
+    background: rgba(15, 15, 26, 0.9);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
   
   .profile-picture-container {

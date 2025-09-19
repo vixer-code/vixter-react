@@ -728,8 +728,9 @@ const Wallet = () => {
               <span className="currency">VC</span>
             </div>
             <button 
-              className="btn-success small"
-              onClick={() => setShowWithdrawModal(true)}
+              className={`btn-success small ${vcBalance >= 50 ? '' : 'disabled'}`}
+              onClick={() => vcBalance >= 50 ? setShowWithdrawModal(true) : null}
+              disabled={vcBalance < 50}
             >
               <i className="fas fa-money-bill-wave"></i> Sacar VC
             </button>
@@ -867,15 +868,6 @@ const Wallet = () => {
           </>
         )}
 
-        {/* Provider Actions - Only for providers and both */}
-        {(isProvider || isBoth) && (
-          <button 
-            className="btn-secondary"
-            onClick={() => setShowWithdrawModal(true)}
-          >
-            <i className="fas fa-money-bill-wave"></i> Sacar VC
-          </button>
-        )}
       </section>
 
       {/* Tabs */}
