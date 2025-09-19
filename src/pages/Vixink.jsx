@@ -73,7 +73,6 @@ const Vixink = () => {
   const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('main'); // main | following | myposts
-  const [dismissedClientRestriction, setDismissedClientRestriction] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
   const [showVixtipModal, setShowVixtipModal] = useState(false);
@@ -445,37 +444,17 @@ const Vixink = () => {
         <div className="create-post-section">
           {currentUser ? (
             userProfile?.accountType === 'client' ? (
-              !dismissedClientRestriction ? (
-                <div className="client-restriction subtle">
-                  <div className="restriction-content">
-                    <div className="restriction-icon">
-                      <i className="fas fa-eye"></i>
-                    </div>
-                    <div className="restriction-text">
-                      <p>Modo visualização - Apenas visualizar conteúdo</p>
-                    </div>
-                    <button 
-                      className="dismiss-btn"
-                      onClick={() => setDismissedClientRestriction(true)}
-                      title="Fechar"
-                    >
-                      <i className="fas fa-times"></i>
-                    </button>
+              <div className="client-feed-only">
+                <div className="feed-only-content">
+                  <div className="feed-only-icon">
+                    <i className="fas fa-eye"></i>
+                  </div>
+                  <div className="feed-only-text">
+                    <p>Essa área é de divulgação de conteúdo de serviços e packs. Portanto, somente vendedores podem publicar.</p>
+                    <small>Conheça novos serviços e apoie seus criadores favoritos.</small>
                   </div>
                 </div>
-              ) : (
-                <div className="client-feed-only">
-                  <div className="feed-only-content">
-                    <div className="feed-only-icon">
-                      <i className="fas fa-eye"></i>
-                    </div>
-                    <div className="feed-only-text">
-                      <p>Essa área é de divulgação de conteúdo de serviços e packs. Portanto, somente vendedores podem publicar.</p>
-                      <small>Conheça novos serviços e apoie seus criadores favoritos.</small>
-                    </div>
-                  </div>
-                </div>
-              )
+              </div>
             ) : (
               <PostCreator
                 mode="vixink"
