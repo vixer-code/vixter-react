@@ -21,7 +21,7 @@ const VixtipModal = ({ isOpen, onClose, post, postType = 'vixies' }) => {
 
   // Verificar se o usuário pode dar gorjeta
   const canGiveTip = userProfile?.accountType === 'client' && vpBalance >= 1;
-  const canReceiveTip = post?.authorAccountType === 'provider';
+  const canReceiveTip = true; // Qualquer usuário pode receber gorjetas
 
   const handleAmountSelect = (amount) => {
     setSelectedAmount(amount);
@@ -43,11 +43,6 @@ const VixtipModal = ({ isOpen, onClose, post, postType = 'vixies' }) => {
   const handleSendTip = async () => {
     if (!canGiveTip) {
       showWarning('Somente contas de cliente podem dar gorjetas.');
-      return;
-    }
-
-    if (!canReceiveTip) {
-      showWarning('Este usuário não pode receber gorjetas.');
       return;
     }
 
