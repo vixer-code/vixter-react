@@ -67,7 +67,7 @@ const AttachmentDisplay = ({ attachment, checkAttachmentExists, getImageUrl }) =
 const Vixink = () => {
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
-  const { showNotification } = useNotification();
+  const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const [posts, setPosts] = useState([]);
   const [users, setUsers] = useState({});
   const [following, setFollowing] = useState([]);
@@ -146,7 +146,7 @@ const Vixink = () => {
       await update(postRef, { likes: newLikes, likedBy: newLikedBy });
     } catch (error) {
       console.error('Error liking post:', error);
-      showNotification('Erro ao curtir post', 'error');
+      showError('Erro ao curtir post');
     }
   };
 
@@ -158,7 +158,7 @@ const Vixink = () => {
       const postRepostsRef = ref(database, `vixinkReposts/${post.id}/${currentUser.uid}`);
       const snap = await get(postRepostsRef).catch(() => null);
       if (snap && snap.exists()) { 
-        showNotification('Você já repostou este conteúdo.', 'info'); 
+        showInfo('Você já repostou este conteúdo.'); 
         return; 
       }
 
@@ -201,24 +201,24 @@ const Vixink = () => {
         await update(originalPostRef, { repostCount: newRepostCount });
       }
 
-      showNotification('Post repostado com sucesso!', 'success');
+      showSuccess('Post repostado com sucesso!');
     } catch (error) {
       console.error('Error reposting:', error);
-      showNotification('Erro ao repostar conteúdo', 'error');
+      showError('Erro ao repostar conteúdo');
     }
   };
 
   const tipPost = async (post) => {
     if (!currentUser) return;
     if (!userProfile || userProfile.accountType !== 'client') {
-      showNotification('Somente contas de cliente podem dar gorjeta.', 'warning');
+      showWarning('Somente contas de cliente podem dar gorjeta.');
       return;
     }
     
     // Verificar se o autor do post pode receber gorjetas (deve ser provider)
     const author = users[post.authorId] || {};
     if (author.accountType !== 'provider') {
-      showNotification('Este usuário não pode receber gorjetas.', 'warning');
+      showWarning('Este usuário não pode receber gorjetas.');
       return;
     }
     
@@ -253,15 +253,15 @@ const Vixink = () => {
           const post = snapshot.val();
           if (post.authorId === currentUser.uid) {
             await set(postRef, null);
-            showNotification('Post deletado', 'success');
+            showSuccess('Post deletado');
           } else {
-            showNotification('Você só pode deletar seus próprios posts', 'error');
+            showError('Você só pode deletar seus próprios posts');
           }
         }
       });
     } catch (error) {
       console.error('Error deleting post:', error);
-      showNotification('Erro ao deletar post', 'error');
+      showError('Erro ao deletar post');
     } finally {
       setShowDeleteModal(false);
       setPostToDelete(null);
@@ -283,16 +283,16 @@ const Vixink = () => {
         // Unfollow
         const followRef = ref(database, `users/${currentUser.uid}/following/${userId}`);
         await set(followRef, null);
-        showNotification('Deixou de seguir', 'success');
+        showSuccess('Deixou de seguir');
       } else {
         // Follow
         const followRef = ref(database, `users/${currentUser.uid}/following/${userId}`);
         await set(followRef, Date.now());
-        showNotification('Agora você está seguindo', 'success');
+        showSuccess('Agora você está seguindo');
       }
     } catch (error) {
       console.error('Error following/unfollowing:', error);
-      showNotification('Erro ao seguir/deixar de seguir', 'error');
+      showError('Erro ao seguir/deixar de seguir');
     }
   };
 
