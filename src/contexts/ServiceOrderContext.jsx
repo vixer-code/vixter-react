@@ -23,6 +23,10 @@ import {
   sendServiceCompletedEmail, 
   sendServiceCancelledEmail 
 } from '../services/emailService';
+import { 
+  sendServicePurchaseNotification, 
+  sendServiceAcceptedNotification 
+} from '../services/notificationService';
 
 const ServiceOrderContext = createContext({});
 
@@ -233,6 +237,16 @@ export const ServiceOrderProvider = ({ children }) => {
           }
         });
 
+        // Send purchase notification to seller
+        await sendServicePurchaseNotification(
+          serviceData.providerId,
+          currentUser.uid,
+          currentUser.displayName || 'Cliente',
+          serviceData.id,
+          serviceData.title,
+          totalVpAmount
+        );
+
         showSuccess('Pedido de serviço enviado com sucesso! O provedor foi notificado e receberá o pedido em breve.');
         return { success: true, orderId: orderData.id };
       }
@@ -291,6 +305,16 @@ export const ServiceOrderProvider = ({ children }) => {
             console.error('Error sending service accepted email:', emailError);
             // Don't fail the main operation if email fails
           }
+
+          // Send acceptance notification to buyer
+          await sendServiceAcceptedNotification(
+            order.buyerId,
+            order.sellerId,
+            currentUser.displayName || 'Provedor',
+            order.serviceId,
+            order.serviceName || order.metadata?.serviceName,
+            orderId
+          );
         } else {
           console.error('Order not found for conversation creation:', orderId);
         }

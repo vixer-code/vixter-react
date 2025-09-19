@@ -65,7 +65,248 @@ export const getNotificationMessage = (action, actorName, commentContent = null)
       return `${actorName} repostou seu post`;
     case 'comment':
       return `${actorName} comentou em seu post: "${commentContent || ''}"`;
+    case 'message':
+      return `${actorName} enviou uma mensagem`;
+    case 'email_verification':
+      return 'Verifique seu e-mail para completar o cadastro';
+    case 'service_purchased':
+      return `${actorName} comprou seu serviço`;
+    case 'pack_purchased':
+      return `${actorName} comprou seu pack`;
+    case 'service_accepted':
+      return 'Seu pedido de serviço foi aceito';
+    case 'pack_accepted':
+      return 'Seu pedido de pack foi aceito';
     default:
       return `${actorName} interagiu com seu post`;
+  }
+};
+
+/**
+ * Send email verification notification
+ * @param {string} userId - ID of the user
+ */
+export const sendEmailVerificationNotification = async (userId) => {
+  try {
+    const notificationData = {
+      type: 'email_verification',
+      action: 'email_verification',
+      timestamp: Date.now(),
+      read: false
+    };
+
+    const notificationsRef = ref(database, `notifications/${userId}`);
+    await push(notificationsRef, notificationData);
+
+    console.log(`Email verification notification sent to ${userId}`);
+  } catch (error) {
+    console.error('Error sending email verification notification:', error);
+  }
+};
+
+/**
+ * Send message notification
+ * @param {string} recipientId - ID of the message recipient
+ * @param {string} senderId - ID of the message sender
+ * @param {string} senderName - Name of the sender
+ * @param {string} conversationId - ID of the conversation
+ * @param {string} messageContent - Content of the message (truncated)
+ */
+export const sendMessageNotification = async (
+  recipientId,
+  senderId,
+  senderName,
+  conversationId,
+  messageContent
+) => {
+  try {
+    // Don't send notification to self
+    if (recipientId === senderId) return;
+
+    const notificationData = {
+      type: 'message',
+      action: 'message',
+      conversationId,
+      messageContent: messageContent ? messageContent.substring(0, 100) + (messageContent.length > 100 ? '...' : '') : '',
+      senderId,
+      senderName,
+      timestamp: Date.now(),
+      read: false
+    };
+
+    const notificationsRef = ref(database, `notifications/${recipientId}`);
+    await push(notificationsRef, notificationData);
+
+    console.log(`Message notification sent to ${recipientId} from ${senderName}`);
+  } catch (error) {
+    console.error('Error sending message notification:', error);
+  }
+};
+
+/**
+ * Send service purchase notification to seller
+ * @param {string} sellerId - ID of the service seller
+ * @param {string} buyerId - ID of the buyer
+ * @param {string} buyerName - Name of the buyer
+ * @param {string} serviceId - ID of the service
+ * @param {string} serviceName - Name of the service
+ * @param {number} amount - Purchase amount
+ */
+export const sendServicePurchaseNotification = async (
+  sellerId,
+  buyerId,
+  buyerName,
+  serviceId,
+  serviceName,
+  amount
+) => {
+  try {
+    // Don't send notification to self
+    if (sellerId === buyerId) return;
+
+    const notificationData = {
+      type: 'service_purchase',
+      action: 'service_purchased',
+      serviceId,
+      serviceName: serviceName ? serviceName.substring(0, 50) + (serviceName.length > 50 ? '...' : '') : '',
+      buyerId,
+      buyerName,
+      amount,
+      timestamp: Date.now(),
+      read: false
+    };
+
+    const notificationsRef = ref(database, `notifications/${sellerId}`);
+    await push(notificationsRef, notificationData);
+
+    console.log(`Service purchase notification sent to seller ${sellerId} for service ${serviceName}`);
+  } catch (error) {
+    console.error('Error sending service purchase notification:', error);
+  }
+};
+
+/**
+ * Send pack purchase notification to seller
+ * @param {string} sellerId - ID of the pack seller
+ * @param {string} buyerId - ID of the buyer
+ * @param {string} buyerName - Name of the buyer
+ * @param {string} packId - ID of the pack
+ * @param {string} packName - Name of the pack
+ * @param {number} amount - Purchase amount
+ */
+export const sendPackPurchaseNotification = async (
+  sellerId,
+  buyerId,
+  buyerName,
+  packId,
+  packName,
+  amount
+) => {
+  try {
+    // Don't send notification to self
+    if (sellerId === buyerId) return;
+
+    const notificationData = {
+      type: 'pack_purchase',
+      action: 'pack_purchased',
+      packId,
+      packName: packName ? packName.substring(0, 50) + (packName.length > 50 ? '...' : '') : '',
+      buyerId,
+      buyerName,
+      amount,
+      timestamp: Date.now(),
+      read: false
+    };
+
+    const notificationsRef = ref(database, `notifications/${sellerId}`);
+    await push(notificationsRef, notificationData);
+
+    console.log(`Pack purchase notification sent to seller ${sellerId} for pack ${packName}`);
+  } catch (error) {
+    console.error('Error sending pack purchase notification:', error);
+  }
+};
+
+/**
+ * Send service accepted notification to buyer
+ * @param {string} buyerId - ID of the buyer
+ * @param {string} sellerId - ID of the seller
+ * @param {string} sellerName - Name of the seller
+ * @param {string} serviceId - ID of the service
+ * @param {string} serviceName - Name of the service
+ * @param {string} orderId - ID of the order
+ */
+export const sendServiceAcceptedNotification = async (
+  buyerId,
+  sellerId,
+  sellerName,
+  serviceId,
+  serviceName,
+  orderId
+) => {
+  try {
+    // Don't send notification to self
+    if (buyerId === sellerId) return;
+
+    const notificationData = {
+      type: 'service_accepted',
+      action: 'service_accepted',
+      serviceId,
+      serviceName: serviceName ? serviceName.substring(0, 50) + (serviceName.length > 50 ? '...' : '') : '',
+      sellerId,
+      sellerName,
+      orderId,
+      timestamp: Date.now(),
+      read: false
+    };
+
+    const notificationsRef = ref(database, `notifications/${buyerId}`);
+    await push(notificationsRef, notificationData);
+
+    console.log(`Service accepted notification sent to buyer ${buyerId} for service ${serviceName}`);
+  } catch (error) {
+    console.error('Error sending service accepted notification:', error);
+  }
+};
+
+/**
+ * Send pack accepted notification to buyer
+ * @param {string} buyerId - ID of the buyer
+ * @param {string} sellerId - ID of the seller
+ * @param {string} sellerName - Name of the seller
+ * @param {string} packId - ID of the pack
+ * @param {string} packName - Name of the pack
+ * @param {string} orderId - ID of the order
+ */
+export const sendPackAcceptedNotification = async (
+  buyerId,
+  sellerId,
+  sellerName,
+  packId,
+  packName,
+  orderId
+) => {
+  try {
+    // Don't send notification to self
+    if (buyerId === sellerId) return;
+
+    const notificationData = {
+      type: 'pack_accepted',
+      action: 'pack_accepted',
+      packId,
+      packName: packName ? packName.substring(0, 50) + (packName.length > 50 ? '...' : '') : '',
+      sellerId,
+      sellerName,
+      orderId,
+      timestamp: Date.now(),
+      read: false
+    };
+
+    const notificationsRef = ref(database, `notifications/${buyerId}`);
+    await push(notificationsRef, notificationData);
+
+    console.log(`Pack accepted notification sent to buyer ${buyerId} for pack ${packName}`);
+  } catch (error) {
+    console.error('Error sending pack accepted notification:', error);
   }
 };

@@ -32,6 +32,7 @@ import {
   saveMessage,
   subscribeToConversationMessages
 } from '../services/conversationService';
+import { sendMessageNotification } from '../services/notificationService';
 import { 
   createConversationObject, 
   findExistingConversation, 
@@ -1162,6 +1163,15 @@ export const EnhancedMessagingProvider = ({ children }) => {
                   timestamp: Date.now()
                 });
                 console.log('✅ Global notification sent to:', recipientId);
+                
+                // Send push notification
+                await sendMessageNotification(
+                  recipientId,
+                  currentUser.uid,
+                  currentUser.displayName || 'Alguém',
+                  conversationId,
+                  text.trim()
+                );
               } catch (globalError) {
                 console.error('Error sending global notification to', recipientId, ':', globalError);
               }

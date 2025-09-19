@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
+import { sendEmailVerificationNotification } from '../services/notificationService';
 
 export const useEmailVerification = () => {
   const { currentUser } = useAuth();
@@ -39,6 +40,9 @@ export const useEmailVerification = () => {
           'E-mail não verificado',
           'Verifique sua caixa de entrada e clique no link de verificação para acessar todos os recursos.'
         );
+        
+        // Send notification for unverified email
+        await sendEmailVerificationNotification(currentUser.uid);
       }
     } catch (error) {
       console.error('Error checking email verification:', error);

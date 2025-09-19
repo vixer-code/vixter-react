@@ -17,6 +17,10 @@ import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import { useMessaging } from './EnhancedMessagingContext';
 import { useWallet } from './WalletContext';
+import { 
+  sendPackPurchaseNotification, 
+  sendPackAcceptedNotification 
+} from '../services/notificationService';
 
 const PackOrderContext = createContext({});
 
@@ -182,6 +186,16 @@ export const PackOrderProvider = ({ children }) => {
             console.log('Creating pack conversation...');
             const conversation = await createPackConversation(order);
             console.log('Pack conversation created:', conversation);
+
+            // Send acceptance notification to buyer
+            await sendPackAcceptedNotification(
+              order.buyerId,
+              order.sellerId,
+              currentUser.displayName || 'Vendedor',
+              order.packId,
+              order.metadata?.packName || order.packName,
+              orderId
+            );
           } catch (notificationError) {
             console.warn('Error with pack notification/conversation:', notificationError);
             // Don't fail the whole operation if notification fails

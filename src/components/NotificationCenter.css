@@ -187,6 +187,91 @@
   background: #777;
 }
 
+/* New notification types */
+.notification-message-preview {
+  color: #888;
+  font-size: 0.85rem;
+  font-style: italic;
+  margin-top: 4px;
+  display: block;
+}
+
+.notification-product {
+  color: #a8a8b3;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-top: 4px;
+  display: block;
+}
+
+.notification-amount {
+  color: #00ffca;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Email verification notification styling */
+.notification-item[data-type="email_verification"] {
+  border-left: 3px solid #ffa726;
+}
+
+.notification-item[data-type="email_verification"] .notification-icon {
+  background: rgba(255, 167, 38, 0.1);
+}
+
+/* Message notification styling */
+.notification-item[data-type="message"] {
+  border-left: 3px solid #ff6b35;
+}
+
+.notification-item[data-type="message"] .notification-icon {
+  background: rgba(255, 107, 53, 0.1);
+}
+
+/* Service purchase notification styling */
+.notification-item[data-type="service_purchase"] {
+  border-left: 3px solid #2ecc71;
+}
+
+.notification-item[data-type="service_purchase"] .notification-icon {
+  background: rgba(46, 204, 113, 0.1);
+}
+
+/* Pack purchase notification styling */
+.notification-item[data-type="pack_purchase"] {
+  border-left: 3px solid #3498db;
+}
+
+.notification-item[data-type="pack_purchase"] .notification-icon {
+  background: rgba(52, 152, 219, 0.1);
+}
+
+/* Service accepted notification styling */
+.notification-item[data-type="service_accepted"] {
+  border-left: 3px solid #27ae60;
+}
+
+.notification-item[data-type="service_accepted"] .notification-icon {
+  background: rgba(39, 174, 96, 0.1);
+}
+
+/* Pack accepted notification styling */
+.notification-item[data-type="pack_accepted"] {
+  border-left: 3px solid #27ae60;
+}
+
+.notification-item[data-type="pack_accepted"] .notification-icon {
+  background: rgba(39, 174, 96, 0.1);
+}
+
+/* Enhanced notification item hover */
+.notification-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(2px);
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .notification-dropdown {

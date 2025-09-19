@@ -19,6 +19,7 @@ import { db, functions } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import { redirectToCheckout, getPaymentStatusFromURL, cleanPaymentURL } from '../utils/stripe';
+import { sendPackPurchaseNotification } from '../services/notificationService';
 
 const WalletContext = createContext({});
 
@@ -313,6 +314,16 @@ export const WalletProvider = ({ children }) => {
       });
 
       if (result.data.success) {
+        // Send purchase notification to seller
+        await sendPackPurchaseNotification(
+          sellerId,
+          buyerId,
+          buyerInfo.displayName || buyerInfo.name || 'Cliente',
+          packId,
+          packName,
+          vpAmount
+        );
+
         showSuccess(
           `Pedido de pack enviado! A vendedora tem 24h para aprovar.`,
           'Pedido Enviado'

@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../hooks/useNotifications';
 import { getNotificationMessage } from '../services/notificationService';
+import { useAuth } from '../contexts/AuthContext';
 import './NotificationCenter.css';
 
 const NotificationCenter = () => {
   const { notifications, loading, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
 
   const formatTimestamp = (timestamp) => {
     const now = Date.now();
@@ -28,6 +32,18 @@ const NotificationCenter = () => {
         return 'fas fa-retweet';
       case 'comment':
         return 'fas fa-comment';
+      case 'message':
+        return 'fas fa-envelope';
+      case 'email_verification':
+        return 'fas fa-exclamation-triangle';
+      case 'service_purchased':
+        return 'fas fa-shopping-cart';
+      case 'pack_purchased':
+        return 'fas fa-box';
+      case 'service_accepted':
+        return 'fas fa-check-circle';
+      case 'pack_accepted':
+        return 'fas fa-check-circle';
       default:
         return 'fas fa-bell';
     }
@@ -41,8 +57,53 @@ const NotificationCenter = () => {
         return '#00ffca';
       case 'comment':
         return '#3742fa';
+      case 'message':
+        return '#ff6b35';
+      case 'email_verification':
+        return '#ffa726';
+      case 'service_purchased':
+        return '#2ecc71';
+      case 'pack_purchased':
+        return '#3498db';
+      case 'service_accepted':
+        return '#27ae60';
+      case 'pack_accepted':
+        return '#27ae60';
       default:
         return '#a8a8b3';
+    }
+  };
+
+  const handleNotificationClick = (notification) => {
+    // Mark as read
+    markAsRead(notification.id);
+    
+    // Close dropdown
+    setIsOpen(false);
+    
+    // Navigate based on notification type
+    if (notification.type === 'post_interaction' && notification.postId) {
+      // Navigate to the specific post
+      // We'll need to determine which feed the post is in
+      if (notification.postId.includes('vixies')) {
+        navigate('/vixies');
+      } else if (notification.postId.includes('vixink')) {
+        navigate('/vixink');
+      } else {
+        navigate('/feed');
+      }
+    } else if (notification.type === 'message' && notification.conversationId) {
+      // Navigate to messages
+      navigate('/messages');
+    } else if (notification.type === 'email_verification') {
+      // Navigate to settings for email verification
+      navigate('/settings');
+    } else if (notification.type === 'service_purchase' || notification.type === 'pack_purchase') {
+      // Navigate to seller's products page
+      navigate('/my-products');
+    } else if (notification.type === 'service_accepted' || notification.type === 'pack_accepted') {
+      // Navigate to buyer's purchases page
+      navigate('/my-purchases');
     }
   };
 
@@ -94,7 +155,8 @@ const NotificationCenter = () => {
                 <div 
                   key={notification.id}
                   className={`notification-item ${!notification.read ? 'unread' : ''}`}
-                  onClick={() => markAsRead(notification.id)}
+                  data-type={notification.type}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="notification-icon">
                     <i 
@@ -104,11 +166,14 @@ const NotificationCenter = () => {
                   </div>
                   <div className="notification-content">
                     <p className="notification-message">
-                      {getNotificationMessage(
-                        notification.action, 
-                        notification.actorName,
-                        notification.commentContent
-                      )}
+                      {notification.type === 'email_verification' 
+                        ? 'Verifique seu e-mail para completar o cadastro'
+                        : getNotificationMessage(
+                            notification.action, 
+                            notification.actorName || notification.senderName,
+                            notification.commentContent
+                          )
+                      }
                     </p>
                     <div className="notification-meta">
                       <span className="notification-time">
@@ -117,6 +182,26 @@ const NotificationCenter = () => {
                       {notification.postContent && (
                         <span className="notification-post">
                           "{notification.postContent}"
+                        </span>
+                      )}
+                      {notification.messageContent && (
+                        <span className="notification-message-preview">
+                          "{notification.messageContent}"
+                        </span>
+                      )}
+                      {notification.serviceName && (
+                        <span className="notification-product">
+                          "{notification.serviceName}"
+                        </span>
+                      )}
+                      {notification.packName && (
+                        <span className="notification-product">
+                          "{notification.packName}"
+                        </span>
+                      )}
+                      {notification.amount && (
+                        <span className="notification-amount">
+                          {notification.amount} VP
                         </span>
                       )}
                     </div>
