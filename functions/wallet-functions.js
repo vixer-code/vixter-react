@@ -1894,94 +1894,102 @@ export const sendPurchaseConfirmationEmail = onCall({
  * Processa uma gorjeta individual (chamada quando gorjeta é enviada)
  */
 export const processVixtip = onCall(async (request) => {
-  const { vixtipId } = request.data;
+  const { 
+    postId, 
+    postType, 
+    authorId, 
+    authorName, 
+    authorUsername, 
+    buyerId, 
+    buyerName, 
+    buyerUsername, 
+    vpAmount, 
+    vcAmount 
+  } = request.data;
   
-  if (!vixtipId) {
-    throw new HttpsError("invalid-argument", "ID da gorjeta é obrigatório");
+  if (!postId || !authorId || !buyerId || !vpAmount || !vcAmount) {
+    throw new HttpsError("invalid-argument", "Dados obrigatórios não fornecidos");
   }
 
   try {
-    const vixtipRef = db.collection('vixtips').doc(vixtipId);
-    const vixtipDoc = await vixtipRef.get();
+    logger.info(`🔄 Processando gorjeta: ${vpAmount} VP -> ${vcAmount} VC para ${authorName}...`);
     
-    if (!vixtipDoc.exists) {
-      throw new HttpsError("not-found", "Gorjeta não encontrada");
-    }
-    
-    const vixtipData = vixtipDoc.data();
-    
-    if (vixtipData.status !== 'pending') {
-      logger.warn(`Gorjeta ${vixtipId} já foi processada ou não está pendente`);
-      return { success: true, message: "Gorjeta já processada" };
-    }
-
-    // Usar transação para garantir consistência
-    await db.runTransaction(async (transaction) => {
+    // Processar a gorjeta usando transação
+    const result = await db.runTransaction(async (transaction) => {
       // Referências
-      const sellerWalletRef = db.collection('wallets').doc(vixtipData.authorId);
-      const transactionRef = db.collection('transactions').doc();
-      const vixtipUpdateRef = vixtipRef;
+      const sellerWalletRef = db.collection('wallets').doc(authorId);
+      const sellerTransactionRef = db.collection('transactions').doc();
+      const vixtipRef = db.collection('vixtips').doc();
 
-      // Ler carteira do vendedor
+      // Verificar se a carteira do vendedor existe
       const sellerWalletSnap = await transaction.get(sellerWalletRef);
       
-      // Atualizar carteira do vendedor
-      if (sellerWalletSnap.exists()) {
-        const sellerWallet = sellerWalletSnap.data();
-        transaction.update(sellerWalletRef, {
-          vc: (sellerWallet.vc || 0) + vixtipData.vcAmount,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-      } else {
-        // Criar carteira se não existir
-        transaction.set(sellerWalletRef, {
-          vp: 0,
-          vc: vixtipData.vcAmount,
-          vbp: 0,
-          vcPending: 0,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
+      if (!sellerWalletSnap.exists) {
+        throw new HttpsError("not-found", "Carteira do vendedor não encontrada");
       }
 
-      // Criar transação de venda (histórico do vendedor)
-      transaction.set(transactionRef, {
-        userId: vixtipData.authorId,
+      const sellerWallet = sellerWalletSnap.data();
+
+      // Creditar VC na carteira do vendedor
+      transaction.update(sellerWalletRef, {
+        vc: (sellerWallet.vc || 0) + vcAmount,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Criar transação de venda para o vendedor
+      transaction.set(sellerTransactionRef, {
+        userId: authorId,
         type: 'VIXTIP_RECEIVED',
         amounts: {
-          vc: vixtipData.vcAmount
+          vc: vcAmount
         },
         metadata: {
-          description: `Gorjeta recebida de ${vixtipData.buyerName || 'Usuário'}`,
-          postId: vixtipData.postId,
-          postType: vixtipData.postType,
-          buyerId: vixtipData.buyerId,
-          buyerName: vixtipData.buyerName || 'Usuário',
-          buyerUsername: vixtipData.buyerUsername || '',
-          vpAmount: vixtipData.vpAmount
+          description: `Gorjeta recebida de ${buyerName}`,
+          postId,
+          postType,
+          buyerId,
+          buyerName,
+          buyerUsername,
+          vpAmount
         },
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      // Marcar gorjeta como processada
-      transaction.update(vixtipUpdateRef, {
+      // Salvar dados da gorjeta para ranking
+      transaction.set(vixtipRef, {
+        postId,
+        postType,
+        authorId,
+        authorName,
+        authorUsername,
+        buyerId,
+        buyerName,
+        buyerUsername,
+        vpAmount,
+        vcAmount,
         status: 'completed',
-        processedAt: admin.firestore.FieldValue.serverTimestamp()
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
+
+      return {
+        success: true,
+        vcCredited: vcAmount,
+        sellerId: authorId
+      };
     });
 
-    logger.info(`✅ Gorjeta ${vixtipId} processada com sucesso - ${vixtipData.vcAmount} VC creditados para ${vixtipData.authorName}`);
+    logger.info(`✅ Gorjeta processada com sucesso: ${result.vcCredited} VC creditados para ${result.sellerId}`);
     
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: "Gorjeta processada com sucesso",
-      vcAmount: vixtipData.vcAmount,
-      authorName: vixtipData.authorName
+      data: result
     };
 
   } catch (error) {
-    logger.error(`💥 Erro ao processar gorjeta ${vixtipId}:`, error);
+    logger.error(`💥 Erro ao processar gorjeta:`, error);
     throw new HttpsError("internal", "Erro ao processar gorjeta");
   }
 });
@@ -2033,24 +2041,17 @@ export const processPendingVixtips = onCall(async () => {
           // Ler carteira do vendedor
           const sellerWalletSnap = await transaction.get(sellerWalletRef);
           
-          // Atualizar carteira do vendedor
-          if (sellerWalletSnap.exists()) {
-            const sellerWallet = sellerWalletSnap.data();
-            transaction.update(sellerWalletRef, {
-              vc: (sellerWallet.vc || 0) + vixtipData.vcAmount,
-              updatedAt: admin.firestore.FieldValue.serverTimestamp()
-            });
-          } else {
-            // Criar carteira se não existir
-            transaction.set(sellerWalletRef, {
-              vp: 0,
-              vc: vixtipData.vcAmount,
-              vbp: 0,
-              vcPending: 0,
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-              updatedAt: admin.firestore.FieldValue.serverTimestamp()
-            });
+          if (!sellerWalletSnap.exists()) {
+            throw new Error(`Carteira do vendedor ${vixtipData.authorId} não encontrada`);
           }
+
+          const sellerWallet = sellerWalletSnap.data();
+          
+          // Atualizar carteira do vendedor
+          transaction.update(sellerWalletRef, {
+            vc: (sellerWallet.vc || 0) + vixtipData.vcAmount,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          });
 
           // Criar transação de venda (histórico do vendedor)
           transaction.set(transactionRef, {

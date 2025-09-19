@@ -376,12 +376,11 @@ export const WalletProvider = ({ children }) => {
       // Calcular valor em VC que o autor receberá (1 VP = 0.5 VC)
       const vcAmount = Math.round(amount * 0.5);
 
-      // Usar transação para garantir consistência
+      // Usar transação para garantir consistência (apenas carteira do comprador)
       const result = await runTransaction(db, async (transaction) => {
         // Referências dos documentos
         const buyerWalletRef = doc(db, 'wallets', currentUser.uid);
         const transactionRef = doc(collection(db, 'transactions'));
-        const vixtipRef = doc(collection(db, 'vixtips'));
 
         // Ler saldo atual do comprador
         const buyerWalletSnap = await transaction.get(buyerWalletRef);
@@ -421,31 +420,25 @@ export const WalletProvider = ({ children }) => {
           timestamp: Timestamp.now()
         });
 
-        // Salvar dados da gorjeta (para processamento posterior)
-        transaction.set(vixtipRef, {
-          postId,
-          postType,
-          authorId,
-          authorName,
-          authorUsername,
-          buyerId: currentUser.uid,
-          buyerName: buyerName || 'Usuário',
-          buyerUsername: buyerUsername || '',
-          vpAmount: amount,
-          vcAmount,
-          status: 'pending', // Para processamento posterior
-          createdAt: Timestamp.now(),
-          timestamp: Timestamp.now()
-        });
-
-        return { success: true, vixtipId: vixtipRef.id };
+        return { success: true };
       });
 
       if (result.success) {
         // Chamar função para processar a gorjeta imediatamente
         try {
           const processVixtipFunc = httpsCallable(functions, 'processVixtip');
-          await processVixtipFunc({ vixtipId: result.vixtipId });
+          await processVixtipFunc({ 
+            postId,
+            postType,
+            authorId,
+            authorName,
+            authorUsername,
+            buyerId: currentUser.uid,
+            buyerName: buyerName || 'Usuário',
+            buyerUsername: buyerUsername || '',
+            vpAmount: amount,
+            vcAmount
+          });
           
           showSuccess(
             `Gorjeta de ${amount} VP enviada! ${vcAmount} VC foram creditados para ${authorName}.`,
