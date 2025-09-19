@@ -175,7 +175,6 @@
   backdrop-filter: blur(10px);
   border-radius: 8px;
   padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .comment-header {
@@ -370,7 +369,6 @@
 .comment-item {
   background: rgba(26, 26, 46, 0.3);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 8px;
 }
 
