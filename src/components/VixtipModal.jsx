@@ -173,22 +173,11 @@ const VixtipModal = ({ isOpen, onClose, post, postType = 'vixies' }) => {
             )}
           </div>
 
-          {/* Resumo da transação */}
+          {/* Resumo da transação simplificado */}
           <div className="vixtip-summary">
-            <div className="summary-row">
+            <div className="summary-row total">
               <span>Valor da gorjeta:</span>
               <span className="amount">{selectedAmount} VP</span>
-            </div>
-            <div className="summary-row">
-              <span>Valor recebido pelo criador:</span>
-              <span className="amount">{Math.round(selectedAmount * 0.5)} VC</span>
-            </div>
-            <div className="summary-row total">
-              <span>Total debitado da sua conta:</span>
-              <span className="amount">{selectedAmount} VP</span>
-            </div>
-            <div className="conversion-info">
-              <small>1 VC = 1.5 VP | Taxa de conversão: 50%</small>
             </div>
           </div>
 
