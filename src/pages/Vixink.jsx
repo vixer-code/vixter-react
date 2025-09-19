@@ -78,6 +78,7 @@ const Vixink = () => {
   const [postToDelete, setPostToDelete] = useState(null);
   const [showVixtipModal, setShowVixtipModal] = useState(false);
   const [selectedPostForTip, setSelectedPostForTip] = useState(null);
+  const [likes, setLikes] = useState({}); // New state for likes
 
   useEffect(() => {
     let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
@@ -111,6 +112,21 @@ const Vixink = () => {
       setUsers(usersData);
     });
 
+    // Load likes
+    const likesRef = ref(database, 'vixink_likes');
+    const likesUnsubscribe = onValue(likesRef, (snapshot) => {
+      const likesData = {};
+      snapshot.forEach((postSnapshot) => {
+        const postId = postSnapshot.key;
+        const postLikes = {};
+        postSnapshot.forEach((userSnapshot) => {
+          postLikes[userSnapshot.key] = userSnapshot.val();
+        });
+        likesData[postId] = postLikes;
+      });
+      setLikes(likesData);
+    });
+
     // Load following
     if (currentUser) {
       const followingRef = ref(database, `users/${currentUser.uid}/following`);
@@ -127,6 +143,7 @@ const Vixink = () => {
       if (postsUnsubscribe) postsUnsubscribe();
       if (usersUnsubscribe) usersUnsubscribe();
       if (followingUnsubscribe) followingUnsubscribe();
+      if (likesUnsubscribe) likesUnsubscribe();
     };
   }, [currentUser]);
 
@@ -140,10 +157,16 @@ const Vixink = () => {
 
     try {
       const isLiked = likedBy?.includes(currentUser.uid);
-      const newLikedBy = isLiked ? (likedBy || []).filter(id => id !== currentUser.uid) : [...(likedBy || []), currentUser.uid];
-      const newLikes = isLiked ? (currentLikes || 0) - 1 : (currentLikes || 0) + 1;
-      const postRef = ref(database, `vixink_posts/${postId}`);
-      await update(postRef, { likes: newLikes, likedBy: newLikedBy });
+      
+      if (isLiked) {
+        // Unlike: remove from likes
+        const likeRef = ref(database, `vixink_likes/${postId}/${currentUser.uid}`);
+        await set(likeRef, null);
+      } else {
+        // Like: add to likes
+        const likeRef = ref(database, `vixink_likes/${postId}/${currentUser.uid}`);
+        await set(likeRef, Date.now());
+      }
     } catch (error) {
       console.error('Error liking post:', error);
       showError('Erro ao curtir post');
@@ -447,8 +470,8 @@ const Vixink = () => {
                       <i className="fas fa-eye"></i>
                     </div>
                     <div className="feed-only-text">
-                      <p>Modo visualização ativo</p>
-                      <small>Explore o conteúdo da comunidade</small>
+                      <p>Essa área é de divulgação de conteúdo de serviços e packs. Portanto, somente vendedores podem publicar.</p>
+                      <small>Conheça novos serviços e apoie seus criadores favoritos.</small>
                     </div>
                   </div>
                 </div>
@@ -491,7 +514,8 @@ const Vixink = () => {
               // Use current user profile if it's the current user's post
               const isCurrentUser = currentUser && post.authorId === currentUser.uid;
               const author = isCurrentUser ? userProfile : (users[post.authorId] || {});
-              const isLiked = post.likedBy?.includes(currentUser?.uid);
+              const isLiked = currentUser && likes[post.id] && likes[post.id][currentUser.uid];
+              const likeCount = likes[post.id] ? Object.keys(likes[post.id]).length : (post.likes || 0);
               
               return (
                 <div key={post.id} className="post-card">
@@ -556,11 +580,11 @@ const Vixink = () => {
 
                   <div className="post-actions">
                     <button
-                      onClick={() => likePost(post.id, post.likes, post.likedBy || [])}
+                      onClick={() => likePost(post.id, likeCount, likes[post.id] || {})}
                       className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}
                     >
                       <i className={`fas fa-heart ${isLiked ? 'fas' : 'far'}`}></i>
-                      <span>{post.likes || 0}</span>
+                      <span>{likeCount}</span>
                     </button>
                     
                     <button className="action-btn share-btn" onClick={() => repostPost(post)}>
