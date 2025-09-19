@@ -72,7 +72,9 @@ const VixtipModal = ({ isOpen, onClose, post, postType = 'vixies' }) => {
         authorId: post.authorId,
         authorName: post.authorName,
         authorUsername: post.authorUsername,
-        amount: tipAmount
+        amount: tipAmount,
+        buyerName: userProfile?.displayName || userProfile?.name || 'Usuário',
+        buyerUsername: userProfile?.username || ''
       });
 
       if (success) {

@@ -64,6 +64,12 @@ export const WalletProvider = ({ children }) => {
     'pack-320': { amount: 465, bonus: 155, price: 'R$ 320,00', name: 'Pacote Mítico', priceInCents: 32000 }
   };
 
+  // Helper functions to get individual balances (moved up to avoid circular dependency)
+  const vpBalance = wallet?.vp || 0;
+  const vcBalance = wallet?.vc || 0;
+  const vbpBalance = wallet?.vbp || 0;
+  const vcPendingBalance = wallet?.vcPending || 0;
+
   // Initialize wallet when user changes
   useEffect(() => {
     if (currentUser) {
@@ -341,7 +347,7 @@ export const WalletProvider = ({ children }) => {
   const sendVixtip = useCallback(async (vixtipData) => {
     if (!currentUser) return false;
 
-    const { postId, postType, authorId, authorName, authorUsername, amount } = vixtipData;
+    const { postId, postType, authorId, authorName, authorUsername, amount, buyerName, buyerUsername } = vixtipData;
 
     try {
       // Verificar se o usuário tem saldo suficiente
@@ -428,12 +434,12 @@ export const WalletProvider = ({ children }) => {
             vc: vcAmount
           },
           metadata: {
-            description: `Gorjeta recebida de ${userProfile?.displayName || userProfile?.name || 'Usuário'}`,
+            description: `Gorjeta recebida de ${buyerName || 'Usuário'}`,
             postId,
             postType,
             buyerId: currentUser.uid,
-            buyerName: userProfile?.displayName || userProfile?.name || 'Usuário',
-            buyerUsername: userProfile?.username || '',
+            buyerName: buyerName || 'Usuário',
+            buyerUsername: buyerUsername || '',
             vpAmount: amount
           },
           createdAt: Timestamp.now(),
@@ -448,8 +454,8 @@ export const WalletProvider = ({ children }) => {
           authorName,
           authorUsername,
           buyerId: currentUser.uid,
-          buyerName: userProfile?.displayName || userProfile?.name || 'Usuário',
-          buyerUsername: userProfile?.username || '',
+          buyerName: buyerName || 'Usuário',
+          buyerUsername: buyerUsername || '',
           vpAmount: amount,
           vcAmount,
           createdAt: Timestamp.now(),
@@ -473,7 +479,7 @@ export const WalletProvider = ({ children }) => {
       handleWalletError(error, 'sendVixtip');
       return false;
     }
-  }, [currentUser, vpBalance, userProfile, showSuccess, showError, handleWalletError]);
+  }, [currentUser, vpBalance, showSuccess, showError, handleWalletError]);
 
   // Format currency
   const formatCurrency = useCallback((amount, currency = '') => {
@@ -551,11 +557,6 @@ export const WalletProvider = ({ children }) => {
     });
   }, [transactions]);
 
-  // Helper functions to get individual balances
-  const vpBalance = wallet?.vp || 0;
-  const vcBalance = wallet?.vc || 0;
-  const vbpBalance = wallet?.vbp || 0;
-  const vcPendingBalance = wallet?.vcPending || 0;
 
   // Get wallet summary for quick overview
   const getWalletSummary = useCallback(() => {
