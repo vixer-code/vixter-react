@@ -104,14 +104,14 @@ const Wallet = () => {
         const qServices = fsQuery(
           serviceOrdersRef,
           where('sellerId', '==', currentUser.uid),
-          where('timestamp', '>=', startTs),
-          orderBy('timestamp', 'desc')
+          where('timestamps.createdAt', '>=', startTs),
+          orderBy('timestamps.createdAt', 'desc')
         );
         const qPacks = fsQuery(
           packOrdersRef,
           where('sellerId', '==', currentUser.uid),
-          where('timestamp', '>=', startTs),
-          orderBy('timestamp', 'desc')
+          where('timestamps.createdAt', '>=', startTs),
+          orderBy('timestamps.createdAt', 'desc')
         );
 
         const [servicesSnap, packsSnap] = await Promise.all([getDocs(qServices), getDocs(qPacks)]);
@@ -125,20 +125,25 @@ const Wallet = () => {
           rows.push({ id: docSnap.id, type: 'pack', ...d });
         });
 
-        rows.sort((a, b) => (b.timestamp?.toMillis?.() || 0) - (a.timestamp?.toMillis?.() || 0));
+        rows.sort((a, b) => (b.timestamps?.createdAt?.toMillis?.() || 0) - (a.timestamps?.createdAt?.toMillis?.() || 0));
 
         const display = rows.map((o) => {
           const status = (o.status || '').toLowerCase();
-          const isPending = status === 'pending' || status === 'requested' || status === 'awaiting' || status === 'processing';
+          const isPending = status === 'pending_acceptance' || status === 'pending' || status === 'requested' || status === 'awaiting' || status === 'processing';
           const coin = isPending ? 'VCP' : 'VC';
-          const ts = o.timestamp?.toMillis?.() ? o.timestamp.toMillis() : Date.now();
+          const ts = o.timestamps?.createdAt?.toMillis?.() ? o.timestamps.createdAt.toMillis() : Date.now();
           return {
             id: o.id,
             type: o.type,
-            title: o.title || o.itemTitle || (o.type === 'service' ? 'Serviço' : 'Pack'),
-            amount: Number(o.priceVC || 0),
+            title: o.type === 'service' ? (o.metadata?.serviceName || 'Serviço') : (o.metadata?.packName || 'Pack'),
+            amount: Number(o.vcAmount || 0),
             coin,
-            status: o.status || (isPending ? 'pending' : 'finished'),
+            status: o.status === 'PENDING_ACCEPTANCE' ? 'pending' : 
+                   o.status === 'ACCEPTED' ? 'accepted' :
+                   o.status === 'DELIVERED' ? 'delivered' :
+                   o.status === 'CONFIRMED' ? 'completed' :
+                   o.status === 'COMPLETED' ? 'completed' :
+                   o.status === 'CANCELLED' ? 'cancelled' : 'unknown',
             timestamp: ts
           };
         });
