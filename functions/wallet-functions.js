@@ -1917,23 +1917,61 @@ export const processVixtip = onCall(async (request) => {
     // Processar a gorjeta usando transação
     const result = await db.runTransaction(async (transaction) => {
       // Referências
+      const buyerWalletRef = db.collection('wallets').doc(buyerId);
       const sellerWalletRef = db.collection('wallets').doc(authorId);
+      const buyerTransactionRef = db.collection('transactions').doc();
       const sellerTransactionRef = db.collection('transactions').doc();
       const vixtipRef = db.collection('vixtips').doc();
 
+      // Verificar se a carteira do comprador existe
+      const buyerWalletSnap = await transaction.get(buyerWalletRef);
+      if (!buyerWalletSnap.exists) {
+        throw new HttpsError("not-found", "Carteira do comprador não encontrada");
+      }
+
+      const buyerWallet = buyerWalletSnap.data();
+      if (buyerWallet.vp < vpAmount) {
+        throw new HttpsError("failed-precondition", "Saldo VP insuficiente");
+      }
+
       // Verificar se a carteira do vendedor existe
       const sellerWalletSnap = await transaction.get(sellerWalletRef);
-      
       if (!sellerWalletSnap.exists) {
         throw new HttpsError("not-found", "Carteira do vendedor não encontrada");
       }
 
       const sellerWallet = sellerWalletSnap.data();
 
+      // Debitar VP do comprador
+      transaction.update(buyerWalletRef, {
+        vp: buyerWallet.vp - vpAmount,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
       // Creditar VC na carteira do vendedor
       transaction.update(sellerWalletRef, {
         vc: (sellerWallet.vc || 0) + vcAmount,
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Criar transação de compra para o comprador
+      transaction.set(buyerTransactionRef, {
+        userId: buyerId,
+        type: 'VIXTIP_SENT',
+        amounts: {
+          vp: -vpAmount
+        },
+        metadata: {
+          description: `Gorjeta enviada para ${authorName}`,
+          postId,
+          postType,
+          authorId,
+          authorName,
+          authorUsername,
+          vcAmount
+        },
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
       // Criar transação de venda para o vendedor

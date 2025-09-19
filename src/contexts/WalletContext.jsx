@@ -376,88 +376,35 @@ export const WalletProvider = ({ children }) => {
       // Calcular valor em VC que o autor receberá (1 VP = 0.5 VC)
       const vcAmount = Math.round(amount * 0.5);
 
-      // Usar transação para garantir consistência (apenas carteira do comprador)
-      const result = await runTransaction(db, async (transaction) => {
-        // Referências dos documentos
-        const buyerWalletRef = doc(db, 'wallets', currentUser.uid);
-        const transactionRef = doc(collection(db, 'transactions'));
-
-        // Ler saldo atual do comprador
-        const buyerWalletSnap = await transaction.get(buyerWalletRef);
-
-        if (!buyerWalletSnap.exists()) {
-          throw new Error('Carteira do comprador não encontrada');
-        }
-
-        const buyerWallet = buyerWalletSnap.data();
-        if (buyerWallet.vp < amount) {
-          throw new Error('Saldo VP insuficiente');
-        }
-
-        // Atualizar carteira do comprador (debitar VP)
-        transaction.update(buyerWalletRef, {
-          vp: buyerWallet.vp - amount,
-          updatedAt: Timestamp.now()
+      // Chamar função para processar a gorjeta (tudo no servidor)
+      try {
+        const processVixtipFunc = httpsCallable(functions, 'processVixtip');
+        await processVixtipFunc({ 
+          postId,
+          postType,
+          authorId,
+          authorName,
+          authorUsername,
+          buyerId: currentUser.uid,
+          buyerName: buyerName || 'Usuário',
+          buyerUsername: buyerUsername || '',
+          vpAmount: amount,
+          vcAmount
         });
-
-        // Criar transação de compra (histórico do comprador)
-        transaction.set(transactionRef, {
-          userId: currentUser.uid,
-          type: 'VIXTIP_SENT',
-          amounts: {
-            vp: -amount
-          },
-          metadata: {
-            description: `Gorjeta enviada para ${authorName}`,
-            postId,
-            postType,
-            authorId,
-            authorName,
-            authorUsername,
-            vcAmount
-          },
-          createdAt: Timestamp.now(),
-          timestamp: Timestamp.now()
-        });
-
-        return { success: true };
-      });
-
-      if (result.success) {
-        // Chamar função para processar a gorjeta imediatamente
-        try {
-          const processVixtipFunc = httpsCallable(functions, 'processVixtip');
-          await processVixtipFunc({ 
-            postId,
-            postType,
-            authorId,
-            authorName,
-            authorUsername,
-            buyerId: currentUser.uid,
-            buyerName: buyerName || 'Usuário',
-            buyerUsername: buyerUsername || '',
-            vpAmount: amount,
-            vcAmount
-          });
-          
-          showSuccess(
-            `Gorjeta de ${amount} VP enviada! ${vcAmount} VC foram creditados para ${authorName}.`,
-            'Vixtip Enviado'
-          );
-        } catch (processError) {
-          console.error('Erro ao processar gorjeta:', processError);
-          showSuccess(
-            `Gorjeta de ${amount} VP enviada! A vendedora receberá ${vcAmount} VC em breve.`,
-            'Vixtip Enviado'
-          );
-        }
+        
+        showSuccess(
+          `Gorjeta de ${amount} VP enviada! ${vcAmount} VC foram creditados para ${authorName}.`,
+          'Vixtip Enviado'
+        );
         return true;
+      } catch (processError) {
+        console.error('Erro ao processar gorjeta:', processError);
+        showError('Ocorreu um erro ao enviar a gorjeta. Tente novamente.', 'Erro');
+        return false;
       }
 
-      return false;
     } catch (error) {
       console.error('Error sending vixtip:', error);
-      // Use direct error handling instead of handleWalletError to avoid circular dependency
       showError('Ocorreu um erro ao enviar a gorjeta. Tente novamente.', 'Erro');
       return false;
     }
