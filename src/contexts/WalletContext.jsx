@@ -337,6 +337,144 @@ export const WalletProvider = ({ children }) => {
     }
   }, [currentUser, apiFunc, showSuccess, showError]);
 
+  // Send Vixtip (gorjeta)
+  const sendVixtip = useCallback(async (vixtipData) => {
+    if (!currentUser) return false;
+
+    const { postId, postType, authorId, authorName, authorUsername, amount } = vixtipData;
+
+    try {
+      // Verificar se o usuário tem saldo suficiente
+      if (vpBalance < amount) {
+        showError('Saldo VP insuficiente para enviar gorjeta.');
+        return false;
+      }
+
+      // Calcular valor em VC que o autor receberá (1 VP = 0.5 VC)
+      const vcAmount = Math.round(amount * 0.5);
+
+      // Usar transação para garantir consistência
+      const result = await runTransaction(db, async (transaction) => {
+        // Referências dos documentos
+        const buyerWalletRef = doc(db, 'wallets', currentUser.uid);
+        const sellerWalletRef = doc(db, 'wallets', authorId);
+        const transactionRef = doc(collection(db, 'transactions'));
+        const vixtipRef = doc(collection(db, 'vixtips'));
+
+        // Ler saldos atuais
+        const buyerWalletSnap = await transaction.get(buyerWalletRef);
+        const sellerWalletSnap = await transaction.get(sellerWalletRef);
+
+        if (!buyerWalletSnap.exists()) {
+          throw new Error('Carteira do comprador não encontrada');
+        }
+
+        const buyerWallet = buyerWalletSnap.data();
+        if (buyerWallet.vp < amount) {
+          throw new Error('Saldo VP insuficiente');
+        }
+
+        // Atualizar carteira do comprador (debitar VP)
+        transaction.update(buyerWalletRef, {
+          vp: buyerWallet.vp - amount,
+          updatedAt: Timestamp.now()
+        });
+
+        // Atualizar carteira do vendedor (adicionar VC)
+        if (sellerWalletSnap.exists()) {
+          const sellerWallet = sellerWalletSnap.data();
+          transaction.update(sellerWalletRef, {
+            vc: (sellerWallet.vc || 0) + vcAmount,
+            updatedAt: Timestamp.now()
+          });
+        } else {
+          // Se a carteira do vendedor não existe, criar
+          transaction.set(sellerWalletRef, {
+            vp: 0,
+            vc: vcAmount,
+            vbp: 0,
+            vcPending: 0,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+          });
+        }
+
+        // Criar transação de compra (histórico do comprador)
+        transaction.set(transactionRef, {
+          userId: currentUser.uid,
+          type: 'VIXTIP_SENT',
+          amounts: {
+            vp: -amount
+          },
+          metadata: {
+            description: `Gorjeta enviada para ${authorName}`,
+            postId,
+            postType,
+            authorId,
+            authorName,
+            authorUsername,
+            vcAmount
+          },
+          createdAt: Timestamp.now(),
+          timestamp: Timestamp.now()
+        });
+
+        // Criar transação de venda (histórico do vendedor)
+        const sellerTransactionRef = doc(collection(db, 'transactions'));
+        transaction.set(sellerTransactionRef, {
+          userId: authorId,
+          type: 'VIXTIP_RECEIVED',
+          amounts: {
+            vc: vcAmount
+          },
+          metadata: {
+            description: `Gorjeta recebida de ${userProfile?.displayName || userProfile?.name || 'Usuário'}`,
+            postId,
+            postType,
+            buyerId: currentUser.uid,
+            buyerName: userProfile?.displayName || userProfile?.name || 'Usuário',
+            buyerUsername: userProfile?.username || '',
+            vpAmount: amount
+          },
+          createdAt: Timestamp.now(),
+          timestamp: Timestamp.now()
+        });
+
+        // Salvar dados da gorjeta
+        transaction.set(vixtipRef, {
+          postId,
+          postType,
+          authorId,
+          authorName,
+          authorUsername,
+          buyerId: currentUser.uid,
+          buyerName: userProfile?.displayName || userProfile?.name || 'Usuário',
+          buyerUsername: userProfile?.username || '',
+          vpAmount: amount,
+          vcAmount,
+          createdAt: Timestamp.now(),
+          timestamp: Timestamp.now()
+        });
+
+        return { success: true, vixtipId: vixtipRef.id };
+      });
+
+      if (result.success) {
+        showSuccess(
+          `Gorjeta de ${amount} VP enviada! ${vcAmount} VC foram creditados para ${authorName}.`,
+          'Vixtip Enviado'
+        );
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error sending vixtip:', error);
+      handleWalletError(error, 'sendVixtip');
+      return false;
+    }
+  }, [currentUser, vpBalance, userProfile, showSuccess, showError, handleWalletError]);
+
   // Format currency
   const formatCurrency = useCallback((amount, currency = '') => {
     if (amount === null || amount === undefined) return '0';
@@ -495,6 +633,7 @@ export const WalletProvider = ({ children }) => {
     processPackSale,
     processServicePurchase,
     createPackOrder,
+    sendVixtip,
     
     // Utilities
     formatCurrency,

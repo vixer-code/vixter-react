@@ -642,6 +642,25 @@
   transform: translateY(-1px);
 }
 
+/* ===== Tip Button Specific Styles ===== */
+.action-btn.tip-btn {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.action-btn.tip-btn:hover {
+  background: linear-gradient(135deg, #218838, #1ea085);
+  border-color: rgba(40, 167, 69, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.action-btn.tip-btn i {
+  color: #ffffff;
+}
+
 /* ===== Repost Indicator ===== */
 .repost-indicator {
   display: flex;

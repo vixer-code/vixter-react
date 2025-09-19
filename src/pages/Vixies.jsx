@@ -7,6 +7,8 @@ import { database } from '../../config/firebase';
 import { ref, onValue, set, update, push, off, query, orderByChild, get, remove } from 'firebase/database';
 import { Link } from 'react-router-dom';
 import PostCreator from '../components/PostCreator';
+import VixtipModal from '../components/VixtipModal';
+import VixtipSupporters from '../components/VixtipSupporters';
 import './Vixies.css';
 
 // Component for displaying attachments with validation
@@ -74,6 +76,8 @@ const Vixies = () => {
   const [dismissedClientRestriction, setDismissedClientRestriction] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
+  const [showVixtipModal, setShowVixtipModal] = useState(false);
+  const [selectedPostForTip, setSelectedPostForTip] = useState(null);
 
   // Check KYC verification
   const isKycVerified = userProfile?.kyc === true;
@@ -225,8 +229,22 @@ const Vixies = () => {
       showWarning('Somente contas de cliente podem dar gorjeta.');
       return;
     }
-    // Placeholder integration point to VC credit (1.5 VP = 1 VC)
-    showInfo('Funcionalidade de gorjeta será integrada em breve.');
+    
+    // Verificar se o autor do post pode receber gorjetas (deve ser provider)
+    const author = users[post.authorId] || {};
+    if (author.accountType !== 'provider') {
+      showWarning('Este usuário não pode receber gorjetas.');
+      return;
+    }
+    
+    // Adicionar informações do autor ao post para o modal
+    const postWithAuthorInfo = {
+      ...post,
+      authorAccountType: author.accountType
+    };
+    
+    setSelectedPostForTip(postWithAuthorInfo);
+    setShowVixtipModal(true);
   };
 
   const handleDeletePost = (postId) => {
@@ -612,12 +630,26 @@ const Vixies = () => {
                       <i className="fas fa-hand-holding-usd"></i>
                     </button>
                   </div>
+
+                  {/* Top Apoiadores */}
+                  <VixtipSupporters postId={post.id} postType="vixies" />
                 </div>
               );
             })
           )}
         </div>
       </div>
+
+      {/* Vixtip Modal */}
+      <VixtipModal
+        isOpen={showVixtipModal}
+        onClose={() => {
+          setShowVixtipModal(false);
+          setSelectedPostForTip(null);
+        }}
+        post={selectedPostForTip}
+        postType="vixies"
+      />
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
