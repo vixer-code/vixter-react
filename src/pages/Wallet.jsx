@@ -37,14 +37,6 @@ const Wallet = () => {
     type: 'all',
     period: '7days'
   });
-  // Provider sales dashboard filters/state
-  const [salesPeriod, setSalesPeriod] = useState('7days');
-  const [salesLoading, setSalesLoading] = useState(false);
-  const [salesError, setSalesError] = useState(null);
-  const [bestSellers, setBestSellers] = useState([]); // {key, id, type, title, count}
-  const [topBuyers, setTopBuyers] = useState([]); // {buyerId, displayName, username, profilePictureURL, count}
-  const [recentSales, setRecentSales] = useState([]); // {id, type, title, priceVC, timestamp}
-  const [totalVCEarnedPeriod, setTotalVCEarnedPeriod] = useState(0);
   const [providerHistory, setProviderHistory] = useState([]); // full list
   const [providerHistoryLoading, setProviderHistoryLoading] = useState(false);
   const [providerHistoryPeriod, setProviderHistoryPeriod] = useState('all');
@@ -84,124 +76,6 @@ const Wallet = () => {
     setCurrentPage(1);
   }, [transactions, filters]);
 
-  // Load provider sales dashboard data
-  useEffect(() => {
-    const loadProviderSales = async () => {
-      if (!isProvider || !currentUser) return;
-      setSalesLoading(true);
-      setSalesError(null);
-      try {
-        const now = new Date();
-        let startDate;
-        if (salesPeriod === '7days') {
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        } else if (salesPeriod === '30days') {
-          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        } else if (salesPeriod === '3months') {
-          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-        } else {
-          startDate = new Date(0);
-        }
-        const startTs = Timestamp.fromDate(startDate);
-
-        // Query serviceOrders and packOrders for this seller and time range
-        const serviceOrdersRef = collection(db, 'serviceOrders');
-        const packOrdersRef = collection(db, 'packOrders');
-        const qServices = fsQuery(
-          serviceOrdersRef,
-          where('sellerId', '==', currentUser.uid),
-          where('timestamp', '>=', startTs)
-        );
-        const qPacks = fsQuery(
-          packOrdersRef,
-          where('sellerId', '==', currentUser.uid),
-          where('timestamp', '>=', startTs)
-        );
-
-        const [servicesSnap, packsSnap] = await Promise.all([getDocs(qServices), getDocs(qPacks)]);
-
-        const orders = [];
-        servicesSnap.forEach((docSnap) => {
-          const d = docSnap.data();
-          orders.push({ id: docSnap.id, type: 'service', ...d });
-        });
-        packsSnap.forEach((docSnap) => {
-          const d = docSnap.data();
-          orders.push({ id: docSnap.id, type: 'pack', ...d });
-        });
-
-        // Aggregate totals (finished only for earned VC), compute pending separately if needed
-        const finishedOrders = orders.filter(o => (o.status || '').toLowerCase() === 'finished' || (o.status || '').toLowerCase() === 'completed');
-        const totalVC = finishedOrders.reduce((sum, o) => sum + (Number(o.priceVC || 0)), 0);
-        setTotalVCEarnedPeriod(totalVC);
-
-        // Best sellers (by item id)
-        const itemCountMap = new Map(); // key: `${type}:${itemId}`
-        const itemMeta = new Map(); // key -> {id, type, title}
-        orders.forEach((o) => {
-          const itemId = o.itemId || o.serviceId || o.packId || o.id;
-          const key = `${o.type}:${itemId}`;
-          itemCountMap.set(key, (itemCountMap.get(key) || 0) + 1);
-          if (!itemMeta.has(key)) {
-            itemMeta.set(key, { id: itemId, type: o.type, title: o.title || o.itemTitle || (o.type === 'service' ? 'Serviço' : 'Pack') });
-          }
-        });
-        const bestSellersArr = Array.from(itemCountMap.entries())
-          .map(([key, count]) => ({ key, count, ...itemMeta.get(key) }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 5);
-        setBestSellers(bestSellersArr);
-
-        // Top buyers (aggregate by buyerId)
-        const buyerCountMap = new Map();
-        orders.forEach((o) => {
-          const buyerId = o.buyerId;
-          if (!buyerId) return;
-          buyerCountMap.set(buyerId, (buyerCountMap.get(buyerId) || 0) + 1);
-        });
-        const buyersSorted = Array.from(buyerCountMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
-        const buyersWithProfiles = await Promise.all(buyersSorted.map(async ([buyerId, count]) => {
-          const profile = await getUserById(buyerId);
-          return {
-            buyerId,
-            displayName: profile?.displayName || 'Usuário',
-            username: profile?.username || '',
-            profilePictureURL: profile?.profilePictureURL || null,
-            count
-          };
-        }));
-        setTopBuyers(buyersWithProfiles);
-
-        // Recent sales (finished first, then others) - limit 3
-        const recent = orders
-          .slice()
-          .sort((a, b) => (b.timestamp?.toMillis?.() || b.timestamp || 0) - (a.timestamp?.toMillis?.() || a.timestamp || 0))
-          .slice(0, 3)
-          .map(o => ({
-            id: o.id,
-            type: o.type,
-            title: o.title || o.itemTitle || (o.type === 'service' ? 'Serviço' : 'Pack'),
-            priceVC: Number(o.priceVC || 0),
-            timestamp: o.timestamp?.toMillis?.() ? o.timestamp.toMillis() : (typeof o.timestamp === 'number' ? o.timestamp : Date.now()),
-            status: o.status || 'pending'
-          }));
-        setRecentSales(recent);
-
-      } catch (e) {
-        console.error('Error loading provider sales:', e);
-        setSalesError('Erro ao carregar vendas.');
-        setBestSellers([]);
-        setTopBuyers([]);
-        setRecentSales([]);
-        setTotalVCEarnedPeriod(0);
-      } finally {
-        setSalesLoading(false);
-      }
-    };
-    if (activeTab === 'transactions') {
-      loadProviderSales();
-    }
-  }, [isProvider, currentUser, salesPeriod, activeTab, getUserById]);
 
   // Load full provider history list
   useEffect(() => {
@@ -1023,105 +897,6 @@ const Wallet = () => {
       {/* Transactions Tab */}
       {activeTab === 'transactions' && (
         <div className="tab-content active">
-          {(isProvider || isBoth) && (
-            <div className="provider-sales-section">
-              <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3>Visão de Vendas</h3>
-                <div className="filter-group" style={{ minWidth: 200 }}>
-                  <label htmlFor="filter-sales-period">Período</label>
-                  <select 
-                    id="filter-sales-period"
-                    value={salesPeriod}
-                    onChange={(e) => setSalesPeriod(e.target.value)}
-                  >
-                    <option value="7days">Últimos 7 dias</option>
-                    <option value="30days">Últimos 30 dias</option>
-                    <option value="3months">Últimos 3 meses</option>
-                    <option value="all">Todo período</option>
-                  </select>
-                </div>
-              </div>
-
-              {salesLoading ? (
-                <div className="loading-state"><i className="fa-solid fa-spinner fa-spin"></i> Carregando vendas...</div>
-              ) : salesError ? (
-                <div className="empty-state">{salesError}</div>
-              ) : (
-                <>
-                  <div className="sales-summary-cards">
-                    <div className="summary-card"><div className="label">Total em VC</div><div className="value">{totalVCEarnedPeriod.toFixed(2)} VC</div></div>
-                    <div className="summary-card"><div className="label">Saldo Atual</div><div className="value">{formatCurrency(vcBalance, '')} VC</div></div>
-                    <div className="summary-card"><div className="label">Pendente</div><div className="value">{formatCurrency(vcPendingBalance, '')} VC</div></div>
-                  </div>
-
-                  <div className="sales-widgets-grid">
-                    <div className="widget-card">
-                      <div className="widget-header">Mais vendidos</div>
-                      {bestSellers.length === 0 ? (
-                        <div className="empty-state">Sem vendas neste período.</div>
-                      ) : (
-                        <ul className="ranked-list">
-                          {bestSellers.map((item) => (
-                            <li key={item.key}>
-                              <span className="title">{item.title} <small>({item.type === 'service' ? 'Serviço' : 'Pack'})</small></span>
-                              <span className="meta">{item.count} vendas</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-
-                    <div className="widget-card">
-                      <div className="widget-header">Compradores frequentes</div>
-                      {topBuyers.length === 0 ? (
-                        <div className="empty-state">Sem compradores recorrentes.</div>
-                      ) : (
-                        <ul className="buyers-list">
-                          {topBuyers.map((b) => (
-                            <li key={b.buyerId} className="buyer-item">
-                              <div className="buyer-left">
-                                <img src={b.profilePictureURL || '/images/defpfp1.png'} alt={b.displayName} width={32} height={32} style={{ borderRadius: '50%', objectFit: 'cover' }} />
-                                <div className="buyer-text">
-                                  <div className="buyer-name">{b.displayName}</div>
-                                  <div className="buyer-username">@{b.username}</div>
-                                </div>
-                              </div>
-                              <div className="buyer-meta">{b.count} compras</div>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-
-                    <div className="widget-card">
-                      <div className="widget-header">Vendas recentes</div>
-                      {recentSales.length === 0 ? (
-                        <div className="empty-state">Nenhuma venda recente.</div>
-                      ) : (
-                        <ul className="sales-list compact">
-                          {recentSales.map((s) => (
-                            <li key={`${s.type}:${s.id}`} className="sale-item">
-                              <div className="sale-left">
-                                <span className="badge">{s.type === 'service' ? 'Serviço' : 'Pack'}</span>
-                                <span className="title">{s.title}</span>
-                              </div>
-                              <div className="sale-right">
-                                <span className="amount">{Number(s.priceVC || 0).toFixed(2)} VC</span>
-                                <span className="date">{new Date(s.timestamp).toLocaleString('pt-BR')}</span>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      <div className="widget-actions">
-                        <button className="btn-secondary" onClick={() => setActiveTab('transactions')}>Ver histórico completo</button>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
 
           {(isProvider || isBoth) && (
             <div className="provider-history-section">
@@ -1142,10 +917,21 @@ const Wallet = () => {
                 </div>
               </div>
 
+              <div className="provider-info">
+                <p className="info-text">
+                  <i className="fas fa-info-circle"></i>
+                  Histórico de vendas em VC (packs, serviços e gorjetas recebidas)
+                </p>
+              </div>
+
               {providerHistoryLoading ? (
                 <div className="loading-state"><i className="fa-solid fa-spinner fa-spin"></i> Carregando histórico...</div>
               ) : providerHistory.length === 0 ? (
-                <div className="empty-state">Nenhuma venda encontrada.</div>
+                <div className="empty-state">
+                  <i className="fas fa-chart-line"></i>
+                  <h4>Nenhuma venda encontrada</h4>
+                  <p>Suas vendas de packs e serviços aparecerão aqui quando forem concluídas.</p>
+                </div>
               ) : (
                 <div className="transactions-list">
                   {providerHistory.map((row) => (
@@ -1162,7 +948,9 @@ const Wallet = () => {
                         </div>
                       </div>
                       <div className="transaction-amount">
-                        <span className="amount-value">{formatCurrency(row.amount)} {row.coin}</span>
+                        <span className="amount-value" style={{ color: '#00c853' }}>
+                          +{formatCurrency(row.amount)} {row.coin}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -1171,48 +959,51 @@ const Wallet = () => {
             </div>
           )}
 
-          <div className="transactions-filters">
-            <div className="filter-group">
-              <label htmlFor="filter-currency">Moeda</label>
-              <select 
-                id="filter-currency"
-                value={filters.currency}
-                onChange={(e) => setFilters({...filters, currency: e.target.value})}
-              >
-                <option value="all">Todas</option>
-                <option value="vp">VP</option>
-                <option value="vc">VC</option>
-                <option value="vbp">VBP</option>
-              </select>
+          {/* Only show filters for non-providers or when not in provider history */}
+          {!(isProvider || isBoth) && (
+            <div className="transactions-filters">
+              <div className="filter-group">
+                <label htmlFor="filter-currency">Moeda</label>
+                <select 
+                  id="filter-currency"
+                  value={filters.currency}
+                  onChange={(e) => setFilters({...filters, currency: e.target.value})}
+                >
+                  <option value="all">Todas</option>
+                  <option value="vp">VP</option>
+                  <option value="vc">VC</option>
+                  <option value="vbp">VBP</option>
+                </select>
+              </div>
+              <div className="filter-group">
+                <label htmlFor="filter-type">Tipo</label>
+                <select 
+                  id="filter-type"
+                  value={filters.type}
+                  onChange={(e) => setFilters({...filters, type: e.target.value})}
+                >
+                  <option value="all">Todas Transações</option>
+                  <option value="incoming">Recebidas</option>
+                  <option value="outgoing">Enviadas</option>
+                  <option value="purchase">Compras</option>
+                  <option value="earned">Ganhos</option>
+                </select>
+              </div>
+              <div className="filter-group">
+                <label htmlFor="filter-period">Período</label>
+                <select 
+                  id="filter-period"
+                  value={filters.period}
+                  onChange={(e) => setFilters({...filters, period: e.target.value})}
+                >
+                  <option value="7days">Últimos 7 dias</option>
+                  <option value="30days">Últimos 30 dias</option>
+                  <option value="3months">Últimos 3 meses</option>
+                  <option value="all">Todo Histórico</option>
+                </select>
+              </div>
             </div>
-            <div className="filter-group">
-              <label htmlFor="filter-type">Tipo</label>
-              <select 
-                id="filter-type"
-                value={filters.type}
-                onChange={(e) => setFilters({...filters, type: e.target.value})}
-              >
-                <option value="all">Todas Transações</option>
-                <option value="incoming">Recebidas</option>
-                <option value="outgoing">Enviadas</option>
-                <option value="purchase">Compras</option>
-                <option value="earned">Ganhos</option>
-              </select>
-            </div>
-            <div className="filter-group">
-              <label htmlFor="filter-period">Período</label>
-              <select 
-                id="filter-period"
-                value={filters.period}
-                onChange={(e) => setFilters({...filters, period: e.target.value})}
-              >
-                <option value="7days">Últimos 7 dias</option>
-                <option value="30days">Últimos 30 dias</option>
-                <option value="3months">Últimos 3 meses</option>
-                <option value="all">Todo Histórico</option>
-              </select>
-            </div>
-          </div>
+          )}
 
           <div className="transactions-list">
             {pagedTransactions.length > 0 ? (

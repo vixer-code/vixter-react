@@ -9,6 +9,29 @@
   min-height: 100dvh;
 }
 
+/* Provider Info Section */
+.provider-info {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 200, 83, 0.2);
+}
+
+.provider-info .info-text {
+  margin: 0;
+  color: #b0b0b0;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.provider-info .info-text i {
+  color: #00c853;
+  font-size: 1rem;
+}
+
 /* Account Type Header */
 .account-type-header {
   text-align: center;

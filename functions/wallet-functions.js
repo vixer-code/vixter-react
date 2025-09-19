@@ -1513,8 +1513,8 @@ export const processVCWithdrawal = onCall({
     throw new HttpsError("invalid-argument", "Confirmação de taxa obrigatória");
   }
 
-  // Taxa percentual configurável (8% para novos payouts)
-  const WITHDRAWAL_FEE_PERCENTAGE = 0.08; // 8%
+  // Taxa percentual configurável (18% para novos payouts)
+  const WITHDRAWAL_FEE_PERCENTAGE = 0.18; // 18%
   const MINIMUM_WITHDRAWAL = 50; // 50 VC mínimo
 
   if (amount < MINIMUM_WITHDRAWAL) {
@@ -1647,7 +1647,7 @@ export const calculateWithdrawalFee = onCall({
     throw new HttpsError("invalid-argument", "Valor inválido");
   }
 
-  const WITHDRAWAL_FEE_PERCENTAGE = 0.08; // 8%
+  const WITHDRAWAL_FEE_PERCENTAGE = 0.18; // 18%
   const MINIMUM_WITHDRAWAL = 50;
 
   if (amount < MINIMUM_WITHDRAWAL) {
