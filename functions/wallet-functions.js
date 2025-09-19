@@ -1890,4 +1890,254 @@ export const sendPurchaseConfirmationEmail = onCall({
   }
 });
 
-logger.info('✅ Wallet functions loaded - Stripe preserved, watermarking removed');
+/**
+ * Processa uma gorjeta individual (chamada quando gorjeta é enviada)
+ */
+export const processVixtip = onCall(async (request) => {
+  const { vixtipId } = request.data;
+  
+  if (!vixtipId) {
+    throw new HttpsError("invalid-argument", "ID da gorjeta é obrigatório");
+  }
+
+  try {
+    const vixtipRef = db.collection('vixtips').doc(vixtipId);
+    const vixtipDoc = await vixtipRef.get();
+    
+    if (!vixtipDoc.exists) {
+      throw new HttpsError("not-found", "Gorjeta não encontrada");
+    }
+    
+    const vixtipData = vixtipDoc.data();
+    
+    if (vixtipData.status !== 'pending') {
+      logger.warn(`Gorjeta ${vixtipId} já foi processada ou não está pendente`);
+      return { success: true, message: "Gorjeta já processada" };
+    }
+
+    // Usar transação para garantir consistência
+    await db.runTransaction(async (transaction) => {
+      // Referências
+      const sellerWalletRef = db.collection('wallets').doc(vixtipData.authorId);
+      const transactionRef = db.collection('transactions').doc();
+      const vixtipUpdateRef = vixtipRef;
+
+      // Ler carteira do vendedor
+      const sellerWalletSnap = await transaction.get(sellerWalletRef);
+      
+      // Atualizar carteira do vendedor
+      if (sellerWalletSnap.exists()) {
+        const sellerWallet = sellerWalletSnap.data();
+        transaction.update(sellerWalletRef, {
+          vc: (sellerWallet.vc || 0) + vixtipData.vcAmount,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      } else {
+        // Criar carteira se não existir
+        transaction.set(sellerWalletRef, {
+          vp: 0,
+          vc: vixtipData.vcAmount,
+          vbp: 0,
+          vcPending: 0,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+      // Criar transação de venda (histórico do vendedor)
+      transaction.set(transactionRef, {
+        userId: vixtipData.authorId,
+        type: 'VIXTIP_RECEIVED',
+        amounts: {
+          vc: vixtipData.vcAmount
+        },
+        metadata: {
+          description: `Gorjeta recebida de ${vixtipData.buyerName || 'Usuário'}`,
+          postId: vixtipData.postId,
+          postType: vixtipData.postType,
+          buyerId: vixtipData.buyerId,
+          buyerName: vixtipData.buyerName || 'Usuário',
+          buyerUsername: vixtipData.buyerUsername || '',
+          vpAmount: vixtipData.vpAmount
+        },
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Marcar gorjeta como processada
+      transaction.update(vixtipUpdateRef, {
+        status: 'completed',
+        processedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    });
+
+    logger.info(`✅ Gorjeta ${vixtipId} processada com sucesso - ${vixtipData.vcAmount} VC creditados para ${vixtipData.authorName}`);
+    
+    return { 
+      success: true, 
+      message: "Gorjeta processada com sucesso",
+      vcAmount: vixtipData.vcAmount,
+      authorName: vixtipData.authorName
+    };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao processar gorjeta ${vixtipId}:`, error);
+    throw new HttpsError("internal", "Erro ao processar gorjeta");
+  }
+});
+
+/**
+ * Cron job que processa todas as gorjetas pendentes (executa a cada 24 horas)
+ */
+export const processPendingVixtips = onCall(async () => {
+  try {
+    logger.info('🔄 Iniciando processamento de gorjetas pendentes...');
+    
+    // Buscar todas as gorjetas pendentes
+    const pendingVixtips = await db.collection('vixtips')
+      .where('status', '==', 'pending')
+      .orderBy('createdAt', 'asc')
+      .limit(100) // Processar até 100 por vez para evitar timeout
+      .get();
+
+    if (pendingVixtips.empty) {
+      logger.info('✅ Nenhuma gorjeta pendente encontrada');
+      return { 
+        success: true, 
+        message: "Nenhuma gorjeta pendente",
+        processed: 0
+      };
+    }
+
+    let processedCount = 0;
+    let errorCount = 0;
+    const errors = [];
+
+    // Processar cada gorjeta pendente
+    for (const vixtipDoc of pendingVixtips.docs) {
+      try {
+        const vixtipData = vixtipDoc.data();
+        
+        // Usar transação para processar cada gorjeta
+        await db.runTransaction(async (transaction) => {
+          // Verificar se ainda está pendente (pode ter sido processada por outra instância)
+          const currentVixtipSnap = await transaction.get(vixtipDoc.ref);
+          if (!currentVixtipSnap.exists || currentVixtipSnap.data().status !== 'pending') {
+            return; // Já foi processada
+          }
+
+          // Referências
+          const sellerWalletRef = db.collection('wallets').doc(vixtipData.authorId);
+          const transactionRef = db.collection('transactions').doc();
+
+          // Ler carteira do vendedor
+          const sellerWalletSnap = await transaction.get(sellerWalletRef);
+          
+          // Atualizar carteira do vendedor
+          if (sellerWalletSnap.exists()) {
+            const sellerWallet = sellerWalletSnap.data();
+            transaction.update(sellerWalletRef, {
+              vc: (sellerWallet.vc || 0) + vixtipData.vcAmount,
+              updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+          } else {
+            // Criar carteira se não existir
+            transaction.set(sellerWalletRef, {
+              vp: 0,
+              vc: vixtipData.vcAmount,
+              vbp: 0,
+              vcPending: 0,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+          }
+
+          // Criar transação de venda (histórico do vendedor)
+          transaction.set(transactionRef, {
+            userId: vixtipData.authorId,
+            type: 'VIXTIP_RECEIVED',
+            amounts: {
+              vc: vixtipData.vcAmount
+            },
+            metadata: {
+              description: `Gorjeta recebida de ${vixtipData.buyerName || 'Usuário'}`,
+              postId: vixtipData.postId,
+              postType: vixtipData.postType,
+              buyerId: vixtipData.buyerId,
+              buyerName: vixtipData.buyerName || 'Usuário',
+              buyerUsername: vixtipData.buyerUsername || '',
+              vpAmount: vixtipData.vpAmount
+            },
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            timestamp: admin.firestore.FieldValue.serverTimestamp()
+          });
+
+          // Marcar gorjeta como processada
+          transaction.update(vixtipDoc.ref, {
+            status: 'completed',
+            processedAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+        });
+
+        processedCount++;
+        logger.info(`✅ Gorjeta ${vixtipDoc.id} processada - ${vixtipData.vcAmount} VC para ${vixtipData.authorName}`);
+
+      } catch (error) {
+        errorCount++;
+        const errorMsg = `Erro ao processar gorjeta ${vixtipDoc.id}: ${error.message}`;
+        errors.push(errorMsg);
+        logger.error(`💥 ${errorMsg}`, error);
+      }
+    }
+
+    const result = {
+      success: true,
+      message: `Processamento concluído: ${processedCount} gorjetas processadas, ${errorCount} erros`,
+      processed: processedCount,
+      errors: errorCount,
+      errorDetails: errors
+    };
+
+    logger.info(`🎉 Processamento de gorjetas concluído: ${processedCount} processadas, ${errorCount} erros`);
+    return result;
+
+  } catch (error) {
+    logger.error('💥 Erro no processamento em lote de gorjetas:', error);
+    throw new HttpsError("internal", "Erro no processamento de gorjetas");
+  }
+});
+
+/**
+ * Função HTTP para ser chamada por cron job externo (Cloud Scheduler)
+ */
+export const cronProcessVixtips = onRequest(async (req, res) => {
+  try {
+    // Verificar se é uma chamada autorizada (opcional - adicionar autenticação se necessário)
+    const authHeader = req.headers.authorization;
+    const cronSecret = process.env.CRON_SECRET || 'vixter-default-cron-secret';
+    
+    if (authHeader !== `Bearer ${cronSecret}`) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    // Chamar a função de processamento
+    const result = await processPendingVixtips.run();
+    
+    res.status(200).json({
+      success: true,
+      message: 'Cron job executado com sucesso',
+      data: result
+    });
+
+  } catch (error) {
+    logger.error('💥 Erro no cron job de gorjetas:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor',
+      message: error.message
+    });
+  }
+});
+
+logger.info('✅ Wallet functions loaded - Stripe preserved, watermarking removed, Vixtip processing added');

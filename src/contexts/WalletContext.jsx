@@ -442,10 +442,22 @@ export const WalletProvider = ({ children }) => {
       });
 
       if (result.success) {
-        showSuccess(
-          `Gorjeta de ${amount} VP enviada! A vendedora receberá ${vcAmount} VC em breve.`,
-          'Vixtip Enviado'
-        );
+        // Chamar função para processar a gorjeta imediatamente
+        try {
+          const processVixtipFunc = httpsCallable(functions, 'processVixtip');
+          await processVixtipFunc({ vixtipId: result.vixtipId });
+          
+          showSuccess(
+            `Gorjeta de ${amount} VP enviada! ${vcAmount} VC foram creditados para ${authorName}.`,
+            'Vixtip Enviado'
+          );
+        } catch (processError) {
+          console.error('Erro ao processar gorjeta:', processError);
+          showSuccess(
+            `Gorjeta de ${amount} VP enviada! A vendedora receberá ${vcAmount} VC em breve.`,
+            'Vixtip Enviado'
+          );
+        }
         return true;
       }
 

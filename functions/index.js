@@ -16,6 +16,10 @@ import {
   checkStripeConnectConfig,
   checkEnvironment,
   sendPurchaseConfirmationEmail,
+
+  // Vixtip Processing
+  processVixtip,
+  processPendingVixtips,
 } from './wallet-functions.js';
 
 export {
@@ -35,4 +39,8 @@ export {
   checkStripeConnectConfig,
   checkEnvironment,
   sendPurchaseConfirmationEmail,
+
+  // Vixtip Processing
+  processVixtip,
+  processPendingVixtips,
 };
