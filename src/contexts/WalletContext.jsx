@@ -380,13 +380,11 @@ export const WalletProvider = ({ children }) => {
       const result = await runTransaction(db, async (transaction) => {
         // Referências dos documentos
         const buyerWalletRef = doc(db, 'wallets', currentUser.uid);
-        const sellerWalletRef = doc(db, 'wallets', authorId);
         const transactionRef = doc(collection(db, 'transactions'));
         const vixtipRef = doc(collection(db, 'vixtips'));
 
-        // Ler saldos atuais
+        // Ler saldo atual do comprador
         const buyerWalletSnap = await transaction.get(buyerWalletRef);
-        const sellerWalletSnap = await transaction.get(sellerWalletRef);
 
         if (!buyerWalletSnap.exists()) {
           throw new Error('Carteira do comprador não encontrada');
@@ -402,25 +400,6 @@ export const WalletProvider = ({ children }) => {
           vp: buyerWallet.vp - amount,
           updatedAt: Timestamp.now()
         });
-
-        // Atualizar carteira do vendedor (adicionar VC)
-        if (sellerWalletSnap.exists()) {
-          const sellerWallet = sellerWalletSnap.data();
-          transaction.update(sellerWalletRef, {
-            vc: (sellerWallet.vc || 0) + vcAmount,
-            updatedAt: Timestamp.now()
-          });
-        } else {
-          // Se a carteira do vendedor não existe, criar
-          transaction.set(sellerWalletRef, {
-            vp: 0,
-            vc: vcAmount,
-            vbp: 0,
-            vcPending: 0,
-            createdAt: Timestamp.now(),
-            updatedAt: Timestamp.now()
-          });
-        }
 
         // Criar transação de compra (histórico do comprador)
         transaction.set(transactionRef, {
@@ -442,28 +421,7 @@ export const WalletProvider = ({ children }) => {
           timestamp: Timestamp.now()
         });
 
-        // Criar transação de venda (histórico do vendedor)
-        const sellerTransactionRef = doc(collection(db, 'transactions'));
-        transaction.set(sellerTransactionRef, {
-          userId: authorId,
-          type: 'VIXTIP_RECEIVED',
-          amounts: {
-            vc: vcAmount
-          },
-          metadata: {
-            description: `Gorjeta recebida de ${buyerName || 'Usuário'}`,
-            postId,
-            postType,
-            buyerId: currentUser.uid,
-            buyerName: buyerName || 'Usuário',
-            buyerUsername: buyerUsername || '',
-            vpAmount: amount
-          },
-          createdAt: Timestamp.now(),
-          timestamp: Timestamp.now()
-        });
-
-        // Salvar dados da gorjeta
+        // Salvar dados da gorjeta (para processamento posterior)
         transaction.set(vixtipRef, {
           postId,
           postType,
@@ -475,6 +433,7 @@ export const WalletProvider = ({ children }) => {
           buyerUsername: buyerUsername || '',
           vpAmount: amount,
           vcAmount,
+          status: 'pending', // Para processamento posterior
           createdAt: Timestamp.now(),
           timestamp: Timestamp.now()
         });
@@ -484,7 +443,7 @@ export const WalletProvider = ({ children }) => {
 
       if (result.success) {
         showSuccess(
-          `Gorjeta de ${amount} VP enviada! ${vcAmount} VC foram creditados para ${authorName}.`,
+          `Gorjeta de ${amount} VP enviada! A vendedora receberá ${vcAmount} VC em breve.`,
           'Vixtip Enviado'
         );
         return true;
