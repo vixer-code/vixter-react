@@ -576,6 +576,11 @@ header .vp-balance .vp-icon svg,
   z-index: 10;
 }
 
+/* Hide logo in mobile nav header to prevent overlap with close button */
+.mobile-nav-header .logo {
+  display: none;
+}
+
 .mobile-nav-close {
   background: none;
   border: none;

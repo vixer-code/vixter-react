@@ -253,7 +253,16 @@ const Vixies = () => {
     
     // Verificar se o autor do post pode receber gorjetas (deve ser provider)
     const author = users[post.authorId] || {};
-    if (author.accountType !== 'provider') {
+    console.log('Author data for tip:', { author, authorId: post.authorId, accountType: author.accountType });
+    
+    // Se o autor não está carregado ainda, aguardar um pouco e tentar novamente
+    if (!author.accountType) {
+      showWarning('Carregando informações do autor. Tente novamente em alguns segundos.');
+      return;
+    }
+    
+    // Permitir gorjetas para providers e both (legacy)
+    if (author.accountType !== 'provider' && author.accountType !== 'both') {
       showWarning('Este usuário não pode receber gorjetas.');
       return;
     }
