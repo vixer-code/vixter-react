@@ -343,7 +343,24 @@ export const WalletProvider = ({ children }) => {
     }
   }, [currentUser, apiFunc, showSuccess, showError]);
 
-  // Send Vixtip (gorjeta)
+  // Enhanced error handling (moved up to avoid circular dependency)
+  const handleWalletError = useCallback((error, operation) => {
+    console.error(`Wallet error in ${operation}:`, error);
+    
+    if (error.code === 'functions/unauthenticated') {
+      showError('Sessão expirada. Faça login novamente.', 'Erro de Autenticação');
+    } else if (error.code === 'functions/failed-precondition') {
+      showError('Saldo insuficiente para realizar esta operação.', 'Saldo Insuficiente');
+    } else if (error.code === 'functions/already-exists') {
+      showWarning('Esta ação já foi realizada hoje.', 'Ação Duplicada');
+    } else if (error.code === 'functions/not-found') {
+      showError('Recurso não encontrado. Tente novamente.', 'Não Encontrado');
+    } else {
+      showError('Ocorreu um erro inesperado. Tente novamente.', 'Erro');
+    }
+  }, [showError, showWarning]);
+
+  // Send Vixtip (gorjeta) - simplified to avoid circular dependency
   const sendVixtip = useCallback(async (vixtipData) => {
     if (!currentUser) return false;
 
@@ -476,10 +493,11 @@ export const WalletProvider = ({ children }) => {
       return false;
     } catch (error) {
       console.error('Error sending vixtip:', error);
-      handleWalletError(error, 'sendVixtip');
+      // Use direct error handling instead of handleWalletError to avoid circular dependency
+      showError('Ocorreu um erro ao enviar a gorjeta. Tente novamente.', 'Erro');
       return false;
     }
-  }, [currentUser, vpBalance, showSuccess, showError, handleWalletError]);
+  }, [currentUser, vpBalance, showSuccess, showError]);
 
   // Format currency
   const formatCurrency = useCallback((amount, currency = '') => {
@@ -597,22 +615,6 @@ export const WalletProvider = ({ children }) => {
     return transactions.slice(0, 10);
   }, [transactions]);
 
-  // Enhanced error handling
-  const handleWalletError = useCallback((error, operation) => {
-    console.error(`Wallet error in ${operation}:`, error);
-    
-    if (error.code === 'functions/unauthenticated') {
-      showError('Sessão expirada. Faça login novamente.', 'Erro de Autenticação');
-    } else if (error.code === 'functions/failed-precondition') {
-      showError('Saldo insuficiente para realizar esta operação.', 'Saldo Insuficiente');
-    } else if (error.code === 'functions/already-exists') {
-      showWarning('Esta ação já foi realizada hoje.', 'Ação Duplicada');
-    } else if (error.code === 'functions/not-found') {
-      showError('Recurso não encontrado. Tente novamente.', 'Não Encontrado');
-    } else {
-      showError('Ocorreu um erro inesperado. Tente novamente.', 'Erro');
-    }
-  }, [showError, showWarning]);
 
   const value = {
     // State
