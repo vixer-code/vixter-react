@@ -131,6 +131,8 @@
 
 /* ===== Criar Post ===== */
 .create-post-section {
+  width: 100%;
+  max-width: 650px; /* mesma largura do vixies-feed */
   border-radius: 12px;
   margin-bottom: 20px;
 }
