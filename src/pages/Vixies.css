@@ -967,6 +967,37 @@
   margin-left: auto;
 }
 
+/* Post author info styling (matching Feed) */
+.post-author { 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+}
+
+.author-avatar { 
+  width: 40px; 
+  height: 40px; 
+  border-radius: 50%; 
+}
+
+.author-info { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 4px; 
+}
+
+.author-name { 
+  font-size: 1.1rem; 
+  font-weight: 700; 
+  color: #d1d5db; 
+  text-decoration: none; 
+}
+
+.post-time { 
+  font-size: .85rem; 
+  color: #f5f5f57d; 
+}
+
 .delete-btn { 
   background: transparent; 
   border: none; 
