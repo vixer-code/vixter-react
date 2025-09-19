@@ -360,8 +360,8 @@ export const WalletProvider = ({ children }) => {
     }
   }, [showError, showWarning]);
 
-  // Send Vixtip (gorjeta) - simplified to avoid circular dependency
-  const sendVixtip = useCallback(async (vixtipData) => {
+  // Send Vixtip (gorjeta) - function without useCallback to avoid circular dependency
+  const sendVixtip = async (vixtipData) => {
     if (!currentUser) return false;
 
     const { postId, postType, authorId, authorName, authorUsername, amount, buyerName, buyerUsername } = vixtipData;
@@ -497,7 +497,7 @@ export const WalletProvider = ({ children }) => {
       showError('Ocorreu um erro ao enviar a gorjeta. Tente novamente.', 'Erro');
       return false;
     }
-  }, [currentUser, vpBalance, showSuccess, showError]);
+  };
 
   // Format currency
   const formatCurrency = useCallback((amount, currency = '') => {

@@ -418,60 +418,58 @@ const Vixink = () => {
           </button>
         </div>
 
-        <div className="vixies-sidebar">
-          <div className="create-post-section">
-            {currentUser ? (
-              userProfile?.accountType === 'client' ? (
-                !dismissedClientRestriction ? (
-                  <div className="client-restriction subtle">
-                    <div className="restriction-content">
-                      <div className="restriction-icon">
-                        <i className="fas fa-eye"></i>
-                      </div>
-                      <div className="restriction-text">
-                        <p>Modo visualização - Apenas visualizar conteúdo</p>
-                      </div>
-                      <button 
-                        className="dismiss-btn"
-                        onClick={() => setDismissedClientRestriction(true)}
-                        title="Fechar"
-                      >
-                        <i className="fas fa-times"></i>
-                      </button>
+        {/* PostCreator moved to top of feed */}
+        <div className="create-post-section">
+          {currentUser ? (
+            userProfile?.accountType === 'client' ? (
+              !dismissedClientRestriction ? (
+                <div className="client-restriction subtle">
+                  <div className="restriction-content">
+                    <div className="restriction-icon">
+                      <i className="fas fa-eye"></i>
                     </div>
-                  </div>
-                ) : (
-                  <div className="client-feed-only">
-                    <div className="feed-only-content">
-                      <div className="feed-only-icon">
-                        <i className="fas fa-eye"></i>
-                      </div>
-                      <div className="feed-only-text">
-                        <p>Modo visualização ativo</p>
-                        <small>Explore o conteúdo da comunidade</small>
-                      </div>
+                    <div className="restriction-text">
+                      <p>Modo visualização - Apenas visualizar conteúdo</p>
                     </div>
+                    <button 
+                      className="dismiss-btn"
+                      onClick={() => setDismissedClientRestriction(true)}
+                      title="Fechar"
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
                   </div>
-                )
+                </div>
               ) : (
-                <PostCreator
-                  mode="vixink"
-                  onPostCreated={handlePostCreated}
-                  placeholder="O que você está pensando?"
-                  showAttachment={true}
-                />
+                <div className="client-feed-only">
+                  <div className="feed-only-content">
+                    <div className="feed-only-icon">
+                      <i className="fas fa-eye"></i>
+                    </div>
+                    <div className="feed-only-text">
+                      <p>Modo visualização ativo</p>
+                      <small>Explore o conteúdo da comunidade</small>
+                    </div>
+                  </div>
+                </div>
               )
             ) : (
-              <div className="login-prompt">
-                <h3>Faça login para compartilhar</h3>
-                <p>Entre na sua conta para criar posts e interagir com a comunidade</p>
-                <Link to="/login" className="login-btn">
-                  Entrar
-                </Link>
-              </div>
-            )}
-          </div>
-
+              <PostCreator
+                mode="vixink"
+                onPostCreated={handlePostCreated}
+                placeholder="O que você está pensando?"
+                showAttachment={true}
+              />
+            )
+          ) : (
+            <div className="login-prompt">
+              <h3>Faça login para compartilhar</h3>
+              <p>Entre na sua conta para criar posts e interagir com a comunidade</p>
+              <Link to="/login" className="login-btn">
+                Entrar
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="vixies-feed">
