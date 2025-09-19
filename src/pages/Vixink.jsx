@@ -237,29 +237,8 @@ const Vixink = () => {
       return;
     }
     
-    // Verificar se o autor do post pode receber gorjetas (deve ser provider)
-    const author = users[post.authorId] || {};
-    console.log('Author data for tip:', { author, authorId: post.authorId, accountType: author.accountType });
-    
-    // Se o autor não está carregado ainda, aguardar um pouco e tentar novamente
-    if (!author.accountType) {
-      showWarning('Carregando informações do autor. Tente novamente em alguns segundos.');
-      return;
-    }
-    
-    // Permitir gorjetas para providers e both (legacy)
-    if (author.accountType !== 'provider' && author.accountType !== 'both') {
-      showWarning('Este usuário não pode receber gorjetas.');
-      return;
-    }
-    
-    // Adicionar informações do autor ao post para o modal
-    const postWithAuthorInfo = {
-      ...post,
-      authorAccountType: author.accountType
-    };
-    
-    setSelectedPostForTip(postWithAuthorInfo);
+    // Sem barreiras - qualquer usuário pode receber gorjetas
+    setSelectedPostForTip(post);
     setShowVixtipModal(true);
   };
 
