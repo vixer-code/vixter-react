@@ -13,7 +13,8 @@ import './Settings.css';
 const Settings = () => {
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
-  const { showNotification } = useNotification();
+  const notificationContext = useNotification();
+  const showNotification = notificationContext.showNotification;
   const [loading, setLoading] = useState(false);
   const [userSettings, setUserSettings] = useState({
     displayName: '',
@@ -406,7 +407,12 @@ const Settings = () => {
             [documentType]: { uploaded: true, uploading: false, error: null }
           }));
 
-          showNotification(`${documentType === 'front' ? 'Frente' : documentType === 'back' ? 'Verso' : 'Selfie'} do documento enviado com sucesso!`, 'success');
+          try {
+            showNotification(`${documentType === 'front' ? 'Frente' : documentType === 'back' ? 'Verso' : 'Selfie'} do documento enviado com sucesso!`, 'success');
+          } catch (error) {
+            console.error('Error calling showNotification:', error);
+            console.log(`${documentType === 'front' ? 'Frente' : documentType === 'back' ? 'Verso' : 'Selfie'} do documento enviado com sucesso!`);
+          }
         } else {
           throw new Error('Falha no upload do arquivo');
         }
@@ -419,7 +425,12 @@ const Settings = () => {
         ...prev,
         [documentType]: { uploaded: false, uploading: false, error: error.message }
       }));
-      showNotification(`Erro ao enviar ${documentType === 'front' ? 'frente' : documentType === 'back' ? 'verso' : 'selfie'} do documento`, 'error');
+      try {
+        showNotification(`Erro ao enviar ${documentType === 'front' ? 'frente' : documentType === 'back' ? 'verso' : 'selfie'} do documento`, 'error');
+      } catch (error) {
+        console.error('Error calling showNotification:', error);
+        console.log(`Erro ao enviar ${documentType === 'front' ? 'frente' : documentType === 'back' ? 'verso' : 'selfie'} do documento`);
+      }
     }
   };
 
