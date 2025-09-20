@@ -252,19 +252,27 @@ const Settings = () => {
   const openStripeDashboard = async () => {
     if (!isProvider) return;
     
+    // Se já temos o status carregado, usar ele
+    if (stripeStatus.hasAccount && stripeStatus.isComplete) {
+      window.open(`https://connect.stripe.com/express/dashboard`, '_blank');
+      return;
+    }
+    
     try {
-      // Buscar account ID do usuário
-      const userRef = ref(database, `users/${currentUser.uid}`);
-      const snapshot = await get(userRef);
+      // Buscar account ID do usuário no Firestore
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userSnap = await getDoc(userRef);
       
-      if (snapshot.exists()) {
-        const userData = snapshot.val();
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
         if (userData.stripeAccountId) {
           // Abrir dashboard específico da conta Stripe Connect
           window.open(`https://connect.stripe.com/express/dashboard`, '_blank');
         } else {
           showError('Conta Stripe não encontrada. Conecte uma conta primeiro.');
         }
+      } else {
+        showError('Dados do usuário não encontrados.');
       }
     } catch (error) {
       console.error('Error opening Stripe dashboard:', error);
