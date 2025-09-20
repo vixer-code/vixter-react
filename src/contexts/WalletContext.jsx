@@ -364,7 +364,7 @@ export const WalletProvider = ({ children }) => {
   const sendVixtip = async (vixtipData) => {
     if (!currentUser) return false;
 
-    const { postId, postType, authorId, authorName, authorUsername, amount, buyerName, buyerUsername } = vixtipData;
+    const { postId, postType, authorId, authorName, authorUsername, amount, buyerName, buyerUsername, buyerId, buyerProfilePictureURL } = vixtipData;
 
     try {
       // Verificar se o usuário tem saldo suficiente
@@ -385,10 +385,10 @@ export const WalletProvider = ({ children }) => {
           authorId,
           authorName,
           authorUsername,
-          buyerId: currentUser.uid,
+          buyerId: buyerId || currentUser.uid,
           buyerName: buyerName || 'Usuário',
           buyerUsername: buyerUsername || '',
-          buyerProfilePictureURL: userProfile?.profilePictureURL || userProfile?.photoURL || '',
+          buyerProfilePictureURL: buyerProfilePictureURL || '',
           vpAmount: amount,
           vcAmount
         });

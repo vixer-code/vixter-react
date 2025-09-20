@@ -2027,23 +2027,49 @@ export const processVixtip = onCall(async (request) => {
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      // Salvar dados da gorjeta para ranking
-      transaction.set(vixtipRef, {
-        postId,
-        postType,
-        authorId,
-        authorName,
-        authorUsername,
-        buyerId,
-        buyerName,
-        buyerUsername,
-        buyerProfilePictureURL,
-        vpAmount,
-        vcAmount,
-        status: 'completed',
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        timestamp: admin.firestore.FieldValue.serverTimestamp()
-      });
+      // Verificar se já existe um vixtip do mesmo usuário para o mesmo post
+      const existingVixtipQuery = db.collection('vixtips')
+        .where('postId', '==', postId)
+        .where('buyerId', '==', buyerId)
+        .where('status', '==', 'completed');
+      
+      const existingVixtips = await transaction.get(existingVixtipQuery);
+      
+      if (!existingVixtips.empty) {
+        // Se já existe, atualizar o vixtip existente somando os valores
+        const existingVixtip = existingVixtips.docs[0];
+        const existingData = existingVixtip.data();
+        
+        transaction.update(existingVixtip.ref, {
+          vpAmount: existingData.vpAmount + vpAmount,
+          vcAmount: existingData.vcAmount + vcAmount,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          lastTipAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        
+        logger.info(`🔄 Vixtip existente atualizado: ${existingData.vpAmount} + ${vpAmount} = ${existingData.vpAmount + vpAmount} VP`);
+      } else {
+        // Se não existe, criar novo vixtip
+        transaction.set(vixtipRef, {
+          postId,
+          postType,
+          authorId,
+          authorName,
+          authorUsername,
+          buyerId,
+          buyerName,
+          buyerUsername,
+          buyerProfilePictureURL,
+          vpAmount,
+          vcAmount,
+          status: 'completed',
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          lastTipAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        
+        logger.info(`🆕 Novo vixtip criado: ${vpAmount} VP para ${authorName}`);
+      }
 
       return {
         success: true,
