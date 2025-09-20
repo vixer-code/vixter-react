@@ -249,6 +249,29 @@ const Settings = () => {
     }
   };
 
+  const openStripeDashboard = async () => {
+    if (!isProvider) return;
+    
+    try {
+      // Buscar account ID do usuário
+      const userRef = ref(database, `users/${currentUser.uid}`);
+      const snapshot = await get(userRef);
+      
+      if (snapshot.exists()) {
+        const userData = snapshot.val();
+        if (userData.stripeAccountId) {
+          // Abrir dashboard específico da conta Stripe Connect
+          window.open(`https://connect.stripe.com/express/dashboard`, '_blank');
+        } else {
+          showError('Conta Stripe não encontrada. Conecte uma conta primeiro.');
+        }
+      }
+    } catch (error) {
+      console.error('Error opening Stripe dashboard:', error);
+      showError('Erro ao abrir dashboard Stripe');
+    }
+  };
+
   // Password change functions
   const handlePasswordChange = (field, value) => {
     setPasswordForm(prev => ({
@@ -747,14 +770,12 @@ const Settings = () => {
                   </button>
                   
                   {stripeStatus.isComplete && (
-                    <a 
-                      href="https://dashboard.stripe.com/connect/accounts" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
+                    <button 
+                      onClick={openStripeDashboard}
                       className="btn-stripe btn-outline"
                     >
                       <i className="fas fa-external-link-alt"></i> Configurar PIX/Banco
-                    </a>
+                    </button>
                   )}
                 </div>
               </div>
