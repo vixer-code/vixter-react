@@ -4,8 +4,8 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useUser } from '../contexts/UserContext';
 import { database, db } from '../../config/firebase';
 import { ref, set, get, update } from 'firebase/database';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { doc, setDoc, getDoc, deleteDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { updateProfile } from 'firebase/auth';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../config/firebase';
 import PurpleSpinner from '../components/PurpleSpinner';
@@ -43,21 +43,12 @@ const Settings = () => {
     language: 'pt-BR'
   });
 
-  // Stripe Connect states
-  const [stripeStatus, setStripeStatus] = useState({
-    hasAccount: false,
-    isComplete: false,
-    loading: false
+  // PIX configuration states
+  const [pixForm, setPixForm] = useState({
+    pixType: '',
+    pixDetail: ''
   });
-  const [stripeDetailedStatus, setStripeDetailedStatus] = useState(null);
-
-  // Password change states
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [pixLoading, setPixLoading] = useState(false);
 
   // KYC verification states
   const [kycForm, setKycForm] = useState({
@@ -93,14 +84,9 @@ const Settings = () => {
       loadUserSettings();
       loadKycState();
       loadSubmittedKycDocuments();
+      loadPixSettings();
     }
   }, [currentUser]);
-
-  useEffect(() => {
-    if (currentUser && isProvider) {
-      checkStripeStatus();
-    }
-  }, [currentUser, isProvider]);
 
   const loadUserSettings = async () => {
     try {
@@ -198,227 +184,173 @@ const Settings = () => {
     }
   };
 
-  // Stripe Connect functions
-  const checkStripeStatus = async () => {
-    if (!isProvider) return;
-    
-    // Evitar chamadas múltiplas
-    if (stripeStatus.loading) return;
-    
-    setStripeStatus(prev => ({ ...prev, loading: true }));
+  // PIX configuration functions
+  const loadPixSettings = async () => {
     try {
-      const getStripeStatus = httpsCallable(functions, 'getStripeConnectStatus');
-      const result = await getStripeStatus();
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userSnap = await getDoc(userRef);
       
-      setStripeStatus({
-        hasAccount: result.data.hasAccount,
-        isComplete: result.data.isComplete,
-        loading: false
-      });
-    } catch (error) {
-      console.error('Error checking Stripe status:', error);
-      setStripeStatus(prev => ({ ...prev, loading: false }));
-      showError('Erro ao verificar status Stripe');
-    }
-  };
-
-  const checkStripeDetailedStatus = async () => {
-    if (!isProvider) return;
-    
-    try {
-      const getDetailedStatus = httpsCallable(functions, 'getStripeConnectDetailedStatus');
-      const result = await getDetailedStatus();
-      
-      setStripeDetailedStatus(result.data);
-      
-      // Atualizar status básico também
-      setStripeStatus({
-        hasAccount: result.data.hasAccount,
-        isComplete: result.data.isComplete,
-        loading: false
-      });
-      
-      return result.data;
-    } catch (error) {
-      console.error('Error checking detailed Stripe status:', error);
-      showError('Erro ao verificar status detalhado Stripe');
-      return null;
-    }
-  };
-
-  const refreshStripeStatus = async () => {
-    if (!isProvider) return;
-    
-    try {
-      const refreshStatus = httpsCallable(functions, 'refreshStripeConnectStatus');
-      const result = await refreshStatus();
-      
-      setStripeDetailedStatus(result.data);
-      
-      // Atualizar status básico também
-      setStripeStatus({
-        hasAccount: result.data.hasAccount,
-        isComplete: result.data.isComplete,
-        loading: false
-      });
-      
-      showSuccess('Status Stripe atualizado com sucesso!');
-      return result.data;
-    } catch (error) {
-      console.error('Error refreshing Stripe status:', error);
-      showError('Erro ao atualizar status Stripe');
-      return null;
-    }
-  };
-
-  const checkPayoutsStatus = async () => {
-    if (!isProvider) return;
-    
-    try {
-      const checkPayouts = httpsCallable(functions, 'checkAndEnablePayouts');
-      const result = await checkPayouts();
-      
-      if (result.data.success) {
-        showSuccess(result.data.message);
-      } else {
-        // Mostrar erro com ação recomendada
-        const errorMessage = result.data.message;
-        const action = result.data.action;
-        
-        if (action) {
-          showError(`${errorMessage}\n\nAção recomendada: ${action}`, 'Payouts Não Habilitados');
-        } else {
-          showError(errorMessage);
-        }
-      }
-      
-      // Atualizar status detalhado
-      await checkStripeDetailedStatus();
-      
-      return result.data;
-    } catch (error) {
-      console.error('Error checking payouts status:', error);
-      showError('Erro ao verificar status de payouts');
-      return null;
-    }
-  };
-
-  const connectStripeAccount = async () => {
-    if (!isProvider) return;
-    
-    setStripeStatus(prev => ({ ...prev, loading: true }));
-    try {
-      const createStripeAccount = httpsCallable(functions, 'createStripeConnectAccount');
-      const returnUrl = `${window.location.origin}/settings?stripe=success`;
-      const refreshUrl = `${window.location.origin}/settings?stripe=refresh`;
-      
-      const result = await createStripeAccount({ returnUrl, refreshUrl });
-      
-      if (result.data.isComplete) {
-        showSuccess('Conta Stripe já configurada!');
-        setStripeStatus({
-          hasAccount: true,
-          isComplete: true,
-          loading: false
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        setPixForm({
+          pixType: userData.pixType || '',
+          pixDetail: userData.pixDetail || ''
         });
-      } else {
-        // Redirecionar para onboarding do Stripe
-        window.location.href = result.data.onboardingUrl;
       }
     } catch (error) {
-      console.error('Error creating Stripe account:', error);
-      showError('Erro ao conectar conta Stripe', 'error');
-      setStripeStatus(prev => ({ ...prev, loading: false }));
+      console.error('Error loading PIX settings:', error);
     }
   };
 
-  const openStripeDashboard = async () => {
-    if (!isProvider) return;
-    
-    try {
-      // Gerar link de login específico para a conta Stripe Connect
-      const getStripeLoginLink = httpsCallable(functions, 'getStripeConnectLoginLink');
-      const result = await getStripeLoginLink();
-      
-      if (result.data.success && result.data.loginUrl) {
-        // Abrir dashboard com link de login específico
-        window.open(result.data.loginUrl, '_blank');
-      } else {
-        showError('Erro ao gerar link de acesso ao dashboard Stripe');
-      }
-    } catch (error) {
-      console.error('Error opening Stripe dashboard:', error);
-      
-      // Fallback: tentar abrir dashboard genérico se a função não estiver disponível
-      if (error.code === 'functions/not-found' || error.code === 'functions/unavailable') {
-        showError('Função temporariamente indisponível. Tente novamente em alguns minutos.');
-      } else if (error.code === 'functions/not-found' && error.message?.includes('Conta Stripe não encontrada')) {
-        showError('Conta Stripe não encontrada. Conecte uma conta primeiro.');
-      } else {
-        showError('Erro ao abrir dashboard Stripe. Tente novamente.');
-      }
-    }
-  };
-
-  // Password change functions
-  const handlePasswordChange = (field, value) => {
-    setPasswordForm(prev => ({
+  const handlePixChange = (field, value) => {
+    setPixForm(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const changePassword = async () => {
-    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      showError('Preencha todos os campos', 'error');
+  const savePixSettings = async () => {
+    if (!pixForm.pixType || !pixForm.pixDetail) {
+      showError('Preencha todos os campos PIX', 'error');
       return;
     }
 
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      showError('As senhas não coincidem', 'error');
+    // Validar formato do PIX baseado no tipo
+    if (pixForm.pixType === 'cpf' && !/^\d{11}$/.test(pixForm.pixDetail.replace(/\D/g, ''))) {
+      showError('CPF deve ter 11 dígitos', 'error');
+      return;
+    }
+    
+    if (pixForm.pixType === 'phone' && !/^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(pixForm.pixDetail)) {
+      showError('Celular deve estar no formato (11) 99999-9999', 'error');
+      return;
+    }
+    
+    if (pixForm.pixType === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pixForm.pixDetail)) {
+      showError('Email deve ter um formato válido', 'error');
       return;
     }
 
-    if (passwordForm.newPassword.length < 6) {
-      showError('A nova senha deve ter pelo menos 6 caracteres', 'error');
-      return;
-    }
-
-    setPasswordLoading(true);
+    setPixLoading(true);
     try {
-      // Reautenticar usuário
-      const credential = EmailAuthProvider.credential(
-        currentUser.email,
-        passwordForm.currentPassword
-      );
-      await reauthenticateWithCredential(currentUser, credential);
+      const userRef = doc(db, 'users', currentUser.uid);
+      await setDoc(userRef, {
+        pixType: pixForm.pixType,
+        pixDetail: pixForm.pixDetail,
+        updatedAt: new Date()
+      }, { merge: true });
 
-      // Atualizar senha
-      await updatePassword(currentUser, passwordForm.newPassword);
-
-      showSuccess('Senha alterada com sucesso!');
-      setPasswordForm({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
+      showSuccess('Configurações PIX salvas com sucesso!');
     } catch (error) {
-      console.error('Error changing password:', error);
-      if (error.code === 'auth/wrong-password') {
-        showError('Senha atual incorreta', 'error');
-      } else if (error.code === 'auth/weak-password') {
-        showError('A nova senha é muito fraca', 'error');
-      } else {
-        showError('Erro ao alterar senha', 'error');
-      }
+      console.error('Error saving PIX settings:', error);
+      showError('Erro ao salvar configurações PIX', 'error');
     } finally {
-      setPasswordLoading(false);
+      setPixLoading(false);
     }
   };
 
-  const deleteAccount = () => {
-    if (window.confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
-      showWarning('Funcionalidade de exclusão de conta em desenvolvimento');
+  const deleteAccount = async () => {
+    if (!window.confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    if (!window.confirm('ATENÇÃO: Todos os seus dados serão movidos para arquivo e não poderão ser recuperados. Confirma a exclusão?')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const userId = currentUser.uid;
+      
+      // 1. Mover dados do usuário para removedAccounts
+      const userRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userRef);
+      
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        const removedUserRef = doc(db, 'removedAccounts', userId);
+        await setDoc(removedUserRef, {
+          ...userData,
+          removedAt: new Date(),
+          originalId: userId
+        });
+      }
+
+      // 2. Mover posts para removedAccountsPosts
+      const postsQuery = collection(db, 'posts');
+      const postsSnapshot = await getDocs(query(postsQuery, where('authorId', '==', userId)));
+      
+      for (const postDoc of postsSnapshot.docs) {
+        const postData = postDoc.data();
+        const removedPostRef = doc(db, 'removedAccountsPosts', postDoc.id);
+        await setDoc(removedPostRef, {
+          ...postData,
+          removedAt: new Date(),
+          originalId: postDoc.id,
+          originalAuthorId: userId
+        });
+      }
+
+      // 3. Mover packs para removedAccountsPacks
+      const packsQuery = collection(db, 'packs');
+      const packsSnapshot = await getDocs(query(packsQuery, where('authorId', '==', userId)));
+      
+      for (const packDoc of packsSnapshot.docs) {
+        const packData = packDoc.data();
+        const removedPackRef = doc(db, 'removedAccountsPacks', packDoc.id);
+        await setDoc(removedPackRef, {
+          ...packData,
+          removedAt: new Date(),
+          originalId: packDoc.id,
+          originalAuthorId: userId
+        });
+      }
+
+      // 4. Mover serviços para removedAccountsServices
+      const servicesQuery = collection(db, 'services');
+      const servicesSnapshot = await getDocs(query(servicesQuery, where('authorId', '==', userId)));
+      
+      for (const serviceDoc of servicesSnapshot.docs) {
+        const serviceData = serviceDoc.data();
+        const removedServiceRef = doc(db, 'removedAccountsServices', serviceDoc.id);
+        await setDoc(removedServiceRef, {
+          ...serviceData,
+          removedAt: new Date(),
+          originalId: serviceDoc.id,
+          originalAuthorId: userId
+        });
+      }
+
+      // 5. Deletar dados originais
+      await deleteDoc(userRef);
+      
+      // Deletar posts originais
+      for (const postDoc of postsSnapshot.docs) {
+        await deleteDoc(postDoc.ref);
+      }
+      
+      // Deletar packs originais
+      for (const packDoc of packsSnapshot.docs) {
+        await deleteDoc(packDoc.ref);
+      }
+      
+      // Deletar serviços originais
+      for (const serviceDoc of servicesSnapshot.docs) {
+        await deleteDoc(serviceDoc.ref);
+      }
+
+      showSuccess('Conta excluída com sucesso. Todos os dados foram arquivados.');
+      
+      // Fazer logout e redirecionar
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      showError('Erro ao excluir conta. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -818,168 +750,70 @@ const Settings = () => {
 
       <div className="settings-content">
 
-        {/* Stripe Connect Section - Only for providers */}
-        {isProvider && (
-          <div className="settings-section">
-            <h2>Pagamentos (Stripe)</h2>
-            <div className="settings-grid">
-              <div className="setting-group full-width">
-                <label>Conta Stripe Connect</label>
-                <div className="stripe-status">
-                  {stripeStatus.loading ? (
-                    <div className="loading-state">
-                      <PurpleSpinner text="Verificando status..." size="small" />
-                    </div>
-                  ) : stripeStatus.hasAccount ? (
-                    <div className={`stripe-status-badge ${stripeStatus.isComplete ? 'complete' : 'pending'}`}>
-                      <i className={`fas ${stripeStatus.isComplete ? 'fa-check-circle' : 'fa-clock'}`}></i>
-                      {stripeStatus.isComplete ? 'Conta configurada e ativa' : 'Conta pendente de configuração'}
-                    </div>
-                  ) : (
-                    <div className="stripe-status-badge not-connected">
-                      <i className="fas fa-exclamation-circle"></i>
-                      Nenhuma conta Stripe configurada
-                    </div>
-                  )}
-                </div>
-                <small>
-                  {stripeStatus.isComplete 
-                    ? 'Sua conta Stripe está configurada! Configure PIX, conta bancária e outros métodos de pagamento no seu dashboard Stripe.'
-                    : 'Configure sua conta Stripe para receber pagamentos. No Stripe você pode configurar PIX, conta bancária e outros métodos de pagamento.'
-                  }
-                </small>
-                <div className="stripe-actions">
-                  <button 
-                    className={`btn-stripe ${stripeStatus.isComplete ? 'btn-success' : 'btn-primary'}`}
-                    onClick={connectStripeAccount}
-                    disabled={stripeStatus.loading}
-                  >
-                    {stripeStatus.loading ? (
-                      <>
-                        <PurpleSpinner text="Processando..." size="small" />
-                      </>
-                    ) : stripeStatus.isComplete ? (
-                      <>
-                        <i className="fab fa-stripe"></i> Gerenciar Conta Stripe
-                      </>
-                    ) : (
-                      <>
-                        <i className="fab fa-stripe"></i> Conectar Conta Stripe
-                      </>
-                    )}
-                  </button>
-                  
-                  {stripeStatus.isComplete && (
-                    <button 
-                      onClick={openStripeDashboard}
-                      className="btn-stripe btn-outline"
-                    >
-                      <i className="fas fa-external-link-alt"></i> Configurar PIX/Banco
-                    </button>
-                  )}
-                  
-                  <button 
-                    onClick={checkStripeDetailedStatus}
-                    className="btn-stripe btn-outline"
-                    style={{ marginLeft: '10px' }}
-                  >
-                    <i className="fas fa-info-circle"></i> Verificar Status
-                  </button>
-                  
-                  <button 
-                    onClick={refreshStripeStatus}
-                    className="btn-stripe btn-outline"
-                    style={{ marginLeft: '10px' }}
-                  >
-                    <i className="fas fa-sync-alt"></i> Atualizar Status
-                  </button>
-                  
-                  <button 
-                    onClick={checkPayoutsStatus}
-                    className="btn-stripe btn-outline"
-                    style={{ marginLeft: '10px', backgroundColor: '#ff6b6b', color: 'white' }}
-                  >
-                    <i className="fas fa-exclamation-triangle"></i> Verificar Payouts
-                  </button>
-                </div>
-              </div>
+        {/* PIX Configuration Section */}
+        <div className="settings-section">
+          <h2>Configuração PIX</h2>
+          <div className="settings-grid">
+            <div className="setting-group">
+              <label htmlFor="pixType">Tipo da Chave PIX</label>
+              <select
+                id="pixType"
+                value={pixForm.pixType}
+                onChange={(e) => handlePixChange('pixType', e.target.value)}
+              >
+                <option value="">Selecione o tipo</option>
+                <option value="cpf">CPF</option>
+                <option value="phone">Celular</option>
+                <option value="email">Email</option>
+              </select>
+              <small>Escolha o tipo de chave PIX que deseja usar</small>
             </div>
-            
-            {/* Status Detalhado */}
-            {stripeDetailedStatus && (
-              <div className="settings-section">
-                <h3>Status Detalhado da Conta Stripe</h3>
-                <div className="stripe-detailed-status">
-                  <div className="status-item">
-                    <strong>Conta ID:</strong> {stripeDetailedStatus.accountId}
-                  </div>
-                  <div className="status-item">
-                    <strong>Email:</strong> {stripeDetailedStatus.email}
-                  </div>
-                  <div className="status-item">
-                    <strong>País:</strong> {stripeDetailedStatus.country}
-                  </div>
-                  <div className="status-item">
-                    <strong>Cadastro Completo:</strong> 
-                    <span className={`status-badge ${stripeDetailedStatus.detailsSubmitted ? 'success' : 'warning'}`}>
-                      {stripeDetailedStatus.detailsSubmitted ? '✅ Sim' : '⚠️ Não'}
-                    </span>
-                  </div>
-                  <div className="status-item">
-                    <strong>Payouts Habilitados:</strong> 
-                    <span className={`status-badge ${stripeDetailedStatus.payoutsEnabled ? 'success' : 'error'}`}>
-                      {stripeDetailedStatus.payoutsEnabled ? '✅ Sim' : '❌ Não'}
-                    </span>
-                    {!stripeDetailedStatus.payoutsEnabled && (
-                      <div style={{ marginTop: '5px', fontSize: '12px', color: '#ff6b6b' }}>
-                        ⚠️ Configure uma conta bancária no Stripe Dashboard
-                      </div>
-                    )}
-                  </div>
-                  <div className="status-item">
-                    <strong>Pagamentos Habilitados:</strong> 
-                    <span className={`status-badge ${stripeDetailedStatus.chargesEnabled ? 'success' : 'error'}`}>
-                      {stripeDetailedStatus.chargesEnabled ? '✅ Sim' : '❌ Não'}
-                    </span>
-                  </div>
-                  
-                  {stripeDetailedStatus.capabilities && (
-                    <div className="status-item">
-                      <strong>Capacidades:</strong>
-                      <div style={{ marginTop: '5px' }}>
-                        {Object.entries(stripeDetailedStatus.capabilities).map(([key, value]) => (
-                          <div key={key} style={{ marginBottom: '3px', fontSize: '12px' }}>
-                            <strong>{key}:</strong> 
-                            <span className={`status-badge ${value === 'active' ? 'success' : value === 'pending' ? 'warning' : 'error'}`}>
-                              {value === 'active' ? '✅ Ativo' : value === 'pending' ? '⏳ Pendente' : '❌ Inativo'}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {stripeDetailedStatus.requirements && Object.keys(stripeDetailedStatus.requirements).length > 0 && (
-                    <div className="status-item">
-                      <strong>Requisitos Pendentes:</strong>
-                      <ul>
-                        {Object.entries(stripeDetailedStatus.requirements).map(([key, value]) => (
-                          <li key={key}>
-                            <strong>{key}:</strong> {Array.isArray(value) ? value.join(', ') : value}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  <div className="status-message">
-                    <strong>Mensagem:</strong> {stripeDetailedStatus.message}
-                  </div>
-                </div>
-              </div>
-            )}
+
+            <div className="setting-group">
+              <label htmlFor="pixDetail">Chave PIX</label>
+              <input
+                type="text"
+                id="pixDetail"
+                value={pixForm.pixDetail}
+                onChange={(e) => handlePixChange('pixDetail', e.target.value)}
+                placeholder={
+                  pixForm.pixType === 'cpf' ? '000.000.000-00' :
+                  pixForm.pixType === 'phone' ? '(11) 99999-9999' :
+                  pixForm.pixType === 'email' ? 'seu@email.com' :
+                  'Digite sua chave PIX'
+                }
+                disabled={!pixForm.pixType}
+              />
+              <small>
+                {pixForm.pixType === 'cpf' && 'Digite apenas os números do CPF (11 dígitos)'}
+                {pixForm.pixType === 'phone' && 'Digite no formato (11) 99999-9999'}
+                {pixForm.pixType === 'email' && 'Digite seu email válido'}
+                {!pixForm.pixType && 'Primeiro selecione o tipo da chave PIX'}
+              </small>
+            </div>
+
+            <div className="setting-group full-width">
+              <button
+                onClick={savePixSettings}
+                disabled={pixLoading || !pixForm.pixType || !pixForm.pixDetail}
+                className="btn-primary"
+              >
+                {pixLoading ? (
+                  <>
+                    <PurpleSpinner text="Salvando..." size="small" />
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-save"></i> Salvar Configuração PIX
+                  </>
+                )}
+              </button>
+              <small>
+                Configure sua chave PIX para receber pagamentos. Esta informação será usada para processar seus saques de VC.
+              </small>
+            </div>
           </div>
-        )}
+        </div>
 
         {/* KYC Verification Section */}
         {kycState !== 'VERIFIED' && (
@@ -1230,63 +1064,6 @@ const Settings = () => {
           </div>
         )}
 
-        {/* Password Change Section */}
-        <div className="settings-section">
-          <h2>Segurança</h2>
-          <div className="settings-grid">
-            <div className="setting-group">
-              <label htmlFor="currentPassword">Senha Atual</label>
-              <input
-                type="password"
-                id="currentPassword"
-                value={passwordForm.currentPassword}
-                onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
-                placeholder="Digite sua senha atual"
-              />
-            </div>
-
-            <div className="setting-group">
-              <label htmlFor="newPassword">Nova Senha</label>
-              <input
-                type="password"
-                id="newPassword"
-                value={passwordForm.newPassword}
-                onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
-                placeholder="Digite sua nova senha"
-              />
-            </div>
-
-            <div className="setting-group">
-              <label htmlFor="confirmPassword">Confirmar Nova Senha</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                value={passwordForm.confirmPassword}
-                onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
-                placeholder="Confirme sua nova senha"
-              />
-            </div>
-
-            <div className="setting-group full-width">
-              <button 
-                className="btn-primary"
-                onClick={changePassword}
-                disabled={passwordLoading || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
-              >
-                {passwordLoading ? (
-                  <>
-                    <PurpleSpinner text="Alterando..." size="small" />
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-key"></i> Alterar Senha
-                  </>
-                )}
-              </button>
-              <small>Mínimo de 6 caracteres. Use uma senha forte e única.</small>
-            </div>
-          </div>
-        </div>
 
 
         <div className="settings-section danger-zone">
