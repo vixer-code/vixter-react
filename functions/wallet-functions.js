@@ -1519,6 +1519,69 @@ export const getStripeConnectLoginLink = onCall({
 });
 
 /**
+ * Verifica status detalhado da conta Stripe Connect
+ */
+export const getStripeConnectDetailedStatus = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 30,
+  secrets: [STRIPE_SECRET],
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const userId = request.auth.uid;
+
+  try {
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+
+    if (!userData?.stripeAccountId) {
+      return {
+        success: true,
+        hasAccount: false,
+        message: "Nenhuma conta Stripe configurada"
+      };
+    }
+
+    const stripe = new Stripe(STRIPE_SECRET.value(), {
+      apiVersion: STRIPE_API_VERSION,
+    });
+
+    const account = await stripe.accounts.retrieve(userData.stripeAccountId);
+    
+    // Atualizar status no banco
+    await userRef.update({
+      stripeAccountStatus: account.details_submitted ? 'complete' : 'pending',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return {
+      success: true,
+      hasAccount: true,
+      isComplete: account.details_submitted,
+      accountId: userData.stripeAccountId,
+      chargesEnabled: account.charges_enabled,
+      payoutsEnabled: account.payouts_enabled,
+      detailsSubmitted: account.details_submitted,
+      requirements: account.requirements,
+      capabilities: account.capabilities,
+      businessProfile: account.business_profile,
+      country: account.country,
+      email: account.email,
+      message: account.details_submitted 
+        ? "Conta Stripe configurada e ativa" 
+        : "Conta Stripe pendente de configuração"
+    };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao verificar status detalhado Stripe Connect para ${userId}:`, error);
+    throw new HttpsError("internal", "Erro ao verificar conta Stripe");
+  }
+});
+
+/**
  * Verifica status da conta Stripe Connect
  */
 export const getStripeConnectStatus = onCall({
@@ -1633,8 +1696,20 @@ export const processVCWithdrawal = onCall({
 
     // Verificar se a conta está ativa
     const account = await stripe.accounts.retrieve(userData.stripeAccountId);
-    if (!account.details_submitted || !account.payouts_enabled) {
-      throw new HttpsError("failed-precondition", "Conta Stripe não está pronta para receber pagamentos");
+    
+    logger.info(`🔍 Verificando conta Stripe ${userData.stripeAccountId}:`, {
+      details_submitted: account.details_submitted,
+      payouts_enabled: account.payouts_enabled,
+      charges_enabled: account.charges_enabled,
+      requirements: account.requirements
+    });
+    
+    if (!account.details_submitted) {
+      throw new HttpsError("failed-precondition", "Conta Stripe não finalizou o cadastro. Complete o onboarding primeiro.");
+    }
+    
+    if (!account.payouts_enabled) {
+      throw new HttpsError("failed-precondition", "Payouts não habilitados na conta Stripe. Configure PIX ou conta bancária primeiro.");
     }
 
     // Calcular valores

@@ -1477,7 +1477,6 @@ const Wallet = () => {
                     <strong>Como funciona:</strong>
                     <p>Seus VC são convertidos para BRL e transferidos para sua conta Stripe. No Stripe você pode configurar:</p>
                     <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', color: '#b0b0b0' }}>
-                      <li>PIX (recebimento instantâneo)</li>
                       <li>Conta bancária (1-2 dias úteis)</li>
                       <li>Outros métodos de pagamento</li>
                     </ul>

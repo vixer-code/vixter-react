@@ -48,6 +48,7 @@ const Settings = () => {
     isComplete: false,
     loading: false
   });
+  const [stripeDetailedStatus, setStripeDetailedStatus] = useState(null);
 
   // Password change states
   const [passwordForm, setPasswordForm] = useState({
@@ -217,6 +218,30 @@ const Settings = () => {
       console.error('Error checking Stripe status:', error);
       setStripeStatus(prev => ({ ...prev, loading: false }));
       showError('Erro ao verificar status Stripe');
+    }
+  };
+
+  const checkStripeDetailedStatus = async () => {
+    if (!isProvider) return;
+    
+    try {
+      const getDetailedStatus = httpsCallable(functions, 'getStripeConnectDetailedStatus');
+      const result = await getDetailedStatus();
+      
+      setStripeDetailedStatus(result.data);
+      
+      // Atualizar status básico também
+      setStripeStatus({
+        hasAccount: result.data.hasAccount,
+        isComplete: result.data.isComplete,
+        loading: false
+      });
+      
+      return result.data;
+    } catch (error) {
+      console.error('Error checking detailed Stripe status:', error);
+      showError('Erro ao verificar status detalhado Stripe');
+      return null;
     }
   };
 
@@ -782,9 +807,70 @@ const Settings = () => {
                       <i className="fas fa-external-link-alt"></i> Configurar PIX/Banco
                     </button>
                   )}
+                  
+                  <button 
+                    onClick={checkStripeDetailedStatus}
+                    className="btn-stripe btn-outline"
+                    style={{ marginLeft: '10px' }}
+                  >
+                    <i className="fas fa-info-circle"></i> Verificar Status
+                  </button>
                 </div>
               </div>
             </div>
+            
+            {/* Status Detalhado */}
+            {stripeDetailedStatus && (
+              <div className="settings-section">
+                <h3>Status Detalhado da Conta Stripe</h3>
+                <div className="stripe-detailed-status">
+                  <div className="status-item">
+                    <strong>Conta ID:</strong> {stripeDetailedStatus.accountId}
+                  </div>
+                  <div className="status-item">
+                    <strong>Email:</strong> {stripeDetailedStatus.email}
+                  </div>
+                  <div className="status-item">
+                    <strong>País:</strong> {stripeDetailedStatus.country}
+                  </div>
+                  <div className="status-item">
+                    <strong>Cadastro Completo:</strong> 
+                    <span className={`status-badge ${stripeDetailedStatus.detailsSubmitted ? 'success' : 'warning'}`}>
+                      {stripeDetailedStatus.detailsSubmitted ? '✅ Sim' : '⚠️ Não'}
+                    </span>
+                  </div>
+                  <div className="status-item">
+                    <strong>Payouts Habilitados:</strong> 
+                    <span className={`status-badge ${stripeDetailedStatus.payoutsEnabled ? 'success' : 'error'}`}>
+                      {stripeDetailedStatus.payoutsEnabled ? '✅ Sim' : '❌ Não'}
+                    </span>
+                  </div>
+                  <div className="status-item">
+                    <strong>Pagamentos Habilitados:</strong> 
+                    <span className={`status-badge ${stripeDetailedStatus.chargesEnabled ? 'success' : 'error'}`}>
+                      {stripeDetailedStatus.chargesEnabled ? '✅ Sim' : '❌ Não'}
+                    </span>
+                  </div>
+                  
+                  {stripeDetailedStatus.requirements && Object.keys(stripeDetailedStatus.requirements).length > 0 && (
+                    <div className="status-item">
+                      <strong>Requisitos Pendentes:</strong>
+                      <ul>
+                        {Object.entries(stripeDetailedStatus.requirements).map(([key, value]) => (
+                          <li key={key}>
+                            <strong>{key}:</strong> {Array.isArray(value) ? value.join(', ') : value}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  <div className="status-message">
+                    <strong>Mensagem:</strong> {stripeDetailedStatus.message}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
