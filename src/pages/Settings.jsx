@@ -13,7 +13,8 @@ import './Settings.css';
 
 const Settings = () => {
   const { currentUser } = useAuth();
-  const { userProfile } = useUser();
+  const userContext = useUser();
+  const { userProfile } = userContext || {};
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const [loading, setLoading] = useState(false);
   const [userSettings, setUserSettings] = useState({
@@ -791,6 +792,18 @@ const Settings = () => {
       <div className="settings-container">
         <div className="not-authenticated">
           <h2>Faça login para acessar as configurações</h2>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading if userProfile is not loaded yet
+  if (!userContext || !userProfile) {
+    return (
+      <div className="settings-container">
+        <div className="loading-container">
+          <PurpleSpinner />
+          <p>Carregando perfil do usuário...</p>
         </div>
       </div>
     );

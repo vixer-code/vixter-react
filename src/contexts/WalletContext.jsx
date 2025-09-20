@@ -18,6 +18,7 @@ import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
+import { useUser } from './UserContext';
 import { redirectToCheckout, getPaymentStatusFromURL, cleanPaymentURL } from '../utils/stripe';
 import { sendPackPurchaseNotification } from '../services/notificationService';
 
@@ -34,6 +35,7 @@ export const useWallet = () => {
 export const WalletProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
+  const { userProfile } = useUser();
   
   // Wallet state
   const [wallet, setWallet] = useState(null);
