@@ -81,7 +81,7 @@ const VixtipModal = ({ isOpen, onClose, post, postType = 'vixies' }) => {
         buyerId: currentUser.uid,
         buyerName: (userProfile && (userProfile.displayName || userProfile.name)) || 'Usuário',
         buyerUsername: (userProfile && userProfile.username) || '',
-        buyerProfilePictureURL: (userProfile && userProfile.photoURL) || '/images/defpfp1.png'
+        buyerProfilePictureURL: (userProfile && userProfile.profilePictureURL) || '/images/defpfp1.png'
       });
 
       if (success) {

@@ -2043,6 +2043,9 @@ export const processVixtip = onCall(async (request) => {
         transaction.update(existingVixtip.ref, {
           vpAmount: existingData.vpAmount + vpAmount,
           vcAmount: existingData.vcAmount + vcAmount,
+          buyerName: buyerName || existingData.buyerName,
+          buyerUsername: buyerUsername || existingData.buyerUsername,
+          buyerProfilePictureURL: buyerProfilePictureURL || existingData.buyerProfilePictureURL,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           lastTipAt: admin.firestore.FieldValue.serverTimestamp()
         });
