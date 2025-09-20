@@ -252,7 +252,14 @@ const Vixies = () => {
 
   const tipPost = async (post) => {
     if (!currentUser) return;
-    if (!userProfile || userProfile.accountType !== 'client') {
+    
+    // Verificar se o perfil está carregado
+    if (!userProfile) {
+      showWarning('Carregando perfil do usuário...');
+      return;
+    }
+    
+    if (userProfile.accountType !== 'client') {
       showWarning('Somente contas de cliente podem dar gorjeta.');
       return;
     }

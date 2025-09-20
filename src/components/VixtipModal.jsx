@@ -7,7 +7,7 @@ import './VixtipModal.css';
 
 const VixtipModal = ({ isOpen, onClose, post, postType = 'vixies' }) => {
   const { currentUser } = useAuth();
-  const { userProfile } = useUser();
+  const { userProfile, loading: userLoading } = useUser();
   const { vpBalance, sendVixtip } = useWallet();
   const { showSuccess, showError, showWarning } = useNotification();
   
@@ -20,7 +20,7 @@ const VixtipModal = ({ isOpen, onClose, post, postType = 'vixies' }) => {
   const predefinedAmounts = [1, 5, 10, 25, 50, 100];
 
   // Verificar se o usuário pode dar gorjeta
-  const canGiveTip = userProfile?.accountType === 'client' && vpBalance >= 1;
+  const canGiveTip = userProfile && userProfile.accountType === 'client' && vpBalance >= 1;
   const canReceiveTip = true; // Qualquer usuário pode receber gorjetas
 
   const handleAmountSelect = (amount) => {
@@ -41,6 +41,16 @@ const VixtipModal = ({ isOpen, onClose, post, postType = 'vixies' }) => {
   };
 
   const handleSendTip = async () => {
+    if (userLoading) {
+      showWarning('Carregando perfil do usuário...');
+      return;
+    }
+
+    if (!userProfile) {
+      showError('Erro ao carregar perfil do usuário. Tente novamente.');
+      return;
+    }
+
     if (!canGiveTip) {
       showWarning('Somente contas de cliente podem dar gorjetas.');
       return;
@@ -68,8 +78,8 @@ const VixtipModal = ({ isOpen, onClose, post, postType = 'vixies' }) => {
         authorName: post.authorName,
         authorUsername: post.authorUsername,
         amount: tipAmount,
-        buyerName: userProfile?.displayName || userProfile?.name || 'Usuário',
-        buyerUsername: userProfile?.username || ''
+        buyerName: (userProfile && (userProfile.displayName || userProfile.name)) || 'Usuário',
+        buyerUsername: (userProfile && userProfile.username) || ''
       });
 
       if (success) {
@@ -89,6 +99,31 @@ const VixtipModal = ({ isOpen, onClose, post, postType = 'vixies' }) => {
   };
 
   if (!isOpen) return null;
+
+  // Mostrar loading se o perfil ainda está carregando
+  if (userLoading) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content vixtip-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h3>
+              <i className="fas fa-hand-holding-usd"></i>
+              Enviar Gorjeta (Vixtip)
+            </h3>
+            <button className="modal-close" onClick={onClose}>
+              <i className="fas fa-times"></i>
+            </button>
+          </div>
+          <div className="modal-body">
+            <div className="loading-container">
+              <i className="fas fa-spinner fa-spin"></i>
+              <p>Carregando perfil do usuário...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
