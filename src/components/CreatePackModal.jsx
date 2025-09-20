@@ -993,12 +993,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                     {coverImagePreview ? (
                       <div className="cover-image-container">
                         {console.log('Rendering cover preview:', coverImagePreview)}
-                        <SmartMediaViewer 
-                          mediaData={coverImagePreview}
-                          type="pack"
-                          watermarked={false}
-                          isOwner={true}
-                          fallbackSrc="/images/default-pack.jpg"
+                        <img 
+                          src={coverImagePreview}
                           alt="Cover preview"
                           className="image-preview"
                         />

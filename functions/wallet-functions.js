@@ -415,15 +415,27 @@ async function createPackInternal(userId, payload) {
   return { success: true, packId: packRef.id };
 }
 
-async function updatePackInternal(packId, payload) {
+async function updatePackInternal(packId, payload, userId) {
   const packRef = db.collection('packs').doc(packId);
+  
+  // Verify pack exists and user owns it
+  const packSnap = await packRef.get();
+  if (!packSnap.exists) {
+    throw new HttpsError('not-found', 'Pack not found');
+  }
+  
+  const packData = packSnap.data();
+  if (packData.userId !== userId) {
+    throw new HttpsError('permission-denied', 'You can only update your own packs');
+  }
+  
   const updateData = {
     ...payload,
     updatedAt: admin.firestore.FieldValue.serverTimestamp()
   };
   
   await packRef.update(updateData);
-  logger.info(`✅ Pack updated: ${packId}`);
+  logger.info(`✅ Pack updated: ${packId} by user: ${userId}`);
   return { success: true };
 }
 
@@ -478,7 +490,7 @@ export const updatePack = onCall(async (request) => {
   const { packId, ...updateData } = request.data;
   
   try {
-    return await updatePackInternal(packId, updateData);
+    return await updatePackInternal(packId, updateData, request.auth.uid);
   } catch (error) {
     logger.error('Error updating pack:', error);
     throw new HttpsError('internal', 'Failed to update pack');
@@ -574,7 +586,7 @@ export const api = onCall(async (request) => {
             result = await createPackInternal(userId, payload);
             break;
           case 'update':
-            result = await updatePackInternal(payload.packId, payload.updates);
+            result = await updatePackInternal(payload.packId, payload.updates, userId);
             break;
           case 'delete':
             result = await deletePackInternal(payload.packId, userId);
