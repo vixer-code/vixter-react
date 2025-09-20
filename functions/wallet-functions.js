@@ -1899,14 +1899,17 @@ export const processVCWithdrawal = onCall({
     }
 
     // Verificar se o usuário passou pelo KYC
-    if (!userData?.kycStatus || userData.kycStatus !== 'approved') {
+    const isKycApproved = userData?.kyc === true || userData?.kycStatus === 'approved';
+    if (!isKycApproved) {
       throw new HttpsError("failed-precondition", "KYC não aprovado. Complete a verificação de identidade primeiro.");
     }
 
     logger.info(`🔍 Verificando dados PIX para ${userId}:`);
     logger.info(`  - PIX Type: ${userData.pixType}`);
     logger.info(`  - PIX Detail: ${userData.pixDetail}`);
-    logger.info(`  - KYC Status: ${userData.kycStatus}`);
+    logger.info(`  - KYC (boolean): ${userData.kyc}`);
+    logger.info(`  - KYC Status (string): ${userData.kycStatus}`);
+    logger.info(`  - KYC Aprovado: ${isKycApproved}`);
     
     // Calcular valores
     const feeAmount = Math.round(amount * WITHDRAWAL_FEE_PERCENTAGE);
@@ -1958,6 +1961,7 @@ export const processVCWithdrawal = onCall({
         netAmount: netAmount,
         status: 'waiting_payment'
       },
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
       timestamp: admin.firestore.FieldValue.serverTimestamp()
     });
 
@@ -2055,6 +2059,7 @@ export const processPixPayment = onCall({
           processedBy: adminId,
           processedAt: admin.firestore.FieldValue.serverTimestamp()
         },
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
     }

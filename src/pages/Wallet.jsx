@@ -425,17 +425,10 @@ const Wallet = () => {
         confirmWithFee: true
       });
 
-      if (result.data.testMode) {
-        showSuccess(
-          `Saque simulado com sucesso! ${result.data.netAmount} VC foram "transferidos" para sua conta Stripe (modo de teste).`,
-          'Saque Simulado (Teste)'
-        );
-      } else {
-        showSuccess(
-          `Saque processado com sucesso! ${result.data.netAmount} VC foram transferidos para sua conta Stripe.`,
-          'Saque Realizado'
-        );
-      }
+      showSuccess(
+        `Saque solicitado com sucesso! ${result.data.netAmount} VC (R$ ${result.data.brlAmount}) serão enviados via PIX em até 2 dias úteis.`,
+        'Saque em Processamento'
+      );
 
       setShowWithdrawModal(false);
       setWithdrawAmount('');

@@ -79,8 +79,33 @@
   border: 2px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-secondary);
+  color: #ffffff;
   font-size: 14px;
   transition: all 0.3s ease;
+}
+
+/* Estilos específicos para selects */
+.setting-group select {
+  background: var(--bg-secondary);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.setting-group select option {
+  background: var(--bg-secondary);
+  color: #ffffff;
+  padding: 8px 12px;
+  border: none;
+}
+
+.setting-group select option:hover {
+  background: var(--accent-color);
+  color: #ffffff;
+}
+
+.setting-group select option:checked {
+  background: var(--accent-color);
+  color: #ffffff;
 }
 
 .setting-group input:focus,
