@@ -393,7 +393,7 @@ export const WalletProvider = ({ children }) => {
         });
         
         showSuccess(
-          `Gorjeta de ${amount} VP enviada! ${vcAmount} VC foram creditados para ${authorName}.`,
+          `Gorjeta de ${amount} VP enviada!`,
           'Vixtip Enviado'
         );
         return true;

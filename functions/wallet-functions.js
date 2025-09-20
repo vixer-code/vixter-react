@@ -286,15 +286,19 @@ async function handleCheckoutSessionCompleted(session) {
     // Registrar transação
     await db.collection('transactions').add({
       userId: userId,
-      type: 'purchase',
-      amount: parseInt(vpAmount),
-      vbpBonus: parseInt(vbpBonus),
-      currency: 'VP',
-      stripeSessionId: sessionId,
-      packageId: packageId,
+      type: 'BUY_VP',
+      amounts: {
+        vp: parseInt(vpAmount),
+        vbp: parseInt(vbpBonus)
+      },
+      metadata: {
+        description: `Compra de ${vpAmount} VP via Stripe`,
+        stripeSessionId: sessionId,
+        packageId: packageId
+      },
       status: 'completed',
-      description: `Compra de ${vpAmount} VP via Stripe`,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp: admin.firestore.FieldValue.serverTimestamp()
     });
 
     logger.info(`✅ Carteira atualizada para usuário ${userId}: +${vpAmount} VP, +${vbpBonus} VBP`);
@@ -723,17 +727,19 @@ async function createServiceOrderInternal(buyerId, payload) {
     id: transactionRef.id,
     userId: buyerId,
     type: 'SERVICE_PURCHASE',
-    amount: -vpNeeded,
-    currency: 'VP',
-    description: `Compra de serviço: ${metadata.serviceName || 'Serviço'}`,
+    amounts: {
+      vp: -vpNeeded
+    },
     metadata: {
+      description: `Compra de serviço: ${metadata.serviceName || 'Serviço'}`,
       orderId: orderRef.id,
       serviceId,
       sellerId,
       vcAmount
     },
     status: 'COMPLETED',
-    createdAt: admin.firestore.FieldValue.serverTimestamp()
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    timestamp: admin.firestore.FieldValue.serverTimestamp()
   });
 
   // Create seller transaction record
@@ -742,17 +748,19 @@ async function createServiceOrderInternal(buyerId, payload) {
     id: sellerTransactionRef.id,
     userId: sellerId,
     type: 'SERVICE_SALE_PENDING',
-    amount: vcAmount,
-    currency: 'VC',
-    description: `Venda de serviço (pendente): ${metadata.serviceName || 'Serviço'}`,
+    amounts: {
+      vc: vcAmount
+    },
     metadata: {
+      description: `Venda de serviço (pendente): ${metadata.serviceName || 'Serviço'}`,
       orderId: orderRef.id,
       serviceId,
       buyerId,
       vpAmount
     },
     status: 'PENDING',
-    createdAt: admin.firestore.FieldValue.serverTimestamp()
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    timestamp: admin.firestore.FieldValue.serverTimestamp()
   });
 
   await batch.commit();
@@ -876,16 +884,18 @@ async function declineServiceOrderInternal(sellerId, orderId) {
     id: refundTransactionRef.id,
     userId: order.buyerId,
     type: 'SERVICE_REFUND',
-    amount: order.vpAmount,
-    currency: 'VP',
-    description: `Reembolso de serviço: ${order.metadata.serviceName || 'Serviço'}`,
+    amounts: {
+      vp: order.vpAmount
+    },
     metadata: {
+      description: `Reembolso de serviço: ${order.metadata.serviceName || 'Serviço'}`,
       orderId: orderId,
       serviceId: order.serviceId,
       sellerId: order.sellerId
     },
     status: 'COMPLETED',
-    createdAt: admin.firestore.FieldValue.serverTimestamp()
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    timestamp: admin.firestore.FieldValue.serverTimestamp()
   });
 
   await batch.commit();
@@ -974,17 +984,19 @@ async function confirmServiceDeliveryInternal(buyerId, orderId) {
     id: completionTransactionRef.id,
     userId: order.sellerId,
     type: 'SERVICE_SALE_COMPLETED',
-    amount: order.vcAmount,
-    currency: 'VC',
-    description: `Venda de serviço concluída: ${order.metadata.serviceName || 'Serviço'}`,
+    amounts: {
+      vc: order.vcAmount
+    },
     metadata: {
+      description: `Venda de serviço concluída: ${order.metadata.serviceName || 'Serviço'}`,
       orderId: orderId,
       serviceId: order.serviceId,
       buyerId: order.buyerId,
       vpAmount: order.vpAmount
     },
     status: 'COMPLETED',
-    createdAt: admin.firestore.FieldValue.serverTimestamp()
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    timestamp: admin.firestore.FieldValue.serverTimestamp()
   });
 
   await batch.commit();
@@ -1094,17 +1106,19 @@ async function createPackOrderInternal(buyerId, payload) {
     id: buyerTransactionRef.id,
     userId: buyerId,
     type: 'PACK_PURCHASE',
-    amount: -vpAmount,
-    currency: 'VP',
-    description: `Compra de pack: ${metadata.packName || 'Pack'}`,
+    amounts: {
+      vp: -vpAmount
+    },
     metadata: {
+      description: `Compra de pack: ${metadata.packName || 'Pack'}`,
       orderId: orderRef.id,
       packId,
       sellerId,
       vcAmount
     },
     status: 'COMPLETED',
-    createdAt: admin.firestore.FieldValue.serverTimestamp()
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    timestamp: admin.firestore.FieldValue.serverTimestamp()
   });
 
   // Get seller wallet and add VC Pending
@@ -1120,17 +1134,19 @@ async function createPackOrderInternal(buyerId, payload) {
     id: sellerTransactionRef.id,
     userId: sellerId,
     type: 'PACK_SALE_PENDING',
-    amount: vcAmount,
-    currency: 'VC',
-    description: `Venda de pack (pendente): ${metadata.packName || 'Pack'}`,
+    amounts: {
+      vc: vcAmount
+    },
     metadata: {
+      description: `Venda de pack (pendente): ${metadata.packName || 'Pack'}`,
       orderId: orderRef.id,
       packId,
       buyerId,
       vpAmount
     },
     status: 'PENDING',
-    createdAt: admin.firestore.FieldValue.serverTimestamp()
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    timestamp: admin.firestore.FieldValue.serverTimestamp()
   });
 
   await batch.commit();
@@ -1226,17 +1242,19 @@ async function acceptPackOrderInternal(sellerId, orderId) {
     id: completionTransactionRef.id,
     userId: order.sellerId,
     type: 'PACK_SALE_COMPLETED',
-    amount: order.vcAmount,
-    currency: 'VC',
-    description: `Venda de pack concluída: ${order.metadata.packName || 'Pack'}`,
+    amounts: {
+      vc: order.vcAmount
+    },
     metadata: {
+      description: `Venda de pack concluída: ${order.metadata.packName || 'Pack'}`,
       orderId: orderId,
       packId: order.packId,
       buyerId: order.buyerId,
       vpAmount: order.vpAmount
     },
     status: 'COMPLETED',
-    createdAt: admin.firestore.FieldValue.serverTimestamp()
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    timestamp: admin.firestore.FieldValue.serverTimestamp()
   });
 
   await batch.commit();
@@ -1306,16 +1324,18 @@ async function declinePackOrderInternal(sellerId, orderId) {
     id: refundTransactionRef.id,
     userId: order.buyerId,
     type: 'PACK_REFUND',
-    amount: order.vpAmount,
-    currency: 'VP',
-    description: `Reembolso de pack: ${order.metadata.packName || 'Pack'}`,
+    amounts: {
+      vp: order.vpAmount
+    },
     metadata: {
+      description: `Reembolso de pack: ${order.metadata.packName || 'Pack'}`,
       orderId: orderId,
       packId: order.packId,
       sellerId: order.sellerId
     },
     status: 'COMPLETED',
-    createdAt: admin.firestore.FieldValue.serverTimestamp()
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    timestamp: admin.firestore.FieldValue.serverTimestamp()
   });
 
   await batch.commit();
