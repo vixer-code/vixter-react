@@ -453,7 +453,20 @@ const PostCreator = ({
                       <h4>Seus Serviços ({userServices.length})</h4>
                       <div className="items-grid">
                         {userServices.map(service => {
-                          const imageUrl = getImageUrl(service.coverImageURL || service.coverImage);
+                          const rawImageUrl = service.coverImageURL || 
+                            service.coverImage?.publicUrl || 
+                            service.coverImage || 
+                            service.image;
+                          const imageUrl = getImageUrl(rawImageUrl);
+                          
+                          console.log('Service image debug:', {
+                            id: service.id,
+                            title: service.title,
+                            coverImageURL: service.coverImageURL,
+                            coverImage: service.coverImage,
+                            rawImageUrl,
+                            finalImageUrl: imageUrl
+                          });
                           
                           return (
                             <div
@@ -485,7 +498,20 @@ const PostCreator = ({
                       <h4>Seus Packs ({userPacks.length})</h4>
                       <div className="items-grid">
                         {userPacks.map(pack => {
-                          const imageUrl = getImageUrl(pack.coverImageURL || pack.coverImage);
+                          const rawImageUrl = pack.coverImageURL || 
+                            pack.coverImage?.publicUrl || 
+                            pack.coverImage || 
+                            pack.image;
+                          const imageUrl = getImageUrl(rawImageUrl);
+                          
+                          console.log('Pack image debug:', {
+                            id: pack.id,
+                            title: pack.title,
+                            coverImageURL: pack.coverImageURL,
+                            coverImage: pack.coverImage,
+                            rawImageUrl,
+                            finalImageUrl: imageUrl
+                          });
                           
                           return (
                             <div

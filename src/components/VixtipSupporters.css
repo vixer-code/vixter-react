@@ -2,9 +2,9 @@
 .vixtip-supporters {
   margin-top: 12px;
   padding: 8px 12px;
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  background: rgba(138, 43, 226, 0.1);
   border-radius: 8px;
-  border: 1px solid #dee2e6;
+  border: 1px solid rgba(138, 43, 226, 0.2);
   width: 100%;
 }
 
@@ -26,12 +26,12 @@
   gap: 8px;
   margin-bottom: 12px;
   font-weight: 600;
-  color: #495057;
+  color: #ffffff;
   font-size: 14px;
 }
 
 .supporters-header i {
-  color: #28a745;
+  color: #00ffca;
   font-size: 16px;
 }
 
@@ -47,13 +47,14 @@
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  background: white;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 16px;
-  border: 1px solid #e9ecef;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.2s ease;
   min-width: 0;
   flex: 0 0 auto;
   max-width: 140px;
+  color: #ffffff;
 }
 
 .supporter-item:hover {
@@ -63,17 +64,17 @@
 
 .supporter-item.first {
   border-color: #ffd700;
-  background: linear-gradient(135deg, #fff9e6, #fffbf0);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1));
 }
 
 .supporter-item.second {
   border-color: #c0c0c0;
-  background: linear-gradient(135deg, #f8f9fa, #f1f3f4);
+  background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), rgba(192, 192, 192, 0.1));
 }
 
 .supporter-item.third {
   border-color: #cd7f32;
-  background: linear-gradient(135deg, #fdf6e3, #fef9e7);
+  background: linear-gradient(135deg, rgba(205, 127, 50, 0.2), rgba(205, 127, 50, 0.1));
 }
 
 .supporter-rank {

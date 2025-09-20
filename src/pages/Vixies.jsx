@@ -45,7 +45,13 @@ const AttachmentDisplay = ({ attachment, checkAttachmentExists, getImageUrl }) =
     );
   }
   
-  const imageUrl = getImageUrl(attachment.coverUrl || attachment.coverImage || attachment.image || '/images/default-service.jpg');
+  const imageUrl = getImageUrl(
+    attachment.coverUrl || 
+    attachment.coverImage?.publicUrl || 
+    attachment.coverImage || 
+    attachment.image || 
+    '/images/default-service.jpg'
+  );
   
   return (
     <div className="attached-item">
@@ -620,10 +626,10 @@ const Vixies = () => {
                     <button className="action-btn tip-btn" onClick={() => tipPost(post)}>
                       <i className="fas fa-hand-holding-usd"></i>
                     </button>
-                    
-                    {/* Top Apoiadores */}
-                    <VixtipSupporters postId={post.id} postType="vixies" />
                   </div>
+
+                  {/* Top Apoiadores */}
+                  <VixtipSupporters postId={post.id} postType="vixies" />
                 </div>
               );
             })
