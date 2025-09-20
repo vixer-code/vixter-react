@@ -53,7 +53,13 @@ export async function generateUploadSignedUrl(
   const uploadUrl = await getSignedUrl(r2Client, command, { expiresIn });
   
   // Only generate public URL for public bucket
-  const publicUrl = bucket === BUCKET_NAME ? `${process.env.R2_PUBLIC_URL}/${key}` : '';
+  let publicUrl = '';
+  if (bucket === BUCKET_NAME) {
+    const baseUrl = process.env.R2_PUBLIC_URL || 'https://media.vixter.com.br';
+    // Ensure the URL has the correct protocol
+    const normalizedUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
+    publicUrl = `${normalizedUrl}/${key}`;
+  }
 
   return {
     uploadUrl,

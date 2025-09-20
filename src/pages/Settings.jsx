@@ -13,8 +13,7 @@ import './Settings.css';
 const Settings = () => {
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
-  const notificationContext = useNotification();
-  const showNotification = notificationContext.showNotification;
+  const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const [loading, setLoading] = useState(false);
   const [userSettings, setUserSettings] = useState({
     displayName: '',
@@ -127,7 +126,7 @@ const Settings = () => {
       }
     } catch (error) {
       console.error('Error loading user settings:', error);
-      showNotification('Erro ao carregar configurações', 'error');
+      showError('Erro ao carregar configurações');
     }
   };
 
@@ -177,10 +176,10 @@ const Settings = () => {
         updatedAt: Date.now()
       });
 
-      showNotification('Configurações salvas com sucesso!', 'success');
+      showSuccess('Configurações salvas com sucesso!');
     } catch (error) {
       console.error('Error saving settings:', error);
-      showNotification('Erro ao salvar configurações', 'error');
+      showError('Erro ao salvar configurações', 'error');
     } finally {
       setLoading(false);
     }
@@ -189,7 +188,7 @@ const Settings = () => {
   const resetSettings = () => {
     if (window.confirm('Tem certeza que deseja redefinir todas as configurações?')) {
       loadUserSettings();
-      showNotification('Configurações redefinidas', 'info');
+      showInfo('Configurações redefinidas');
     }
   };
 
@@ -225,7 +224,7 @@ const Settings = () => {
       const result = await createStripeAccount({ returnUrl, refreshUrl });
       
       if (result.data.isComplete) {
-        showNotification('Conta Stripe já configurada!', 'success');
+        showSuccess('Conta Stripe já configurada!');
         setStripeStatus({
           hasAccount: true,
           isComplete: true,
@@ -237,7 +236,7 @@ const Settings = () => {
       }
     } catch (error) {
       console.error('Error creating Stripe account:', error);
-      showNotification('Erro ao conectar conta Stripe', 'error');
+      showError('Erro ao conectar conta Stripe', 'error');
       setStripeStatus(prev => ({ ...prev, loading: false }));
     }
   };
@@ -252,17 +251,17 @@ const Settings = () => {
 
   const changePassword = async () => {
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      showNotification('Preencha todos os campos', 'error');
+      showError('Preencha todos os campos', 'error');
       return;
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      showNotification('As senhas não coincidem', 'error');
+      showError('As senhas não coincidem', 'error');
       return;
     }
 
     if (passwordForm.newPassword.length < 6) {
-      showNotification('A nova senha deve ter pelo menos 6 caracteres', 'error');
+      showError('A nova senha deve ter pelo menos 6 caracteres', 'error');
       return;
     }
 
@@ -278,7 +277,7 @@ const Settings = () => {
       // Atualizar senha
       await updatePassword(currentUser, passwordForm.newPassword);
 
-      showNotification('Senha alterada com sucesso!', 'success');
+      showSuccess('Senha alterada com sucesso!');
       setPasswordForm({
         currentPassword: '',
         newPassword: '',
@@ -287,11 +286,11 @@ const Settings = () => {
     } catch (error) {
       console.error('Error changing password:', error);
       if (error.code === 'auth/wrong-password') {
-        showNotification('Senha atual incorreta', 'error');
+        showError('Senha atual incorreta', 'error');
       } else if (error.code === 'auth/weak-password') {
-        showNotification('A nova senha é muito fraca', 'error');
+        showError('A nova senha é muito fraca', 'error');
       } else {
-        showNotification('Erro ao alterar senha', 'error');
+        showError('Erro ao alterar senha', 'error');
       }
     } finally {
       setPasswordLoading(false);
@@ -300,7 +299,7 @@ const Settings = () => {
 
   const deleteAccount = () => {
     if (window.confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
-      showNotification('Funcionalidade de exclusão de conta em desenvolvimento', 'warning');
+      showWarning('Funcionalidade de exclusão de conta em desenvolvimento');
     }
   };
 
@@ -407,12 +406,7 @@ const Settings = () => {
             [documentType]: { uploaded: true, uploading: false, error: null }
           }));
 
-          try {
-            showNotification(`${documentType === 'front' ? 'Frente' : documentType === 'back' ? 'Verso' : 'Selfie'} do documento enviado com sucesso!`, 'success');
-          } catch (error) {
-            console.error('Error calling showNotification:', error);
-            console.log(`${documentType === 'front' ? 'Frente' : documentType === 'back' ? 'Verso' : 'Selfie'} do documento enviado com sucesso!`);
-          }
+          showSuccess(`${documentType === 'front' ? 'Frente' : documentType === 'back' ? 'Verso' : 'Selfie'} do documento enviado com sucesso!`);
         } else {
           throw new Error('Falha no upload do arquivo');
         }
@@ -425,12 +419,7 @@ const Settings = () => {
         ...prev,
         [documentType]: { uploaded: false, uploading: false, error: error.message }
       }));
-      try {
-        showNotification(`Erro ao enviar ${documentType === 'front' ? 'frente' : documentType === 'back' ? 'verso' : 'selfie'} do documento`, 'error');
-      } catch (error) {
-        console.error('Error calling showNotification:', error);
-        console.log(`Erro ao enviar ${documentType === 'front' ? 'frente' : documentType === 'back' ? 'verso' : 'selfie'} do documento`);
-      }
+      showError(`Erro ao enviar ${documentType === 'front' ? 'frente' : documentType === 'back' ? 'verso' : 'selfie'} do documento`);
     }
   };
 
@@ -507,12 +496,12 @@ const Settings = () => {
   // Submit KYC documents for verification
   const submitKycDocuments = async () => {
     if (!cpfVerificationState.isVerified) {
-      showNotification('Verifique o CPF antes de enviar os documentos', 'error');
+      showError('Verifique o CPF antes de enviar os documentos', 'error');
       return;
     }
 
     if (!kycForm.fullName.trim()) {
-      showNotification('Preencha o nome completo', 'error');
+      showError('Preencha o nome completo', 'error');
       return;
     }
 
@@ -520,7 +509,7 @@ const Settings = () => {
     const allDocumentsUploaded = Object.values(documentUploadStates).every(state => state.uploaded);
 
     if (!allDocumentsUploaded) {
-      showNotification('Todos os documentos devem ser enviados antes de finalizar', 'error');
+      showError('Todos os documentos devem ser enviados antes de finalizar', 'error');
       return;
     }
 
@@ -553,7 +542,7 @@ const Settings = () => {
       // Update local state
       setKycState('PENDING_VERIFICATION');
 
-      showNotification('Documentos enviados com sucesso! A verificação será realizada assim que possível.', 'success');
+      showSuccess('Documentos enviados com sucesso! A verificação será realizada assim que possível.');
       
       // Reset form
       setKycForm({
@@ -579,7 +568,7 @@ const Settings = () => {
 
     } catch (error) {
       console.error('Error submitting KYC documents:', error);
-      showNotification('Erro ao enviar documentos. Tente novamente.', 'error');
+      showError('Erro ao enviar documentos. Tente novamente.', 'error');
     } finally {
       setKycLoading(false);
     }
@@ -603,11 +592,11 @@ const Settings = () => {
         window.open(data.downloadUrl, '_blank');
       } else {
         const error = await response.json();
-        showNotification(error.error || 'Erro ao visualizar documento', 'error');
+        showError(error.error || 'Erro ao visualizar documento', 'error');
       }
     } catch (error) {
       console.error('Error viewing KYC document:', error);
-      showNotification('Erro ao visualizar documento', 'error');
+      showError('Erro ao visualizar documento', 'error');
     }
   };
 
