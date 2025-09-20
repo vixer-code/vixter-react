@@ -73,18 +73,6 @@ const Wallet = () => {
   const isClient = accountType === 'client';
   const isBoth = accountType === 'both'; // Legacy account type for management/testing
 
-  // Show loading if userProfile is not loaded yet
-  if (!userContext || !userProfile) {
-    return (
-      <div className="wallet-container">
-        <div className="loading-container">
-          <PurpleSpinner />
-          <p>Carregando perfil do usuário...</p>
-        </div>
-      </div>
-    );
-  }
-
   useEffect(() => {
     applyFilters();
     setCurrentPage(1);
@@ -497,6 +485,18 @@ const Wallet = () => {
     return (
       <div className="wallet-container">
         <div className="loading-text">Carregando...</div>
+      </div>
+    );
+  }
+
+  // Show loading if userProfile is not loaded yet
+  if (!userContext || !userProfile) {
+    return (
+      <div className="wallet-container">
+        <div className="loading-container">
+          <PurpleSpinner />
+          <p>Carregando perfil do usuário...</p>
+        </div>
       </div>
     );
   }
