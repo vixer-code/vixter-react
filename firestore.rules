@@ -319,6 +319,27 @@ service cloud.firestore {
     }
 
     // =====================================================
+    // KYC COLLECTION RULES
+    // =====================================================
+    
+    match /kyc/{userId} {
+      // Users can only read their own KYC data
+      allow read: if isAuthenticated() && isOwner(userId);
+      
+      // Users can create their own KYC document
+      allow create: if isAuthenticated() && isOwner(userId);
+      
+      // Users can update their own KYC document (for status updates)
+      allow update: if isAuthenticated() && isOwner(userId);
+      
+      // Only admins can delete KYC documents
+      allow delete: if isAdmin();
+      
+      // Admin access for verification and management
+      allow read, write: if isAdmin();
+    }
+    
+    // =====================================================
     // DEFAULT DENY RULE
     // =====================================================
     

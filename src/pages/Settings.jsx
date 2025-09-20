@@ -598,6 +598,22 @@ const Settings = () => {
     }
   };
 
+  // Get KYC document from Firestore
+  const getKycDocument = async (userId) => {
+    try {
+      const kycRef = doc(db, 'kyc', userId);
+      const kycSnap = await getDoc(kycRef);
+      
+      if (kycSnap.exists()) {
+        return kycSnap.data();
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting KYC document:', error);
+      return null;
+    }
+  };
+
   // Load submitted KYC documents
   const loadKycState = async () => {
     try {
@@ -647,22 +663,6 @@ const Settings = () => {
     } catch (error) {
       console.error('Error creating KYC document:', error);
       throw error;
-    }
-  };
-
-  // Get KYC document from Firestore
-  const getKycDocument = async (userId) => {
-    try {
-      const kycRef = doc(db, 'kyc', userId);
-      const kycSnap = await getDoc(kycRef);
-      
-      if (kycSnap.exists()) {
-        return kycSnap.data();
-      }
-      return null;
-    } catch (error) {
-      console.error('Error getting KYC document:', error);
-      return null;
     }
   };
 
