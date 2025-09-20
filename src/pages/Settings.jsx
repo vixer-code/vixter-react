@@ -265,10 +265,14 @@ const Settings = () => {
       }
     } catch (error) {
       console.error('Error opening Stripe dashboard:', error);
-      if (error.code === 'functions/not-found') {
+      
+      // Fallback: tentar abrir dashboard genérico se a função não estiver disponível
+      if (error.code === 'functions/not-found' || error.code === 'functions/unavailable') {
+        showError('Função temporariamente indisponível. Tente novamente em alguns minutos.');
+      } else if (error.code === 'functions/not-found' && error.message?.includes('Conta Stripe não encontrada')) {
         showError('Conta Stripe não encontrada. Conecte uma conta primeiro.');
       } else {
-        showError('Erro ao abrir dashboard Stripe');
+        showError('Erro ao abrir dashboard Stripe. Tente novamente.');
       }
     }
   };

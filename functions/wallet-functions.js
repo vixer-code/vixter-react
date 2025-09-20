@@ -1480,6 +1480,7 @@ export const getStripeConnectLoginLink = onCall({
   memory: "128MiB",
   timeoutSeconds: 30,
   secrets: [STRIPE_SECRET],
+  cors: true,
 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Usuário não autenticado");

@@ -11,6 +11,7 @@ import {
   // Stripe Connect
   createStripeConnectAccount,
   getStripeConnectStatus,
+  getStripeConnectLoginLink,
   processVCWithdrawal,
   calculateWithdrawalFee,
   checkStripeConnectConfig,
@@ -42,6 +43,7 @@ export {
   // Stripe Connect
   createStripeConnectAccount,
   getStripeConnectStatus,
+  getStripeConnectLoginLink,
   processVCWithdrawal,
   calculateWithdrawalFee,
   checkStripeConnectConfig,
