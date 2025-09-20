@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { requireAuth, getCorsHeaders, handleCors, AuthenticatedUser } from '@/lib/auth';
 import { generateUploadSignedUrl, generateMediaKey, generateKycUploadSignedUrl, generatePackContentUploadSignedUrl, generatePackContentKeyOrganized } from '@/lib/r2';
+import { database } from '@/lib/firebase-admin';
 
 export async function OPTIONS(request: NextRequest) {
   return handleCors(request);
@@ -38,6 +39,37 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
           headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
         }
       );
+    }
+
+    // Check KYC status for non-KYC uploads
+    if (type !== 'kyc') {
+      try {
+        const userRef = database.ref(`users/${user.uid}`);
+        const snapshot = await userRef.once('value');
+        
+        if (snapshot.exists()) {
+          const userData = snapshot.val();
+          const kycState = userData.kycState;
+          
+          // Block uploads if KYC is not verified
+          if (kycState !== 'VERIFIED') {
+            return new Response(
+              JSON.stringify({ 
+                error: 'KYC verification required',
+                message: 'You must complete KYC verification before uploading content',
+                kycState: kycState || 'PENDING_UPLOAD'
+              }),
+              { 
+                status: 403,
+                headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
+              }
+            );
+          }
+        }
+      } catch (kycError) {
+        console.error('Error checking KYC status:', kycError);
+        // Allow upload to proceed if KYC check fails
+      }
     }
 
     // Use custom key if provided, otherwise generate one

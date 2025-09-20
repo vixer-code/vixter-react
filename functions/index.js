@@ -22,6 +22,14 @@ import {
   processPendingVixtips,
 } from './wallet-functions.js';
 
+import {
+  // KYC Management
+  updateKycStatus,
+  getKycDocument,
+  listPendingKycDocuments,
+  generateKycDownloadUrl,
+} from './kyc-functions.js';
+
 export {
   // Wallet & Payments
   initializeWallet,
@@ -43,4 +51,10 @@ export {
   // Vixtip Processing
   processVixtip,
   processPendingVixtips,
+
+  // KYC Management
+  updateKycStatus,
+  getKycDocument,
+  listPendingKycDocuments,
+  generateKycDownloadUrl,
 };

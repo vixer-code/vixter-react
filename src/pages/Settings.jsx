@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useUser } from '../contexts/UserContext';
-import { database } from '../../config/firebase';
-import { ref, set, get } from 'firebase/database';
+import { database, db } from '../../config/firebase';
+import { ref, set, get, update } from 'firebase/database';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../config/firebase';
@@ -73,6 +74,12 @@ const Settings = () => {
     isValid: false,
     message: ''
   });
+  const [kycState, setKycState] = useState('PENDING_UPLOAD');
+  const [documentUploadStates, setDocumentUploadStates] = useState({
+    front: { uploaded: false, uploading: false, error: null },
+    back: { uploaded: false, uploading: false, error: null },
+    selfie: { uploaded: false, uploading: false, error: null }
+  });
 
   // Get account type
   const accountType = userProfile?.accountType || 'client';
@@ -81,6 +88,7 @@ const Settings = () => {
   useEffect(() => {
     if (currentUser) {
       loadUserSettings();
+      loadKycState();
       loadSubmittedKycDocuments();
       if (isProvider) {
         checkStripeStatus();
@@ -314,7 +322,10 @@ const Settings = () => {
     }
   };
 
-  const handleKycDocumentChange = (documentType, file) => {
+  const handleKycDocumentChange = async (documentType, file) => {
+    if (!file) return;
+
+    // Update form state
     setKycForm(prev => ({
       ...prev,
       documents: {
@@ -322,6 +333,67 @@ const Settings = () => {
         [documentType]: file
       }
     }));
+
+    // Set uploading state
+    setDocumentUploadStates(prev => ({
+      ...prev,
+      [documentType]: { uploaded: false, uploading: true, error: null }
+    }));
+
+    try {
+      // Upload document immediately for visual feedback
+      const documentKey = `KYC/${currentUser.uid}/${documentType}-${Date.now()}.${file.name.split('.').pop()}`;
+      
+      const response = await fetch('/api/media/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'kyc',
+          contentType: file.type,
+          originalName: file.name,
+          key: documentKey
+        })
+      });
+
+      if (response.ok) {
+        const { data } = await response.json();
+        const uploadResponse = await fetch(data.uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: { 'Content-Type': file.type }
+        });
+        
+        if (uploadResponse.ok) {
+          // Update form with the key
+          setKycForm(prev => ({
+            ...prev,
+            documents: {
+              ...prev.documents,
+              [documentType]: { file, key: data.key }
+            }
+          }));
+
+          // Set uploaded state
+          setDocumentUploadStates(prev => ({
+            ...prev,
+            [documentType]: { uploaded: true, uploading: false, error: null }
+          }));
+
+          showNotification(`${documentType === 'front' ? 'Frente' : documentType === 'back' ? 'Verso' : 'Selfie'} do documento enviado com sucesso!`, 'success');
+        } else {
+          throw new Error('Falha no upload do arquivo');
+        }
+      } else {
+        throw new Error('Falha ao gerar URL de upload');
+      }
+    } catch (error) {
+      console.error(`Error uploading ${documentType} document:`, error);
+      setDocumentUploadStates(prev => ({
+        ...prev,
+        [documentType]: { uploaded: false, uploading: false, error: error.message }
+      }));
+      showNotification(`Erro ao enviar ${documentType === 'front' ? 'frente' : documentType === 'back' ? 'verso' : 'selfie'} do documento`, 'error');
+    }
   };
 
   // CPF validation function
@@ -436,124 +508,56 @@ const Settings = () => {
     }
   };
 
-  // Upload KYC documents to R2
-  const uploadKycDocuments = async () => {
+  // Submit KYC documents for verification
+  const submitKycDocuments = async () => {
     if (!cpfVerificationState.isVerified) {
       showNotification('Verifique o CPF antes de enviar os documentos', 'error');
       return;
     }
 
+    // Check if all documents are uploaded
+    const allDocumentsUploaded = Object.values(kycForm.documents).every(doc => 
+      doc && (typeof doc === 'object' ? doc.key : true)
+    );
+
+    if (!allDocumentsUploaded) {
+      showNotification('Todos os documentos devem ser enviados antes de finalizar', 'error');
+      return;
+    }
+
     setKycLoading(true);
     try {
-      const documentURLs = {};
-      const uploadPromises = [];
+      // Prepare document keys
+      const documentKeys = {
+        front: kycForm.documents.front?.key || kycForm.documents.front,
+        back: kycForm.documents.back?.key || kycForm.documents.back,
+        selfie: kycForm.documents.selfie?.key || kycForm.documents.selfie
+      };
 
-      // Upload front document
-      if (kycForm.documents.front) {
-        const frontKey = `KYC/${currentUser.uid}/doc-front-${Date.now()}.${kycForm.documents.front.name.split('.').pop()}`;
-        uploadPromises.push(
-          fetch('/api/media/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'kyc',
-              contentType: kycForm.documents.front.type,
-              originalName: kycForm.documents.front.name,
-              key: frontKey
-            })
-          }).then(async (response) => {
-            if (response.ok) {
-              const { data } = await response.json();
-              const uploadResponse = await fetch(data.uploadUrl, {
-                method: 'PUT',
-                body: kycForm.documents.front,
-                headers: { 'Content-Type': kycForm.documents.front.type }
-              });
-              
-              if (uploadResponse.ok) {
-                // For KYC documents, store only the key - no public URL
-                documentURLs.front = data.key;
-              }
-            }
-          })
-        );
-      }
+      // Create KYC document in Firestore
+      await createKycDocument(currentUser.uid, {
+        fullName: kycForm.fullName,
+        cpf: kycForm.cpf.replace(/\D/g, ''),
+        documents: documentKeys,
+        submittedAt: Date.now(),
+        status: 'PENDING_VERIFICATION'
+      });
 
-      // Upload back document
-      if (kycForm.documents.back) {
-        const backKey = `KYC/${currentUser.uid}/doc-back-${Date.now()}.${kycForm.documents.back.name.split('.').pop()}`;
-        uploadPromises.push(
-          fetch('/api/media/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'kyc',
-              contentType: kycForm.documents.back.type,
-              originalName: kycForm.documents.back.name,
-              key: backKey
-            })
-          }).then(async (response) => {
-            if (response.ok) {
-              const { data } = await response.json();
-              const uploadResponse = await fetch(data.uploadUrl, {
-                method: 'PUT',
-                body: kycForm.documents.back,
-                headers: { 'Content-Type': kycForm.documents.back.type }
-              });
-              
-              if (uploadResponse.ok) {
-                // For KYC documents, store only the key - no public URL
-                documentURLs.back = data.key;
-              }
-            }
-          })
-        );
-      }
-
-      // Upload selfie document
-      if (kycForm.documents.selfie) {
-        const selfieKey = `KYC/${currentUser.uid}/selfie-${Date.now()}.${kycForm.documents.selfie.name.split('.').pop()}`;
-        uploadPromises.push(
-          fetch('/api/media/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'kyc',
-              contentType: kycForm.documents.selfie.type,
-              originalName: kycForm.documents.selfie.name,
-              key: selfieKey
-            })
-          }).then(async (response) => {
-            if (response.ok) {
-              const { data } = await response.json();
-              const uploadResponse = await fetch(data.uploadUrl, {
-                method: 'PUT',
-                body: kycForm.documents.selfie,
-                headers: { 'Content-Type': kycForm.documents.selfie.type }
-              });
-              
-              if (uploadResponse.ok) {
-                // For KYC documents, store only the key - no public URL
-                documentURLs.selfie = data.key;
-              }
-            }
-          })
-        );
-      }
-
-      await Promise.all(uploadPromises);
-
-      // Update user profile with KYC data
+      // Update user profile with KYC state
       const userRef = ref(database, `users/${currentUser.uid}`);
       await update(userRef, {
+        kycState: 'PENDING_VERIFICATION',
         verification: {
           fullName: kycForm.fullName,
           cpf: kycForm.cpf.replace(/\D/g, ''),
-          documents: documentURLs,
+          documents: documentKeys,
           submittedAt: Date.now(),
           verificationStatus: 'pending'
         }
       });
+
+      // Update local state
+      setKycState('PENDING_VERIFICATION');
 
       showNotification('Documentos enviados com sucesso! A verificação será realizada assim que possível.', 'success');
       
@@ -573,9 +577,14 @@ const Settings = () => {
         isValid: false,
         message: ''
       });
+      setDocumentUploadStates({
+        front: { uploaded: false, uploading: false, error: null },
+        back: { uploaded: false, uploading: false, error: null },
+        selfie: { uploaded: false, uploading: false, error: null }
+      });
 
     } catch (error) {
-      console.error('Error uploading KYC documents:', error);
+      console.error('Error submitting KYC documents:', error);
       showNotification('Erro ao enviar documentos. Tente novamente.', 'error');
     } finally {
       setKycLoading(false);
@@ -608,9 +617,54 @@ const Settings = () => {
   };
 
   // Load submitted KYC documents
+  const loadKycState = async () => {
+    try {
+      const userRef = ref(database, `users/${currentUser.uid}`);
+      const snapshot = await get(userRef);
+      
+      if (snapshot.exists()) {
+        const userData = snapshot.val();
+        setKycState(userData.kycState || 'PENDING_UPLOAD');
+      }
+    } catch (error) {
+      console.error('Error loading KYC state:', error);
+    }
+  };
+
   const loadSubmittedKycDocuments = () => {
     if (userProfile?.verification?.documents) {
       setSubmittedKycDocuments(userProfile.verification.documents);
+    }
+  };
+
+  // Create or update KYC document in Firestore
+  const createKycDocument = async (userId, kycData) => {
+    try {
+      const kycRef = doc(db, 'kyc', userId);
+      await setDoc(kycRef, {
+        ...kycData,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      });
+    } catch (error) {
+      console.error('Error creating KYC document:', error);
+      throw error;
+    }
+  };
+
+  // Get KYC document from Firestore
+  const getKycDocument = async (userId) => {
+    try {
+      const kycRef = doc(db, 'kyc', userId);
+      const kycSnap = await getDoc(kycRef);
+      
+      if (kycSnap.exists()) {
+        return kycSnap.data();
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting KYC document:', error);
+      return null;
     }
   };
 
@@ -701,19 +755,26 @@ const Settings = () => {
         )}
 
         {/* KYC Verification Section */}
-        {!userProfile?.kyc && (
+        {kycState !== 'VERIFIED' && (
           <div className="settings-section">
             <h2>Verificação de Identidade (KYC)</h2>
             <div className="settings-grid">
               <div className="setting-group full-width">
                 <div className="kyc-info">
-                  <div className="kyc-status">
-                    <i className="fas fa-exclamation-triangle"></i>
-                    <span>Verificação Pendente</span>
+                  <div className={`kyc-status ${kycState === 'PENDING_VERIFICATION' ? 'pending' : 'warning'}`}>
+                    <i className={`fas ${kycState === 'PENDING_VERIFICATION' ? 'fa-clock' : 'fa-exclamation-triangle'}`}></i>
+                    <span>
+                      {kycState === 'PENDING_VERIFICATION' 
+                        ? 'Verificação em Andamento' 
+                        : 'Verificação Pendente'
+                      }
+                    </span>
                   </div>
                   <p className="kyc-description">
-                    Complete a verificação de identidade para acessar todas as funcionalidades da plataforma, incluindo o Vixies.
-                    Uma vez validada a identidade que comprove sua maioridade, o Vixies será liberado para acesso.
+                    {kycState === 'PENDING_VERIFICATION' 
+                      ? 'Seus documentos foram enviados e estão sendo analisados. Você receberá uma notificação assim que a verificação for concluída.'
+                      : 'Complete a verificação de identidade para acessar todas as funcionalidades da plataforma, incluindo o Vixies. Uma vez validada a identidade que comprove sua maioridade, o Vixies será liberado para acesso.'
+                    }
                   </p>
                 </div>
               </div>
@@ -783,72 +844,177 @@ const Settings = () => {
                 )}
               </div>
 
-              <div className="setting-group full-width">
-                <label>Documentos de Verificação</label>
-                <p className="verification-description">
-                  Envie 3 fotos conforme especificado abaixo. Certifique-se de que todas as informações estejam legíveis e que as fotos estejam bem iluminadas.
-                </p>
-                
-                <div className="kyc-documents">
-                  <div className="document-upload-item">
-                    <input 
-                      type="file" 
-                      id="kyc-doc-front" 
-                      accept="image/*"
-                      onChange={(e) => handleKycDocumentChange('front', e.target.files[0])}
-                    />
-                    <div className="document-upload-icon">📄</div>
-                    <div className="document-upload-title">Frente do Documento</div>
-                    <div className="document-upload-description">
-                      Foto da frente do RG, CNH ou outro documento com foto que contenha seu CPF
+              {kycState === 'PENDING_UPLOAD' && (
+                <div className="setting-group full-width">
+                  <label>Documentos de Verificação</label>
+                  <p className="verification-description">
+                    Envie 3 fotos conforme especificado abaixo. Certifique-se de que todas as informações estejam legíveis e que as fotos estejam bem iluminadas.
+                  </p>
+                  
+                  <div className="kyc-documents">
+                    <div className={`document-upload-item ${documentUploadStates.front.uploaded ? 'uploaded' : documentUploadStates.front.uploading ? 'uploading' : documentUploadStates.front.error ? 'error' : ''}`}>
+                      <input 
+                        type="file" 
+                        id="kyc-doc-front" 
+                        accept="image/*"
+                        onChange={(e) => handleKycDocumentChange('front', e.target.files[0])}
+                        disabled={documentUploadStates.front.uploading}
+                      />
+                      <div className="document-upload-icon">
+                        {documentUploadStates.front.uploaded ? '✅' : documentUploadStates.front.uploading ? '⏳' : '📄'}
+                      </div>
+                      <div className="document-upload-title">Frente do Documento</div>
+                      <div className="document-upload-description">
+                        Foto da frente do RG, CNH ou outro documento com foto que contenha seu CPF
+                      </div>
+                      {documentUploadStates.front.uploading && (
+                        <div className="upload-progress">
+                          <div className="progress-bar"></div>
+                          <span>Enviando...</span>
+                        </div>
+                      )}
+                      {documentUploadStates.front.error && (
+                        <div className="upload-error">
+                          <i className="fas fa-exclamation-circle"></i>
+                          <span>{documentUploadStates.front.error}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className={`document-upload-item ${documentUploadStates.back.uploaded ? 'uploaded' : documentUploadStates.back.uploading ? 'uploading' : documentUploadStates.back.error ? 'error' : ''}`}>
+                      <input 
+                        type="file" 
+                        id="kyc-doc-back" 
+                        accept="image/*"
+                        onChange={(e) => handleKycDocumentChange('back', e.target.files[0])}
+                        disabled={documentUploadStates.back.uploading}
+                      />
+                      <div className="document-upload-icon">
+                        {documentUploadStates.back.uploaded ? '✅' : documentUploadStates.back.uploading ? '⏳' : '📄'}
+                      </div>
+                      <div className="document-upload-title">Verso do Documento</div>
+                      <div className="document-upload-description">
+                        Foto do verso do mesmo documento usado na frente
+                      </div>
+                      {documentUploadStates.back.uploading && (
+                        <div className="upload-progress">
+                          <div className="progress-bar"></div>
+                          <span>Enviando...</span>
+                        </div>
+                      )}
+                      {documentUploadStates.back.error && (
+                        <div className="upload-error">
+                          <i className="fas fa-exclamation-circle"></i>
+                          <span>{documentUploadStates.back.error}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className={`document-upload-item ${documentUploadStates.selfie.uploaded ? 'uploaded' : documentUploadStates.selfie.uploading ? 'uploading' : documentUploadStates.selfie.error ? 'error' : ''}`}>
+                      <input 
+                        type="file" 
+                        id="kyc-selfie-doc" 
+                        accept="image/*"
+                        onChange={(e) => handleKycDocumentChange('selfie', e.target.files[0])}
+                        disabled={documentUploadStates.selfie.uploading}
+                      />
+                      <div className="document-upload-icon">
+                        {documentUploadStates.selfie.uploaded ? '✅' : documentUploadStates.selfie.uploading ? '⏳' : '🤳'}
+                      </div>
+                      <div className="document-upload-title">Selfie com Documento</div>
+                      <div className="document-upload-description">
+                        Foto sua segurando o documento ao lado do rosto, ambos devem estar visíveis
+                      </div>
+                      {documentUploadStates.selfie.uploading && (
+                        <div className="upload-progress">
+                          <div className="progress-bar"></div>
+                          <span>Enviando...</span>
+                        </div>
+                      )}
+                      {documentUploadStates.selfie.error && (
+                        <div className="upload-error">
+                          <i className="fas fa-exclamation-circle"></i>
+                          <span>{documentUploadStates.selfie.error}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  
-                  <div className="document-upload-item">
-                    <input 
-                      type="file" 
-                      id="kyc-doc-back" 
-                      accept="image/*"
-                      onChange={(e) => handleKycDocumentChange('back', e.target.files[0])}
-                    />
-                    <div className="document-upload-icon">📄</div>
-                    <div className="document-upload-title">Verso do Documento</div>
-                    <div className="document-upload-description">
-                      Foto do verso do mesmo documento usado na frente
+
+                  <button 
+                    className="btn-primary kyc-submit-btn"
+                    onClick={submitKycDocuments}
+                    disabled={kycLoading || !cpfVerificationState.isVerified || !Object.values(documentUploadStates).every(state => state.uploaded)}
+                  >
+                    {kycLoading ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin"></i> Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-upload"></i> Finalizar Envio
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* KYC Status Display for PENDING_VERIFICATION */}
+              {kycState === 'PENDING_VERIFICATION' && (
+                <div className="setting-group full-width">
+                  <div className="kyc-status-display">
+                    <div className="status-icon">
+                      <i className="fas fa-clock"></i>
                     </div>
-                  </div>
-                  
-                  <div className="document-upload-item">
-                    <input 
-                      type="file" 
-                      id="kyc-selfie-doc" 
-                      accept="image/*"
-                      onChange={(e) => handleKycDocumentChange('selfie', e.target.files[0])}
-                    />
-                    <div className="document-upload-icon">🤳</div>
-                    <div className="document-upload-title">Selfie com Documento</div>
-                    <div className="document-upload-description">
-                      Foto sua segurando o documento ao lado do rosto, ambos devem estar visíveis
+                    <div className="status-content">
+                      <h3>Documentos Enviados</h3>
+                      <p>Seus documentos de verificação foram enviados e estão sendo analisados pela nossa equipe.</p>
+                      <div className="status-details">
+                        <div className="detail-item">
+                          <i className="fas fa-check-circle"></i>
+                          <span>CPF verificado</span>
+                        </div>
+                        <div className="detail-item">
+                          <i className="fas fa-check-circle"></i>
+                          <span>Documentos enviados</span>
+                        </div>
+                        <div className="detail-item">
+                          <i className="fas fa-clock"></i>
+                          <span>Aguardando análise</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
+              )}
 
-                <button 
-                  className="btn-primary kyc-submit-btn"
-                  onClick={uploadKycDocuments}
-                  disabled={kycLoading || !cpfVerificationState.isVerified || !kycForm.documents.front || !kycForm.documents.back || !kycForm.documents.selfie}
-                >
-                  {kycLoading ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin"></i> Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-upload"></i> Enviar Documentos
-                    </>
-                  )}
-                </button>
-              </div>
+              {/* KYC Status Display for VERIFIED */}
+              {kycState === 'VERIFIED' && (
+                <div className="setting-group full-width">
+                  <div className="kyc-status-display verified">
+                    <div className="status-icon">
+                      <i className="fas fa-check-circle"></i>
+                    </div>
+                    <div className="status-content">
+                      <h3>Verificação Concluída</h3>
+                      <p>Sua identidade foi verificada com sucesso! Agora você tem acesso completo a todas as funcionalidades da plataforma.</p>
+                      <div className="status-details">
+                        <div className="detail-item">
+                          <i className="fas fa-check-circle"></i>
+                          <span>Identidade verificada</span>
+                        </div>
+                        <div className="detail-item">
+                          <i className="fas fa-unlock"></i>
+                          <span>Acesso completo liberado</span>
+                        </div>
+                        <div className="detail-item">
+                          <i className="fas fa-shield-alt"></i>
+                          <span>Conta segura</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

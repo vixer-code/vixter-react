@@ -487,6 +487,7 @@ const Register = () => {
         avatarType: formData.avatarChoice || null,
         idVerified: false,
         kyc: false, // KYC flag - will be set to true manually by admin
+        kycState: 'PENDING_UPLOAD', // KYC state: PENDING_UPLOAD, PENDING_VERIFICATION, VERIFIED
         profileComplete: true,
         accountRestrictions: isAdult ? [] : ['adult_content', 'unsupervised_transfers', 'unverified_chat'],
         registeredAt: Date.now(),

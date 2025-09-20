@@ -101,7 +101,9 @@ export const AuthProvider = ({ children }) => {
         name,
         email,
         createdAt: Date.now(),
-        profileComplete: false
+        profileComplete: false,
+        kyc: false,
+        kycState: 'PENDING_UPLOAD'
       });
   
       console.log('[createUserProfile] set successful!');

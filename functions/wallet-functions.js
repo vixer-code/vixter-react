@@ -425,7 +425,7 @@ async function updatePackInternal(packId, payload, userId) {
   }
   
   const packData = packSnap.data();
-  if (packData.userId !== userId) {
+  if (packData.authorId !== userId && packData.creatorId !== userId) {
     throw new HttpsError('permission-denied', 'You can only update your own packs');
   }
   
