@@ -673,7 +673,7 @@ async function createServiceOrderInternal(buyerId, payload) {
 
   const buyerWallet = buyerWalletSnap.data();
   const vpNeeded = vpAmount;
-  const vcAmount = Math.round(vpAmount / 1.5); // Convert VP to VC
+  const vcAmount = Math.round(vpAmount * 0.5); // Convert VP to VC (1 VP = 0.5 VC)
 
   // Check if buyer has enough VP
   if (buyerWallet.vp < vpNeeded) {
@@ -1077,8 +1077,8 @@ async function createPackOrderInternal(buyerId, payload) {
     throw new HttpsError("failed-precondition", "Saldo VP insuficiente");
   }
 
-  // Calculate VC amount (1.5x conversion rate - VP to VC)
-  const vcAmount = Math.round(vpAmount / 1.5);
+  // Calculate VC amount (1 VP = 0.5 VC)
+  const vcAmount = Math.round(vpAmount * 0.5);
 
   // Create pack order
   const orderRef = db.collection('packOrders').doc();
@@ -1947,6 +1947,22 @@ export const processVixtip = onCall(async (request) => {
   try {
     logger.info(`🔄 Processando gorjeta: ${vpAmount} VP -> ${vcAmount} VC para ${authorName}...`);
     
+    // Verificar se já existe um vixtip do mesmo usuário para o mesmo post (FORA da transação)
+    const existingVixtipQuery = db.collection('vixtips')
+      .where('postId', '==', postId)
+      .where('buyerId', '==', buyerId)
+      .where('status', '==', 'completed');
+    
+    const existingVixtips = await existingVixtipQuery.get();
+    let existingVixtip = null;
+    let existingData = null;
+    
+    if (!existingVixtips.empty) {
+      existingVixtip = existingVixtips.docs[0];
+      existingData = existingVixtip.data();
+      logger.info(`🔄 Vixtip existente encontrado: ${existingData.vpAmount} VP`);
+    }
+    
     // Processar a gorjeta usando transação
     const result = await db.runTransaction(async (transaction) => {
       // Referências
@@ -2027,19 +2043,9 @@ export const processVixtip = onCall(async (request) => {
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      // Verificar se já existe um vixtip do mesmo usuário para o mesmo post
-      const existingVixtipQuery = db.collection('vixtips')
-        .where('postId', '==', postId)
-        .where('buyerId', '==', buyerId)
-        .where('status', '==', 'completed');
-      
-      const existingVixtips = await transaction.get(existingVixtipQuery);
-      
-      if (!existingVixtips.empty) {
+      // Processar vixtip baseado no que foi encontrado fora da transação
+      if (existingVixtip && existingData) {
         // Se já existe, atualizar o vixtip existente somando os valores
-        const existingVixtip = existingVixtips.docs[0];
-        const existingData = existingVixtip.data();
-        
         transaction.update(existingVixtip.ref, {
           vpAmount: existingData.vpAmount + vpAmount,
           vcAmount: existingData.vcAmount + vcAmount,
