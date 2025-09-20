@@ -99,6 +99,7 @@ const Wallet = () => {
 
         const serviceOrdersRef = collection(db, 'serviceOrders');
         const packOrdersRef = collection(db, 'packOrders');
+        const transactionsRef = collection(db, 'transactions');
 
         // where + orderBy same field supported
         const qServices = fsQuery(
@@ -113,8 +114,15 @@ const Wallet = () => {
           where('timestamps.createdAt', '>=', startTs),
           orderBy('timestamps.createdAt', 'desc')
         );
+        const qVixtips = fsQuery(
+          transactionsRef,
+          where('userId', '==', currentUser.uid),
+          where('type', '==', 'VIXTIP_RECEIVED'),
+          where('createdAt', '>=', startTs),
+          orderBy('createdAt', 'desc')
+        );
 
-        const [servicesSnap, packsSnap] = await Promise.all([getDocs(qServices), getDocs(qPacks)]);
+        const [servicesSnap, packsSnap, vixtipsSnap] = await Promise.all([getDocs(qServices), getDocs(qPacks), getDocs(qVixtips)]);
         const rows = [];
         servicesSnap.forEach((docSnap) => {
           const d = docSnap.data();
@@ -124,26 +132,61 @@ const Wallet = () => {
           const d = docSnap.data();
           rows.push({ id: docSnap.id, type: 'pack', ...d });
         });
+        vixtipsSnap.forEach((docSnap) => {
+          const d = docSnap.data();
+          rows.push({ id: docSnap.id, type: 'vixtip', ...d });
+        });
 
-        rows.sort((a, b) => (b.timestamps?.createdAt?.toMillis?.() || 0) - (a.timestamps?.createdAt?.toMillis?.() || 0));
+        rows.sort((a, b) => {
+          const aTime = a.timestamps?.createdAt?.toMillis?.() || a.createdAt?.toMillis?.() || 0;
+          const bTime = b.timestamps?.createdAt?.toMillis?.() || b.createdAt?.toMillis?.() || 0;
+          return bTime - aTime;
+        });
 
         const display = rows.map((o) => {
           const status = (o.status || '').toLowerCase();
           const isPending = status === 'pending_acceptance' || status === 'pending' || status === 'requested' || status === 'awaiting' || status === 'processing';
           const coin = isPending ? 'VCP' : 'VC';
-          const ts = o.timestamps?.createdAt?.toMillis?.() ? o.timestamps.createdAt.toMillis() : Date.now();
+          const ts = o.timestamps?.createdAt?.toMillis?.() || o.createdAt?.toMillis?.() || Date.now();
+          
+          // Handle different types of transactions
+          let title, amount, transactionStatus;
+          
+          if (o.type === 'vixtip') {
+            title = `Gorjeta de ${o.metadata?.buyerName || 'Usuário'}`;
+            amount = Number(o.amounts?.vc || 0);
+            transactionStatus = 'completed';
+          } else if (o.type === 'service') {
+            title = o.metadata?.serviceName || 'Serviço';
+            amount = Number(o.vcAmount || 0);
+            transactionStatus = o.status === 'PENDING_ACCEPTANCE' ? 'pending' : 
+                               o.status === 'ACCEPTED' ? 'accepted' :
+                               o.status === 'DELIVERED' ? 'delivered' :
+                               o.status === 'CONFIRMED' ? 'completed' :
+                               o.status === 'COMPLETED' ? 'completed' :
+                               o.status === 'CANCELLED' ? 'cancelled' : 'unknown';
+          } else if (o.type === 'pack') {
+            title = o.metadata?.packName || 'Pack';
+            amount = Number(o.vcAmount || 0);
+            transactionStatus = o.status === 'PENDING_ACCEPTANCE' ? 'pending' : 
+                               o.status === 'ACCEPTED' ? 'accepted' :
+                               o.status === 'DELIVERED' ? 'delivered' :
+                               o.status === 'CONFIRMED' ? 'completed' :
+                               o.status === 'COMPLETED' ? 'completed' :
+                               o.status === 'CANCELLED' ? 'cancelled' : 'unknown';
+          } else {
+            title = 'Transação';
+            amount = Number(o.vcAmount || 0);
+            transactionStatus = 'unknown';
+          }
+          
           return {
             id: o.id,
             type: o.type,
-            title: o.type === 'service' ? (o.metadata?.serviceName || 'Serviço') : (o.metadata?.packName || 'Pack'),
-            amount: Number(o.vcAmount || 0),
+            title,
+            amount,
             coin,
-            status: o.status === 'PENDING_ACCEPTANCE' ? 'pending' : 
-                   o.status === 'ACCEPTED' ? 'accepted' :
-                   o.status === 'DELIVERED' ? 'delivered' :
-                   o.status === 'CONFIRMED' ? 'completed' :
-                   o.status === 'COMPLETED' ? 'completed' :
-                   o.status === 'CANCELLED' ? 'cancelled' : 'unknown',
+            status: transactionStatus,
             timestamp: ts
           };
         });
