@@ -293,7 +293,7 @@ async function handleCheckoutSessionCompleted(session) {
       },
       metadata: {
         description: `Compra de ${vpAmount} VP via Stripe`,
-        stripeSessionId: sessionId,
+      stripeSessionId: sessionId,
         packageId: packageId
       },
       status: 'completed',
@@ -1935,6 +1935,7 @@ export const processVixtip = onCall(async (request) => {
     buyerId, 
     buyerName, 
     buyerUsername, 
+    buyerProfilePictureURL,
     vpAmount, 
     vcAmount 
   } = request.data;
@@ -2036,6 +2037,7 @@ export const processVixtip = onCall(async (request) => {
         buyerId,
         buyerName,
         buyerUsername,
+        buyerProfilePictureURL,
         vpAmount,
         vcAmount,
         status: 'completed',

@@ -1,10 +1,11 @@
 /* VixtipSupporters Styles */
 .vixtip-supporters {
-  margin-top: 16px;
-  padding: 12px;
+  margin-top: 12px;
+  padding: 8px 12px;
   background: linear-gradient(135deg, #f8f9fa, #e9ecef);
   border-radius: 8px;
   border: 1px solid #dee2e6;
+  width: 100%;
 }
 
 .vixtip-supporters.loading {
@@ -36,22 +37,23 @@
 
 .supporters-list {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
 .supporter-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   background: white;
-  border-radius: 20px;
+  border-radius: 16px;
   border: 1px solid #e9ecef;
   transition: all 0.2s ease;
   min-width: 0;
-  flex: 1;
-  min-width: 120px;
+  flex: 0 0 auto;
+  max-width: 140px;
 }
 
 .supporter-item:hover {
@@ -87,8 +89,8 @@
 }
 
 .supporter-avatar {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
@@ -111,11 +113,11 @@
   font-weight: 500;
   color: #333;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100px;
+  max-width: 80px;
 }
 
 .supporter-name:hover {
@@ -124,7 +126,7 @@
 }
 
 .supporter-amount {
-  font-size: 12px;
+  font-size: 11px;
   color: #28a745;
   font-weight: 600;
   white-space: nowrap;

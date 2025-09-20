@@ -560,10 +560,10 @@ const Vixink = () => {
                     <button className="action-btn tip-btn" onClick={() => tipPost(post)}>
                       <i className="fas fa-hand-holding-usd"></i>
                     </button>
+                    
+                    {/* Top Apoiadores */}
+                    <VixtipSupporters postId={post.id} postType="vixink" />
                   </div>
-
-                  {/* Top Apoiadores */}
-                  <VixtipSupporters postId={post.id} postType="vixink" />
                 </div>
               );
             })

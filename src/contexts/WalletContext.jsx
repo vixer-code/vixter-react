@@ -388,6 +388,7 @@ export const WalletProvider = ({ children }) => {
           buyerId: currentUser.uid,
           buyerName: buyerName || 'Usuário',
           buyerUsername: buyerUsername || '',
+          buyerProfilePictureURL: userProfile?.profilePictureURL || userProfile?.photoURL || '',
           vpAmount: amount,
           vcAmount
         });

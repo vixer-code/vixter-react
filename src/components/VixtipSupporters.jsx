@@ -20,6 +20,7 @@ const VixtipSupporters = ({ postId, postType = 'vixies' }) => {
           vixtipsRef,
           where('postId', '==', postId),
           where('postType', '==', postType),
+          where('status', '==', 'completed'),
           orderBy('vpAmount', 'desc'),
           limit(3)
         );
@@ -27,14 +28,18 @@ const VixtipSupporters = ({ postId, postType = 'vixies' }) => {
         const snapshot = await getDocs(q);
         const supportersData = [];
 
+        console.log(`VixtipSupporters: Found ${snapshot.size} supporters for post ${postId}`);
+
         snapshot.forEach((doc) => {
           const data = doc.data();
+          console.log('VixtipSupporters: Supporter data:', data);
           supportersData.push({
             id: doc.id,
             ...data
           });
         });
 
+        console.log('VixtipSupporters: Final supporters array:', supportersData);
         setSupporters(supportersData);
       } catch (error) {
         console.error('Error loading supporters:', error);

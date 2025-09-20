@@ -357,9 +357,12 @@ const Vixies = () => {
     if (!attachment || !attachment.id || !attachment.kind) return false;
     
     try {
-      const refPath = attachment.kind === 'service' ? `services/${attachment.id}` : `packs/${attachment.id}`;
-      const attachmentRef = ref(database, refPath);
-      const snapshot = await get(attachmentRef);
+      const { doc, getDoc } = await import('firebase/firestore');
+      const { firestore } = await import('../../config/firebase');
+      
+      const collectionName = attachment.kind === 'service' ? 'services' : 'packs';
+      const attachmentRef = doc(firestore, collectionName, attachment.id);
+      const snapshot = await getDoc(attachmentRef);
       return snapshot.exists();
     } catch (error) {
       console.error('Error checking attachment existence:', error);
@@ -617,10 +620,10 @@ const Vixies = () => {
                     <button className="action-btn tip-btn" onClick={() => tipPost(post)}>
                       <i className="fas fa-hand-holding-usd"></i>
                     </button>
+                    
+                    {/* Top Apoiadores */}
+                    <VixtipSupporters postId={post.id} postType="vixies" />
                   </div>
-
-                  {/* Top Apoiadores */}
-                  <VixtipSupporters postId={post.id} postType="vixies" />
                 </div>
               );
             })
