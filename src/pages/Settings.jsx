@@ -367,7 +367,7 @@ const Settings = () => {
       // Get Firebase ID token for authentication
       const token = await currentUser.getIdToken();
       
-      const response = await fetch('/api/media/upload', {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'https://vixter-react-llyd.vercel.app'}/api/media/upload`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -576,7 +576,7 @@ const Settings = () => {
   // View KYC document (for user's own documents)
   const viewKycDocument = async (documentKey) => {
     try {
-      const response = await fetch('/api/kyc/download', {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'https://vixter-react-llyd.vercel.app'}/api/kyc/download`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
