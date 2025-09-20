@@ -1,5 +1,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { getDatabase } from 'firebase-admin/database';
 
 // Initialize Firebase Admin SDK
 const initializeFirebaseAdmin = () => {
@@ -36,4 +37,5 @@ const initializeFirebaseAdmin = () => {
 initializeFirebaseAdmin();
 
 export const auth = getAuth();
+export const database = getDatabase();
 export default auth;

@@ -319,6 +319,26 @@ const Settings = () => {
         ...prev,
         [field]: value
       }));
+
+      // Auto-validate CPF when typing
+      if (field === 'cpf' && value) {
+        const validation = validateCPF(value);
+        if (validation.isValid) {
+          setCpfVerificationState({
+            isVerified: true,
+            isVerifying: false,
+            isValid: true,
+            message: 'CPF válido'
+          });
+        } else {
+          setCpfVerificationState({
+            isVerified: false,
+            isVerifying: false,
+            isValid: false,
+            message: validation.message
+          });
+        }
+      }
     }
   };
 
@@ -433,77 +453,35 @@ const Settings = () => {
     return { isValid: true, message: 'CPF válido' };
   };
 
-  // CPF verification with API
-  const verifyCPF = async () => {
+  // CPF verification (local validation only)
+  const verifyCPF = () => {
     const cpfRaw = kycForm.cpf.replace(/\D/g, '');
     const name = kycForm.fullName.trim();
-    const birthDate = userProfile?.birthDate;
 
-    if (!cpfRaw || !name || !birthDate) {
+    if (!cpfRaw || !name) {
       setCpfVerificationState({
         isVerified: false,
         isVerifying: false,
         isValid: false,
-        message: 'Preencha todos os campos obrigatórios antes de verificar.'
+        message: 'Preencha o nome completo e CPF antes de verificar.'
       });
       return;
     }
 
     const validation = validateCPF(kycForm.cpf);
-    if (!validation.isValid) {
+    if (validation.isValid) {
+      setCpfVerificationState({
+        isVerified: true,
+        isVerifying: false,
+        isValid: true,
+        message: 'CPF verificado com sucesso!'
+      });
+    } else {
       setCpfVerificationState({
         isVerified: false,
         isVerifying: false,
         isValid: false,
         message: validation.message
-      });
-      return;
-    }
-
-    setCpfVerificationState(prev => ({ ...prev, isVerifying: true }));
-
-    try {
-      // Convert birthDate format if needed
-      let formattedBirthDate = birthDate;
-      if (birthDate.includes('/')) {
-        const [day, month, year] = birthDate.split('/');
-        formattedBirthDate = `${year}-${month}-${day}`;
-      }
-
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'https://vixter-react-llyd.vercel.app'}/api/verify-id`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cpf: cpfRaw,
-          name: name,
-          birthDate: formattedBirthDate
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.verified) {
-        setCpfVerificationState({
-          isVerified: true,
-          isVerifying: false,
-          isValid: true,
-          message: 'CPF verificado com sucesso!'
-        });
-      } else {
-        setCpfVerificationState({
-          isVerified: false,
-          isVerifying: false,
-          isValid: false,
-          message: data.message || 'Falha na verificação do CPF'
-        });
-      }
-    } catch (error) {
-      console.error('CPF verification error:', error);
-      setCpfVerificationState({
-        isVerified: false,
-        isVerifying: false,
-        isValid: false,
-        message: 'Erro na verificação. Tente novamente.'
       });
     }
   };
@@ -515,10 +493,13 @@ const Settings = () => {
       return;
     }
 
+    if (!kycForm.fullName.trim()) {
+      showNotification('Preencha o nome completo', 'error');
+      return;
+    }
+
     // Check if all documents are uploaded
-    const allDocumentsUploaded = Object.values(kycForm.documents).every(doc => 
-      doc && (typeof doc === 'object' ? doc.key : true)
-    );
+    const allDocumentsUploaded = Object.values(documentUploadStates).every(state => state.uploaded);
 
     if (!allDocumentsUploaded) {
       showNotification('Todos os documentos devem ser enviados antes de finalizar', 'error');
@@ -808,27 +789,12 @@ const Settings = () => {
                   </div>
                   <button 
                     type="button" 
-                    className={`btn-verify-cpf ${cpfVerificationState.isVerified ? 'verified' : ''} ${cpfVerificationState.isVerifying ? 'verifying' : ''}`}
+                    className={`btn-verify-cpf ${cpfVerificationState.isVerified ? 'verified' : ''}`}
                     onClick={verifyCPF}
-                    disabled={cpfVerificationState.isVerifying || cpfVerificationState.isVerified || !kycForm.fullName || !kycForm.cpf || !userProfile?.birthDate}
+                    disabled={cpfVerificationState.isVerified || !kycForm.fullName || !kycForm.cpf}
                   >
-                    {cpfVerificationState.isVerifying ? (
-                      <>
-                        <span className="verify-loading">
-                          <svg className="loading-spinner" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="31.416" strokeDashoffset="31.416">
-                              <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
-                              <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
-                            </circle>
-                          </svg>
-                          Verificando...
-                        </span>
-                      </>
-                    ) : (
-                      <span className="verify-text">
-                        {cpfVerificationState.isVerified ? 'CPF Verificado' : 'Verificar CPF'}
-                      </span>
-                    )}
+                    <i className={`fas ${cpfVerificationState.isVerified ? 'fa-check' : 'fa-search'}`}></i>
+                    {cpfVerificationState.isVerified ? 'CPF Verificado' : 'Verificar CPF'}
                   </button>
                 </div>
                 <small>Informe apenas números, a formatação será aplicada automaticamente</small>
@@ -943,7 +909,7 @@ const Settings = () => {
                   <button 
                     className="btn-primary kyc-submit-btn"
                     onClick={submitKycDocuments}
-                    disabled={kycLoading || !cpfVerificationState.isVerified || !Object.values(documentUploadStates).every(state => state.uploaded)}
+                    disabled={kycLoading || !cpfVerificationState.isVerified || !kycForm.fullName || !Object.values(documentUploadStates).every(state => state.uploaded)}
                   >
                     {kycLoading ? (
                       <>

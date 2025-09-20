@@ -7,8 +7,40 @@ export async function OPTIONS(request: NextRequest) {
   return handleCors(request);
 }
 
-export const POST = requireAuth(async (request: NextRequest, user: AuthenticatedUser) => {
+export async function POST(request: NextRequest) {
   try {
+    // Verify authentication
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
+        }
+      );
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    if (!token) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
+        }
+      );
+    }
+
+    // Verify the token with Firebase Admin SDK
+    const { auth } = await import('@/lib/firebase-admin');
+    const decodedToken = await auth.verifyIdToken(token);
+    const user: AuthenticatedUser = {
+      uid: decodedToken.uid,
+      email: decodedToken.email,
+      name: decodedToken.name
+    };
+
     const body = await request.json();
     const { 
       type, 
@@ -136,4 +168,4 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       }
     );
   }
-});
+}
