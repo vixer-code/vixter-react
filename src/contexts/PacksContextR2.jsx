@@ -10,7 +10,6 @@ import {
   doc,
   getDoc,
   deleteDoc,
-  updateDoc,
   onSnapshot
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
@@ -295,13 +294,27 @@ export const PacksProviderR2 = ({ children }) => {
         // Final progress update
         onProgress && onProgress(100, 'Finalizando...');
 
-        // Update pack with media data directly in Firestore
-        const packRef = doc(db, 'packs', packId);
-        await updateDoc(packRef, {
+        // Update pack with media data using unified API
+        console.log('Updating pack with media data:', { packId, mediaData });
+        const updateData = {
           ...mediaData,
           mediaStorage: 'r2', // Flag to indicate R2 storage
           updatedAt: new Date()
+        };
+        console.log('Update data:', updateData);
+        
+        const updateResult = await apiFunc({
+          resource: 'pack',
+          action: 'update',
+          payload: { 
+            packId, 
+            updates: updateData 
+          }
         });
+        
+        if (!updateResult.data.success) {
+          throw new Error('Failed to update pack with media data');
+        }
 
         showSuccess('Pack criado com sucesso!', 'Pack Criado');
         

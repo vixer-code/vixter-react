@@ -214,9 +214,13 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   const handleCoverImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    console.log('Cover image file selected:', file);
     setCoverImageFile(file);
     const reader = new FileReader();
-    reader.onload = (ev) => setCoverImagePreview(ev.target.result);
+    reader.onload = (ev) => {
+      console.log('Cover image preview generated:', ev.target.result);
+      setCoverImagePreview(ev.target.result);
+    };
     reader.readAsDataURL(file);
   };
 
@@ -988,6 +992,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                   <label htmlFor="cover-image" className="upload-placeholder">
                     {coverImagePreview ? (
                       <div className="cover-image-container">
+                        {console.log('Rendering cover preview:', coverImagePreview)}
                         <SmartMediaViewer 
                           mediaData={coverImagePreview}
                           type="pack"
