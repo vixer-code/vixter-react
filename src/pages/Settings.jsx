@@ -364,9 +364,15 @@ const Settings = () => {
       // Upload document immediately for visual feedback
       const documentKey = `KYC/${currentUser.uid}/${documentType}-${Date.now()}.${file.name.split('.').pop()}`;
       
+      // Get Firebase ID token for authentication
+      const token = await currentUser.getIdToken();
+      
       const response = await fetch('/api/media/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           type: 'kyc',
           contentType: file.type,

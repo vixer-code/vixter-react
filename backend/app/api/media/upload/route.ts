@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { requireAuth, getCorsHeaders, handleCors, AuthenticatedUser } from '@/lib/auth';
+import { getCorsHeaders, handleCors, AuthenticatedUser } from '@/lib/auth';
 import { generateUploadSignedUrl, generateMediaKey, generateKycUploadSignedUrl, generatePackContentUploadSignedUrl, generatePackContentKeyOrganized } from '@/lib/r2';
 import { database } from '@/lib/firebase-admin';
 
