@@ -930,6 +930,22 @@ const Settings = () => {
                     </span>
                   </div>
                   
+                  {stripeDetailedStatus.capabilities && (
+                    <div className="status-item">
+                      <strong>Capacidades:</strong>
+                      <div style={{ marginTop: '5px' }}>
+                        {Object.entries(stripeDetailedStatus.capabilities).map(([key, value]) => (
+                          <div key={key} style={{ marginBottom: '3px', fontSize: '12px' }}>
+                            <strong>{key}:</strong> 
+                            <span className={`status-badge ${value === 'active' ? 'success' : value === 'pending' ? 'warning' : 'error'}`}>
+                              {value === 'active' ? '✅ Ativo' : value === 'pending' ? '⏳ Pendente' : '❌ Inativo'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   {stripeDetailedStatus.requirements && Object.keys(stripeDetailedStatus.requirements).length > 0 && (
                     <div className="status-item">
                       <strong>Requisitos Pendentes:</strong>

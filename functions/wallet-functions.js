@@ -1617,13 +1617,27 @@ export const checkAndEnablePayouts = onCall({
     logger.info(`  - payouts_enabled: ${account.payouts_enabled}`);
     logger.info(`  - details_submitted: ${account.details_submitted}`);
     logger.info(`  - external_accounts: ${account.external_accounts?.data?.length || 0}`);
+    logger.info(`  - capabilities: ${JSON.stringify(account.capabilities || {})}`);
     logger.info(`  - requirements: ${JSON.stringify(account.requirements || {})}`);
+    logger.info(`  - test_mode: ${account.livemode === false ? 'SIM (conta de teste)' : 'NÃO (conta de produção)'}`);
 
     if (account.payouts_enabled) {
       return {
         success: true,
         payoutsEnabled: true,
         message: "Payouts já estão habilitados"
+      };
+    }
+
+    // Verificar se é conta de teste
+    if (account.livemode === false) {
+      return {
+        success: true, // Permitir em modo de teste
+        payoutsEnabled: false, // Mas marcar como não habilitado
+        message: "🧪 Conta de teste detectada. Payouts serão simulados para teste.",
+        capabilities: capabilities,
+        testMode: true,
+        action: "Teste funcionará com simulação de payout"
       };
     }
 
@@ -1648,6 +1662,23 @@ export const checkAndEnablePayouts = onCall({
         message: "⚠️ Conta bancária configurada mas não verificada. Aguarde a verificação do Stripe ou configure uma nova conta.",
         requirements: account.requirements,
         action: "Aguarde verificação ou configure nova conta bancária"
+      };
+    }
+
+    // Verificar capacidades pendentes
+    const capabilities = account.capabilities || {};
+    const pendingCapabilities = Object.entries(capabilities)
+      .filter(([, value]) => value === 'pending')
+      .map(([key]) => key);
+    
+    if (pendingCapabilities.length > 0) {
+      return {
+        success: false,
+        payoutsEnabled: false,
+        message: `⏳ Capacidades pendentes de aprovação: ${pendingCapabilities.join(', ')}. Aguarde a aprovação do Stripe (pode levar até 24h).`,
+        requirements: account.requirements,
+        capabilities: capabilities,
+        action: "Aguarde aprovação das capacidades pelo Stripe (até 24h)"
       };
     }
 
@@ -1894,7 +1925,51 @@ export const processVCWithdrawal = onCall({
     }
     
     if (!account.payouts_enabled) {
-      // Verificar se há requisitos pendentes específicos para payouts
+      // Verificar se é conta de teste - permitir simulação
+      if (account.livemode === false) {
+        logger.info(`🧪 Modo de teste: Simulando payout para ${userData.stripeAccountId}`);
+        
+        // Simular payout em modo de teste
+        const feeAmount = Math.round(amount * WITHDRAWAL_FEE_PERCENTAGE);
+        const netAmount = amount - feeAmount;
+        
+        // Atualizar saldo VC (simulação)
+        await walletRef.update({
+          vc: admin.firestore.FieldValue.increment(-amount),
+          vcPending: admin.firestore.FieldValue.increment(netAmount),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Registrar transação de saque (simulação)
+        const withdrawalTransaction = {
+          id: `withdrawal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: 'withdrawal',
+          amount: amount,
+          fee: feeAmount,
+          netAmount: netAmount,
+          currency: 'vc',
+          status: 'completed',
+          method: 'stripe_test',
+          stripeAccountId: userData.stripeAccountId,
+          testMode: true,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          processedAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+
+        await db.collection('transactions').add(withdrawalTransaction);
+
+        logger.info(`✅ Saque simulado para ${userId}: ${netAmount} VC (teste)`);
+        
+        return {
+          success: true,
+          message: `Saque simulado com sucesso! ${netAmount} VC foram "transferidos" para sua conta Stripe (modo de teste).`,
+          netAmount: netAmount,
+          fee: feeAmount,
+          testMode: true
+        };
+      }
+      
+      // Para contas de produção, verificar requisitos
       const pendingRequirements = account.requirements?.currently_due || [];
       const pastDueRequirements = account.requirements?.past_due || [];
       

@@ -424,10 +424,17 @@ const Wallet = () => {
         confirmWithFee: true
       });
 
-      showSuccess(
-        `Saque processado com sucesso! ${result.data.netAmount} VC foram transferidos para sua conta Stripe.`,
-        'Saque Realizado'
-      );
+      if (result.data.testMode) {
+        showSuccess(
+          `Saque simulado com sucesso! ${result.data.netAmount} VC foram "transferidos" para sua conta Stripe (modo de teste).`,
+          'Saque Simulado (Teste)'
+        );
+      } else {
+        showSuccess(
+          `Saque processado com sucesso! ${result.data.netAmount} VC foram transferidos para sua conta Stripe.`,
+          'Saque Realizado'
+        );
+      }
 
       setShowWithdrawModal(false);
       setWithdrawAmount('');
