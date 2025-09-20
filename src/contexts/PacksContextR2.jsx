@@ -42,10 +42,8 @@ export const PacksProviderR2 = ({ children }) => {
   const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);
 
-  // Cloud Functions for pack operations
-  const createPackFunc = httpsCallable(functions, 'createPack');
-  const updatePackFunc = httpsCallable(functions, 'updatePack');
-  const deletePackFunc = httpsCallable(functions, 'deletePack');
+  // Cloud Functions for pack operations (using unified API)
+  const apiFunc = httpsCallable(functions, 'api');
 
   // Categories for filtering
   const PACK_CATEGORIES = [
@@ -204,8 +202,12 @@ export const PacksProviderR2 = ({ children }) => {
     try {
       setCreating(true);
       
-      // Create the pack using Cloud Function
-      const result = await createPackFunc(packData);
+      // Create the pack using unified API
+      const result = await apiFunc({
+        resource: 'pack',
+        action: 'create',
+        payload: packData
+      });
       
       if (result.data.success) {
         const packId = result.data.packId;
@@ -329,7 +331,11 @@ export const PacksProviderR2 = ({ children }) => {
     try {
       setUpdating(true);
       
-      const result = await updatePackFunc({ packId, ...updates });
+      const result = await apiFunc({
+        resource: 'pack',
+        action: 'update',
+        payload: { packId, updates }
+      });
       
       if (result.data.success) {
         if (showSuccessMessage) {
@@ -460,14 +466,18 @@ export const PacksProviderR2 = ({ children }) => {
         throw new Error('Invalid pack ID');
       }
       
-      console.log('📞 Calling Cloud Function with payload:', { packId });
-      const result = await deletePackFunc({ packId });
+      console.log('📞 Calling unified API with payload:', { packId });
+      const result = await apiFunc({
+        resource: 'pack',
+        action: 'delete',
+        payload: { packId }
+      });
       
-      console.log('📥 Cloud Function response:', result);
+      console.log('📥 Unified API response:', result);
       
       if (!result.data.success) {
-        console.error('❌ Cloud Function failed:', result.data.error);
-        throw new Error(result.error || 'Failed to delete pack');
+        console.error('❌ Unified API failed:', result.data.error);
+        throw new Error(result.data.error || 'Failed to delete pack');
       }
       
       onProgress && onProgress(90, 'Finalizando exclusão...');
