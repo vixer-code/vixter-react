@@ -28,7 +28,8 @@ const Wallet = () => {
     vcPendingBalance
   } = useWallet();
   const { currentUser } = useAuth();
-  const { userProfile, getUserById } = useUser();
+  const userContext = useUser();
+  const { userProfile, getUserById } = userContext || {};
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const [activeTab, setActiveTab] = useState('transactions');
   const [currentPage, setCurrentPage] = useState(1);
@@ -71,6 +72,18 @@ const Wallet = () => {
   const isProvider = accountType === 'provider';
   const isClient = accountType === 'client';
   const isBoth = accountType === 'both'; // Legacy account type for management/testing
+
+  // Show loading if userProfile is not loaded yet
+  if (!userContext || !userProfile) {
+    return (
+      <div className="wallet-container">
+        <div className="loading-container">
+          <PurpleSpinner />
+          <p>Carregando perfil do usuário...</p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     applyFilters();
