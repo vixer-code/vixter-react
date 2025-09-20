@@ -245,6 +245,31 @@ const Settings = () => {
     }
   };
 
+  const refreshStripeStatus = async () => {
+    if (!isProvider) return;
+    
+    try {
+      const refreshStatus = httpsCallable(functions, 'refreshStripeConnectStatus');
+      const result = await refreshStatus();
+      
+      setStripeDetailedStatus(result.data);
+      
+      // Atualizar status básico também
+      setStripeStatus({
+        hasAccount: result.data.hasAccount,
+        isComplete: result.data.isComplete,
+        loading: false
+      });
+      
+      showSuccess('Status Stripe atualizado com sucesso!');
+      return result.data;
+    } catch (error) {
+      console.error('Error refreshing Stripe status:', error);
+      showError('Erro ao atualizar status Stripe');
+      return null;
+    }
+  };
+
   const connectStripeAccount = async () => {
     if (!isProvider) return;
     
@@ -815,6 +840,14 @@ const Settings = () => {
                   >
                     <i className="fas fa-info-circle"></i> Verificar Status
                   </button>
+                  
+                  <button 
+                    onClick={refreshStripeStatus}
+                    className="btn-stripe btn-outline"
+                    style={{ marginLeft: '10px' }}
+                  >
+                    <i className="fas fa-sync-alt"></i> Atualizar Status
+                  </button>
                 </div>
               </div>
             </div>
@@ -844,6 +877,11 @@ const Settings = () => {
                     <span className={`status-badge ${stripeDetailedStatus.payoutsEnabled ? 'success' : 'error'}`}>
                       {stripeDetailedStatus.payoutsEnabled ? '✅ Sim' : '❌ Não'}
                     </span>
+                    {!stripeDetailedStatus.payoutsEnabled && (
+                      <div style={{ marginTop: '5px', fontSize: '12px', color: '#ff6b6b' }}>
+                        ⚠️ Configure uma conta bancária no Stripe Dashboard
+                      </div>
+                    )}
                   </div>
                   <div className="status-item">
                     <strong>Pagamentos Habilitados:</strong> 

@@ -1582,6 +1582,73 @@ export const getStripeConnectDetailedStatus = onCall({
 });
 
 /**
+ * Força atualização do status da conta Stripe Connect
+ */
+export const refreshStripeConnectStatus = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 30,
+  secrets: [STRIPE_SECRET],
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const userId = request.auth.uid;
+
+  try {
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+
+    if (!userData?.stripeAccountId) {
+      return {
+        success: true,
+        hasAccount: false,
+        message: "Nenhuma conta Stripe configurada"
+      };
+    }
+
+    const stripe = new Stripe(STRIPE_SECRET.value(), {
+      apiVersion: STRIPE_API_VERSION,
+    });
+
+    // Forçar atualização da conta
+    const account = await stripe.accounts.retrieve(userData.stripeAccountId);
+    
+    // Atualizar status no banco
+    await userRef.update({
+      stripeAccountStatus: account.details_submitted ? 'complete' : 'pending',
+      stripePayoutsEnabled: account.payouts_enabled,
+      stripeChargesEnabled: account.charges_enabled,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    logger.info(`🔄 Status atualizado para ${userId}:`, {
+      details_submitted: account.details_submitted,
+      payouts_enabled: account.payouts_enabled,
+      charges_enabled: account.charges_enabled
+    });
+
+    return {
+      success: true,
+      hasAccount: true,
+      isComplete: account.details_submitted,
+      payoutsEnabled: account.payouts_enabled,
+      chargesEnabled: account.charges_enabled,
+      accountId: userData.stripeAccountId,
+      requirements: account.requirements,
+      message: account.details_submitted 
+        ? (account.payouts_enabled ? "Conta Stripe configurada e ativa" : "Conta Stripe configurada, mas payouts não habilitados")
+        : "Conta Stripe pendente de configuração"
+    };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao atualizar status Stripe Connect para ${userId}:`, error);
+    throw new HttpsError("internal", "Erro ao atualizar conta Stripe");
+  }
+});
+
+/**
  * Verifica status da conta Stripe Connect
  */
 export const getStripeConnectStatus = onCall({
@@ -1701,7 +1768,15 @@ export const processVCWithdrawal = onCall({
       details_submitted: account.details_submitted,
       payouts_enabled: account.payouts_enabled,
       charges_enabled: account.charges_enabled,
-      requirements: account.requirements
+      requirements: account.requirements,
+      capabilities: account.capabilities,
+      business_type: account.business_type,
+      country: account.country,
+      email: account.email,
+      external_accounts: account.external_accounts?.data?.length || 0,
+      requirements_pending: account.requirements?.currently_due || [],
+      requirements_past_due: account.requirements?.past_due || [],
+      requirements_eventually_due: account.requirements?.eventually_due || []
     });
     
     if (!account.details_submitted) {
@@ -1709,7 +1784,25 @@ export const processVCWithdrawal = onCall({
     }
     
     if (!account.payouts_enabled) {
-      throw new HttpsError("failed-precondition", "Payouts não habilitados na conta Stripe. Configure PIX ou conta bancária primeiro.");
+      // Verificar se há requisitos pendentes específicos para payouts
+      const pendingRequirements = account.requirements?.currently_due || [];
+      const pastDueRequirements = account.requirements?.past_due || [];
+      
+      let errorMessage = "Payouts não habilitados na conta Stripe.";
+      
+      if (pastDueRequirements.length > 0) {
+        errorMessage += ` Requisitos em atraso: ${pastDueRequirements.join(', ')}.`;
+      }
+      
+      if (pendingRequirements.length > 0) {
+        errorMessage += ` Requisitos pendentes: ${pendingRequirements.join(', ')}.`;
+      }
+      
+      if (account.external_accounts?.data?.length === 0) {
+        errorMessage += " Configure uma conta bancária no Stripe Dashboard.";
+      }
+      
+      throw new HttpsError("failed-precondition", errorMessage);
     }
 
     // Calcular valores
