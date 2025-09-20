@@ -6,6 +6,7 @@ import { usePackOrder } from '../contexts/PackOrderContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useBuyerData } from '../hooks/useBuyerData';
 import { Link } from 'react-router-dom';
+import PurpleSpinner from '../components/PurpleSpinner';
 import './MyProducts.css';
 
 const MyProducts = () => {
@@ -287,10 +288,7 @@ const MyProducts = () => {
   if (serviceLoading || packLoading || serviceBuyerLoading || packBuyerLoading) {
     return (
       <div className="my-services-container">
-        <div className="loading-spinner">
-          <i className="fas fa-spinner fa-spin"></i>
-          <span>Carregando produtos...</span>
-        </div>
+        <PurpleSpinner text="Carregando produtos..." size="large" />
       </div>
     );
   }

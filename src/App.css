@@ -113,15 +113,14 @@ body {
 .mt-5 { margin-top: 1.25rem; }
 .mt-6 { margin-top: 1.5rem; }
 
-/* Loading Spinner */
+/* Legacy Loading Spinner - Keep for backward compatibility */
 .loading-spinner {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #667eea;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  font-size: 1.1rem;
+  color: #a8a8b3;
 }
 
 /* Loading Text - for text-based loading states */
@@ -134,6 +133,7 @@ body {
   color: #a8a8b3;
 }
 
+/* Legacy spin animation - Keep for backward compatibility */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }

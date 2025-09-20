@@ -3,6 +3,7 @@ import { collection, query, where, orderBy, limit, getDocs } from 'firebase/fire
 import { db } from '../../config/firebase';
 import { Link } from 'react-router-dom';
 import { getProfileUrlById } from '../utils/profileUrls';
+import PurpleSpinner from './PurpleSpinner';
 import './VixtipSupporters.css';
 
 const VixtipSupporters = ({ postId, postType = 'vixies' }) => {
@@ -56,9 +57,7 @@ const VixtipSupporters = ({ postId, postType = 'vixies' }) => {
   if (loading) {
     return (
       <div className="vixtip-supporters loading">
-        <div className="loading-spinner">
-          <i className="fas fa-spinner fa-spin"></i>
-        </div>
+        <PurpleSpinner size="small" />
       </div>
     );
   }

@@ -6,6 +6,7 @@ import { ref, set, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage, db } from '../../config/firebase';
 import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import PurpleSpinner from '../components/PurpleSpinner';
 import './Auth.css';
 
 const Register = () => {
@@ -957,7 +958,9 @@ const Register = () => {
         </div>
       )}
 
-      <button type="submit" className="auth-button">Continuar</button>
+      <button type="submit" className="auth-button" disabled={loading}>
+        {loading ? <PurpleSpinner text="Processando..." size="small" /> : 'Continuar'}
+      </button>
     </form>
   );
 
@@ -1078,7 +1081,9 @@ const Register = () => {
 
       <div className="form-footer">
         <button type="button" className="btn secondary" onClick={prevStep}>Voltar</button>
-        <button type="submit" className="btn primary">Continuar</button>
+        <button type="submit" className="btn primary" disabled={loading}>
+          {loading ? <PurpleSpinner text="Processando..." size="small" /> : 'Continuar'}
+        </button>
       </div>
     </form>
   );
@@ -1212,7 +1217,9 @@ const Register = () => {
 
       <div className="form-footer">
         <button type="button" className="btn secondary" onClick={prevStep}>Voltar</button>
-        <button type="submit" className="btn primary">Continuar</button>
+        <button type="submit" className="btn primary" disabled={loading}>
+          {loading ? <PurpleSpinner text="Processando..." size="small" /> : 'Continuar'}
+        </button>
       </div>
     </form>
   );
@@ -1286,15 +1293,7 @@ const Register = () => {
           >
             {cpfVerificationState.isVerifying ? (
               <>
-                <span className="verify-loading">
-                  <svg className="loading-spinner" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="31.416" strokeDashoffset="31.416">
-                      <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
-                      <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
-                    </circle>
-                  </svg>
-                  Verificando...
-                </span>
+                <PurpleSpinner text="Verificando..." size="small" />
               </>
             ) : (
               <span className="verify-text">
@@ -1385,7 +1384,9 @@ const Register = () => {
         }}>
           Pular Verificação (concluir depois)
         </button>
-        <button type="submit" className="btn primary">Concluir Verificação</button>
+        <button type="submit" className="btn primary" disabled={loading}>
+          {loading ? <PurpleSpinner text="Processando..." size="small" /> : 'Concluir Verificação'}
+        </button>
       </div>
     </form>
   );

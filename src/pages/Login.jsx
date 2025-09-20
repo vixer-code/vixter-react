@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import PurpleSpinner from '../components/PurpleSpinner';
 import './Auth.css';
 
 const Login = () => {
@@ -117,7 +118,7 @@ const Login = () => {
             className="auth-button"
             disabled={loading}
           >
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? <PurpleSpinner text="Entrando..." size="small" /> : 'Entrar'}
           </button>
         </form>
 

@@ -4,6 +4,7 @@ import { database } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import CachedImage from './CachedImage';
+import PurpleSpinner from './PurpleSpinner';
 import './PackBuyersModal.css';
 
 const PackBuyersModal = ({ isOpen, onClose, pack }) => {
@@ -145,8 +146,7 @@ const PackBuyersModal = ({ isOpen, onClose, pack }) => {
         <div className="modal-content">
           {loading ? (
             <div className="loading-state">
-              <i className="fas fa-spinner fa-spin"></i>
-              <p>Carregando compradores...</p>
+              <PurpleSpinner text="Carregando compradores..." size="medium" />
             </div>
           ) : buyers.length > 0 ? (
             <div className="buyers-list">
@@ -193,7 +193,7 @@ const PackBuyersModal = ({ isOpen, onClose, pack }) => {
                         title={buyer.paymentMethod === 'VC' ? 'Não é possível banir compras com VC' : 'Banir usuário'}
                       >
                         {banning === buyer.id ? (
-                          <i className="fas fa-spinner fa-spin"></i>
+                          <PurpleSpinner size="small" />
                         ) : (
                           <i className="fas fa-ban"></i>
                         )}

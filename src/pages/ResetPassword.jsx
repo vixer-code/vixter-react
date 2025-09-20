@@ -5,6 +5,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import { Lock, Eye, EyeOff } from 'lucide-react';
+import PurpleSpinner from '../components/PurpleSpinner';
 import './Auth.css';
 
 const ResetPassword = () => {
@@ -224,7 +225,7 @@ const ResetPassword = () => {
             className="auth-button"
             disabled={loading}
           >
-            {loading ? 'Redefinindo...' : 'Redefinir Senha'}
+            {loading ? <PurpleSpinner text="Redefinindo..." size="small" /> : 'Redefinir Senha'}
           </button>
         </form>
 

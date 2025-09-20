@@ -7,6 +7,7 @@ import { db } from '../../config/firebase';
 import { collection, query as fsQuery, where, orderBy, limit as fsLimit, getDocs, Timestamp } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../config/firebase';
+import PurpleSpinner from '../components/PurpleSpinner';
 import './Wallet.css';
 
 const Wallet = () => {
@@ -965,7 +966,7 @@ const Wallet = () => {
               </div>
 
               {providerHistoryLoading ? (
-                <div className="loading-state"><i className="fa-solid fa-spinner fa-spin"></i> Carregando histórico...</div>
+                <div className="loading-state"><PurpleSpinner text="Carregando histórico..." size="small" /></div>
               ) : providerHistory.length === 0 ? (
                 <div className="empty-state">
                   <i className="fas fa-chart-line"></i>
@@ -1512,7 +1513,7 @@ const Wallet = () => {
 
               {feeLoading && (
                 <div className="loading-state">
-                  <i className="fas fa-spinner fa-spin"></i> Calculando taxa...
+                  <PurpleSpinner text="Calculando taxa..." size="small" />
                 </div>
               )}
 
@@ -1548,7 +1549,7 @@ const Wallet = () => {
               >
                 {withdrawLoading ? (
                   <>
-                    <i className="fas fa-spinner fa-spin"></i> Processando...
+                    <PurpleSpinner text="Processando..." size="small" />
                   </>
                 ) : (
                   <>

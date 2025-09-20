@@ -18,6 +18,7 @@ const CreatePackModal = lazy(() => import('../components/CreatePackModal'));
 import CachedImage from '../components/CachedImage';
 import SmartMediaViewer from '../components/SmartMediaViewer';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import PurpleSpinner from '../components/PurpleSpinner';
 import DeleteServiceModal from '../components/DeleteServiceModal';
 import DeletePackModal from '../components/DeletePackModal';
 import PackBuyersModal from '../components/PackBuyersModal';
@@ -2111,8 +2112,7 @@ const Profile = () => {
           <div className="services-grid">
             {servicesLoading ? (
               <div className="loading-state">
-                <i className="fa-solid fa-spinner fa-spin"></i>
-                <p>Carregando serviços...</p>
+                <PurpleSpinner text="Carregando serviços..." size="medium" />
               </div>
             ) : firestoreServices.length > 0 ? (
               firestoreServices.map((service) => (
@@ -2238,8 +2238,7 @@ const Profile = () => {
           <div className="packs-grid">
             {packsLoading ? (
               <div className="loading-state">
-                <i className="fa-solid fa-spinner fa-spin"></i>
-                <p>Carregando packs...</p>
+                <PurpleSpinner text="Carregando packs..." size="medium" />
               </div>
             ) : firestorePacks.length > 0 ? (
               firestorePacks.map((pack) => (
@@ -2676,7 +2675,7 @@ const Profile = () => {
             </div>
             <div className="modal-body">
               {serviceSalesLoading ? (
-                <div className="loading-state"><i className="fa-solid fa-spinner fa-spin"></i> Carregando...</div>
+                <div className="loading-state"><PurpleSpinner text="Carregando..." size="small" /></div>
               ) : serviceSales.length === 0 ? (
                 <div className="empty-state">Nenhuma venda ainda.</div>
               ) : (
@@ -2714,7 +2713,7 @@ const Profile = () => {
             </div>
             <div className="modal-body">
               {packSalesLoading ? (
-                <div className="loading-state"><i className="fa-solid fa-spinner fa-spin"></i> Carregando...</div>
+                <div className="loading-state"><PurpleSpinner text="Carregando..." size="small" /></div>
               ) : packSales.length === 0 ? (
                 <div className="empty-state">Nenhuma venda ainda.</div>
               ) : (

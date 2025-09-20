@@ -8,6 +8,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../config/firebase';
+import PurpleSpinner from '../components/PurpleSpinner';
 import './Settings.css';
 
 const Settings = () => {
@@ -697,7 +698,7 @@ const Settings = () => {
                 <div className="stripe-status">
                   {stripeStatus.loading ? (
                     <div className="loading-state">
-                      <i className="fas fa-spinner fa-spin"></i> Verificando status...
+                      <PurpleSpinner text="Verificando status..." size="small" />
                     </div>
                   ) : stripeStatus.hasAccount ? (
                     <div className={`stripe-status-badge ${stripeStatus.isComplete ? 'complete' : 'pending'}`}>
@@ -725,7 +726,7 @@ const Settings = () => {
                   >
                     {stripeStatus.loading ? (
                       <>
-                        <i className="fas fa-spinner fa-spin"></i> Processando...
+                        <PurpleSpinner text="Processando..." size="small" />
                       </>
                     ) : stripeStatus.isComplete ? (
                       <>
@@ -931,7 +932,7 @@ const Settings = () => {
                   >
                     {kycLoading ? (
                       <>
-                        <i className="fas fa-spinner fa-spin"></i> Enviando...
+                        <PurpleSpinner text="Enviando..." size="small" />
                       </>
                     ) : (
                       <>
@@ -1048,7 +1049,7 @@ const Settings = () => {
               >
                 {passwordLoading ? (
                   <>
-                    <i className="fas fa-spinner fa-spin"></i> Alterando...
+                    <PurpleSpinner text="Alterando..." size="small" />
                   </>
                 ) : (
                   <>

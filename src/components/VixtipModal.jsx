@@ -3,6 +3,7 @@ import { useWallet } from '../contexts/WalletContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
+import PurpleSpinner from './PurpleSpinner';
 import './VixtipModal.css';
 
 const VixtipModal = ({ isOpen, onClose, post, postType = 'vixies' }) => {
@@ -118,8 +119,7 @@ const VixtipModal = ({ isOpen, onClose, post, postType = 'vixies' }) => {
           </div>
           <div className="modal-body">
             <div className="loading-container">
-              <i className="fas fa-spinner fa-spin"></i>
-              <p>Carregando perfil do usuário...</p>
+              <PurpleSpinner text="Carregando perfil do usuário..." size="medium" />
             </div>
           </div>
         </div>
@@ -231,8 +231,7 @@ const VixtipModal = ({ isOpen, onClose, post, postType = 'vixies' }) => {
           >
             {isProcessing ? (
               <>
-                <i className="fas fa-spinner fa-spin"></i>
-                Enviando...
+                <PurpleSpinner text="Enviando..." size="small" />
               </>
             ) : (
               <>

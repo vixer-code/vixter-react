@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { Mail, ArrowLeft } from 'lucide-react';
+import PurpleSpinner from '../components/PurpleSpinner';
 import './Auth.css';
 
 const ForgotPassword = () => {
@@ -120,7 +121,7 @@ const ForgotPassword = () => {
             className="auth-button"
             disabled={loading}
           >
-            {loading ? 'Enviando...' : 'Enviar Email de Recuperação'}
+            {loading ? <PurpleSpinner text="Enviando..." size="small" /> : 'Enviar Email de Recuperação'}
           </button>
         </form>
 

@@ -1,0 +1,147 @@
+/* Purple Spinner Container */
+.purple-spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Main Spinner Circle */
+.purple-spinner {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(139, 69, 255, 0.1);
+  animation: spin 2s linear infinite;
+}
+
+/* Size variations */
+.purple-spinner.small {
+  width: 24px;
+  height: 24px;
+}
+
+.purple-spinner.large {
+  width: 56px;
+  height: 56px;
+}
+
+/* Spinner Dots */
+.spinner-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: linear-gradient(135deg, #8B45FF, #B794F6);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform-origin: 0 0;
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+/* Small dots */
+.purple-spinner.small .spinner-dot {
+  width: 4px;
+  height: 4px;
+}
+
+/* Large dots */
+.purple-spinner.large .spinner-dot {
+  width: 8px;
+  height: 8px;
+}
+
+/* Dot positioning */
+.dot-1 { transform: rotate(0deg) translateX(-50%) translateY(-50%) translateX(16px); animation-delay: 0s; }
+.dot-2 { transform: rotate(45deg) translateX(-50%) translateY(-50%) translateX(16px); animation-delay: 0.1s; }
+.dot-3 { transform: rotate(90deg) translateX(-50%) translateY(-50%) translateX(16px); animation-delay: 0.2s; }
+.dot-4 { transform: rotate(135deg) translateX(-50%) translateY(-50%) translateX(16px); animation-delay: 0.3s; }
+.dot-5 { transform: rotate(180deg) translateX(-50%) translateY(-50%) translateX(16px); animation-delay: 0.4s; }
+.dot-6 { transform: rotate(225deg) translateX(-50%) translateY(-50%) translateX(16px); animation-delay: 0.5s; }
+.dot-7 { transform: rotate(270deg) translateX(-50%) translateY(-50%) translateX(16px); animation-delay: 0.6s; }
+.dot-8 { transform: rotate(315deg) translateX(-50%) translateY(-50%) translateX(16px); animation-delay: 0.7s; }
+
+/* Small size dot positioning */
+.purple-spinner.small .dot-1 { transform: rotate(0deg) translateX(-50%) translateY(-50%) translateX(10px); }
+.purple-spinner.small .dot-2 { transform: rotate(45deg) translateX(-50%) translateY(-50%) translateX(10px); }
+.purple-spinner.small .dot-3 { transform: rotate(90deg) translateX(-50%) translateY(-50%) translateX(10px); }
+.purple-spinner.small .dot-4 { transform: rotate(135deg) translateX(-50%) translateY(-50%) translateX(10px); }
+.purple-spinner.small .dot-5 { transform: rotate(180deg) translateX(-50%) translateY(-50%) translateX(10px); }
+.purple-spinner.small .dot-6 { transform: rotate(225deg) translateX(-50%) translateY(-50%) translateX(10px); }
+.purple-spinner.small .dot-7 { transform: rotate(270deg) translateX(-50%) translateY(-50%) translateX(10px); }
+.purple-spinner.small .dot-8 { transform: rotate(315deg) translateX(-50%) translateY(-50%) translateX(10px); }
+
+/* Large size dot positioning */
+.purple-spinner.large .dot-1 { transform: rotate(0deg) translateX(-50%) translateY(-50%) translateX(24px); }
+.purple-spinner.large .dot-2 { transform: rotate(45deg) translateX(-50%) translateY(-50%) translateX(24px); }
+.purple-spinner.large .dot-3 { transform: rotate(90deg) translateX(-50%) translateY(-50%) translateX(24px); }
+.purple-spinner.large .dot-4 { transform: rotate(135deg) translateX(-50%) translateY(-50%) translateX(24px); }
+.purple-spinner.large .dot-5 { transform: rotate(180deg) translateX(-50%) translateY(-50%) translateX(24px); }
+.purple-spinner.large .dot-6 { transform: rotate(225deg) translateX(-50%) translateY(-50%) translateX(24px); }
+.purple-spinner.large .dot-7 { transform: rotate(270deg) translateX(-50%) translateY(-50%) translateX(24px); }
+.purple-spinner.large .dot-8 { transform: rotate(315deg) translateX(-50%) translateY(-50%) translateX(24px); }
+
+/* Spinner Text */
+.spinner-text {
+  color: #8B45FF;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* Animations */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes dotPulse {
+  0%, 100% { 
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .spinner-text {
+    font-size: 12px;
+  }
+  
+  .purple-spinner {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .purple-spinner .spinner-dot {
+    width: 5px;
+    height: 5px;
+  }
+  
+  .purple-spinner .dot-1,
+  .purple-spinner .dot-2,
+  .purple-spinner .dot-3,
+  .purple-spinner .dot-4,
+  .purple-spinner .dot-5,
+  .purple-spinner .dot-6,
+  .purple-spinner .dot-7,
+  .purple-spinner .dot-8 {
+    transform-origin: 0 0;
+  }
+  
+  .purple-spinner .dot-1 { transform: rotate(0deg) translateX(-50%) translateY(-50%) translateX(14px); }
+  .purple-spinner .dot-2 { transform: rotate(45deg) translateX(-50%) translateY(-50%) translateX(14px); }
+  .purple-spinner .dot-3 { transform: rotate(90deg) translateX(-50%) translateY(-50%) translateX(14px); }
+  .purple-spinner .dot-4 { transform: rotate(135deg) translateX(-50%) translateY(-50%) translateX(14px); }
+  .purple-spinner .dot-5 { transform: rotate(180deg) translateX(-50%) translateY(-50%) translateX(14px); }
+  .purple-spinner .dot-6 { transform: rotate(225deg) translateX(-50%) translateY(-50%) translateX(14px); }
+  .purple-spinner .dot-7 { transform: rotate(270deg) translateX(-50%) translateY(-50%) translateX(14px); }
+  .purple-spinner .dot-8 { transform: rotate(315deg) translateX(-50%) translateY(-50%) translateX(14px); }
+}

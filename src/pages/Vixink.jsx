@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import PostCreator from '../components/PostCreator';
 import VixtipModal from '../components/VixtipModal';
 import VixtipSupporters from '../components/VixtipSupporters';
+import PurpleSpinner from '../components/PurpleSpinner';
 import './Vixies.css';
 
 // Component for displaying attachments with validation
@@ -36,7 +37,7 @@ const AttachmentDisplay = ({ attachment, checkAttachmentExists, getImageUrl }) =
     return (
       <div className="attached-item loading">
         <div className="attached-cover loading-cover">
-          <i className="fas fa-spinner fa-spin"></i>
+          <PurpleSpinner size="small" />
         </div>
         <div className="attached-info">
           <span className="loading-text">Verificando disponibilidade...</span>
@@ -406,7 +407,7 @@ const Vixink = () => {
   if (loading) {
     return (
       <div className="vixies-container">
-        <div className="loading-spinner">Carregando posts...</div>
+        <PurpleSpinner text="Carregando posts..." size="large" />
       </div>
     );
   }

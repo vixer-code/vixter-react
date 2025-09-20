@@ -49,7 +49,8 @@ service cloud.firestore {
     match /transactions/{transactionId} {
       // Users can only read their own transactions
       allow read: if isAuthenticated() && 
-                    (isOwner(resource.data.fromUserId) || 
+                    (isOwner(resource.data.userId) || 
+                     isOwner(resource.data.fromUserId) || 
                      isOwner(resource.data.toUserId));
       
       // Only Cloud Functions can create transactions (no direct client writes)
