@@ -25,13 +25,7 @@ import { useNotification } from './NotificationContext';
 import { useUser } from './UserContext';
 import { useCentrifugo } from './CentrifugoContext';
 import { useStatus } from './StatusContext';
-import { 
-  saveConversation, 
-  getUserConversations, 
-  subscribeToUserConversations,
-  saveMessage,
-  subscribeToConversationMessages
-} from '../services/conversationService';
+// Conversation service removed - using RTDB only
 import { sendMessageNotification } from '../services/notificationService';
 import { 
   createConversationObject, 
@@ -301,7 +295,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
           
           // Check if current user is a participant
           if (conversation.participants && conversation.participants[currentUser.uid]) {
-            // Only include service conversations
+            // Only include service conversations (both active and completed)
             if (conversation.serviceOrderId) {
               serviceConversationsData.push(conversation);
             }
@@ -314,6 +308,11 @@ export const EnhancedMessagingProvider = ({ children }) => {
       
       console.log('Service conversations loaded:', serviceConversationsData.length);
       console.log('Service conversations data:', serviceConversationsData);
+      
+      // Debug: Check for completed conversations
+      const completedConversations = serviceConversationsData.filter(conv => conv.isCompleted);
+      console.log('Completed service conversations:', completedConversations.length);
+      
       setServiceConversations(serviceConversationsData);
     });
 
@@ -433,7 +432,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
     console.log('Loading messages for conversation:', selectedConversation.id);
 
-    const messagesRef = ref(database, `messages/${selectedConversation.id}`);
+    // Load messages from within the conversation document for Centrifugo compatibility
+    const messagesRef = ref(database, `conversations/${selectedConversation.id}/messages`);
     
     const unsubscribeMessages = onValue(messagesRef, (snapshot) => {
       const messagesData = [];
@@ -450,7 +450,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
         messagesData.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
       }
       
-      console.log('Messages loaded:', messagesData.length);
+      console.log('Messages loaded from conversation document:', messagesData.length);
       setMessages(messagesData);
       
       // Mark messages as read (disabled to avoid permission issues)
@@ -953,7 +953,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
       debugLog('Creating new conversation', newConversation);
 
-      // Save to Firebase Realtime Database (keeping existing structure)
+      // Save to Firebase Realtime Database with messages structure for Centrifugo compatibility
       const conversationRef = ref(database, `conversations/${newConversation.id}`);
       await set(conversationRef, {
         participants: newConversation.participants,
@@ -962,16 +962,15 @@ export const EnhancedMessagingProvider = ({ children }) => {
         lastMessageTime: newConversation.lastMessageTime,
         lastSenderId: currentUser.uid,
         type: newConversation.type,
-        ...(serviceOrderId && { serviceOrderId })
+        ...(serviceOrderId && { serviceOrderId }),
+        // Initialize messages structure for Centrifugo compatibility
+        messages: {},
+        messageCount: 0,
+        lastActivity: Date.now()
       });
 
-      // Also save to Firestore for persistent storage
-      try {
-        await saveConversation(newConversation);
-        debugLog('Conversation saved to Firestore', newConversation.id);
-      } catch (firestoreError) {
-        console.warn('Failed to save to Firestore, but Realtime DB save succeeded:', firestoreError);
-      }
+      // Conversations are stored in RTDB only
+      debugLog('Conversation saved to RTDB', newConversation.id);
 
       // Add to local state immediately
       if (serviceOrderId) {
@@ -1100,7 +1099,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
     if (!text.trim() || !conversationId || !currentUser?.uid) return false;
 
     try {
+      const messageId = `msg_${Date.now()}_${currentUser.uid}`;
       const messageData = {
+        id: messageId,
         senderId: currentUser.uid,
         type: MESSAGE_TYPES.TEXT,
         content: text.trim(),
@@ -1109,20 +1110,20 @@ export const EnhancedMessagingProvider = ({ children }) => {
         replyTo: replyToId || null
       };
 
-      const messagesRef = ref(database, `messages/${conversationId}`);
-      const newMessageRef = await push(messagesRef, messageData);
-
-      const newMessage = {
-        id: newMessageRef.key,
-        ...messageData
-      };
-
-      // Update conversation last message
+      // Save message inside the conversation document for Centrifugo compatibility
       const conversationRef = ref(database, `conversations/${conversationId}`);
+      const messageRef = ref(database, `conversations/${conversationId}/messages/${messageId}`);
+      
+      // Save the message
+      await set(messageRef, messageData);
+
+      // Update conversation metadata
       const conversationUpdates = {
         lastMessage: text.trim(),
         lastMessageTime: Date.now(),
-        lastSenderId: currentUser.uid
+        lastSenderId: currentUser.uid,
+        messageCount: serverTimestamp(), // Increment message count
+        lastActivity: Date.now()
       };
 
       await update(conversationRef, conversationUpdates);
@@ -1605,18 +1606,19 @@ export const EnhancedMessagingProvider = ({ children }) => {
         isCompleted: false
       };
 
-      // Save to RTDB
+      // Save to RTDB with messages structure for Centrifugo compatibility
       const conversationRef = ref(database, `conversations/${conversationId}`);
-      await set(conversationRef, conversationData);
+      await set(conversationRef, {
+        ...conversationData,
+        // Initialize messages structure for Centrifugo compatibility
+        messages: {},
+        messageCount: 0,
+        lastActivity: Date.now()
+      });
       console.log('Service conversation saved to RTDB:', conversationId);
 
-      // Also save to Firestore for persistent storage
-      try {
-        await saveConversation(conversationData);
-        console.log('Service conversation saved to Firestore:', conversationId);
-      } catch (firestoreError) {
-        console.warn('Failed to save service conversation to Firestore:', firestoreError);
-      }
+      // Service conversations are stored in RTDB only
+      console.log('Service conversation saved to RTDB:', conversationId);
 
       // Add to local state immediately
       setServiceConversations(prev => [conversationData, ...prev]);

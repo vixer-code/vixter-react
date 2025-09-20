@@ -1,13 +1,10 @@
 .enhanced-messages {
-  height: calc(100vh - 80px - 60px); /* 100vh - header height - footer height */
-  max-height: calc(100vh - 80px - 60px);
+  height: 100%;
   display: flex;
   flex-direction: column;
   background: linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 100%);
   color: #FFFFFF;
   overflow: hidden;
-  margin-top: 80px; /* Header height */
-  margin-bottom: 60px; /* Footer height */
   position: relative;
   z-index: 1;
 }
@@ -327,10 +324,7 @@
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .enhanced-messages {
-    height: calc(100vh - 60px - 60px); /* 100vh - mobile header - footer */
-    max-height: calc(100vh - 60px - 60px);
-    margin-top: 60px; /* Mobile header height */
-    margin-bottom: 60px; /* Footer height */
+    height: 100%;
   }
   
   .conversations-sidebar {
@@ -434,10 +428,7 @@
 
 @media (max-width: 480px) {
   .enhanced-messages {
-    height: calc(100vh - 50px - 60px); /* 100vh - small mobile header - footer */
-    max-height: calc(100vh - 50px - 60px);
-    margin-top: 50px; /* Small mobile header height */
-    margin-bottom: 60px; /* Footer height */
+    height: 100%;
   }
   
   .connection-status {

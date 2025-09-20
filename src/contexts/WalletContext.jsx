@@ -220,6 +220,10 @@ export const WalletProvider = ({ children }) => {
           `Bônus diário recebido! ${result.data.bonusAmount} VBP foram adicionados à sua conta.`,
           'Bônus Diário'
         );
+        
+        // Refresh wallet data to show updated balance
+        await initUserWallet();
+        
         return true;
       }
       return false;
@@ -227,14 +231,20 @@ export const WalletProvider = ({ children }) => {
       handleWalletError(error, 'claimDaily');
       return false;
     }
-  }, [currentUser, claimDailyBonusFunc, showSuccess, showError]);
+  }, [currentUser, claimDailyBonusFunc, showSuccess, showError, initUserWallet]);
 
   // Check if can claim daily bonus
   const canClaimDailyBonus = useCallback(() => {
-    // This would need to check the last claim time from user data
-    // For now, always allow claiming (will be validated on server)
-    return true;
-  }, []);
+    if (!userProfile) return false;
+    
+    const lastClaimDate = userProfile.lastDailyBonusClaim?.toDate();
+    if (!lastClaimDate) return true;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return lastClaimDate < today;
+  }, [userProfile]);
 
   // Process pack sale (immediate VC)
   const processPackSale = useCallback(async (buyerId, sellerId, packId, packName, vpAmount) => {

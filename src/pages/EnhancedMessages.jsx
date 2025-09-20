@@ -6,6 +6,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useLocation, useParams } from 'react-router-dom';
 import UserSelector from '../components/messaging/UserSelector';
 import ChatInterface from '../components/messaging/ChatInterface';
+import OnlineUsersList from '../components/messaging/OnlineUsersList';
 import { 
   getConversationDisplayName, 
   formatLastMessageTime, 
@@ -256,6 +257,12 @@ const EnhancedMessages = () => {
             >
               Serviços ({serviceConversations.length})
             </button>
+            <button
+              className={`tab ${activeTab === 'online' ? 'active' : ''}`}
+              onClick={() => setActiveTab('online')}
+            >
+              Online agora
+            </button>
           </div>
 
           <div className="conversations-list">
@@ -309,6 +316,11 @@ const EnhancedMessages = () => {
                   );
                 }).filter(Boolean)
               )
+            ) : activeTab === 'online' ? (
+              <OnlineUsersList 
+                onUserSelect={handleUserSelected}
+                currentUser={currentUser}
+              />
             ) : (
               serviceConversations.length === 0 ? (
                 <div className="empty-state">

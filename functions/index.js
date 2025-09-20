@@ -4,6 +4,7 @@ import {
   initializeWallet,
   createStripeSession,
   stripeWebhook,
+  claimDailyBonus,
 
   // Unified API for CRUD operations
   api,
@@ -20,6 +21,10 @@ import {
   checkStripeConnectConfig,
   checkEnvironment,
   sendPurchaseConfirmationEmail,
+
+  // PIX Withdrawals
+  processPixPayment,
+  listPendingWithdrawals,
 
   // Vixtip Processing
   processVixtip,
@@ -39,6 +44,7 @@ export {
   initializeWallet,
   createStripeSession,
   stripeWebhook,
+  claimDailyBonus,
 
   // Unified API (substitui createPack, updatePack, deletePack, createService, updateService, deleteService, createPost, updatePost, deletePost)
   api,
@@ -55,6 +61,10 @@ export {
   checkStripeConnectConfig,
   checkEnvironment,
   sendPurchaseConfirmationEmail,
+
+  // PIX Withdrawals
+  processPixPayment,
+  listPendingWithdrawals,
 
   // Vixtip Processing
   processVixtip,

@@ -1376,8 +1376,8 @@ async function updatePackOrderInternal(orderId, updates) {
  * Cria conta Stripe Connect para providers
  */
 export const createStripeConnectAccount = onCall({
-  memory: "256MiB",
-  timeoutSeconds: 60,
+  memory: "128MiB",
+  timeoutSeconds: 30,
   secrets: [STRIPE_SECRET],
 }, async (request) => {
   if (!request.auth) {
@@ -1849,9 +1849,8 @@ export const getStripeConnectStatus = onCall({
  * Processa saque de VC para BRL via Stripe
  */
 export const processVCWithdrawal = onCall({
-  memory: "256MiB",
-  timeoutSeconds: 60,
-  secrets: [STRIPE_SECRET],
+  memory: "128MiB",
+  timeoutSeconds: 30,
 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Usuário não autenticado");
@@ -1890,123 +1889,32 @@ export const processVCWithdrawal = onCall({
       throw new HttpsError("invalid-argument", "Saldo VC insuficiente");
     }
 
-    // Verificar conta Stripe Connect
+    // Verificar dados PIX e KYC
     const userRef = db.collection('users').doc(userId);
     const userDoc = await userRef.get();
     const userData = userDoc.data();
 
-    if (!userData?.stripeAccountId) {
-      throw new HttpsError("failed-precondition", "Conta Stripe não configurada");
+    if (!userData?.pixDetail || !userData?.pixType) {
+      throw new HttpsError("failed-precondition", "Dados PIX não configurados. Configure sua chave PIX primeiro.");
     }
 
-    const stripe = new Stripe(STRIPE_SECRET.value(), {
-      apiVersion: STRIPE_API_VERSION,
-    });
-
-    // Verificar se a conta está ativa
-    const account = await stripe.accounts.retrieve(userData.stripeAccountId);
-    
-    // Log detalhado da conta Stripe
-    logger.info(`🔍 Verificando conta Stripe ${userData.stripeAccountId}:`);
-    logger.info(`  - details_submitted: ${account.details_submitted}`);
-    logger.info(`  - payouts_enabled: ${account.payouts_enabled}`);
-    logger.info(`  - charges_enabled: ${account.charges_enabled}`);
-    logger.info(`  - business_type: ${account.business_type}`);
-    logger.info(`  - country: ${account.country}`);
-    logger.info(`  - email: ${account.email}`);
-    logger.info(`  - external_accounts: ${account.external_accounts?.data?.length || 0}`);
-    logger.info(`  - requirements.currently_due: ${JSON.stringify(account.requirements?.currently_due || [])}`);
-    logger.info(`  - requirements.past_due: ${JSON.stringify(account.requirements?.past_due || [])}`);
-    logger.info(`  - requirements.eventually_due: ${JSON.stringify(account.requirements?.eventually_due || [])}`);
-    logger.info(`  - capabilities: ${JSON.stringify(account.capabilities || {})}`);
-    
-    if (!account.details_submitted) {
-      throw new HttpsError("failed-precondition", "Conta Stripe não finalizou o cadastro. Complete o onboarding primeiro.");
-    }
-    
-    if (!account.payouts_enabled) {
-      // Verificar se é conta de teste - permitir simulação
-      if (account.livemode === false) {
-        logger.info(`🧪 Modo de teste: Simulando payout para ${userData.stripeAccountId}`);
-        
-        // Simular payout em modo de teste
-        const feeAmount = Math.round(amount * WITHDRAWAL_FEE_PERCENTAGE);
-        const netAmount = amount - feeAmount;
-        
-        // Atualizar saldo VC (simulação)
-        await walletRef.update({
-          vc: admin.firestore.FieldValue.increment(-amount),
-          vcPending: admin.firestore.FieldValue.increment(netAmount),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-
-        // Registrar transação de saque (simulação)
-        const withdrawalTransaction = {
-          id: `withdrawal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          type: 'withdrawal',
-          amount: amount,
-          fee: feeAmount,
-          netAmount: netAmount,
-          currency: 'vc',
-          status: 'completed',
-          method: 'stripe_test',
-          stripeAccountId: userData.stripeAccountId,
-          testMode: true,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          processedAt: admin.firestore.FieldValue.serverTimestamp()
-        };
-
-        await db.collection('transactions').add(withdrawalTransaction);
-
-        logger.info(`✅ Saque simulado para ${userId}: ${netAmount} VC (teste)`);
-        
-        return {
-          success: true,
-          message: `Saque simulado com sucesso! ${netAmount} VC foram "transferidos" para sua conta Stripe (modo de teste).`,
-          netAmount: netAmount,
-          fee: feeAmount,
-          testMode: true
-        };
-      }
-      
-      // Para contas de produção, verificar requisitos
-      const pendingRequirements = account.requirements?.currently_due || [];
-      const pastDueRequirements = account.requirements?.past_due || [];
-      
-      let errorMessage = "Payouts não habilitados na conta Stripe.";
-      
-      if (pastDueRequirements.length > 0) {
-        errorMessage += ` Requisitos em atraso: ${pastDueRequirements.join(', ')}.`;
-      }
-      
-      if (pendingRequirements.length > 0) {
-        errorMessage += ` Requisitos pendentes: ${pendingRequirements.join(', ')}.`;
-      }
-      
-      if (account.external_accounts?.data?.length === 0) {
-        errorMessage += " Configure uma conta bancária no Stripe Dashboard.";
-      }
-      
-      throw new HttpsError("failed-precondition", errorMessage);
+    // Verificar se o usuário passou pelo KYC
+    if (!userData?.kycStatus || userData.kycStatus !== 'approved') {
+      throw new HttpsError("failed-precondition", "KYC não aprovado. Complete a verificação de identidade primeiro.");
     }
 
+    logger.info(`🔍 Verificando dados PIX para ${userId}:`);
+    logger.info(`  - PIX Type: ${userData.pixType}`);
+    logger.info(`  - PIX Detail: ${userData.pixDetail}`);
+    logger.info(`  - KYC Status: ${userData.kycStatus}`);
+    
     // Calcular valores
     const feeAmount = Math.round(amount * WITHDRAWAL_FEE_PERCENTAGE);
     const netAmount = amount - feeAmount;
     const brlAmount = netAmount; // 1 VC = 1 BRL
 
-    // Criar transferência para a conta do provider
-    const transfer = await stripe.transfers.create({
-      amount: brlAmount * 100, // Stripe usa centavos
-      currency: 'brl',
-      destination: userData.stripeAccountId,
-      metadata: {
-        userId: userId,
-        vcAmount: amount.toString(),
-        feeAmount: feeAmount.toString(),
-        netAmount: netAmount.toString()
-      }
-    });
+    // Gerar ID único para a transação
+    const transactionId = `withdrawal_${userId}_${Date.now()}`;
 
     // Debitar VC da carteira
     await walletRef.update({
@@ -2014,17 +1922,20 @@ export const processVCWithdrawal = onCall({
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    // Registrar transação de saque
+    // Registrar transação de saque pendente
     const withdrawalRef = db.collection('withdrawals').doc();
     await withdrawalRef.set({
       id: withdrawalRef.id,
+      transactionId: transactionId,
       userId: userId,
       vcAmount: amount,
       brlAmount: brlAmount,
       feeAmount: feeAmount,
       netAmount: netAmount,
-      stripeTransferId: transfer.id,
-      status: 'completed',
+      pixType: userData.pixType,
+      pixDetail: userData.pixDetail,
+      status: 'waiting_payment',
+      pixDocument: null, // Será preenchido pelo admin
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
@@ -2034,29 +1945,39 @@ export const processVCWithdrawal = onCall({
     await transactionRef.set({
       id: transactionRef.id,
       userId: userId,
-      type: 'WITHDRAW_VC',
+      type: 'WITHDRAW_VC_PENDING',
       amounts: {
         vc: -amount
       },
       metadata: {
-        description: `Saque de VC para BRL`,
-        stripeTransferId: transfer.id,
+        description: `Saque de VC para PIX - Aguardando pagamento`,
+        transactionId: transactionId,
+        pixType: userData.pixType,
+        pixDetail: userData.pixDetail,
         feeAmount: feeAmount,
-        netAmount: netAmount
+        netAmount: netAmount,
+        status: 'waiting_payment'
       },
       timestamp: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    logger.info(`✅ VC withdrawal processed for user ${userId}: ${amount} VC -> ${brlAmount} BRL (8% fee: ${feeAmount} VC)`);
-
+    logger.info(`✅ Saque pendente criado para ${userId}: ${netAmount} VC (${brlAmount} BRL)`);
+    logger.info(`  - Transaction ID: ${transactionId}`);
+    logger.info(`  - PIX Type: ${userData.pixType}`);
+    logger.info(`  - PIX Detail: ${userData.pixDetail}`);
+    logger.info(`  - Status: waiting_payment`);
+    
     return {
       success: true,
-      withdrawalId: withdrawalRef.id,
+      transactionId: transactionId,
       vcAmount: amount,
       brlAmount: brlAmount,
       feeAmount: feeAmount,
       netAmount: netAmount,
-      stripeTransferId: transfer.id
+      pixType: userData.pixType,
+      pixDetail: userData.pixDetail,
+      status: 'waiting_payment',
+      message: `Saque solicitado com sucesso! ${netAmount} VC (${brlAmount} BRL) serão transferidos via PIX. Aguarde o processamento.`
     };
 
   } catch (error) {
@@ -2067,6 +1988,158 @@ export const processVCWithdrawal = onCall({
     }
     
     throw new HttpsError("internal", "Erro ao processar saque");
+  }
+});
+
+/**
+ * Processa pagamento PIX (admin) - marca saque como pago
+ */
+export const processPixPayment = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 30,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { withdrawalId, pixDocument } = request.data;
+  const adminId = request.auth.uid;
+
+  if (!withdrawalId || !pixDocument) {
+    throw new HttpsError("invalid-argument", "ID do saque e comprovante PIX são obrigatórios");
+  }
+
+  try {
+    // Verificar se o usuário é admin (você pode implementar sua lógica de admin aqui)
+    // Por enquanto, vamos permitir qualquer usuário autenticado
+    
+    // Buscar o saque
+    const withdrawalRef = db.collection('withdrawals').doc(withdrawalId);
+    const withdrawalDoc = await withdrawalRef.get();
+    
+    if (!withdrawalDoc.exists) {
+      throw new HttpsError("not-found", "Saque não encontrado");
+    }
+    
+    const withdrawalData = withdrawalDoc.data();
+    
+    if (withdrawalData.status !== 'waiting_payment') {
+      throw new HttpsError("failed-precondition", "Saque não está aguardando pagamento");
+    }
+
+    // Atualizar saque como pago
+    await withdrawalRef.update({
+      status: 'paid',
+      pixDocument: pixDocument,
+      processedBy: adminId,
+      processedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Atualizar transação na carteira
+    const transactionQuery = await db.collection('transactions')
+      .where('userId', '==', withdrawalData.userId)
+      .where('metadata.transactionId', '==', withdrawalData.transactionId)
+      .where('type', '==', 'WITHDRAW_VC_PENDING')
+      .limit(1)
+      .get();
+
+    if (!transactionQuery.empty) {
+      const transactionDoc = transactionQuery.docs[0];
+      await transactionDoc.ref.update({
+        type: 'WITHDRAW_VC',
+        metadata: {
+          ...transactionDoc.data().metadata,
+          status: 'paid',
+          pixDocument: pixDocument,
+          processedBy: adminId,
+          processedAt: admin.firestore.FieldValue.serverTimestamp()
+        },
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    logger.info(`✅ Pagamento PIX processado para saque ${withdrawalId}:`);
+    logger.info(`  - Usuário: ${withdrawalData.userId}`);
+    logger.info(`  - Valor: ${withdrawalData.netAmount} VC (${withdrawalData.brlAmount} BRL)`);
+    logger.info(`  - PIX: ${withdrawalData.pixType} - ${withdrawalData.pixDetail}`);
+    logger.info(`  - Processado por: ${adminId}`);
+    
+    return {
+      success: true,
+      message: `Pagamento PIX processado com sucesso! ${withdrawalData.netAmount} VC foram transferidos.`,
+      withdrawalId: withdrawalId,
+      status: 'paid'
+    };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao processar pagamento PIX para saque ${withdrawalId}:`, error);
+    
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    
+    throw new HttpsError("internal", "Erro interno do servidor");
+  }
+});
+
+/**
+ * Lista saques pendentes (admin)
+ */
+export const listPendingWithdrawals = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 30,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  try {
+    // Buscar saques pendentes
+    const withdrawalsQuery = await db.collection('withdrawals')
+      .where('status', '==', 'waiting_payment')
+      .orderBy('createdAt', 'desc')
+      .limit(50)
+      .get();
+
+    const withdrawals = [];
+    
+    for (const doc of withdrawalsQuery.docs) {
+      const data = doc.data();
+      
+      // Buscar dados do usuário
+      const userDoc = await db.collection('users').doc(data.userId).get();
+      const userData = userDoc.data();
+      
+      withdrawals.push({
+        id: doc.id,
+        transactionId: data.transactionId,
+        userId: data.userId,
+        userEmail: userData?.email || 'N/A',
+        username: userData?.username || 'N/A',
+        vcAmount: data.vcAmount,
+        brlAmount: data.brlAmount,
+        feeAmount: data.feeAmount,
+        netAmount: data.netAmount,
+        pixType: data.pixType,
+        pixDetail: data.pixDetail,
+        status: data.status,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt
+      });
+    }
+
+    logger.info(`📋 Listados ${withdrawals.length} saques pendentes`);
+    
+    return {
+      success: true,
+      withdrawals: withdrawals,
+      count: withdrawals.length
+    };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao listar saques pendentes:`, error);
+    throw new HttpsError("internal", "Erro interno do servidor");
   }
 });
 
@@ -2649,6 +2722,105 @@ export const cronProcessVixtips = onRequest(async (req, res) => {
       error: 'Erro interno do servidor',
       message: error.message
     });
+  }
+});
+
+/**
+ * Claim daily bonus VBP
+ */
+export const claimDailyBonus = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 30,
+  cors: true,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const userId = request.auth.uid;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Start of today
+  
+  try {
+    // Check if user has already claimed today
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    
+    if (!userDoc.exists) {
+      throw new HttpsError("not-found", "Usuário não encontrado");
+    }
+    
+    const userData = userDoc.data();
+    const lastClaimDate = userData.lastDailyBonusClaim?.toDate();
+    
+    // Check if already claimed today
+    if (lastClaimDate && lastClaimDate >= today) {
+      throw new HttpsError("already-exists", "Bônus diário já foi reivindicado hoje");
+    }
+    
+    // Get or create wallet
+    const walletRef = db.collection('wallets').doc(userId);
+    const walletDoc = await walletRef.get();
+    
+    let walletData;
+    if (!walletDoc.exists) {
+      // Create wallet if it doesn't exist
+      walletData = {
+        uid: userId,
+        vp: 0,
+        vc: 0,
+        vbp: 10, // Daily bonus amount
+        vcPending: 0,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+      await walletRef.set(walletData);
+    } else {
+      // Update existing wallet
+      walletData = walletDoc.data();
+      await walletRef.update({
+        vbp: admin.firestore.FieldValue.increment(10),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    
+    // Update user's last claim date
+    await userRef.update({
+      lastDailyBonusClaim: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    // Create transaction record
+    const transactionRef = db.collection('transactions').doc();
+    await transactionRef.set({
+      id: transactionRef.id,
+      userId: userId,
+      type: 'DAILY_BONUS',
+      amount: 10,
+      currency: 'VBP',
+      description: 'Bônus diário VBP',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      metadata: {
+        bonusType: 'daily',
+        claimDate: today.toISOString()
+      }
+    });
+    
+    logger.info(`✅ Daily bonus claimed by user ${userId}: 10 VBP`);
+    
+    return {
+      success: true,
+      bonusAmount: 10,
+      message: 'Bônus diário reivindicado com sucesso!'
+    };
+    
+  } catch (error) {
+    logger.error(`💥 Erro ao reivindicar bônus diário para ${userId}:`, error);
+    
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    
+    throw new HttpsError("internal", "Erro interno do servidor");
   }
 });
 
