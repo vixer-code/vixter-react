@@ -448,6 +448,12 @@
   flex-shrink: 0;
 }
 
+/* Special styling for vixtip (gorjeta) icons */
+.transaction-icon i.fa-arrow-down {
+  color: #00c853 !important;
+  font-size: 1.2rem;
+}
+
 .transaction-icon i {
   font-size: 1.2rem;
 }

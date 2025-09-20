@@ -978,14 +978,26 @@ const Wallet = () => {
                   {providerHistory.map((row) => (
                     <div key={`${row.type}:${row.id}`} className="transaction-item">
                       <div className="transaction-icon">
-                        <i className={row.type === 'service' ? 'fas fa-briefcase' : 'fas fa-box-open'}></i>
+                        <i className={
+                          row.type === 'vixtip' ? 'fas fa-arrow-down' :
+                          row.type === 'service' ? 'fas fa-briefcase' : 
+                          'fas fa-box-open'
+                        } style={{ color: '#00c853' }}></i>
                       </div>
                       <div className="transaction-details">
                         <div className="transaction-description">
-                          {row.title} <small>({row.type === 'service' ? 'Serviço' : 'Pack'})</small>
+                          {row.title} {row.type !== 'vixtip' && <small>({row.type === 'service' ? 'Serviço' : 'Pack'})</small>}
                         </div>
                         <div className="transaction-date">
-                          {new Date(row.timestamp).toLocaleString('pt-BR')} · <span className={`status-badge ${row.status}`}>{row.status}</span>
+                          {(() => {
+                            const date = new Date(row.timestamp);
+                            const day = date.getDate().toString().padStart(2, '0');
+                            const month = date.toLocaleDateString('pt-BR', { month: 'short' });
+                            const year = date.getFullYear();
+                            const hours = date.getHours().toString().padStart(2, '0');
+                            const minutes = date.getMinutes().toString().padStart(2, '0');
+                            return `${day} de ${month}. de ${year}, ${hours}:${minutes}`;
+                          })()} · <span className={`status-badge ${row.status}`}>{row.status}</span>
                         </div>
                       </div>
                       <div className="transaction-amount">

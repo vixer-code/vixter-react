@@ -1431,6 +1431,7 @@ export const createStripeConnectAccount = onCall({
         payouts: {
           schedule: {
             interval: 'monthly', // Pagamentos mensais
+            monthly_anchor: 15, // Dia 1 de cada mês
           },
         },
       },
