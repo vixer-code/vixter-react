@@ -1474,6 +1474,50 @@ export const createStripeConnectAccount = onCall({
 });
 
 /**
+ * Gera link de login para dashboard Stripe Connect
+ */
+export const getStripeConnectLoginLink = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 30,
+  secrets: [STRIPE_SECRET],
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const userId = request.auth.uid;
+
+  try {
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+
+    if (!userData?.stripeAccountId) {
+      throw new HttpsError("not-found", "Conta Stripe não encontrada");
+    }
+
+    const stripe = new Stripe(STRIPE_SECRET.value(), {
+      apiVersion: STRIPE_API_VERSION,
+    });
+
+    // Criar link de login para a conta Stripe Connect
+    const loginLink = await stripe.accounts.createLoginLink(userData.stripeAccountId);
+
+    logger.info(`✅ Login link created for user ${userId}: ${userData.stripeAccountId}`);
+    
+    return {
+      success: true,
+      loginUrl: loginLink.url,
+      accountId: userData.stripeAccountId
+    };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao gerar link de login para ${userId}:`, error);
+    throw new HttpsError("internal", "Erro ao gerar link de acesso");
+  }
+});
+
+/**
  * Verifica status da conta Stripe Connect
  */
 export const getStripeConnectStatus = onCall({
