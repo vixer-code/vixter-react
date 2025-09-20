@@ -270,6 +270,38 @@ const Settings = () => {
     }
   };
 
+  const checkPayoutsStatus = async () => {
+    if (!isProvider) return;
+    
+    try {
+      const checkPayouts = httpsCallable(functions, 'checkAndEnablePayouts');
+      const result = await checkPayouts();
+      
+      if (result.data.success) {
+        showSuccess(result.data.message);
+      } else {
+        // Mostrar erro com ação recomendada
+        const errorMessage = result.data.message;
+        const action = result.data.action;
+        
+        if (action) {
+          showError(`${errorMessage}\n\nAção recomendada: ${action}`, 'Payouts Não Habilitados');
+        } else {
+          showError(errorMessage);
+        }
+      }
+      
+      // Atualizar status detalhado
+      await checkStripeDetailedStatus();
+      
+      return result.data;
+    } catch (error) {
+      console.error('Error checking payouts status:', error);
+      showError('Erro ao verificar status de payouts');
+      return null;
+    }
+  };
+
   const connectStripeAccount = async () => {
     if (!isProvider) return;
     
@@ -847,6 +879,14 @@ const Settings = () => {
                     style={{ marginLeft: '10px' }}
                   >
                     <i className="fas fa-sync-alt"></i> Atualizar Status
+                  </button>
+                  
+                  <button 
+                    onClick={checkPayoutsStatus}
+                    className="btn-stripe btn-outline"
+                    style={{ marginLeft: '10px', backgroundColor: '#ff6b6b', color: 'white' }}
+                  >
+                    <i className="fas fa-exclamation-triangle"></i> Verificar Payouts
                   </button>
                 </div>
               </div>

@@ -1582,6 +1582,117 @@ export const getStripeConnectDetailedStatus = onCall({
 });
 
 /**
+ * Verifica e tenta habilitar payouts na conta Stripe Connect
+ */
+export const checkAndEnablePayouts = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 30,
+  secrets: [STRIPE_SECRET],
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const userId = request.auth.uid;
+
+  try {
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+
+    if (!userData?.stripeAccountId) {
+      return {
+        success: false,
+        message: "Nenhuma conta Stripe configurada"
+      };
+    }
+
+    const stripe = new Stripe(STRIPE_SECRET.value(), {
+      apiVersion: STRIPE_API_VERSION,
+    });
+
+    const account = await stripe.accounts.retrieve(userData.stripeAccountId);
+    
+    logger.info(`🔍 Verificando payouts para ${userData.stripeAccountId}:`);
+    logger.info(`  - payouts_enabled: ${account.payouts_enabled}`);
+    logger.info(`  - details_submitted: ${account.details_submitted}`);
+    logger.info(`  - external_accounts: ${account.external_accounts?.data?.length || 0}`);
+    logger.info(`  - requirements: ${JSON.stringify(account.requirements || {})}`);
+
+    if (account.payouts_enabled) {
+      return {
+        success: true,
+        payoutsEnabled: true,
+        message: "Payouts já estão habilitados"
+      };
+    }
+
+    // Verificar se há contas bancárias
+    const externalAccounts = account.external_accounts?.data || [];
+    if (externalAccounts.length === 0) {
+      return {
+        success: false,
+        payoutsEnabled: false,
+        message: "❌ Nenhuma conta bancária configurada. Configure uma conta bancária no Stripe Dashboard primeiro.",
+        requirements: account.requirements,
+        action: "Configure uma conta bancária no Stripe Dashboard"
+      };
+    }
+
+    // Verificar se a conta bancária está verificada
+    const verifiedAccounts = externalAccounts.filter(account => account.status === 'verified');
+    if (verifiedAccounts.length === 0) {
+      return {
+        success: false,
+        payoutsEnabled: false,
+        message: "⚠️ Conta bancária configurada mas não verificada. Aguarde a verificação do Stripe ou configure uma nova conta.",
+        requirements: account.requirements,
+        action: "Aguarde verificação ou configure nova conta bancária"
+      };
+    }
+
+    // Verificar requisitos pendentes
+    const pendingRequirements = account.requirements?.currently_due || [];
+    const pastDueRequirements = account.requirements?.past_due || [];
+    
+    if (pastDueRequirements.length > 0) {
+      return {
+        success: false,
+        payoutsEnabled: false,
+        message: `🚨 Requisitos em atraso: ${pastDueRequirements.join(', ')}. Complete estes requisitos no Stripe Dashboard urgentemente.`,
+        requirements: account.requirements,
+        action: "Complete requisitos em atraso no Stripe Dashboard"
+      };
+    }
+
+    if (pendingRequirements.length > 0) {
+      return {
+        success: false,
+        payoutsEnabled: false,
+        message: `⚠️ Requisitos pendentes: ${pendingRequirements.join(', ')}. Complete estes requisitos no Stripe Dashboard.`,
+        requirements: account.requirements,
+        action: "Complete requisitos pendentes no Stripe Dashboard"
+      };
+    }
+
+    // Se chegou até aqui, pode ser um problema de sincronização ou outros fatores
+    return {
+      success: false,
+      payoutsEnabled: false,
+      message: "🤔 Payouts não habilitados mesmo com conta bancária verificada. Pode ser necessário aguardar alguns minutos ou verificar com o suporte do Stripe.",
+      requirements: account.requirements,
+      externalAccounts: externalAccounts.length,
+      verifiedAccounts: verifiedAccounts.length,
+      action: "Aguarde alguns minutos ou entre em contato com o suporte do Stripe"
+    };
+
+  } catch (error) {
+    logger.error(`💥 Erro ao verificar payouts para ${userId}:`, error);
+    throw new HttpsError("internal", "Erro ao verificar payouts");
+  }
+});
+
+/**
  * Força atualização do status da conta Stripe Connect
  */
 export const refreshStripeConnectStatus = onCall({
@@ -1764,20 +1875,19 @@ export const processVCWithdrawal = onCall({
     // Verificar se a conta está ativa
     const account = await stripe.accounts.retrieve(userData.stripeAccountId);
     
-    logger.info(`🔍 Verificando conta Stripe ${userData.stripeAccountId}:`, {
-      details_submitted: account.details_submitted,
-      payouts_enabled: account.payouts_enabled,
-      charges_enabled: account.charges_enabled,
-      requirements: account.requirements,
-      capabilities: account.capabilities,
-      business_type: account.business_type,
-      country: account.country,
-      email: account.email,
-      external_accounts: account.external_accounts?.data?.length || 0,
-      requirements_pending: account.requirements?.currently_due || [],
-      requirements_past_due: account.requirements?.past_due || [],
-      requirements_eventually_due: account.requirements?.eventually_due || []
-    });
+    // Log detalhado da conta Stripe
+    logger.info(`🔍 Verificando conta Stripe ${userData.stripeAccountId}:`);
+    logger.info(`  - details_submitted: ${account.details_submitted}`);
+    logger.info(`  - payouts_enabled: ${account.payouts_enabled}`);
+    logger.info(`  - charges_enabled: ${account.charges_enabled}`);
+    logger.info(`  - business_type: ${account.business_type}`);
+    logger.info(`  - country: ${account.country}`);
+    logger.info(`  - email: ${account.email}`);
+    logger.info(`  - external_accounts: ${account.external_accounts?.data?.length || 0}`);
+    logger.info(`  - requirements.currently_due: ${JSON.stringify(account.requirements?.currently_due || [])}`);
+    logger.info(`  - requirements.past_due: ${JSON.stringify(account.requirements?.past_due || [])}`);
+    logger.info(`  - requirements.eventually_due: ${JSON.stringify(account.requirements?.eventually_due || [])}`);
+    logger.info(`  - capabilities: ${JSON.stringify(account.capabilities || {})}`);
     
     if (!account.details_submitted) {
       throw new HttpsError("failed-precondition", "Conta Stripe não finalizou o cadastro. Complete o onboarding primeiro.");
