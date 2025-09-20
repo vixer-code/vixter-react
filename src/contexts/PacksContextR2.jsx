@@ -10,9 +10,12 @@ import {
   doc,
   getDoc,
   deleteDoc,
+  updateDoc,
   onSnapshot
 } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../../config/firebase';
+import mediaService from '../services/mediaService';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import useR2Media from '../hooks/useR2Media';
@@ -39,8 +42,10 @@ export const PacksProviderR2 = ({ children }) => {
   const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);
 
-  // Backend API URL
-  const BACKEND_URL = 'https://vixter-react-llyd.vercel.app';
+  // Cloud Functions for pack operations
+  const createPackFunc = httpsCallable(functions, 'createPack');
+  const updatePackFunc = httpsCallable(functions, 'updatePack');
+  const deletePackFunc = httpsCallable(functions, 'deletePack');
 
   // Categories for filtering
   const PACK_CATEGORIES = [
@@ -199,24 +204,11 @@ export const PacksProviderR2 = ({ children }) => {
     try {
       setCreating(true);
       
-      // First create the pack in Firestore via backend
-      const response = await fetch(`${BACKEND_URL}/api/packs`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await currentUser.getIdToken()}`
-        },
-        body: JSON.stringify(packData)
-      });
+      // Create the pack using Cloud Function
+      const result = await createPackFunc(packData);
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        const packId = result.packId;
+      if (result.data.success) {
+        const packId = result.data.packId;
         
         // Calculate total files to upload
         const totalFiles = [
@@ -301,22 +293,13 @@ export const PacksProviderR2 = ({ children }) => {
         // Final progress update
         onProgress && onProgress(100, 'Finalizando...');
 
-        // Update pack with media data via backend
-        const updateResponse = await fetch(`${BACKEND_URL}/api/packs/${packId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${await currentUser.getIdToken()}`
-          },
-          body: JSON.stringify({ 
-            ...mediaData,
-            mediaStorage: 'r2' // Flag to indicate R2 storage
-          })
+        // Update pack with media data directly in Firestore
+        const packRef = doc(db, 'packs', packId);
+        await updateDoc(packRef, {
+          ...mediaData,
+          mediaStorage: 'r2', // Flag to indicate R2 storage
+          updatedAt: new Date()
         });
-        
-        if (!updateResponse.ok) {
-          throw new Error(`HTTP ${updateResponse.status}: ${updateResponse.statusText}`);
-        }
 
         showSuccess('Pack criado com sucesso!', 'Pack Criado');
         
@@ -346,22 +329,9 @@ export const PacksProviderR2 = ({ children }) => {
     try {
       setUpdating(true);
       
-      const response = await fetch(`${BACKEND_URL}/api/packs/${packId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await currentUser.getIdToken()}`
-        },
-        body: JSON.stringify(updates)
-      });
+      const result = await updatePackFunc({ packId, ...updates });
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
+      if (result.data.success) {
         if (showSuccessMessage) {
           showSuccess('Pack atualizado com sucesso!', 'Pack Atualizado');
         }
@@ -490,25 +460,13 @@ export const PacksProviderR2 = ({ children }) => {
         throw new Error('Invalid pack ID');
       }
       
-      console.log('📞 Calling backend API with payload:', { packId });
-      const response = await fetch(`${BACKEND_URL}/api/packs/${packId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await currentUser.getIdToken()}`
-        }
-      });
+      console.log('📞 Calling Cloud Function with payload:', { packId });
+      const result = await deletePackFunc({ packId });
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      console.log('📥 Cloud Function response:', result);
       
-      const result = await response.json();
-      
-      console.log('📥 Backend API response:', result);
-      
-      if (!result.success) {
-        console.error('❌ Backend API failed:', result.error);
+      if (!result.data.success) {
+        console.error('❌ Cloud Function failed:', result.data.error);
         throw new Error(result.error || 'Failed to delete pack');
       }
       
