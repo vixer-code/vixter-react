@@ -343,11 +343,11 @@
         ".write": "auth != null",
         "$userId": {
           ".read": "$userId == auth.uid",
-          ".write": "$userId == auth.uid",
+          ".write": "auth != null",
           "$notificationId": {
             ".validate": "newData.hasChildren(['type', 'action', 'postId', 'actorId', 'actorName', 'timestamp', 'read'])",
-            "type": { ".validate": "newData.isString() && newData.val() == 'post_interaction'" },
-            "action": { ".validate": "newData.isString() && newData.val().matches(/^(like|repost|comment)$/)" },
+            "type": { ".validate": "newData.isString()" },
+            "action": { ".validate": "newData.isString()" },
             "postId": { ".validate": "newData.isString() && newData.val().length > 0" },
             "actorId": { ".validate": "newData.isString() && newData.val() == auth.uid" },
             "actorName": { ".validate": "newData.isString() && newData.val().length > 0" },
@@ -355,7 +355,13 @@
             "timestamp": { ".validate": "newData.isNumber() && newData.val() <= now + 600000" },
             "read": { ".validate": "newData.isBoolean()" },
             "postContent": { ".validate": "newData.isString()" },
-            "commentContent": { ".validate": "newData.isString()" }
+            "commentContent": { ".validate": "newData.isString()" },
+            "amount": { ".validate": "newData.isNumber() && newData.val() > 0" },
+            "serviceName": { ".validate": "newData.isString()" },
+            "packName": { ".validate": "newData.isString()" },
+            "orderId": { ".validate": "newData.isString()" },
+            "senderName": { ".validate": "newData.isString()" },
+            "recipientId": { ".validate": "newData.isString()" }
           }
         }
       }

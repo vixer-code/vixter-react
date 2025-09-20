@@ -78,8 +78,10 @@ const VixtipModal = ({ isOpen, onClose, post, postType = 'vixies' }) => {
         authorName: post.authorName,
         authorUsername: post.authorUsername,
         amount: tipAmount,
+        buyerId: currentUser.uid,
         buyerName: (userProfile && (userProfile.displayName || userProfile.name)) || 'Usuário',
-        buyerUsername: (userProfile && userProfile.username) || ''
+        buyerUsername: (userProfile && userProfile.username) || '',
+        buyerProfilePictureURL: (userProfile && userProfile.photoURL) || '/images/defpfp1.png'
       });
 
       if (success) {

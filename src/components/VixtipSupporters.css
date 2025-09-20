@@ -112,7 +112,7 @@
 
 .supporter-name {
   font-weight: 500;
-  color: #333;
+  color: #ffffff;
   text-decoration: none;
   font-size: 12px;
   white-space: nowrap;
@@ -122,13 +122,13 @@
 }
 
 .supporter-name:hover {
-  color: #007bff;
+  color: #00ffca;
   text-decoration: underline;
 }
 
 .supporter-amount {
   font-size: 11px;
-  color: #28a745;
+  color: #00ffca;
   font-weight: 600;
   white-space: nowrap;
 }
