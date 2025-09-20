@@ -91,11 +91,14 @@ const Settings = () => {
       loadUserSettings();
       loadKycState();
       loadSubmittedKycDocuments();
-      if (isProvider) {
-        checkStripeStatus();
-      }
     }
-  }, [currentUser, isProvider, userProfile]);
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser && isProvider) {
+      checkStripeStatus();
+    }
+  }, [currentUser, isProvider]);
 
   const loadUserSettings = async () => {
     try {
@@ -197,6 +200,9 @@ const Settings = () => {
   const checkStripeStatus = async () => {
     if (!isProvider) return;
     
+    // Evitar chamadas múltiplas
+    if (stripeStatus.loading) return;
+    
     setStripeStatus(prev => ({ ...prev, loading: true }));
     try {
       const getStripeStatus = httpsCallable(functions, 'getStripeConnectStatus');
@@ -210,6 +216,7 @@ const Settings = () => {
     } catch (error) {
       console.error('Error checking Stripe status:', error);
       setStripeStatus(prev => ({ ...prev, loading: false }));
+      showError('Erro ao verificar status Stripe');
     }
   };
 
@@ -741,7 +748,7 @@ const Settings = () => {
                   
                   {stripeStatus.isComplete && (
                     <a 
-                      href="https://dashboard.stripe.com/connect/accounts/overview" 
+                      href="https://dashboard.stripe.com/connect/accounts" 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="btn-stripe btn-outline"

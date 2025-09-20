@@ -1418,25 +1418,30 @@ export const createStripeConnectAccount = onCall({
       }
     }
 
-    // Criar nova conta Stripe Connect
-    const account = await stripe.accounts.create({
-      type: 'express',
-      country: 'BR',
-      email: request.auth.token.email,
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-      settings: {
-        payouts: {
-          schedule: {
-            interval: 'monthly', // Pagamentos mensais
-            monthly_anchor: 15, // Dia 1 de cada mês
-          },
-        },
-      },
-      business_type: 'individual', // Para pessoas físicas
-    });
+     // Criar nova conta Stripe Connect
+     const account = await stripe.accounts.create({
+       type: 'express',
+       country: 'BR',
+       email: request.auth.token.email,
+       capabilities: {
+         card_payments: { requested: true },
+         transfers: { requested: true },
+       },
+       // No Brasil, payouts são sempre automáticos e diários - não precisamos configurar
+       business_type: 'individual', // Para pessoas físicas
+       // Informações profissionais
+       business_profile: {
+         url: `https://vixter.com.br/profile/${userData.username || userId}`,
+         mcc: '7372', // Computer Software Stores (código MCC para plataformas digitais)
+         product_description: 'Serviços digitais e conteúdo criativo através da plataforma Vixter'
+       },
+       // Informações adicionais
+       metadata: {
+         platform: 'vixter',
+         user_id: userId,
+         created_via: 'vixter_platform'
+       }
+     });
 
     // Criar link de onboarding
     const accountLink = await stripe.accountLinks.create({
