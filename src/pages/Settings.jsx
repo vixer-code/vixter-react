@@ -515,7 +515,7 @@ const Settings = () => {
         selfie: kycForm.documents.selfie?.key || kycForm.documents.selfie
       };
 
-      // Create KYC document in Firestore
+      // Create KYC document in Firestore (main data storage)
       await createKycDocument(currentUser.uid, {
         fullName: kycForm.fullName,
         cpf: kycForm.cpf.replace(/\D/g, ''),
@@ -524,17 +524,12 @@ const Settings = () => {
         status: 'PENDING_VERIFICATION'
       });
 
-      // Update user profile with KYC state
+      // Update only basic KYC state in Realtime Database
       const userRef = ref(database, `users/${currentUser.uid}`);
       await update(userRef, {
         kycState: 'PENDING_VERIFICATION',
-        verification: {
-          fullName: kycForm.fullName,
-          cpf: kycForm.cpf.replace(/\D/g, ''),
-          documents: documentKeys,
-          submittedAt: Date.now(),
-          verificationStatus: 'pending'
-        }
+        kyc: false, // Will be set to true by admin when verified
+        updatedAt: Date.now()
       });
 
       // Update local state
@@ -600,15 +595,31 @@ const Settings = () => {
   // Load submitted KYC documents
   const loadKycState = async () => {
     try {
-      const userRef = ref(database, `users/${currentUser.uid}`);
-      const snapshot = await get(userRef);
+      // First check Firestore for KYC data
+      const kycData = await getKycDocument(currentUser.uid);
       
-      if (snapshot.exists()) {
-        const userData = snapshot.val();
-        setKycState(userData.kycState || 'PENDING_UPLOAD');
+      if (kycData) {
+        // KYC document exists, check status
+        if (kycData.status === 'VERIFIED') {
+          setKycState('VERIFIED');
+        } else {
+          setKycState('PENDING_VERIFICATION');
+        }
+      } else {
+        // No KYC document, check Realtime Database for basic state
+        const userRef = ref(database, `users/${currentUser.uid}`);
+        const snapshot = await get(userRef);
+        
+        if (snapshot.exists()) {
+          const userData = snapshot.val();
+          setKycState(userData.kycState || 'PENDING_UPLOAD');
+        } else {
+          setKycState('PENDING_UPLOAD');
+        }
       }
     } catch (error) {
       console.error('Error loading KYC state:', error);
+      setKycState('PENDING_UPLOAD');
     }
   };
 
@@ -785,7 +796,6 @@ const Settings = () => {
                       placeholder="000.000.000-00"
                       maxLength="14"
                     />
-                    <span className={`status-icon ${cpfVerificationState.isVerified ? 'verified' : ''}`}></span>
                   </div>
                   <button 
                     type="button" 

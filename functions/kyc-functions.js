@@ -34,7 +34,26 @@ export const updateKycStatus = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    // Update user document in Realtime Database
+    // Update KYC document in Firestore (primary data storage)
+    const kycRef = firestore.collection('kyc').doc(userId);
+    const kycDoc = await kycRef.get();
+    
+    if (kycDoc.exists) {
+      const kycUpdates = {
+        status: kycState,
+        updatedAt: Date.now()
+      };
+
+      // If verifying, add verification details
+      if (kycState === 'VERIFIED') {
+        kycUpdates.verifiedAt = Date.now();
+        kycUpdates.verifiedBy = context.auth.uid;
+      }
+
+      await kycRef.update(kycUpdates);
+    }
+
+    // Update basic KYC state in Realtime Database
     const userRef = db.ref(`users/${userId}`);
     const updates = {
       kycState: kycState,
@@ -46,24 +65,12 @@ export const updateKycStatus = functions.https.onCall(async (data, context) => {
       updates.kyc = kyc;
     }
 
-    // If verifying, also update verification status
+    // If verifying, set kyc to true
     if (kycState === 'VERIFIED') {
       updates.kyc = true;
-      updates['verification/verificationStatus'] = 'verified';
-      updates['verification/verifiedAt'] = Date.now();
     }
 
     await userRef.update(updates);
-
-    // Update KYC document in Firestore if it exists
-    if (kycState === 'VERIFIED') {
-      const kycRef = firestore.collection('kyc').doc(userId);
-      await kycRef.update({
-        status: 'VERIFIED',
-        verifiedAt: Date.now(),
-        verifiedBy: context.auth.uid
-      });
-    }
 
     return {
       success: true,
@@ -125,7 +132,9 @@ export const getKycDocument = functions.https.onCall(async (data, context) => {
           cpf: kycData.cpf,
           documents: kycData.documents,
           submittedAt: kycData.submittedAt,
-          status: kycData.status
+          status: kycData.status,
+          verifiedAt: kycData.verifiedAt,
+          verifiedBy: kycData.verifiedBy
         }
       }
     };
