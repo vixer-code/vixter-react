@@ -42,13 +42,19 @@ const OnlineUsersList = ({ onUserSelect, currentUser }) => {
 
         const statusData = snapshot.val();
         console.log('👥 Total users with status data:', Object.keys(statusData).length);
+        console.log('📊 Status data structure:', statusData);
         
         const onlineUserIds = [];
 
         // Get all users with 'online' status
         Object.keys(statusData).forEach(userId => {
           const userStatus = statusData[userId];
-          console.log(`👤 User ${userId.slice(0, 8)}: status = ${userStatus?.state}`);
+          console.log(`👤 User ${userId.slice(0, 8)}:`, {
+            fullUID: userId,
+            status: userStatus?.state,
+            rawUserStatus: userStatus,
+            isCurrentUser: userId === currentUser.uid
+          });
           
           if (userId !== currentUser.uid && userStatus?.state === 'online') {
             onlineUserIds.push(userId);
@@ -67,16 +73,24 @@ const OnlineUsersList = ({ onUserSelect, currentUser }) => {
         const usersData = [];
         for (const userId of onlineUserIds) {
           try {
+            console.log(`🔍 Fetching user data for UID: ${userId}`);
             const userData = await getUserById(userId);
             if (userData) {
-              usersData.push({
+              const combinedUserData = {
                 ...userData,
                 id: userId,
                 lastSeen: statusData[userId].last_changed,
+                status: statusData[userId].state
+              };
+              usersData.push(combinedUserData);
+              console.log(`✅ Successfully loaded user:`, {
+                uid: userId,
+                displayName: userData.displayName || userData.name,
                 status: statusData[userId].state,
-                current_page: statusData[userId].current_page
+                hasProfileData: !!userData.displayName || !!userData.name
               });
-              console.log(`📝 Loaded data for online user: ${userData.displayName || userData.name}`);
+            } else {
+              console.warn(`⚠️ No user data found in Firestore for UID: ${userId}`);
             }
           } catch (error) {
             console.error('❌ Error loading user data for', userId, ':', error);
