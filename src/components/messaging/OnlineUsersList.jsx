@@ -12,63 +12,92 @@ const OnlineUsersList = ({ onUserSelect, currentUser }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    if (!currentUser?.uid) {
+      setLoading(false);
+      return;
+    }
+
+    console.log('🔄 Starting online users listener for user:', currentUser.uid);
+
+    // Set timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      console.warn('⏰ OnlineUsersList loading timeout - setting loading to false');
+      setLoading(false);
+    }, 10000); // 10 second timeout
 
     // Listen to status changes
     const statusRef = ref(database, 'status');
     
     const unsubscribe = onValue(statusRef, async (snapshot) => {
+      clearTimeout(loadingTimeout); // Clear timeout since we got data
       console.log('🌐 Status data received:', snapshot.exists());
       
-      if (!snapshot.exists()) {
-        console.log('📭 No status data available');
-        setOnlineUsers([]);
-        setLoading(false);
-        return;
-      }
+      try {
+        if (!snapshot.exists()) {
+          console.log('📭 No status data available');
+          setOnlineUsers([]);
+          setLoading(false);
+          return;
+        }
 
-      const statusData = snapshot.val();
-      console.log('👥 Total users with status data:', Object.keys(statusData).length);
-      
-      const onlineUserIds = [];
-
-      // Get all users with 'online' status
-      Object.keys(statusData).forEach(userId => {
-        const userStatus = statusData[userId];
-        console.log(`👤 User ${userId}: status = ${userStatus?.state}`);
+        const statusData = snapshot.val();
+        console.log('👥 Total users with status data:', Object.keys(statusData).length);
         
-        if (userId !== currentUser.uid && userStatus?.state === 'online') {
-          onlineUserIds.push(userId);
-        }
-      });
+        const onlineUserIds = [];
 
-      console.log('✅ Found online users:', onlineUserIds.length);
-
-      // Load user data for online users
-      const usersData = [];
-      for (const userId of onlineUserIds) {
-        try {
-          const userData = await getUserById(userId);
-          if (userData) {
-            usersData.push({
-              ...userData,
-              id: userId,
-              lastSeen: statusData[userId].last_changed,
-              status: statusData[userId].state
-            });
-            console.log(`📝 Loaded data for online user: ${userData.displayName || userData.name}`);
+        // Get all users with 'online' status
+        Object.keys(statusData).forEach(userId => {
+          const userStatus = statusData[userId];
+          console.log(`👤 User ${userId.slice(0, 8)}: status = ${userStatus?.state}`);
+          
+          if (userId !== currentUser.uid && userStatus?.state === 'online') {
+            onlineUserIds.push(userId);
           }
-        } catch (error) {
-          console.error('❌ Error loading user data for', userId, ':', error);
-        }
-      }
+        });
 
-      console.log('🎯 Final online users list:', usersData.length);
-      setOnlineUsers(usersData);
+        console.log('✅ Found online users:', onlineUserIds.length);
+
+        if (onlineUserIds.length === 0) {
+          setOnlineUsers([]);
+          setLoading(false);
+          return;
+        }
+
+        // Load user data for online users
+        const usersData = [];
+        for (const userId of onlineUserIds) {
+          try {
+            const userData = await getUserById(userId);
+            if (userData) {
+              usersData.push({
+                ...userData,
+                id: userId,
+                lastSeen: statusData[userId].last_changed,
+                status: statusData[userId].state,
+                current_page: statusData[userId].current_page
+              });
+              console.log(`📝 Loaded data for online user: ${userData.displayName || userData.name}`);
+            }
+          } catch (error) {
+            console.error('❌ Error loading user data for', userId, ':', error);
+          }
+        }
+
+        console.log('🎯 Final online users list:', usersData.length);
+        setOnlineUsers(usersData);
+        setLoading(false);
+      } catch (error) {
+        console.error('❌ Error processing status data:', error);
+        setLoading(false);
+      }
+    }, (error) => {
+      console.error('❌ Error listening to status changes:', error);
+      clearTimeout(loadingTimeout);
       setLoading(false);
     });
 
     return () => {
+      clearTimeout(loadingTimeout);
       off(statusRef, 'value', unsubscribe);
     };
   }, [currentUser?.uid, getUserById]);
@@ -167,17 +196,7 @@ const OnlineUsersList = ({ onUserSelect, currentUser }) => {
                 {getKycBadge(user)}
               </div>
               <div className="user-status-info">
-                <span className="status-text">Online agora</span>
-                {user.current_page && (
-                  <span className="current-page">
-                    {user.current_page === '/messages' ? '💬 Mensagens' :
-                     user.current_page === '/feed' ? '📱 Feed' :
-                     user.current_page === '/profile' ? '👤 Perfil' :
-                     user.current_page === '/wallet' ? '💰 Carteira' :
-                     '🌐 Navegando'
-                    }
-                  </span>
-                )}
+                <span className="status-text">🟢 Online agora</span>
               </div>
             </div>
             

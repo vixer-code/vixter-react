@@ -176,23 +176,7 @@ const ChatInterface = ({ conversation, onClose }) => {
               {isServiceCompleted ? (
                 <span className="service-completed">🔒 Serviço Concluído</span>
               ) : users[otherUser.uid]?.status === 'online' ? (
-                <span className="status-online">
-                  🟢 Online
-                  {users[otherUser.uid]?.current_page && (
-                    <span className="page-indicator">
-                      {users[otherUser.uid].current_page === '/messages' ? ' - 💬 Mensagens' :
-                       users[otherUser.uid].current_page === '/feed' ? ' - 📱 Feed' :
-                       users[otherUser.uid].current_page === '/profile' ? ' - 👤 Perfil' :
-                       users[otherUser.uid].current_page === '/wallet' ? ' - 💰 Carteira' :
-                       ' - 🌐 Navegando'
-                      }
-                    </span>
-                  )}
-                </span>
-              ) : users[otherUser.uid]?.status === 'ausente' ? (
-                <span className="status-away">🟡 Ausente</span>
-              ) : users[otherUser.uid]?.status === 'invisivel' ? (
-                <span className="status-invisible">⚫ Invisível</span>
+                <span className="status-online">🟢 Online</span>
               ) : (
                 <span className="status-offline">🔴 Offline</span>
               )}

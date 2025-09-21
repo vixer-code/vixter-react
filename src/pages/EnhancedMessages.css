@@ -1,14 +1,17 @@
 .enhanced-messages {
-  height: calc(100vh - 80px);
-  min-height: calc(100vh - 80px);
+  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 100%);
   color: #FFFFFF;
   overflow: hidden;
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1;
-  margin-top: 80px;
 }
 
 .enhanced-messages.loading {
@@ -47,6 +50,7 @@
   font-size: 0.9rem;
   flex-shrink: 0;
   margin: 0;
+  margin-top: 80px; /* Account for fixed header */
 }
 
 .connection-status.connected {
@@ -102,7 +106,7 @@
   display: flex;
   overflow: hidden;
   min-height: 0; /* Allow flex item to shrink */
-  height: 100%; /* Take full height of parent */
+  height: calc(100vh - 80px - 50px); /* Full height minus header and connection status */
   width: 100%; /* Ensure full width usage */
 }
 
