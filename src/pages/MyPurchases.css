@@ -405,6 +405,18 @@
   box-shadow: 0 5px 15px rgba(138, 43, 238, 0.3);
 }
 
+.btn-review {
+  background: linear-gradient(45deg, #ffc107, #ff9800);
+  color: #000;
+  border: 1px solid #ffc107;
+}
+
+.btn-review:hover {
+  background: linear-gradient(45deg, #ff9800, #ffc107);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
+}
+
 .purchase-completed-info,
 .purchase-cancelled-info {
   display: flex;

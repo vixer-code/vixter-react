@@ -6,6 +6,7 @@ import { database, storage } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { usePacksR2 as usePacks } from '../contexts/PacksContextR2';
+import ReviewsSection from '../components/ReviewsSection';
 import { useServicesR2 as useServices } from '../contexts/ServicesContextR2';
 import { useNotification } from '../contexts/NotificationContext';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
@@ -56,7 +57,6 @@ const Profile = () => {
   const [posts, setPosts] = useState([]);
   const [newPostContent, setNewPostContent] = useState('');
   const [selectedImages, setSelectedImages] = useState([]);
-  const [reviews, setReviews] = useState([]);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   
   // Post interaction states
@@ -248,12 +248,11 @@ const Profile = () => {
   }, [profile?.id, loadUserPacks]);
 
 
-  // Load followers, posts, and reviews for any profile
+  // Load followers and posts for any profile
   useEffect(() => {
     if (profile) {
       loadFollowers(profile.id);
       loadPosts(profile.id);
-      loadReviews(profile.id);
     }
   }, [profile]);
 
@@ -627,23 +626,6 @@ const Profile = () => {
 
   // Removed loadSubscriptions state and fetch for now (feature coming soon)
 
-  const loadReviews = async (userId) => {
-    try {
-      const reviewsRef = ref(database, `reviews/${userId}`);
-      const snapshot = await get(reviewsRef);
-      
-      if (snapshot.exists()) {
-        const reviewsData = snapshot.val();
-        const reviewsArray = Object.entries(reviewsData).map(([id, review]) => ({
-          id,
-          ...review
-        }));
-        setReviews(reviewsArray);
-      }
-    } catch (error) {
-      console.error('Error loading reviews:', error);
-    }
-  };
 
   const handleImageUpload = async (event, type) => {
     const file = event.target.files[0];
@@ -2359,47 +2341,14 @@ const Profile = () => {
       
       {/* Reviews Tab */}
       <div className={`tab-content ${activeTab === 'reviews' ? 'active' : ''}`}>
-        <div className="reviews-tab-content">
-          <h3>Avaliações</h3>
-          
-          <div className="reviews-summary">
-            <div className="rating-breakdown">
-              <div className="rating-value-large">{profile.rating || 0.0}</div>
-              <div className="rating-stars-large">
-                <div className="stars-display-large">★★★★★</div>
-                <div className="reviews-count">({reviews.length} avaliações)</div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="reviews-list">
-            {reviews.length > 0 ? (
-              reviews.map((review) => (
-                <div key={review.id} className="review-item">
-                  <div className="review-header">
-                    <div className="reviewer-avatar">
-                      <img src={review.reviewerPhoto || getDefaultImage('PROFILE_3')} alt={review.reviewerName} />
-                    </div>
-                    <div className="review-meta">
-                      <div className="reviewer-name">{review.reviewerName}</div>
-                      <div className="review-date">
-                        {new Date(review.timestamp).toLocaleDateString('pt-BR')}
-                      </div>
-                    </div>
-                    <div className="review-rating">
-                      {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
-                    </div>
-                  </div>
-                  <div className="review-content">
-                    <p>{review.comment}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="empty-state">Nenhuma avaliação ainda.</div>
-            )}
-          </div>
-        </div>
+        <ReviewsSection 
+          userId={profile?.id}
+          userType={profile?.accountType === 'provider' ? 'seller' : 'buyer'}
+          showBehaviorReview={isProvider && !isOwner}
+          buyerId={profile?.id}
+          buyerName={profile?.displayName || profile?.username}
+          buyerPhotoURL={profile?.photoURL}
+        />
       </div>
 
 

@@ -5,6 +5,8 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import { usePacksR2 } from '../contexts/PacksContextR2';
+import { useReview } from '../contexts/ReviewContext';
+import ServiceReviewModal from '../components/ServiceReviewModal';
 import { collection, query as fsQuery, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { Link, useNavigate } from 'react-router-dom';
@@ -20,6 +22,7 @@ const MyPurchases = () => {
   const { createOrGetConversation } = useEnhancedMessaging();
   const { confirmServiceDelivery, processing } = useServiceOrder();
   const { getPackById } = usePacksR2();
+  const { canReviewOrder } = useReview();
   const navigate = useNavigate();
   
   const [purchasedPacks, setPurchasedPacks] = useState([]);
@@ -32,6 +35,9 @@ const MyPurchases = () => {
   const [viewingService, setViewingService] = useState(null);
   const [confirmingOrder, setConfirmingOrder] = useState(null);
   const [feedback, setFeedback] = useState('');
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewingOrder, setReviewingOrder] = useState(null);
+  const [canReviewMap, setCanReviewMap] = useState({});
 
   // Redirect if not a client
   useEffect(() => {
@@ -189,6 +195,33 @@ const MyPurchases = () => {
     }
   }, [currentUser, loadPurchasedPacks, loadPurchasedServices]);
 
+  // Check which orders can be reviewed
+  useEffect(() => {
+    const checkReviewPermissions = async () => {
+      if (!currentUser) return;
+
+      const allPurchases = [...purchasedPacks, ...purchasedServices];
+      const canReviewPromises = allPurchases.map(async (purchase) => {
+        if (purchase.status === 'CONFIRMED' || purchase.status === 'COMPLETED' || purchase.status === 'AUTO_RELEASED') {
+          const canReview = await canReviewOrder(purchase.id, purchase.type);
+          return { orderId: purchase.id, canReview };
+        }
+        return { orderId: purchase.id, canReview: false };
+      });
+
+      const results = await Promise.all(canReviewPromises);
+      const canReviewMap = {};
+      results.forEach(({ orderId, canReview }) => {
+        canReviewMap[orderId] = canReview;
+      });
+      setCanReviewMap(canReviewMap);
+    };
+
+    if (purchasedPacks.length > 0 || purchasedServices.length > 0) {
+      checkReviewPermissions();
+    }
+  }, [currentUser, purchasedPacks, purchasedServices, canReviewOrder]);
+
   // Load pack data and seller data when purchases change
   useEffect(() => {
     if (purchasedPacks.length > 0 || purchasedServices.length > 0) {
@@ -306,6 +339,22 @@ const MyPurchases = () => {
   const handleCloseConfirmation = () => {
     setConfirmingOrder(null);
     setFeedback('');
+  };
+
+  const handleOpenReview = (order) => {
+    setReviewingOrder(order);
+    setShowReviewModal(true);
+  };
+
+  const handleCloseReview = () => {
+    setShowReviewModal(false);
+    setReviewingOrder(null);
+  };
+
+  const handleReviewSubmitted = () => {
+    // Reload purchases to update review status
+    loadPurchasedPacks();
+    loadPurchasedServices();
   };
 
   const getFilteredPurchases = () => {
@@ -604,13 +653,24 @@ const MyPurchases = () => {
                         </button>
                       )}
                       {isCompleted && (
-                        <button 
-                          className="btn-rebuy"
-                          onClick={() => handleRebuyService(purchase)}
-                        >
-                          <i className="fas fa-redo"></i>
-                          Comprar Novamente
-                        </button>
+                        <>
+                          <button 
+                            className="btn-rebuy"
+                            onClick={() => handleRebuyService(purchase)}
+                          >
+                            <i className="fas fa-redo"></i>
+                            Comprar Novamente
+                          </button>
+                          {canReviewMap[purchase.id] && (
+                            <button 
+                              className="btn-review"
+                              onClick={() => handleOpenReview(purchase)}
+                            >
+                              <i className="fas fa-star"></i>
+                              Avaliar Serviço
+                            </button>
+                          )}
+                        </>
                       )}
                     </>
                   )}
@@ -634,6 +694,15 @@ const MyPurchases = () => {
                         <i className="fas fa-images"></i>
                         Ver Mídias
                       </button>
+                      {isCompleted && canReviewMap[purchase.id] && (
+                        <button 
+                          className="btn-review"
+                          onClick={() => handleOpenReview(purchase)}
+                        >
+                          <i className="fas fa-star"></i>
+                          Avaliar Pack
+                        </button>
+                      )}
                     </>
                   )}
 
@@ -740,6 +809,22 @@ const MyPurchases = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Review Modal */}
+      {showReviewModal && reviewingOrder && (
+        <ServiceReviewModal
+          isOpen={showReviewModal}
+          onClose={handleCloseReview}
+          orderId={reviewingOrder.id}
+          orderType={reviewingOrder.type}
+          itemName={reviewingOrder.type === 'service' 
+            ? (reviewingOrder.metadata?.serviceName || 'Serviço')
+            : (packData[reviewingOrder.packId]?.title || reviewingOrder.metadata?.packName || 'Pack')
+          }
+          sellerName={sellerData[reviewingOrder.sellerId]?.name || 'Vendedor'}
+          onReviewSubmitted={handleReviewSubmitted}
+        />
       )}
     </div>
   );

@@ -364,6 +364,51 @@ service cloud.firestore {
     }
     
     // =====================================================
+    // REVIEWS COLLECTION RULES
+    // =====================================================
+    
+    match /reviews/{reviewId} {
+      // Users can read reviews where they are the target or reviewer
+      allow read: if isAuthenticated() && 
+                    (isOwner(resource.data.targetUserId) || 
+                     isOwner(resource.data.reviewerId));
+      
+      // Users can create reviews (with validation)
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.reviewerId) &&
+                      isValidReview(request.resource.data);
+      
+      // Users can update their own reviews
+      allow update: if isAuthenticated() && 
+                      isOwner(resource.data.reviewerId) &&
+                      isValidReviewUpdate(resource.data, request.resource.data);
+      
+      // Users can delete their own reviews
+      allow delete: if isAuthenticated() && 
+                      isOwner(resource.data.reviewerId);
+      
+      // Admin access
+      allow read, write: if isAdmin();
+    }
+    
+    // Helper function for review validation
+    function isValidReview(data) {
+      return data.keys().hasAll(['type', 'reviewerId', 'targetUserId', 'rating', 'comment']) &&
+             data.rating >= 1 && data.rating <= 5 &&
+             data.comment.size() > 0 && data.comment.size() <= 200 &&
+             (data.type == 'service' || data.type == 'pack' || data.type == 'behavior');
+    }
+    
+    // Helper function for review update validation
+    function isValidReviewUpdate(currentData, newData) {
+      return newData.rating >= 1 && newData.rating <= 5 &&
+             newData.comment.size() > 0 && newData.comment.size() <= 200 &&
+             newData.type == currentData.type &&
+             newData.reviewerId == currentData.reviewerId &&
+             newData.targetUserId == currentData.targetUserId;
+    }
+
+    // =====================================================
     // DEFAULT DENY RULE
     // =====================================================
     

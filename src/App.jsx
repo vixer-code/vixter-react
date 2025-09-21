@@ -11,6 +11,7 @@ import { CentrifugoProvider } from './contexts/CentrifugoContext';
 import { EnhancedMessagingProvider as MessagingProvider } from './contexts/EnhancedMessagingContext';
 import { ServiceOrderProvider } from './contexts/ServiceOrderContext';
 import { PackOrderProvider } from './contexts/PackOrderContext';
+import { ReviewProvider } from './contexts/ReviewContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import NotificationContainer from './components/NotificationContainer';
@@ -68,8 +69,9 @@ function App() {
                 <ServicesProvider>
                   <ServiceOrderProvider>
                     <PackOrderProvider>
-                      <CentrifugoProvider>
-                        <MessagingProvider>
+                      <ReviewProvider>
+                        <CentrifugoProvider>
+                          <MessagingProvider>
                       <Router>
                         <div className="App">
                           <Header />
@@ -109,8 +111,9 @@ function App() {
                           <NotificationContainer />
                         </div>
                       </Router>
-                        </MessagingProvider>
-                      </CentrifugoProvider>
+                          </MessagingProvider>
+                        </CentrifugoProvider>
+                      </ReviewProvider>
                     </PackOrderProvider>
                   </ServiceOrderProvider>
                 </ServicesProvider>
