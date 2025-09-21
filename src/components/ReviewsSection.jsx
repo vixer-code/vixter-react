@@ -111,7 +111,15 @@ const ReviewsSection = ({
           <div className="reviewer-info">
             <div className="reviewer-avatar">
               {review.reviewerPhotoURL ? (
-                <img src={review.reviewerPhotoURL} alt={review.reviewerUsername} />
+                <img 
+                  src={review.reviewerPhotoURL} 
+                  alt={review.reviewerUsername}
+                  onError={(e) => {
+                    console.log('Image load error for:', review.reviewerPhotoURL);
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
               ) : (
                 <div className="default-avatar">
                   <i className="fas fa-user"></i>
