@@ -1404,13 +1404,26 @@ const Profile = () => {
         
         <div className="profile-header">
           <div className="profile-avatar">
-            <label className="avatar-upload-btn">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleImageUpload(e, 'avatar')}
-                style={{ display: 'none' }}
-              />
+            {isOwner ? (
+              <label className="avatar-upload-btn">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, 'avatar')}
+                  style={{ display: 'none' }}
+                />
+                <CachedImage 
+                  src={profile.profilePictureURL}
+                  defaultType="PROFILE_1"
+                  alt="Avatar de Perfil"
+                  className="profile-avatar-img"
+                  priority={false}
+                  sizes={avatarSizes}
+                  showLoading={true}
+                />
+                <i className="fas fa-camera"></i>
+              </label>
+            ) : (
               <CachedImage 
                 src={profile.profilePictureURL}
                 defaultType="PROFILE_1"
@@ -1420,10 +1433,7 @@ const Profile = () => {
                 sizes={avatarSizes}
                 showLoading={true}
               />
-              {isOwner && (
-                <i className="fas fa-camera"></i>
-              )}
-            </label>
+            )}
           </div>
           
           <div className="profile-info">
