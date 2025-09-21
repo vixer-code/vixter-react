@@ -45,6 +45,14 @@ const EnhancedMessages = () => {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
+  // Add class to body for CSS targeting
+  useEffect(() => {
+    document.body.classList.add('messages-page');
+    return () => {
+      document.body.classList.remove('messages-page');
+    };
+  }, []);
+
   // Handle URL parameters for conversation selection
   useEffect(() => {
     if (conversationId && conversations.length > 0) {
@@ -206,14 +214,6 @@ const EnhancedMessages = () => {
   } else {
     console.warn('Users object is invalid, cannot check for missing user data');
   }
-
-  // Add class to body for CSS targeting
-  useEffect(() => {
-    document.body.classList.add('messages-page');
-    return () => {
-      document.body.classList.remove('messages-page');
-    };
-  }, []);
 
   return (
     <div className="enhanced-messages">
