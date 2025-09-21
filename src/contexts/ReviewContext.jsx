@@ -459,17 +459,17 @@ export const ReviewProvider = ({ children }) => {
   }, [currentUser]);
 
   // Check if user can review buyer behavior
-  const canReviewBuyerBehavior = useCallback(async (buyerId, userType = 'seller') => {
+  const canReviewBuyerBehavior = useCallback(async (targetUserId, userType = 'seller') => {
     if (!currentUser) return false;
 
     try {
-      // Sellers (providers) can review any user's behavior
+      // Providers can review any user's behavior
       if (userType === 'seller') {
         // Check if behavior review already exists
         const existingReviewQuery = query(
           collection(db, 'reviews'),
           where('reviewerId', '==', currentUser.uid),
-          where('targetUserId', '==', buyerId),
+          where('targetUserId', '==', targetUserId),
           where('type', '==', 'behavior')
         );
         
@@ -477,20 +477,20 @@ export const ReviewProvider = ({ children }) => {
         return existingSnapshot.empty;
       }
 
-      // Buyers can only review sellers who provided services/packs to them
+      // Clients can only review providers who provided services/packs to them
       if (userType === 'buyer') {
         // Check if user has purchased from this seller
         const serviceOrdersQuery = query(
           collection(db, 'serviceOrders'),
           where('buyerId', '==', currentUser.uid),
-          where('sellerId', '==', buyerId),
+          where('sellerId', '==', targetUserId),
           where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
         );
 
         const packOrdersQuery = query(
           collection(db, 'packOrders'),
           where('buyerId', '==', currentUser.uid),
-          where('sellerId', '==', buyerId),
+          where('sellerId', '==', targetUserId),
           where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
         );
 
@@ -505,7 +505,7 @@ export const ReviewProvider = ({ children }) => {
         const existingReviewQuery = query(
           collection(db, 'reviews'),
           where('reviewerId', '==', currentUser.uid),
-          where('targetUserId', '==', buyerId),
+          where('targetUserId', '==', targetUserId),
           where('type', '==', 'behavior')
         );
         
