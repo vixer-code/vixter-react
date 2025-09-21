@@ -564,6 +564,44 @@ export const ReviewProvider = ({ children }) => {
     }
   }, [currentUser]);
 
+  // Update reviewer photo in all reviews when user updates their profile picture
+  const updateReviewerPhoto = useCallback(async (userId, newPhotoURL) => {
+    if (!userId || !newPhotoURL) return;
+
+    try {
+      setProcessing(true);
+      
+      // Update all reviews where this user is the reviewer
+      const reviewsRef = collection(db, 'reviews');
+      const q = query(reviewsRef, where('reviewerId', '==', userId));
+      const snapshot = await getDocs(q);
+      
+      const updatePromises = snapshot.docs.map(doc => 
+        updateDoc(doc.ref, { 
+          reviewerPhotoURL: newPhotoURL,
+          updatedAt: serverTimestamp()
+        })
+      );
+      
+      await Promise.all(updatePromises);
+      
+      // Update local state
+      setReviews(prevReviews => 
+        prevReviews.map(review => 
+          review.reviewerId === userId 
+            ? { ...review, reviewerPhotoURL: newPhotoURL }
+            : review
+        )
+      );
+      
+      console.log(`Updated photo for ${snapshot.docs.length} reviews`);
+    } catch (error) {
+      console.error('Error updating reviewer photos:', error);
+    } finally {
+      setProcessing(false);
+    }
+  }, []);
+
   const value = useMemo(() => ({
     // State
     reviews,
@@ -578,6 +616,7 @@ export const ReviewProvider = ({ children }) => {
     createBehaviorReview,
     updateReview,
     deleteReview,
+    updateReviewerPhoto,
 
     // Utilities
     getAverageRating,
@@ -595,6 +634,7 @@ export const ReviewProvider = ({ children }) => {
     createBehaviorReview,
     updateReview,
     deleteReview,
+    updateReviewerPhoto,
     getAverageRating,
     getRatingDistribution,
     canReviewOrder,

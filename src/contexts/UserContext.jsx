@@ -19,6 +19,7 @@ import { ref as rtdbRef, get as rtdbGet } from 'firebase/database';
 import { database as rtdb, } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
+import { useReview } from './ReviewContext';
 
 const UserContext = createContext({});
 
@@ -33,6 +34,7 @@ export const useUser = () => {
 export const UserProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showInfo } = useNotification();
+  const { updateReviewerPhoto } = useReview();
   
   // User state
   const [userProfile, setUserProfile] = useState(null);
@@ -135,6 +137,16 @@ export const UserProvider = ({ children }) => {
 
       await updateDoc(userRef, updateData);
       
+      // If profile picture was updated, update all reviews
+      if (updates.profilePictureURL) {
+        try {
+          await updateReviewerPhoto(currentUser.uid, updates.profilePictureURL);
+        } catch (reviewError) {
+          console.error('Error updating reviewer photos:', reviewError);
+          // Don't fail the profile update if review update fails
+        }
+      }
+      
       showSuccess('Perfil atualizado com sucesso!', 'Perfil Atualizado');
       return true;
     } catch (error) {
@@ -144,7 +156,7 @@ export const UserProvider = ({ children }) => {
     } finally {
       setUpdating(false);
     }
-  }, [currentUser, userProfile, showSuccess, showError]);
+  }, [currentUser, userProfile, showSuccess, showError, updateReviewerPhoto]);
 
   // Search users
   const searchUsers = useCallback(async (searchTerm, limitCount = 20) => {

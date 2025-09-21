@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useReview } from '../contexts/ReviewContext';
 import { useAuth } from '../contexts/AuthContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import BehaviorReviewModal from './BehaviorReviewModal';
 import './ReviewsSection.css';
 
@@ -28,10 +30,45 @@ const ReviewsSection = ({
   const [loading, setLoading] = useState(true);
   const [showBehaviorModal, setShowBehaviorModal] = useState(false);
   const [filter, setFilter] = useState('all'); // 'all', 'service', 'pack', 'behavior'
+  const [userPhotos, setUserPhotos] = useState({}); // Cache for user photos
 
   useEffect(() => {
     loadReviews();
   }, [userId, filter]);
+
+  // Load user photos when reviews change
+  useEffect(() => {
+    if (reviews.length > 0) {
+      const uniqueUserIds = [...new Set(reviews.map(review => review.reviewerId))];
+      uniqueUserIds.forEach(userId => {
+        if (!userPhotos[userId]) {
+          loadUserPhoto(userId);
+        }
+      });
+    }
+  }, [reviews, userPhotos]);
+
+  // Load current user photo
+  const loadUserPhoto = async (userId) => {
+    if (userPhotos[userId]) return userPhotos[userId];
+    
+    try {
+      const userRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.exists() ? userSnap.data() : {};
+      const photoURL = userData.profilePictureURL || null;
+      
+      setUserPhotos(prev => ({
+        ...prev,
+        [userId]: photoURL
+      }));
+      
+      return photoURL;
+    } catch (error) {
+      console.error('Error loading user photo:', error);
+      return null;
+    }
+  };
 
   const loadReviews = async () => {
     if (!userId) return;
@@ -104,18 +141,21 @@ const ReviewsSection = ({
   const renderReviewItem = (review, isGiven = false) => {
     const isOwner = currentUser && currentUser.uid === review.reviewerId;
     const isTarget = currentUser && currentUser.uid === review.targetUserId;
+    
+    // Use current photo from cache or fallback to stored photo
+    const currentPhoto = userPhotos[review.reviewerId] || review.reviewerPhotoURL;
 
     return (
       <div key={review.id} className="review-item">
         <div className="review-header">
           <div className="reviewer-info">
             <div className="reviewer-avatar">
-              {review.reviewerPhotoURL ? (
+              {currentPhoto ? (
                 <img 
-                  src={review.reviewerPhotoURL} 
+                  src={currentPhoto} 
                   alt={review.reviewerUsername}
                   onError={(e) => {
-                    console.log('Image load error for:', review.reviewerPhotoURL);
+                    console.log('Image load error for:', currentPhoto);
                     e.target.style.display = 'none';
                     e.target.nextSibling.style.display = 'flex';
                   }}
