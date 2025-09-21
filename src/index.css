@@ -68,7 +68,6 @@ body {
   font-size: var(--font-size-base);
   line-height: 1.6;
   overflow-x: hidden; /* Prevent horizontal scroll on mobile */
-  padding-top: 80px; /* Account for fixed header */
 }
 
 /* Responsive padding for fixed header */
