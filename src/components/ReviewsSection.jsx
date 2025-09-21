@@ -56,9 +56,15 @@ const ReviewsSection = ({
   const handleBehaviorReview = async () => {
     if (!buyerId) return;
     
-    const canReview = await canReviewBuyerBehavior(buyerId);
+    // Sellers (providers) can review any user's behavior
+    // Buyers can only review sellers who provided services/packs to them
+    const canReview = await canReviewBuyerBehavior(buyerId, userType);
     if (!canReview) {
-      alert('Você só pode avaliar compradores que compraram seus serviços/packs');
+      if (userType === 'buyer') {
+        alert('Você só pode avaliar vendedoras que prestaram serviços/packs para você');
+      } else {
+        alert('Você já avaliou este usuário');
+      }
       return;
     }
     
@@ -299,12 +305,15 @@ const ReviewsSection = ({
         >
           Packs
         </button>
-        <button 
-          className={`filter-btn ${filter === 'behavior' ? 'active' : ''}`}
-          onClick={() => setFilter('behavior')}
-        >
-          Comportamento
-        </button>
+        {/* Only show behavior filter for sellers (providers can evaluate any user's behavior) */}
+        {userType === 'seller' && (
+          <button 
+            className={`filter-btn ${filter === 'behavior' ? 'active' : ''}`}
+            onClick={() => setFilter('behavior')}
+          >
+            Comportamento
+          </button>
+        )}
       </div>
 
       <div className="reviews-list">
@@ -331,6 +340,7 @@ const ReviewsSection = ({
           buyerId={buyerId}
           buyerName={buyerName}
           buyerPhotoURL={buyerPhotoURL}
+          userType={userType}
           onReviewSubmitted={handleReviewSubmitted}
         />
       )}

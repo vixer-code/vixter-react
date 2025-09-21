@@ -203,8 +203,8 @@ export const ReviewProvider = ({ children }) => {
     }
   }, [currentUser, showSuccess, showError]);
 
-  // Create a behavior review (seller evaluating buyer)
-  const createBehaviorReview = useCallback(async (buyerId, rating, comment) => {
+  // Create a behavior review (seller evaluating buyer or buyer evaluating seller)
+  const createBehaviorReview = useCallback(async (targetUserId, rating, comment, userType = 'seller') => {
     if (!currentUser) {
       showError('Você precisa estar logado para avaliar');
       return false;
@@ -228,59 +228,61 @@ export const ReviewProvider = ({ children }) => {
     try {
       setProcessing(true);
 
-      // Check if user has purchased from this seller
-      const serviceOrdersQuery = query(
-        collection(db, 'serviceOrders'),
-        where('buyerId', '==', buyerId),
-        where('sellerId', '==', currentUser.uid),
-        where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
-      );
+      // For buyers, check if they purchased from this seller
+      if (userType === 'buyer') {
+        const serviceOrdersQuery = query(
+          collection(db, 'serviceOrders'),
+          where('buyerId', '==', currentUser.uid),
+          where('sellerId', '==', targetUserId),
+          where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
+        );
 
-      const packOrdersQuery = query(
-        collection(db, 'packOrders'),
-        where('buyerId', '==', buyerId),
-        where('sellerId', '==', currentUser.uid),
-        where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
-      );
+        const packOrdersQuery = query(
+          collection(db, 'packOrders'),
+          where('buyerId', '==', currentUser.uid),
+          where('sellerId', '==', targetUserId),
+          where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
+        );
 
-      const [serviceSnapshot, packSnapshot] = await Promise.all([
-        getDocs(serviceOrdersQuery),
-        getDocs(packOrdersQuery)
-      ]);
+        const [serviceSnapshot, packSnapshot] = await Promise.all([
+          getDocs(serviceOrdersQuery),
+          getDocs(packOrdersQuery)
+        ]);
 
-      if (serviceSnapshot.empty && packSnapshot.empty) {
-        showError('Você só pode avaliar compradores que compraram seus serviços/packs');
-        return false;
+        if (serviceSnapshot.empty && packSnapshot.empty) {
+          showError('Você só pode avaliar vendedoras que prestaram serviços/packs para você');
+          return false;
+        }
       }
 
       // Check if behavior review already exists
       const existingReviewQuery = query(
         collection(db, 'reviews'),
         where('reviewerId', '==', currentUser.uid),
-        where('targetUserId', '==', buyerId),
+        where('targetUserId', '==', targetUserId),
         where('type', '==', 'behavior')
       );
       
       const existingSnapshot = await getDocs(existingReviewQuery);
       if (!existingSnapshot.empty) {
-        showError('Você já avaliou este comprador');
+        showError('Você já avaliou este usuário');
         return false;
       }
 
-      // Get buyer info
-      const buyerRef = doc(db, 'users', buyerId);
-      const buyerSnap = await getDoc(buyerRef);
-      const buyerData = buyerSnap.exists() ? buyerSnap.data() : {};
+      // Get target user info
+      const targetRef = doc(db, 'users', targetUserId);
+      const targetSnap = await getDoc(targetRef);
+      const targetData = targetSnap.exists() ? targetSnap.data() : {};
 
       // Create behavior review
       const reviewData = {
         type: 'behavior',
         orderId: null,
         reviewerId: currentUser.uid,
-        reviewerUsername: currentUser.displayName || 'Vendedor',
+        reviewerUsername: currentUser.displayName || 'Usuário',
         reviewerPhotoURL: currentUser.photoURL || null,
-        targetUserId: buyerId,
-        targetUsername: buyerData.username || buyerData.displayName || 'Comprador',
+        targetUserId: targetUserId,
+        targetUsername: targetData.username || targetData.displayName || 'Usuário',
         rating: rating,
         comment: comment.trim(),
         itemId: null,
@@ -457,42 +459,61 @@ export const ReviewProvider = ({ children }) => {
   }, [currentUser]);
 
   // Check if user can review buyer behavior
-  const canReviewBuyerBehavior = useCallback(async (buyerId) => {
+  const canReviewBuyerBehavior = useCallback(async (buyerId, userType = 'seller') => {
     if (!currentUser) return false;
 
     try {
-      // Check if user has sold to this buyer
-      const serviceOrdersQuery = query(
-        collection(db, 'serviceOrders'),
-        where('buyerId', '==', buyerId),
-        where('sellerId', '==', currentUser.uid),
-        where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
-      );
+      // Sellers (providers) can review any user's behavior
+      if (userType === 'seller') {
+        // Check if behavior review already exists
+        const existingReviewQuery = query(
+          collection(db, 'reviews'),
+          where('reviewerId', '==', currentUser.uid),
+          where('targetUserId', '==', buyerId),
+          where('type', '==', 'behavior')
+        );
+        
+        const existingSnapshot = await getDocs(existingReviewQuery);
+        return existingSnapshot.empty;
+      }
 
-      const packOrdersQuery = query(
-        collection(db, 'packOrders'),
-        where('buyerId', '==', buyerId),
-        where('sellerId', '==', currentUser.uid),
-        where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
-      );
+      // Buyers can only review sellers who provided services/packs to them
+      if (userType === 'buyer') {
+        // Check if user has purchased from this seller
+        const serviceOrdersQuery = query(
+          collection(db, 'serviceOrders'),
+          where('buyerId', '==', currentUser.uid),
+          where('sellerId', '==', buyerId),
+          where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
+        );
 
-      const [serviceSnapshot, packSnapshot] = await Promise.all([
-        getDocs(serviceOrdersQuery),
-        getDocs(packOrdersQuery)
-      ]);
+        const packOrdersQuery = query(
+          collection(db, 'packOrders'),
+          where('buyerId', '==', currentUser.uid),
+          where('sellerId', '==', buyerId),
+          where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
+        );
 
-      if (serviceSnapshot.empty && packSnapshot.empty) return false;
+        const [serviceSnapshot, packSnapshot] = await Promise.all([
+          getDocs(serviceOrdersQuery),
+          getDocs(packOrdersQuery)
+        ]);
 
-      // Check if behavior review already exists
-      const existingReviewQuery = query(
-        collection(db, 'reviews'),
-        where('reviewerId', '==', currentUser.uid),
-        where('targetUserId', '==', buyerId),
-        where('type', '==', 'behavior')
-      );
-      
-      const existingSnapshot = await getDocs(existingReviewQuery);
-      return existingSnapshot.empty;
+        if (serviceSnapshot.empty && packSnapshot.empty) return false;
+
+        // Check if behavior review already exists
+        const existingReviewQuery = query(
+          collection(db, 'reviews'),
+          where('reviewerId', '==', currentUser.uid),
+          where('targetUserId', '==', buyerId),
+          where('type', '==', 'behavior')
+        );
+        
+        const existingSnapshot = await getDocs(existingReviewQuery);
+        return existingSnapshot.empty;
+      }
+
+      return false;
     } catch (error) {
       console.error('Error checking if user can review buyer behavior:', error);
       return false;

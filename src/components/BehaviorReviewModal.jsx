@@ -9,6 +9,7 @@ const BehaviorReviewModal = ({
   buyerId, 
   buyerName,
   buyerPhotoURL,
+  userType = 'seller',
   onReviewSubmitted 
 }) => {
   const { createBehaviorReview, processing } = useReview();
@@ -45,7 +46,7 @@ const BehaviorReviewModal = ({
       return;
     }
 
-    const result = await createBehaviorReview(buyerId, rating, comment);
+    const result = await createBehaviorReview(buyerId, rating, comment, userType);
     
     if (result && result.success) {
       onReviewSubmitted && onReviewSubmitted();
@@ -112,15 +113,15 @@ const BehaviorReviewModal = ({
             </div>
             <div className="buyer-details">
               <h4>{buyerName}</h4>
-              <p>Comprador</p>
+              <p>{userType === 'seller' ? 'Comprador' : 'Vendedora'}</p>
             </div>
           </div>
 
           <div className="review-notice">
             <i className="fas fa-info-circle"></i>
             <p>
-              Esta avaliação será visível no perfil do comprador e ajudará outros vendedores 
-              a conhecer o comportamento dele durante as compras.
+              Esta avaliação será visível no perfil do usuário e ajudará outros usuários 
+              a conhecer o comportamento {userType === 'seller' ? 'dele durante as compras' : 'dela durante as vendas'}.
             </p>
           </div>
 
@@ -145,7 +146,7 @@ const BehaviorReviewModal = ({
                 id="comment"
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="Descreva como foi a experiência com este comprador..."
+                placeholder={`Descreva como foi a experiência com este ${userType === 'seller' ? 'comprador' : 'vendedor'}...`}
                 maxLength="200"
                 rows="4"
               />
@@ -159,7 +160,7 @@ const BehaviorReviewModal = ({
               <ul>
                 <li>Respeito na comunicação</li>
                 <li>Pontualidade nas respostas</li>
-                <li>Clareza nas solicitações</li>
+                <li>Clareza nas {userType === 'seller' ? 'solicitações' : 'explicações'}</li>
                 <li>Cooperação durante o processo</li>
                 <li>Respeito aos termos acordados</li>
               </ul>
