@@ -101,6 +101,7 @@
   overflow: hidden;
   min-height: 0; /* Allow flex item to shrink */
   height: 100%; /* Take full height of parent */
+  width: 100%; /* Ensure full width usage */
 }
 
 /* Conversations Sidebar */
@@ -314,11 +315,12 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--vixter-bg-primary);
+  background: linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 100%);
   min-height: 0; /* Important for flex child to shrink */
   height: 100%; /* Full height of parent container */
   overflow: hidden;
   position: relative;
+  width: calc(100% - 350px); /* Full width minus sidebar */
 }
 
 /* Mobile Responsive */

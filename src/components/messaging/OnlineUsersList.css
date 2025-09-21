@@ -178,6 +178,28 @@
   border: 1px solid rgba(0, 255, 202, 0.3);
 }
 
+.user-status-info {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.status-text {
+  font-size: 0.7rem;
+  color: #22c55e;
+  font-weight: 500;
+}
+
+.current-page {
+  font-size: 0.65rem;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  padding: 1px 4px;
+  border-radius: 3px;
+  align-self: flex-start;
+}
+
 .user-actions {
   flex-shrink: 0;
 }

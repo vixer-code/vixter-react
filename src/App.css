@@ -32,6 +32,8 @@ body {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  padding-top: 80px; /* Account for fixed header */
+  height: calc(100vh - 80px); /* Full viewport height minus header */
 }
 
 /* Container */

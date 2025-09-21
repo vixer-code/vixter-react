@@ -173,10 +173,29 @@ const ChatInterface = ({ conversation, onClose }) => {
               {otherUser.displayName || otherUser.name || 'Usuário sem nome'}
             </div>
             <div className="user-status">
-              {isServiceCompleted ? 'Serviço Concluído' : 
-               users[otherUser.uid]?.status === 'online' ? 'Online' : 
-               users[otherUser.uid]?.status === 'ausente' ? 'Ausente' : 
-               users[otherUser.uid]?.status === 'invisivel' ? 'Invisível' : 'Offline'}
+              {isServiceCompleted ? (
+                <span className="service-completed">🔒 Serviço Concluído</span>
+              ) : users[otherUser.uid]?.status === 'online' ? (
+                <span className="status-online">
+                  🟢 Online
+                  {users[otherUser.uid]?.current_page && (
+                    <span className="page-indicator">
+                      {users[otherUser.uid].current_page === '/messages' ? ' - 💬 Mensagens' :
+                       users[otherUser.uid].current_page === '/feed' ? ' - 📱 Feed' :
+                       users[otherUser.uid].current_page === '/profile' ? ' - 👤 Perfil' :
+                       users[otherUser.uid].current_page === '/wallet' ? ' - 💰 Carteira' :
+                       ' - 🌐 Navegando'
+                      }
+                    </span>
+                  )}
+                </span>
+              ) : users[otherUser.uid]?.status === 'ausente' ? (
+                <span className="status-away">🟡 Ausente</span>
+              ) : users[otherUser.uid]?.status === 'invisivel' ? (
+                <span className="status-invisible">⚫ Invisível</span>
+              ) : (
+                <span className="status-offline">🔴 Offline</span>
+              )}
             </div>
             {conversation?.type === 'service' && (
               <div className="service-name">

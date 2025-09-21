@@ -18,6 +18,8 @@ export const StatusProvider = ({ children }) => {
   const [userStatus, setUserStatus] = useState('offline');
   const [selectedStatus, setSelectedStatus] = useState('online');
   const [isConnected, setIsConnected] = useState(false);
+  const [lastActivity, setLastActivity] = useState(Date.now());
+  const [currentPage, setCurrentPage] = useState(window.location.pathname);
 
   useEffect(() => {
     if (!currentUser || !currentUser.uid) {
@@ -45,10 +47,13 @@ export const StatusProvider = ({ children }) => {
         onDisconnect(userStatusRef).set(isOfflineForDatabase).then(() => {
           // When disconnect trigger is set, update status based on user's selected status
           getUserSelectedStatus(uid).then(status => {
+            // Set the status to online immediately when connected
+            const statusToSet = status || 'online';
             set(userStatusRef, {
-              state: status,
+              state: statusToSet,
               last_changed: serverTimestamp(),
             });
+            console.log('✅ User status set to:', statusToSet, 'for user:', uid);
           });
         });
       }
@@ -82,12 +87,46 @@ export const StatusProvider = ({ children }) => {
     // Try to load status, but don't fail if it doesn't exist
     loadSelectedStatus();
 
+    // Immediately set user status to online when they login
+    const setInitialOnlineStatus = async () => {
+      try {
+        console.log('🌐 Setting initial online status for user:', uid);
+        await set(ref(database, `status/${uid}`), {
+          state: 'online',
+          last_changed: serverTimestamp(),
+          user_agent: navigator.userAgent,
+          platform: navigator.platform,
+          language: navigator.language,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          session_start: serverTimestamp()
+        });
+        
+        // Also ensure selectedStatus is set to online if not set
+        const currentSelectedStatus = await getUserSelectedStatus(uid);
+        if (!currentSelectedStatus) {
+          await set(ref(database, `users/${uid}/selectedStatus`), 'online');
+        }
+        console.log('✅ Initial status set successfully');
+      } catch (error) {
+        console.error('❌ Error setting initial status:', error);
+      }
+    };
+
+    // Set initial status immediately
+    setInitialOnlineStatus();
+
     // Set up inactivity detection
     const inactivityTimeout = 5 * 60 * 1000; // 5 minutes
     let inactivityTimer;
 
     const resetInactivityTimer = () => {
       clearTimeout(inactivityTimer);
+      setLastActivity(Date.now());
+      
+      // Update last activity in real-time
+      if (userStatus === 'online') {
+        set(ref(database, `status/${uid}/last_activity`), serverTimestamp());
+      }
       
       inactivityTimer = setTimeout(async () => {
         const currentSelectedStatus = await getUserSelectedStatus(uid);
@@ -97,6 +136,12 @@ export const StatusProvider = ({ children }) => {
           set(userStatusRef, {
             state: 'ausente',
             last_changed: serverTimestamp(),
+            user_agent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            last_activity: serverTimestamp(),
+            current_page: window.location.pathname
           });
         }
       }, inactivityTimeout);
@@ -135,6 +180,32 @@ export const StatusProvider = ({ children }) => {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    // Track page changes for rich presence
+    const updateCurrentPage = () => {
+      const newPage = window.location.pathname;
+      if (newPage !== currentPage) {
+        setCurrentPage(newPage);
+        if (userStatus === 'online') {
+          set(ref(database, `status/${uid}/current_page`), newPage);
+        }
+      }
+    };
+
+    // Listen for route changes
+    window.addEventListener('popstate', updateCurrentPage);
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+    
+    history.pushState = function(...args) {
+      originalPushState.apply(history, args);
+      setTimeout(updateCurrentPage, 0);
+    };
+    
+    history.replaceState = function(...args) {
+      originalReplaceState.apply(history, args);
+      setTimeout(updateCurrentPage, 0);
+    };
+
     return () => {
       unsubscribeConnected();
       unsubscribeStatus();
@@ -142,6 +213,9 @@ export const StatusProvider = ({ children }) => {
         document.removeEventListener(event, resetInactivityTimer, true);
       });
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('popstate', updateCurrentPage);
+      history.pushState = originalPushState;
+      history.replaceState = originalReplaceState;
       clearTimeout(inactivityTimer);
     };
   }, [currentUser]);
@@ -155,10 +229,15 @@ export const StatusProvider = ({ children }) => {
       // Update the user's selected status
       await set(ref(database, `users/${uid}/selectedStatus`), status);
       
-      // Update the current status
+      // Update the current status with rich presence info
       await set(ref(database, `status/${uid}`), {
         state: status,
         last_changed: serverTimestamp(),
+        user_agent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        last_activity: serverTimestamp()
       });
       
       setSelectedStatus(status);
@@ -238,10 +317,19 @@ export const StatusProvider = ({ children }) => {
     userStatus,
     selectedStatus,
     isConnected,
+    lastActivity,
+    currentPage,
     updateUserStatus,
     getUserSelectedStatus,
-    getCurrentStatus
-  }), [userStatus, selectedStatus, isConnected, updateUserStatus, getUserSelectedStatus, getCurrentStatus]);
+    getCurrentStatus,
+    // Status options
+    statusOptions: [
+      { value: 'online', label: 'Online', color: '#22c55e', emoji: '🟢' },
+      { value: 'ausente', label: 'Ausente', color: '#f59e0b', emoji: '🟡' },
+      { value: 'invisivel', label: 'Invisível', color: '#6b7280', emoji: '⚫' },
+      { value: 'offline', label: 'Offline', color: '#ef4444', emoji: '🔴' }
+    ]
+  }), [userStatus, selectedStatus, isConnected, lastActivity, currentPage, updateUserStatus, getUserSelectedStatus, getCurrentStatus]);
 
   return (
     <StatusContext.Provider value={value}>

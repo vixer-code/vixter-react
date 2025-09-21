@@ -613,3 +613,37 @@
   background: rgba(42, 42, 42, 0.8);
   border: 1px solid #444;
 }
+
+/* Rich Presence Styles */
+.status-online {
+  color: #22c55e;
+  font-weight: 500;
+}
+
+.status-away {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.status-invisible {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.status-offline {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.service-completed {
+  color: #8b5cf6;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.page-indicator {
+  font-size: 0.75rem;
+  color: var(--vixter-accent-primary);
+  margin-left: 4px;
+  opacity: 0.8;
+}
