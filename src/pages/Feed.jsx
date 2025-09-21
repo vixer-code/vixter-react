@@ -189,10 +189,17 @@ const Feed = () => {
     try {
       const isFollowing = following.includes(userId);
       
+      // Get references to the documents
       const followerRef = doc(firestore, 'users', userId, 'followers', currentUser.uid);
       const followingRef = doc(firestore, 'users', currentUser.uid, 'following', userId);
-      const targetUserDoc = doc(firestore, 'users', userId);
-      const currentUserDoc = doc(firestore, 'users', currentUser.uid);
+      const targetUserDocRef = doc(firestore, 'users', userId);
+      const currentUserDocRef = doc(firestore, 'users', currentUser.uid);
+      
+      // Check if user documents exist first
+      const [targetUserDoc, currentUserDoc] = await Promise.all([
+        getDoc(targetUserDocRef),
+        getDoc(currentUserDocRef)
+      ]);
       
       const batch = writeBatch(firestore);
       
@@ -200,8 +207,20 @@ const Feed = () => {
         // Unfollow
         batch.delete(followerRef);
         batch.delete(followingRef);
-        batch.update(targetUserDoc, { followersCount: increment(-1), updatedAt: new Date() });
-        batch.update(currentUserDoc, { followingCount: increment(-1), updatedAt: new Date() });
+        
+        // Only update counts if documents exist
+        if (targetUserDoc.exists()) {
+          batch.update(targetUserDocRef, { 
+            followersCount: increment(-1), 
+            updatedAt: new Date() 
+          });
+        }
+        if (currentUserDoc.exists()) {
+          batch.update(currentUserDocRef, { 
+            followingCount: increment(-1), 
+            updatedAt: new Date() 
+          });
+        }
         
         await batch.commit();
         setFollowing(prevFollowing => prevFollowing.filter(id => id !== userId));
@@ -210,8 +229,20 @@ const Feed = () => {
         // Follow
         batch.set(followerRef, { followedAt: Date.now(), followerId: currentUser.uid });
         batch.set(followingRef, { followedAt: Date.now(), followingId: userId });
-        batch.update(targetUserDoc, { followersCount: increment(1), updatedAt: new Date() });
-        batch.update(currentUserDoc, { followingCount: increment(1), updatedAt: new Date() });
+        
+        // Only update counts if documents exist
+        if (targetUserDoc.exists()) {
+          batch.update(targetUserDocRef, { 
+            followersCount: increment(1), 
+            updatedAt: new Date() 
+          });
+        }
+        if (currentUserDoc.exists()) {
+          batch.update(currentUserDocRef, { 
+            followingCount: increment(1), 
+            updatedAt: new Date() 
+          });
+        }
         
         await batch.commit();
         setFollowing(prevFollowing => [...prevFollowing, userId]);
@@ -219,7 +250,7 @@ const Feed = () => {
       }
     } catch (error) {
       console.error('Error toggling follow:', error);
-      showError('Erro ao seguir/parar de seguir');
+      showError('Erro ao seguir/parar de seguir: ' + error.message);
     }
   }, [currentUser?.uid, following, showSuccess, showError]);
 

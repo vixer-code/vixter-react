@@ -85,6 +85,7 @@ const Vixies = () => {
   const [showVixtipModal, setShowVixtipModal] = useState(false);
   const [selectedPostForTip, setSelectedPostForTip] = useState(null);
   const [likes, setLikes] = useState({}); // New state for likes
+  const [repostStatus, setRepostStatus] = useState({}); // Track repost status
 
   // Check KYC verification
   const isKycVerified = userProfile?.kyc === true;
@@ -172,6 +173,42 @@ const Vixies = () => {
     // The posts will be automatically updated via the real-time listener
   }, []);
 
+  // Check if user has reposted a specific post
+  const checkRepostStatus = useCallback(async (postId) => {
+    if (!currentUser?.uid) return false;
+    
+    try {
+      const repostRef = ref(database, `vixiesReposts/${postId}/${currentUser.uid}`);
+      const snapshot = await get(repostRef);
+      return snapshot.exists();
+    } catch (error) {
+      console.error('Error checking repost status:', error);
+      return false;
+    }
+  }, [currentUser?.uid]);
+
+  // Load repost status for all posts
+  useEffect(() => {
+    if (!currentUser?.uid || posts.length === 0) return;
+
+    const loadRepostStatus = async () => {
+      const statusPromises = posts.map(async (post) => {
+        const originalPostId = post.isRepost ? post.originalPostId : post.id;
+        const isReposted = await checkRepostStatus(originalPostId);
+        return { postId: originalPostId, isReposted };
+      });
+
+      const results = await Promise.all(statusPromises);
+      const newRepostStatus = {};
+      results.forEach(({ postId, isReposted }) => {
+        newRepostStatus[postId] = isReposted;
+      });
+      setRepostStatus(newRepostStatus);
+    };
+
+    loadRepostStatus();
+  }, [posts, currentUser?.uid, checkRepostStatus]);
+
   const likePost = async (postId, currentLikes, likedBy) => {
     if (!currentUser) return;
 
@@ -200,9 +237,47 @@ const Vixies = () => {
       // Check if user already reposted this post
       const postRepostsRef = ref(database, `vixiesReposts/${post.id}/${currentUser.uid}`);
       const snap = await get(postRepostsRef).catch(() => null);
+      
       if (snap && snap.exists()) { 
-        showInfo('Você já repostou este conteúdo.'); 
-        return; 
+        // User already reposted - remove the repost (unrepost)
+        await set(postRepostsRef, null);
+        
+        // Find and remove the repost from posts collection
+        const postsRef = ref(database, 'vixies_posts');
+        const postsSnapshot = await get(postsRef);
+        const posts = postsSnapshot.val() || {};
+        
+        let repostToDelete = null;
+        for (const [postId, postData] of Object.entries(posts)) {
+          if (postData.isRepost && 
+              postData.authorId === currentUser.uid && 
+              postData.originalPostId === post.id) {
+            repostToDelete = postId;
+            break;
+          }
+        }
+        
+        if (repostToDelete) {
+          await set(ref(database, `vixies_posts/${repostToDelete}`), null);
+        }
+        
+        // Update repost status in state
+        setRepostStatus(prev => ({
+          ...prev,
+          [post.id]: false
+        }));
+        
+        // Update original post repost count
+        const originalPostRef = ref(database, `vixies_posts/${post.id}`);
+        const originalPostSnap = await get(originalPostRef);
+        if (originalPostSnap.exists()) {
+          const originalData = originalPostSnap.val();
+          const newRepostCount = Math.max(0, (originalData.repostCount || 0) - 1);
+          await update(originalPostRef, { repostCount: newRepostCount });
+        }
+
+        showSuccess('Repost removido com sucesso!');
+        return;
       }
 
       // Create a new repost post
@@ -234,6 +309,12 @@ const Vixies = () => {
       await set(postRepostsRef, Date.now());
       const userRepostsRef = ref(database, `userReposts/${currentUser.uid}/${post.id}`);
       await set(userRepostsRef, Date.now());
+      
+      // Update repost status in state
+      setRepostStatus(prev => ({
+        ...prev,
+        [post.id]: true
+      }));
       
       // Update original post repost count
       const originalPostRef = ref(database, `vixies_posts/${post.id}`);
@@ -558,6 +639,8 @@ const Vixies = () => {
               const author = isCurrentUser ? userProfile : (users[post.authorId] || {});
               const isLiked = currentUser && likes[post.id] && likes[post.id][currentUser.uid];
               const likeCount = likes[post.id] ? Object.keys(likes[post.id]).length : (post.likes || 0);
+              const originalPostId = post.isRepost ? post.originalPostId : post.id;
+              const isReposted = repostStatus[originalPostId] || false;
               
               return (
                 <div key={post.id} className="post-card">
@@ -628,8 +711,13 @@ const Vixies = () => {
                       <i className={`fas fa-heart ${isLiked ? 'fas' : 'far'}`}></i>
                       <span>{likeCount}</span>
                     </button>
-                    <button className="action-btn share-btn" onClick={() => repostPost(post)}>
+                    <button 
+                      className={`action-btn share-btn ${isReposted ? 'reposted' : ''}`} 
+                      onClick={() => repostPost(post)}
+                      title={isReposted ? 'Remover repost' : 'Repostar'}
+                    >
                       <i className="fas fa-retweet"></i>
+                      <span>{post.repostCount || 0}</span>
                     </button>
                     <button className="action-btn tip-btn" onClick={() => tipPost(post)}>
                       <i className="fas fa-hand-holding-usd"></i>
