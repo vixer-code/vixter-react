@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useReview } from '../contexts/ReviewContext';
 import { useAuth } from '../contexts/AuthContext';
 import BehaviorReviewModal from './BehaviorReviewModal';
+import EditReviewModal from './EditReviewModal';
 import './ReviewsSection.css';
 
 const ReviewsSection = ({ 
@@ -27,6 +28,7 @@ const ReviewsSection = ({
   const [givenReviews, setGivenReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showBehaviorModal, setShowBehaviorModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all', 'service', 'pack', 'behavior'
 
@@ -87,14 +89,16 @@ const ReviewsSection = ({
 
   const handleEditReview = (review) => {
     setEditingReview(review);
+    setShowEditModal(true);
   };
 
-  const handleUpdateReview = async (reviewId, rating, comment) => {
-    const success = await updateReview(reviewId, rating, comment);
-    if (success) {
-      setEditingReview(null);
-      loadReviews();
-    }
+  const handleReviewUpdated = () => {
+    loadReviews();
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditingReview(null);
   };
 
   const renderStars = (rating, interactive = false, onStarClick = null) => {
@@ -178,54 +182,6 @@ const ReviewsSection = ({
     );
   };
 
-  const renderEditForm = (review) => {
-    const [rating, setRating] = useState(review.rating);
-    const [comment, setComment] = useState(review.comment);
-
-    const handleSave = () => {
-      handleUpdateReview(review.id, rating, comment);
-    };
-
-    const handleCancel = () => {
-      setEditingReview(null);
-    };
-
-    return (
-      <div className="edit-review-form">
-        <h4>Editar Avaliação</h4>
-        <div className="rating-input">
-          <label>Avaliação:</label>
-          <div className="stars">
-            {renderStars(rating, true, setRating)}
-          </div>
-        </div>
-        <div className="comment-input">
-          <label>Comentário:</label>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            maxLength="200"
-            rows="3"
-          />
-          <div className="character-count">
-            {comment.length}/200 caracteres
-          </div>
-        </div>
-        <div className="edit-actions">
-          <button className="btn-secondary" onClick={handleCancel}>
-            Cancelar
-          </button>
-          <button 
-            className="btn-primary" 
-            onClick={handleSave}
-            disabled={!comment.trim() || rating === 0}
-          >
-            Salvar
-          </button>
-        </div>
-      </div>
-    );
-  };
 
   if (loading) {
     return (
@@ -318,19 +274,13 @@ const ReviewsSection = ({
       </div>
 
       <div className="reviews-list">
-        {editingReview ? (
-          renderEditForm(editingReview)
+        {reviews.length > 0 ? (
+          reviews.map(review => renderReviewItem(review))
         ) : (
-          <>
-            {reviews.length > 0 ? (
-              reviews.map(review => renderReviewItem(review))
-            ) : (
-              <div className="no-reviews">
-                <i className="fas fa-star"></i>
-                <p>Nenhuma avaliação encontrada</p>
-              </div>
-            )}
-          </>
+          <div className="no-reviews">
+            <i className="fas fa-star"></i>
+            <p>Nenhuma avaliação encontrada</p>
+          </div>
         )}
       </div>
 
@@ -343,6 +293,15 @@ const ReviewsSection = ({
           buyerPhotoURL={buyerPhotoURL}
           userType={userType}
           onReviewSubmitted={handleReviewSubmitted}
+        />
+      )}
+
+      {showEditModal && editingReview && (
+        <EditReviewModal
+          isOpen={showEditModal}
+          onClose={handleCloseEditModal}
+          review={editingReview}
+          onReviewUpdated={handleReviewUpdated}
         />
       )}
     </div>

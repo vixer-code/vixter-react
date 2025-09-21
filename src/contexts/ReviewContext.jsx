@@ -112,6 +112,39 @@ export const ReviewProvider = ({ children }) => {
     }
   }, []);
 
+  // Load reviews for a specific item (service or pack)
+  const loadItemReviews = useCallback(async (itemId, itemType) => {
+    if (!itemId || !itemType) return [];
+
+    try {
+      setLoading(true);
+      const reviewsRef = collection(db, 'reviews');
+      const q = query(
+        reviewsRef,
+        where('itemId', '==', itemId),
+        where('type', '==', itemType),
+        orderBy('createdAt', 'desc')
+      );
+
+      const snapshot = await getDocs(q);
+      const reviewsData = [];
+      
+      snapshot.forEach((doc) => {
+        reviewsData.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+
+      return reviewsData;
+    } catch (error) {
+      console.error('Error loading item reviews:', error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Create a service/pack review
   const createServiceReview = useCallback(async (orderId, rating, comment, orderType = 'service') => {
     if (!currentUser) {
@@ -530,6 +563,7 @@ export const ReviewProvider = ({ children }) => {
     // Actions
     loadUserReviews,
     loadUserGivenReviews,
+    loadItemReviews,
     createServiceReview,
     createBehaviorReview,
     updateReview,
@@ -546,6 +580,7 @@ export const ReviewProvider = ({ children }) => {
     processing,
     loadUserReviews,
     loadUserGivenReviews,
+    loadItemReviews,
     createServiceReview,
     createBehaviorReview,
     updateReview,

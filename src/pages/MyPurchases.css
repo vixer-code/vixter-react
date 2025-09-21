@@ -417,6 +417,27 @@
   box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
 }
 
+.btn-review-service {
+  background: linear-gradient(45deg, #8A2BE2, #00FFCA);
+  color: #0F0F1A;
+  border: 1px solid #8A2BE2;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-review-service:hover {
+  background: linear-gradient(45deg, #00FFCA, #8A2BE2);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(138, 43, 226, 0.3);
+}
+
 .purchase-completed-info,
 .purchase-cancelled-info {
   display: flex;
