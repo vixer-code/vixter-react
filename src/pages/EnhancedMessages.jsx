@@ -45,11 +45,18 @@ const EnhancedMessages = () => {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  // Add class to body for CSS targeting
+  // Add class to main-content for CSS targeting
   useEffect(() => {
-    document.body.classList.add('messages-page');
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+      mainContent.classList.add('messages-page');
+    }
+    
     return () => {
-      document.body.classList.remove('messages-page');
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent) {
+        mainContent.classList.remove('messages-page');
+      }
     };
   }, []);
 

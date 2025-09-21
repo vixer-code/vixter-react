@@ -561,7 +561,7 @@ const Vixink = () => {
 
                   <div className="post-actions">
                     <button
-                      onClick={() => likePost(post.id, likeCount, likes[post.id] || {})}
+                      onClick={() => likePost(post.id, likeCount, likes[post.id] ? Object.keys(likes[post.id]) : [])}
                       className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}
                     >
                       <i className={`fas fa-heart ${isLiked ? 'fas' : 'far'}`}></i>
