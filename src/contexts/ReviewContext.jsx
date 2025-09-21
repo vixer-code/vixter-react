@@ -207,12 +207,17 @@ export const ReviewProvider = ({ children }) => {
         return false;
       }
 
+      // Get reviewer user info
+      const reviewerRef = doc(db, 'users', currentUser.uid);
+      const reviewerSnap = await getDoc(reviewerRef);
+      const reviewerData = reviewerSnap.exists() ? reviewerSnap.data() : {};
+
       // Create review
       const reviewData = {
         type: orderType,
         orderId: orderId,
         reviewerId: currentUser.uid,
-        reviewerUsername: currentUser.displayName || 'Usuário',
+        reviewerUsername: reviewerData.username || currentUser.displayName || 'Usuário',
         reviewerPhotoURL: currentUser.photoURL || null,
         targetUserId: orderData.sellerId,
         targetUsername: orderData.sellerUsername || 'Vendedor',
@@ -303,9 +308,14 @@ export const ReviewProvider = ({ children }) => {
         return false;
       }
 
-      // Get target user info
+      // Get reviewer and target user info
+      const reviewerRef = doc(db, 'users', currentUser.uid);
       const targetRef = doc(db, 'users', targetUserId);
-      const targetSnap = await getDoc(targetRef);
+      const [reviewerSnap, targetSnap] = await Promise.all([
+        getDoc(reviewerRef),
+        getDoc(targetRef)
+      ]);
+      const reviewerData = reviewerSnap.exists() ? reviewerSnap.data() : {};
       const targetData = targetSnap.exists() ? targetSnap.data() : {};
 
       // Create behavior review
@@ -313,7 +323,7 @@ export const ReviewProvider = ({ children }) => {
         type: 'behavior',
         orderId: null,
         reviewerId: currentUser.uid,
-        reviewerUsername: currentUser.displayName || 'Usuário',
+        reviewerUsername: reviewerData.username || currentUser.displayName || 'Usuário',
         reviewerPhotoURL: currentUser.photoURL || null,
         targetUserId: targetUserId,
         targetUsername: targetData.username || targetData.displayName || 'Usuário',

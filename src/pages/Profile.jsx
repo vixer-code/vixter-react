@@ -264,8 +264,7 @@ const Profile = () => {
   // Load and calculate profile rating
   const loadProfileRating = async (userId) => {
     try {
-      await loadUserReviews(userId);
-      const reviews = userReviews.filter(review => review.targetUserId === userId);
+      const reviews = await loadUserReviews(userId);
       const averageRating = getAverageRating(reviews);
       setProfileRating(averageRating);
       setProfileReviewsCount(reviews.length);
