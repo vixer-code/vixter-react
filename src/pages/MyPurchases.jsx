@@ -6,9 +6,8 @@ import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import { usePacksR2 } from '../contexts/PacksContextR2';
 import { useReview } from '../contexts/ReviewContext';
-import ServiceReviewModal from '../components/ServiceReviewModal';
 import ServicePackReviewModal from '../components/ServicePackReviewModal';
-import { collection, query as fsQuery, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query as fsQuery, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { Link, useNavigate } from 'react-router-dom';
 import SmartMediaViewer from '../components/SmartMediaViewer';
@@ -36,7 +35,6 @@ const MyPurchases = () => {
   const [viewingService, setViewingService] = useState(null);
   const [confirmingOrder, setConfirmingOrder] = useState(null);
   const [feedback, setFeedback] = useState('');
-  const [showReviewModal, setShowReviewModal] = useState(false);
   const [showServicePackReviewModal, setShowServicePackReviewModal] = useState(false);
   const [reviewingOrder, setReviewingOrder] = useState(null);
   const [canReviewMap, setCanReviewMap] = useState({});
@@ -205,6 +203,12 @@ const MyPurchases = () => {
       const allPurchases = [...purchasedPacks, ...purchasedServices];
       const canReviewPromises = allPurchases.map(async (purchase) => {
         if (purchase.status === 'CONFIRMED' || purchase.status === 'COMPLETED' || purchase.status === 'AUTO_RELEASED') {
+          // Check if the service/pack still exists
+          const itemExists = await checkItemExists(purchase);
+          if (!itemExists) {
+            return { orderId: purchase.id, canReview: false };
+          }
+          
           const canReview = await canReviewOrder(purchase.id, purchase.type);
           return { orderId: purchase.id, canReview };
         }
@@ -223,6 +227,25 @@ const MyPurchases = () => {
       checkReviewPermissions();
     }
   }, [currentUser, purchasedPacks, purchasedServices, canReviewOrder]);
+
+  // Check if service/pack still exists
+  const checkItemExists = async (purchase) => {
+    try {
+      if (purchase.type === 'service') {
+        const serviceRef = doc(db, 'services', purchase.serviceId);
+        const serviceSnap = await getDoc(serviceRef);
+        return serviceSnap.exists();
+      } else if (purchase.type === 'pack') {
+        const packRef = doc(db, 'packs', purchase.packId);
+        const packSnap = await getDoc(packRef);
+        return packSnap.exists();
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking if item exists:', error);
+      return false;
+    }
+  };
 
   // Load pack data and seller data when purchases change
   useEffect(() => {
@@ -343,15 +366,6 @@ const MyPurchases = () => {
     setFeedback('');
   };
 
-  const handleOpenReview = (order) => {
-    setReviewingOrder(order);
-    setShowReviewModal(true);
-  };
-
-  const handleCloseReview = () => {
-    setShowReviewModal(false);
-    setReviewingOrder(null);
-  };
 
   const handleReviewSubmitted = () => {
     // Reload purchases to update review status
@@ -682,13 +696,6 @@ const MyPurchases = () => {
                                 <i className="fas fa-star"></i>
                                 Avaliar Serviço
                               </button>
-                              <button 
-                                className="btn-review"
-                                onClick={() => handleOpenReview(purchase)}
-                              >
-                                <i className="fas fa-user"></i>
-                                Avaliar Comportamento
-                              </button>
                             </>
                           )}
                         </>
@@ -723,13 +730,6 @@ const MyPurchases = () => {
                           >
                             <i className="fas fa-star"></i>
                             Avaliar Pack
-                          </button>
-                          <button 
-                            className="btn-review"
-                            onClick={() => handleOpenReview(purchase)}
-                          >
-                            <i className="fas fa-user"></i>
-                            Avaliar Comportamento
                           </button>
                         </>
                       )}
@@ -841,21 +841,6 @@ const MyPurchases = () => {
         </div>
       )}
 
-      {/* Review Modal */}
-      {showReviewModal && reviewingOrder && (
-        <ServiceReviewModal
-          isOpen={showReviewModal}
-          onClose={handleCloseReview}
-          orderId={reviewingOrder.id}
-          orderType={reviewingOrder.type}
-          itemName={reviewingOrder.type === 'service' 
-            ? (reviewingOrder.metadata?.serviceName || 'Serviço')
-            : (packData[reviewingOrder.packId]?.title || reviewingOrder.metadata?.packName || 'Pack')
-          }
-          sellerName={sellerData[reviewingOrder.sellerId]?.name || 'Vendedor'}
-          onReviewSubmitted={handleReviewSubmitted}
-        />
-      )}
 
       {/* Service/Pack Review Modal */}
       {showServicePackReviewModal && reviewingOrder && (
