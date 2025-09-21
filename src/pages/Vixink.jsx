@@ -292,6 +292,9 @@ const Vixink = () => {
         originalPostId: post.id,
         originalAuthorId: post.authorId,
         originalAuthorName: post.authorName,
+        originalAuthorPhotoURL: post.authorPhotoURL,
+        originalAuthorUsername: post.authorUsername,
+        originalTimestamp: post.timestamp,
         repostCount: 0
       };
 
@@ -592,6 +595,7 @@ const Vixink = () => {
             filteredPosts.map((post) => {
               // Use current user profile if it's the current user's post
               const isCurrentUser = currentUser && post.authorId === currentUser.uid;
+              const isOriginalAuthor = post.isRepost ? post.originalAuthorId === currentUser?.uid : false;
               const author = isCurrentUser ? userProfile : (users[post.authorId] || {});
               const isLiked = currentUser && likes[post.id] && likes[post.id][currentUser.uid];
               const likeCount = likes[post.id] ? Object.keys(likes[post.id]).length : (post.likes || 0);
@@ -603,24 +607,27 @@ const Vixink = () => {
                   <div className="post-header">
                     <div className="post-author">
                       <img
-                        src={post.authorPhotoURL || '/images/defpfp1.png'}
-                        alt={post.authorName}
+                        src={post.isRepost ? (post.originalAuthorPhotoURL || '/images/defpfp1.png') : (post.authorPhotoURL || '/images/defpfp1.png')}
+                        alt={post.isRepost ? post.originalAuthorName : post.authorName}
                         className="author-avatar"
                         onError={(e) => {
                           e.target.src = '/images/defpfp1.png';
                         }}
                       />
                       <div className="author-info">
-                        <Link to={isCurrentUser ? '/profile' : getProfileUrlById(post.authorId, post.authorUsername)} className="author-name">
-                          {post.authorName}
+                        <Link 
+                          to={post.isRepost ? getProfileUrlById(post.originalAuthorId, post.originalAuthorUsername) : (isCurrentUser ? '/profile' : getProfileUrlById(post.authorId, post.authorUsername))} 
+                          className="author-name"
+                        >
+                          {post.isRepost ? post.originalAuthorName : post.authorName}
                         </Link>
-                        <span className="post-time">{formatTime(post.timestamp)}</span>
+                        <span className="post-time">{formatTime(post.isRepost ? post.originalTimestamp || post.timestamp : post.timestamp)}</span>
                       </div>
                     </div>
                     <div className="post-actions">
-                      {!isCurrentUser && (
-                        <button className={`follow-btn ${following.includes(post.authorId) ? 'following' : ''}`} onClick={() => handleFollow(post.authorId)}>
-                          {following.includes(post.authorId) ? 'Seguindo' : 'Seguir'}
+                      {!isOriginalAuthor && !isCurrentUser && (
+                        <button className={`follow-btn ${following.includes(post.isRepost ? post.originalAuthorId : post.authorId) ? 'following' : ''}`} onClick={() => handleFollow(post.isRepost ? post.originalAuthorId : post.authorId)}>
+                          {following.includes(post.isRepost ? post.originalAuthorId : post.authorId) ? 'Seguindo' : 'Seguir'}
                         </button>
                       )}
                       {isCurrentUser && (
@@ -669,12 +676,13 @@ const Vixink = () => {
                     </button>
                     
                     <button 
-                      className={`action-btn share-btn ${post.isRepost ? 'disabled' : ''}`} 
+                      className={`action-btn share-btn ${isReposted ? 'reposted' : ''} ${post.isRepost ? 'disabled' : ''}`} 
                       onClick={() => !post.isRepost && repostPost(post)}
-                      title={post.isRepost ? 'Não é possível repostar um repost' : 'Repostar'}
+                      title={post.isRepost ? 'Não é possível repostar um repost' : (isReposted ? 'Remover repost' : 'Repostar')}
                       disabled={post.isRepost}
                     >
                       <i className="fas fa-retweet"></i>
+                      <span>{post.repostCount || 0}</span>
                     </button>
                     <button className="action-btn tip-btn" onClick={() => tipPost(post)}>
                       <i className="fas fa-hand-holding-usd"></i>
