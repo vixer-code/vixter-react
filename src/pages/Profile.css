@@ -1022,8 +1022,26 @@
 }
 
 .profile-stars {
+  display: flex;
+  gap: 2px;
+}
+
+.profile-stars .star {
+  font-size: 16px;
   color: #FFD700;
-  font-size: 1.1rem;
+}
+
+.profile-stars .star.filled {
+  color: #FFD700;
+}
+
+.profile-stars .star.half {
+  color: #FFD700;
+  opacity: 0.7;
+}
+
+.profile-stars .star.empty {
+  color: #666;
 }
 
 .profile-rating-value {

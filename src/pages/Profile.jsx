@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { usePacksR2 as usePacks } from '../contexts/PacksContextR2';
 import ReviewsSection from '../components/ReviewsSection';
+import { useReview } from '../contexts/ReviewContext';
 import { useServicesR2 as useServices } from '../contexts/ServicesContextR2';
 import { useNotification } from '../contexts/NotificationContext';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
@@ -31,6 +32,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { userProfile, getUserById, getUserByUsername, updateUserProfile, formatUserDisplayName, getUserAvatarUrl, loading: userLoading } = useUser();
+  const { getAverageRating, reviews: userReviews, loadUserReviews } = useReview();
   
   // Get account type from user profile
   const accountType = userProfile?.accountType || 'client';
@@ -81,6 +83,8 @@ const Profile = () => {
   const [packToDelete, setPackToDelete] = useState(null);
   const [deleteProgress, setDeleteProgress] = useState(0);
   const [deleteStatus, setDeleteStatus] = useState('');
+  const [profileRating, setProfileRating] = useState(0);
+  const [profileReviewsCount, setProfileReviewsCount] = useState(0);
 
   // Direct Firebase Storage uploads only
 
@@ -253,8 +257,43 @@ const Profile = () => {
     if (profile) {
       loadFollowers(profile.id);
       loadPosts(profile.id);
+      loadProfileRating(profile.id);
     }
   }, [profile]);
+
+  // Load and calculate profile rating
+  const loadProfileRating = async (userId) => {
+    try {
+      await loadUserReviews(userId);
+      const reviews = userReviews.filter(review => review.targetUserId === userId);
+      const averageRating = getAverageRating(reviews);
+      setProfileRating(averageRating);
+      setProfileReviewsCount(reviews.length);
+    } catch (error) {
+      console.error('Error loading profile rating:', error);
+      setProfileRating(0);
+      setProfileReviewsCount(0);
+    }
+  };
+
+  // Render profile stars based on rating
+  const renderProfileStars = (rating) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    
+    for (let i = 1; i <= 5; i++) {
+      if (i <= fullStars) {
+        stars.push(<span key={i} className="star filled">★</span>);
+      } else if (i === fullStars + 1 && hasHalfStar) {
+        stars.push(<span key={i} className="star half">★</span>);
+      } else {
+        stars.push(<span key={i} className="star empty">☆</span>);
+      }
+    }
+    
+    return stars;
+  };
 
   // Handle URL hash navigation
   useEffect(() => {
@@ -1500,9 +1539,11 @@ const Profile = () => {
             </div>
             
             <div className="profile-rating">
-              <div className="profile-stars">★★★★☆</div>
-              <span className="profile-rating-value">{profile.rating || 4.0}</span>
-              <span className="profile-rating-count">({profile.reviewsCount || 0} avaliações)</span>
+              <div className="profile-stars">
+                {renderProfileStars(profileRating)}
+              </div>
+              <span className="profile-rating-value">{profileRating.toFixed(1)}</span>
+              <span className="profile-rating-count">({profileReviewsCount} avaliações)</span>
             </div>
           </div>
           

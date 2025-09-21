@@ -49,24 +49,16 @@
   padding: 20px;
   margin-bottom: 24px;
   display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 32px;
-  flex-wrap: wrap;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .rating-overview {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  min-width: 200px;
-}
-
-.average-rating {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  gap: 16px;
 }
 
 .rating-number {
@@ -105,8 +97,10 @@
 }
 
 .rating-breakdown {
-  flex: 1;
-  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
 }
 
 .rating-bar {
@@ -295,31 +289,18 @@
   gap: 8px;
 }
 
-.edit-btn, .delete-btn {
-  padding: 6px 12px;
+.delete-btn {
+  padding: 8px;
   border: none;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
+  border-radius: 6px;
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 4px;
-}
-
-.edit-btn {
-  background: rgba(0, 255, 202, 0.2);
-  color: #00FFCA;
-  border: 1px solid rgba(0, 255, 202, 0.3);
-}
-
-.edit-btn:hover {
-  background: rgba(0, 255, 202, 0.3);
-  color: #ffffff;
-}
-
-.delete-btn {
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   background: rgba(255, 46, 99, 0.2);
   color: #FF2E63;
   border: 1px solid rgba(255, 46, 99, 0.3);
@@ -372,7 +353,7 @@
   }
   
   .rating-overview {
-    min-width: auto;
+    justify-content: center;
   }
   
   .rating-breakdown {

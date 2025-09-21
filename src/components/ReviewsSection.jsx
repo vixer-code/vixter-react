@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useReview } from '../contexts/ReviewContext';
 import { useAuth } from '../contexts/AuthContext';
 import BehaviorReviewModal from './BehaviorReviewModal';
-import EditReviewModal from './EditReviewModal';
 import './ReviewsSection.css';
 
 const ReviewsSection = ({ 
@@ -28,8 +27,6 @@ const ReviewsSection = ({
   const [givenReviews, setGivenReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showBehaviorModal, setShowBehaviorModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingReview, setEditingReview] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all', 'service', 'pack', 'behavior'
 
   useEffect(() => {
@@ -87,19 +84,6 @@ const ReviewsSection = ({
     }
   };
 
-  const handleEditReview = (review) => {
-    setEditingReview(review);
-    setShowEditModal(true);
-  };
-
-  const handleReviewUpdated = () => {
-    loadReviews();
-  };
-
-  const handleCloseEditModal = () => {
-    setShowEditModal(false);
-    setEditingReview(null);
-  };
 
   const renderStars = (rating, interactive = false, onStarClick = null) => {
     const stars = [];
@@ -135,7 +119,7 @@ const ReviewsSection = ({
               )}
             </div>
             <div className="reviewer-details">
-              <h4>{review.reviewerUsername}</h4>
+              <h4>@{review.reviewerUsername}</h4>
               <p className="review-type">
                 {review.type === 'service' ? 'Avaliou serviço' :
                  review.type === 'pack' ? 'Avaliou pack' :
@@ -163,16 +147,11 @@ const ReviewsSection = ({
             {isOwner && (
               <div className="review-actions">
                 <button 
-                  className="edit-btn"
-                  onClick={() => handleEditReview(review)}
-                >
-                  <i className="fas fa-edit"></i> Editar
-                </button>
-                <button 
                   className="delete-btn"
                   onClick={() => handleDeleteReview(review.id)}
+                  title="Excluir avaliação"
                 >
-                  <i className="fas fa-trash"></i> Excluir
+                  <i className="fas fa-trash"></i>
                 </button>
               </div>
             )}
@@ -215,13 +194,11 @@ const ReviewsSection = ({
       {totalReviews > 0 && (
         <div className="reviews-summary">
           <div className="rating-overview">
-            <div className="average-rating">
-              <span className="rating-number">{averageRating.toFixed(1)}</span>
-              <div className="stars">
-                {renderStars(Math.round(averageRating))}
-              </div>
-              <span className="total-reviews">({totalReviews} avaliações)</span>
+            <span className="rating-number">{averageRating.toFixed(1)}</span>
+            <div className="stars">
+              {renderStars(Math.round(averageRating))}
             </div>
+            <span className="total-reviews">({totalReviews} avaliações)</span>
           </div>
           
           <div className="rating-breakdown">
@@ -296,14 +273,6 @@ const ReviewsSection = ({
         />
       )}
 
-      {showEditModal && editingReview && (
-        <EditReviewModal
-          isOpen={showEditModal}
-          onClose={handleCloseEditModal}
-          review={editingReview}
-          onReviewUpdated={handleReviewUpdated}
-        />
-      )}
     </div>
   );
 };

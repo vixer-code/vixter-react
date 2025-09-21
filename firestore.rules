@@ -368,10 +368,8 @@ service cloud.firestore {
     // =====================================================
     
     match /reviews/{reviewId} {
-      // Users can read reviews where they are the target or reviewer
-      allow read: if isAuthenticated() && 
-                    (isOwner(resource.data.targetUserId) || 
-                     isOwner(resource.data.reviewerId));
+      // Any authenticated user can read reviews (for profile display)
+      allow read: if isAuthenticated();
       
       // Users can create reviews (with validation)
       allow create: if isAuthenticated() && 
