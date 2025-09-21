@@ -438,6 +438,19 @@
   box-shadow: 0 5px 15px rgba(138, 43, 226, 0.3);
 }
 
+.btn-review-service:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-review-service:disabled:hover {
+  background: linear-gradient(135deg, #8A2BE2, #00FFCA);
+  transform: none;
+  box-shadow: none;
+}
+
 .purchase-completed-info,
 .purchase-cancelled-info {
   display: flex;

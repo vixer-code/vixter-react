@@ -38,6 +38,7 @@ const MyPurchases = () => {
   const [showServicePackReviewModal, setShowServicePackReviewModal] = useState(false);
   const [reviewingOrder, setReviewingOrder] = useState(null);
   const [canReviewMap, setCanReviewMap] = useState({});
+  const [checkingPermissions, setCheckingPermissions] = useState(false);
 
   // Redirect if not a client
   useEffect(() => {
@@ -200,16 +201,22 @@ const MyPurchases = () => {
     const checkReviewPermissions = async () => {
       if (!currentUser) return;
 
+      setCheckingPermissions(true);
+      console.log('Checking review permissions for purchases...');
       const allPurchases = [...purchasedPacks, ...purchasedServices];
+      console.log('Total purchases to check:', allPurchases.length);
+      
       const canReviewPromises = allPurchases.map(async (purchase) => {
         if (purchase.status === 'CONFIRMED' || purchase.status === 'COMPLETED' || purchase.status === 'AUTO_RELEASED') {
           // Check if the service/pack still exists
           const itemExists = await checkItemExists(purchase);
           if (!itemExists) {
+            console.log(`Item ${purchase.id} no longer exists, cannot review`);
             return { orderId: purchase.id, canReview: false };
           }
           
           const canReview = await canReviewOrder(purchase.id, purchase.type);
+          console.log(`Purchase ${purchase.id} can review:`, canReview);
           return { orderId: purchase.id, canReview };
         }
         return { orderId: purchase.id, canReview: false };
@@ -220,13 +227,16 @@ const MyPurchases = () => {
       results.forEach(({ orderId, canReview }) => {
         canReviewMap[orderId] = canReview;
       });
+      
+      console.log('Final canReviewMap:', canReviewMap);
       setCanReviewMap(canReviewMap);
+      setCheckingPermissions(false);
     };
 
     if (purchasedPacks.length > 0 || purchasedServices.length > 0) {
       checkReviewPermissions();
     }
-  }, [currentUser, purchasedPacks, purchasedServices, canReviewOrder]);
+  }, [currentUser, purchasedPacks, purchasedServices]);
 
   // Check if service/pack still exists
   const checkItemExists = async (purchase) => {
@@ -374,6 +384,9 @@ const MyPurchases = () => {
   };
 
   const handleOpenServicePackReview = (order) => {
+    console.log('Opening review modal for order:', order);
+    console.log('Current canReviewMap:', canReviewMap);
+    console.log('Can review this order:', canReviewMap[order.id]);
     setReviewingOrder(order);
     setShowServicePackReviewModal(true);
   };
@@ -692,9 +705,10 @@ const MyPurchases = () => {
                               <button 
                                 className="btn-review-service"
                                 onClick={() => handleOpenServicePackReview(purchase)}
+                                disabled={checkingPermissions}
                               >
                                 <i className="fas fa-star"></i>
-                                Avaliar Serviço
+                                {checkingPermissions ? 'Verificando...' : 'Avaliar Serviço'}
                               </button>
                             </>
                           )}
@@ -727,9 +741,10 @@ const MyPurchases = () => {
                           <button 
                             className="btn-review-service"
                             onClick={() => handleOpenServicePackReview(purchase)}
+                            disabled={checkingPermissions}
                           >
                             <i className="fas fa-star"></i>
-                            Avaliar Pack
+                            {checkingPermissions ? 'Verificando...' : 'Avaliar Pack'}
                           </button>
                         </>
                       )}

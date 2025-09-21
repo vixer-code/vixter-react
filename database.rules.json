@@ -345,11 +345,11 @@
           ".read": "$userId == auth.uid",
           ".write": "auth != null",
           "$notificationId": {
-            ".validate": "newData.hasChildren(['type', 'action', 'postId', 'actorId', 'actorName', 'timestamp', 'read'])",
+            ".validate": "newData.hasChildren(['type', 'action', 'timestamp', 'read'])",
             "type": { ".validate": "newData.isString()" },
             "action": { ".validate": "newData.isString()" },
             "postId": { ".validate": "newData.isString() && newData.val().length > 0" },
-            "actorId": { ".validate": "newData.isString() && newData.val() == auth.uid" },
+            "actorId": { ".validate": "newData.isString()" },
             "actorName": { ".validate": "newData.isString() && newData.val().length > 0" },
             "actorUsername": { ".validate": "newData.isString()" },
             "timestamp": { ".validate": "newData.isNumber() && newData.val() <= now + 600000" },
