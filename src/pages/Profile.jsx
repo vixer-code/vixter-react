@@ -2343,7 +2343,7 @@ const Profile = () => {
       <div className={`tab-content ${activeTab === 'reviews' ? 'active' : ''}`}>
         <ReviewsSection 
           userId={profile?.id}
-          userType={profile?.accountType === 'provider' ? 'seller' : 'buyer'}
+          userType={userProfile?.accountType === 'provider' ? 'seller' : 'buyer'}
           showBehaviorReview={isProvider && !isOwner}
           buyerId={profile?.id}
           buyerName={profile?.displayName || profile?.username}

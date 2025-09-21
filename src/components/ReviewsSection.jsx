@@ -56,7 +56,7 @@ const ReviewsSection = ({
   const handleBehaviorReview = async () => {
     if (!buyerId) return;
     
-    // Determine user type based on current user's account type
+    // Get current user's account type from context
     // Providers can review any user's behavior
     // Clients can only review providers who provided services/packs to them
     const canReview = await canReviewBuyerBehavior(buyerId, userType);
