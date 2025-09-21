@@ -328,17 +328,39 @@
         }
       }
     },
-      "generalReposts": {
+    "vixink_likes": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$postId": {
         ".read": "auth != null",
         ".write": "auth != null",
-        "$postId": {
-          ".read": "auth != null",
-          ".write": "auth != null",
-          "$userId": {
-            ".validate": "newData.isNumber() && newData.val() <= now + 600000"
-          }
+        "$userId": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 600000"
         }
-      },
+      }
+    },
+    "vixies_likes": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$postId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$userId": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 600000"
+        }
+      }
+    },
+    "generalReposts": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$postId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$userId": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 600000"
+        }
+      }
+    },
       "notifications": {
         ".read": "auth != null",
         ".write": "auth != null",

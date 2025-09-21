@@ -74,13 +74,13 @@ body {
 /* Responsive padding for fixed header */
 @media (max-width: 768px) {
   body {
-    padding-top: 60px; /* Smaller header on mobile */
+    padding-top: 72px; /* Adjusted for larger mobile header */
   }
 }
 
 @media (max-width: 576px) {
   body {
-    padding-top: 50px; /* Even smaller header on small mobile */
+    padding-top: 68px; /* Adjusted for larger small mobile header */
   }
 }
 
