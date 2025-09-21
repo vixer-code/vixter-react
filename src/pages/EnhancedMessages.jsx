@@ -45,16 +45,18 @@ const EnhancedMessages = () => {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  // Add class to main-content for CSS targeting
+  // Remove header padding for messages page
   useEffect(() => {
     const mainContent = document.querySelector('.main-content');
     if (mainContent) {
+      mainContent.classList.add('no-header-padding');
       mainContent.classList.add('messages-page');
     }
     
     return () => {
       const mainContent = document.querySelector('.main-content');
       if (mainContent) {
+        mainContent.classList.remove('no-header-padding');
         mainContent.classList.remove('messages-page');
       }
     };

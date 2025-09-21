@@ -116,6 +116,7 @@
       }
     },
     "status": {
+      ".read": "auth != null",
       "$userId": {
         ".read": "auth != null",
         ".write": "$userId == auth.uid",

@@ -11,6 +11,21 @@ const Home = () => {
   });
   const [activeFAQ, setActiveFAQ] = useState(null);
 
+  // Remove header padding for home page
+  useEffect(() => {
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+      mainContent.classList.add('no-header-padding');
+    }
+    
+    return () => {
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent) {
+        mainContent.classList.remove('no-header-padding');
+      }
+    };
+  }, []);
+
   useEffect(() => {
     // Animate stats counter
     const animateStats = () => {
