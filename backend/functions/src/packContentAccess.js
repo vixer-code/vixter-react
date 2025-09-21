@@ -529,20 +529,42 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
           '-bufsize 4M' // Buffer size
         ])
         .videoFilters([
-          // Main watermark with rotation (20% larger) - repeated pattern
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=24:fontcolor=white@0.6:x=(w-text_w)/2:y=(h-text_h)/2`,
-          // Profile watermarks (20% larger) - more visible
-          `drawtext=text='${buyerText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=16:fontcolor=white@0.5:x=15:y=25`,
-          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=16:fontcolor=white@0.5:x=15:y=45`,
-          `drawtext=text='vixter.com.br':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=19:fontcolor=white@0.5:x=w-text_w-15:y=h-15`,
-          // Additional watermarks for more coverage
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=w/4:y=h/4`,
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=3*w/4:y=3*h/4`,
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.3:x=w/2:y=h/3`,
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.3:x=w/2:y=2*h/3`,
-          // Corner watermarks
-          `drawtext=text='vixter.com.br':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=15:fontcolor=white@0.4:x=15:y=h-15`,
-          `drawtext=text='vixter.com.br':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=15:fontcolor=white@0.4:x=w-15:y=15`
+          // Main watermark with rotation (30% larger) - repeated pattern
+          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=28:fontcolor=white@0.7:x=(w-text_w)/2:y=(h-text_h)/2`,
+          // Profile watermarks (30% larger) - more visible
+          `drawtext=text='${buyerText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.6:x=15:y=25`,
+          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.6:x=15:y=45`,
+          `drawtext=text='vixter.com.br':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=22:fontcolor=white@0.6:x=w-text_w-15:y=h-15`,
+          
+          // High density watermark pattern - buyer username
+          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=24:fontcolor=white@0.5:x=w/4:y=h/4`,
+          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=24:fontcolor=white@0.5:x=3*w/4:y=3*h/4`,
+          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=22:fontcolor=white@0.4:x=w/2:y=h/3`,
+          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=22:fontcolor=white@0.4:x=w/2:y=2*h/3`,
+          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=w/6:y=h/6`,
+          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=5*w/6:y=5*h/6`,
+          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=w/3:y=h/6`,
+          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=2*w/3:y=5*h/6`,
+          
+          // High density watermark pattern - vendor username
+          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=w/8:y=h/8`,
+          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=7*w/8:y=7*h/8`,
+          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.3:x=w/5:y=h/5`,
+          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.3:x=4*w/5:y=4*h/5`,
+          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.3:x=w/7:y=h/7`,
+          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.3:x=6*w/7:y=6*h/7`,
+          
+          // Corner watermarks with both usernames
+          `drawtext=text='vixter.com.br':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=16:fontcolor=white@0.5:x=15:y=h-15`,
+          `drawtext=text='vixter.com.br':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=16:fontcolor=white@0.5:x=w-15:y=15`,
+          `drawtext=text='${buyerText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=14:fontcolor=white@0.4:x=w-15:y=h-35`,
+          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=14:fontcolor=white@0.4:x=15:y=65`,
+          
+          // Additional diagonal watermarks for extra coverage
+          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=16:fontcolor=white@0.3:x=w/10:y=h/10`,
+          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=16:fontcolor=white@0.3:x=9*w/10:y=9*h/10`,
+          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=14:fontcolor=white@0.3:x=w/12:y=h/12`,
+          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=14:fontcolor=white@0.3:x=11*w/12:y=11*h/12`
         ])
         .on('start', (commandLine) => {
           console.log('FFmpeg process started:', commandLine);

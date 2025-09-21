@@ -195,10 +195,34 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
     }
   }, [galleryOpen, selectedMediaIndex, mediaItems, loadAuthenticatedMedia]);
 
-  // Handle keyboard navigation
+  // Handle keyboard navigation and disable download shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!galleryOpen) return;
+      
+      // Disable common download shortcuts
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+          case 's': // Ctrl+S / Cmd+S
+          case 'a': // Ctrl+A / Cmd+A (select all)
+          case 'c': // Ctrl+C / Cmd+C (copy)
+          case 'v': // Ctrl+V / Cmd+V (paste)
+          case 'x': // Ctrl+X / Cmd+X (cut)
+          case 'p': // Ctrl+P / Cmd+P (print)
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+      }
+      
+      // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U (view source)
+      if (e.key === 'F12' || 
+          (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+          (e.ctrlKey && e.key === 'u')) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
       
       switch (e.key) {
         case 'ArrowLeft':
@@ -216,8 +240,35 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
       }
     };
 
+    // Disable right-click context menu
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+      return false;
+    };
+
+    // Disable drag and drop
+    const handleDragStart = (e) => {
+      e.preventDefault();
+      return false;
+    };
+
+    // Disable text selection
+    const handleSelectStart = (e) => {
+      e.preventDefault();
+      return false;
+    };
+
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('dragstart', handleDragStart);
+    document.addEventListener('selectstart', handleSelectStart);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('dragstart', handleDragStart);
+      document.removeEventListener('selectstart', handleSelectStart);
+    };
   }, [galleryOpen]);
 
   if (!pack) {
@@ -396,6 +447,9 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
                     autoPlay
                     className="gallery-video"
                     crossOrigin="anonymous"
+                    controlsList="nodownload nofullscreen noremoteplayback"
+                    disablePictureInPicture
+                    onContextMenu={(e) => e.preventDefault()}
                     onLoadStart={() => {
                       console.log('=== VIDEO LOAD START ===');
                       console.log('Video src:', mediaBlobUrls[mediaItems[selectedMediaIndex]?.key] || mediaItems[selectedMediaIndex]?.secureUrl);
@@ -406,6 +460,13 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
                       console.error('=== VIDEO LOAD ERROR ===');
                       console.error('Error:', e);
                       console.error('Video src:', e.target.src);
+                    }}
+                    style={{
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      MozUserSelect: 'none',
+                      msUserSelect: 'none',
+                      pointerEvents: 'auto'
                     }}
                   />
                 ) : (
@@ -458,6 +519,10 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
               <span className="watermark-notice">
                 <i className="fas fa-shield-alt"></i>
                 Conteúdo protegido com watermark personalizado
+              </span>
+              <span className="download-warning">
+                <i className="fas fa-ban"></i>
+                Download desabilitado - Conteúdo protegido
               </span>
             </div>
           </div>
