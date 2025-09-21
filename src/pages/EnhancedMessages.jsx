@@ -207,6 +207,14 @@ const EnhancedMessages = () => {
     console.warn('Users object is invalid, cannot check for missing user data');
   }
 
+  // Add class to body for CSS targeting
+  useEffect(() => {
+    document.body.classList.add('messages-page');
+    return () => {
+      document.body.classList.remove('messages-page');
+    };
+  }, []);
+
   return (
     <div className="enhanced-messages">
       {/* Connection Status */}

@@ -1,5 +1,6 @@
 .enhanced-messages {
-  height: 100%;
+  height: calc(100vh - 80px);
+  min-height: calc(100vh - 80px);
   display: flex;
   flex-direction: column;
   background: linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 100%);
@@ -7,6 +8,7 @@
   overflow: hidden;
   position: relative;
   z-index: 1;
+  margin-top: 80px;
 }
 
 .enhanced-messages.loading {
@@ -107,6 +109,8 @@
 /* Conversations Sidebar */
 .conversations-sidebar {
   width: 350px;
+  min-width: 350px;
+  max-width: 350px;
   height: 100%; /* Full height of parent container */
   background: #1A1A2E;
   border-right: 1px solid rgba(0, 255, 202, 0.2);
@@ -114,6 +118,7 @@
   flex-direction: column;
   transition: transform 0.3s ease;
   box-shadow: 2px 0 20px rgba(0, 255, 202, 0.1);
+  flex-shrink: 0;
 }
 
 .sidebar-header {
@@ -320,7 +325,6 @@
   height: 100%; /* Full height of parent container */
   overflow: hidden;
   position: relative;
-  width: calc(100% - 350px); /* Full width minus sidebar */
 }
 
 /* Mobile Responsive */

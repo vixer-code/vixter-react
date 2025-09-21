@@ -36,6 +36,18 @@ body {
   height: calc(100vh - 80px); /* Full viewport height minus header */
 }
 
+/* Special case for messages page - no padding */
+.main-content:has(.enhanced-messages) {
+  padding-top: 0;
+  height: 100vh;
+}
+
+/* Alternative selector for older browsers */
+.messages-page .main-content {
+  padding-top: 0;
+  height: 100vh;
+}
+
 /* Container */
 .container {
   max-width: 1200px;
