@@ -5,7 +5,7 @@ import { useUser } from '../contexts/UserContext';
 import { useWallet } from '../contexts/WalletContext';
 import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import CachedImage from '../components/CachedImage';
 import R2MediaViewer from '../components/R2MediaViewer';
@@ -19,6 +19,119 @@ const ServiceDetail = () => {
   const { vpBalance } = useWallet();
   const { createServiceOrder, processing } = useServiceOrder();
   const { showSuccess, showError, showWarning } = useNotification();
+
+  // Function to calculate provider statistics dynamically
+  const calculateProviderStats = async (providerData) => {
+    try {
+      // Calculate completed service orders
+      const serviceOrdersQuery = query(
+        collection(db, 'serviceOrders'),
+        where('sellerId', '==', providerData.id),
+        where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
+      );
+      const serviceOrdersSnap = await getDocs(serviceOrdersQuery);
+      const completedServiceOrders = serviceOrdersSnap.size;
+
+      // Calculate completed pack orders
+      const packOrdersQuery = query(
+        collection(db, 'packOrders'),
+        where('sellerId', '==', providerData.id),
+        where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
+      );
+      const packOrdersSnap = await getDocs(packOrdersQuery);
+      const completedPackOrders = packOrdersSnap.size;
+
+      // Total completed orders
+      const totalCompletedOrders = completedServiceOrders + completedPackOrders;
+
+      // Calculate average rating from reviews
+      const reviewsQuery = query(
+        collection(db, 'reviews'),
+        where('targetUserId', '==', providerData.id)
+      );
+      const reviewsSnap = await getDocs(reviewsQuery);
+      
+      let totalRating = 0;
+      let reviewCount = 0;
+      
+      reviewsSnap.forEach((doc) => {
+        const reviewData = doc.data();
+        if (reviewData.rating && reviewData.rating >= 1 && reviewData.rating <= 5) {
+          totalRating += reviewData.rating;
+          reviewCount++;
+        }
+      });
+
+      const averageRating = reviewCount > 0 ? (totalRating / reviewCount).toFixed(1) : 0;
+
+      // Update provider data with calculated stats
+      providerData.completedOrders = totalCompletedOrders;
+      providerData.servicesSold = completedServiceOrders;
+      providerData.packsSold = completedPackOrders;
+      providerData.rating = averageRating;
+      providerData.reviewCount = reviewCount;
+
+      console.log('Provider stats calculated:', {
+        completedOrders: totalCompletedOrders,
+        servicesSold: completedServiceOrders,
+        packsSold: completedPackOrders,
+        rating: averageRating,
+        reviewCount: reviewCount
+      });
+
+    } catch (error) {
+      console.error('Error calculating provider stats:', error);
+    }
+  };
+
+  // Function to calculate service specific statistics
+  const calculateServiceStats = async (serviceData, serviceId) => {
+    try {
+      // Calculate service rating from reviews
+      const serviceReviewsQuery = query(
+        collection(db, 'reviews'),
+        where('itemId', '==', serviceId),
+        where('type', '==', 'service')
+      );
+      const serviceReviewsSnap = await getDocs(serviceReviewsQuery);
+      
+      let totalRating = 0;
+      let reviewCount = 0;
+      
+      serviceReviewsSnap.forEach((doc) => {
+        const reviewData = doc.data();
+        if (reviewData.rating && reviewData.rating >= 1 && reviewData.rating <= 5) {
+          totalRating += reviewData.rating;
+          reviewCount++;
+        }
+      });
+
+      const averageRating = reviewCount > 0 ? (totalRating / reviewCount).toFixed(1) : 'N/A';
+
+      // Calculate service sales count
+      const serviceSalesQuery = query(
+        collection(db, 'serviceOrders'),
+        where('serviceId', '==', serviceId),
+        where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
+      );
+      const serviceSalesSnap = await getDocs(serviceSalesQuery);
+      const salesCount = serviceSalesSnap.size;
+
+      // Update service data with calculated stats
+      serviceData.rating = averageRating;
+      serviceData.reviewCount = reviewCount;
+      serviceData.salesCount = salesCount;
+
+      console.log('Service stats calculated:', {
+        rating: averageRating,
+        reviewCount: reviewCount,
+        salesCount: salesCount
+      });
+
+    } catch (error) {
+      console.error('Error calculating service stats:', error);
+    }
+  };
   
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,14 +159,20 @@ const ServiceDetail = () => {
             const providerRef = doc(db, 'users', serviceData.providerId);
             const providerSnap = await getDoc(providerRef);
             if (providerSnap.exists()) {
-              providerData = providerSnap.data();
+              providerData = {
+                id: providerSnap.id,
+                ...providerSnap.data()
+              };
+              
+              // Calculate provider statistics dynamically
+              await calculateProviderStats(providerData);
             }
           } catch (providerError) {
             console.warn('Error loading provider data:', providerError);
           }
         }
         
-        setService({
+        const serviceWithProvider = {
           id: serviceSnap.id,
           ...serviceData,
           // Add provider information
@@ -62,7 +181,12 @@ const ServiceDetail = () => {
           providerAvatar: providerData.profilePictureURL || serviceData.providerAvatar,
           providerRating: providerData.rating || serviceData.providerRating,
           providerCompletedOrders: providerData.completedOrders || serviceData.providerCompletedOrders
-        });
+        };
+
+        // Calculate service-specific statistics
+        await calculateServiceStats(serviceWithProvider, serviceSnap.id);
+        
+        setService(serviceWithProvider);
       } else {
         showError('Serviço não encontrado');
         navigate('/');

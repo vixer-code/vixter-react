@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useWallet } from '../contexts/WalletContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref as rtdbRef, get as rtdbGet } from 'firebase/database';
 import { db, database } from '../../config/firebase';
 import CachedImage from '../components/CachedImage';
@@ -33,6 +33,119 @@ const PackDetail = () => {
   const { userProfile } = useUser();
   const { vpBalance, createPackOrder } = useWallet();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
+
+  // Function to calculate provider statistics dynamically
+  const calculateProviderStats = async (providerData) => {
+    try {
+      // Calculate completed pack orders (sold packs)
+      const packOrdersQuery = query(
+        collection(db, 'packOrders'),
+        where('sellerId', '==', providerData.id),
+        where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
+      );
+      const packOrdersSnap = await getDocs(packOrdersQuery);
+      const completedPackOrders = packOrdersSnap.size;
+
+      // Calculate completed service orders
+      const serviceOrdersQuery = query(
+        collection(db, 'serviceOrders'),
+        where('sellerId', '==', providerData.id),
+        where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
+      );
+      const serviceOrdersSnap = await getDocs(serviceOrdersQuery);
+      const completedServiceOrders = serviceOrdersSnap.size;
+
+      // Total completed orders
+      const totalCompletedOrders = completedPackOrders + completedServiceOrders;
+
+      // Calculate average rating from reviews
+      const reviewsQuery = query(
+        collection(db, 'reviews'),
+        where('targetUserId', '==', providerData.id)
+      );
+      const reviewsSnap = await getDocs(reviewsQuery);
+      
+      let totalRating = 0;
+      let reviewCount = 0;
+      
+      reviewsSnap.forEach((doc) => {
+        const reviewData = doc.data();
+        if (reviewData.rating && reviewData.rating >= 1 && reviewData.rating <= 5) {
+          totalRating += reviewData.rating;
+          reviewCount++;
+        }
+      });
+
+      const averageRating = reviewCount > 0 ? (totalRating / reviewCount).toFixed(1) : 0;
+
+      // Update provider data with calculated stats
+      providerData.completedOrders = totalCompletedOrders;
+      providerData.packsSold = completedPackOrders;
+      providerData.servicesSold = completedServiceOrders;
+      providerData.rating = averageRating;
+      providerData.reviewCount = reviewCount;
+
+      console.log('Provider stats calculated:', {
+        completedOrders: totalCompletedOrders,
+        packsSold: completedPackOrders,
+        servicesSold: completedServiceOrders,
+        rating: averageRating,
+        reviewCount: reviewCount
+      });
+
+    } catch (error) {
+      console.error('Error calculating provider stats:', error);
+    }
+  };
+
+  // Function to calculate pack specific statistics
+  const calculatePackStats = async (packData, packId) => {
+    try {
+      // Calculate pack rating from reviews
+      const packReviewsQuery = query(
+        collection(db, 'reviews'),
+        where('itemId', '==', packId),
+        where('type', '==', 'pack')
+      );
+      const packReviewsSnap = await getDocs(packReviewsQuery);
+      
+      let totalRating = 0;
+      let reviewCount = 0;
+      
+      packReviewsSnap.forEach((doc) => {
+        const reviewData = doc.data();
+        if (reviewData.rating && reviewData.rating >= 1 && reviewData.rating <= 5) {
+          totalRating += reviewData.rating;
+          reviewCount++;
+        }
+      });
+
+      const averageRating = reviewCount > 0 ? (totalRating / reviewCount).toFixed(1) : 'N/A';
+
+      // Calculate pack sales count
+      const packSalesQuery = query(
+        collection(db, 'packOrders'),
+        where('packId', '==', packId),
+        where('status', 'in', ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'])
+      );
+      const packSalesSnap = await getDocs(packSalesQuery);
+      const salesCount = packSalesSnap.size;
+
+      // Update pack data with calculated stats
+      packData.rating = averageRating;
+      packData.reviewCount = reviewCount;
+      packData.salesCount = salesCount;
+
+      console.log('Pack stats calculated:', {
+        rating: averageRating,
+        reviewCount: reviewCount,
+        salesCount: salesCount
+      });
+
+    } catch (error) {
+      console.error('Error calculating pack stats:', error);
+    }
+  };
 
   // Helper functions for category and subcategory labels
   const getCategoryLabel = (categoryValue) => {
@@ -119,6 +232,11 @@ const PackDetail = () => {
                 console.warn('Provider not found in either database');
               }
             }
+
+            // Calculate provider statistics dynamically
+            if (providerData.id) {
+              await calculateProviderStats(providerData);
+            }
           } catch (providerError) {
             console.error('Error loading provider data:', providerError);
           }
@@ -144,6 +262,9 @@ const PackDetail = () => {
           sellerRating: providerData.rating || providerData.averageRating || packData.sellerRating || 0,
           sellerCompletedOrders: providerData.completedOrders || providerData.totalSales || packData.sellerCompletedOrders || 0
         };
+
+        // Calculate pack-specific statistics
+        await calculatePackStats(packWithProvider, packSnap.id);
         
         console.log('Pack data loaded:', packWithProvider);
         console.log('Provider data from Firestore:', providerData);
