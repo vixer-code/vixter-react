@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useReview } from '../contexts/ReviewContext';
+import Portal from './Portal';
 import './EditReviewModal.css';
 
 const EditReviewModal = ({ 
@@ -49,59 +50,61 @@ const EditReviewModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content edit-review-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Editar Avaliação</h2>
-          <button className="modal-close" onClick={onClose}>
-            <i className="fas fa-times"></i>
-          </button>
-        </div>
-        
-        <div className="modal-body">
-          <div className="edit-review-form">
-            <div className="rating-input">
-              <label>Avaliação:</label>
-              <div className="stars">
-                {renderStars(rating, setRating)}
+    <Portal>
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content edit-review-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2>Editar Avaliação</h2>
+            <button className="modal-close" onClick={onClose}>
+              <i className="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <div className="modal-body">
+            <div className="edit-review-form">
+              <div className="rating-input">
+                <label>Avaliação:</label>
+                <div className="stars">
+                  {renderStars(rating, setRating)}
+                </div>
+                <span className="rating-text">{rating}/5 estrelas</span>
               </div>
-              <span className="rating-text">{rating}/5 estrelas</span>
-            </div>
-            
-            <div className="comment-input">
-              <label>Comentário:</label>
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                maxLength="200"
-                rows="4"
-                placeholder="Descreva sua experiência..."
-              />
-              <div className="character-count">
-                {comment.length}/200 caracteres
+              
+              <div className="comment-input">
+                <label>Comentário:</label>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  maxLength="200"
+                  rows="4"
+                  placeholder="Descreva sua experiência..."
+                />
+                <div className="character-count">
+                  {comment.length}/200 caracteres
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        
-        <div className="modal-footer">
-          <button 
-            className="btn-secondary" 
-            onClick={handleCancel}
-            disabled={processing}
-          >
-            Cancelar
-          </button>
-          <button 
-            className="btn-primary" 
-            onClick={handleSave}
-            disabled={!comment.trim() || rating === 0 || processing}
-          >
-            {processing ? 'Salvando...' : 'Salvar'}
-          </button>
+          
+          <div className="modal-footer">
+            <button 
+              className="btn-secondary" 
+              onClick={handleCancel}
+              disabled={processing}
+            >
+              Cancelar
+            </button>
+            <button 
+              className="btn-primary" 
+              onClick={handleSave}
+              disabled={!comment.trim() || rating === 0 || processing}
+            >
+              {processing ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Portal>
   );
 };
 

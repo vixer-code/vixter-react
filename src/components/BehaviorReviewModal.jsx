@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useReview } from '../contexts/ReviewContext';
 import { useNotification } from '../contexts/NotificationContext';
+import Portal from './Portal';
 import './BehaviorReviewModal.css';
 
 const BehaviorReviewModal = ({ 
@@ -91,8 +92,9 @@ const BehaviorReviewModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content behavior-review-modal" onClick={(e) => e.stopPropagation()}>
+    <Portal>
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content behavior-review-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>Avaliar Comportamento</h3>
           <button className="modal-close" onClick={onClose}>
@@ -197,7 +199,7 @@ const BehaviorReviewModal = ({
           </button>
         </div>
       </div>
-    </div>
+    </Portal>
   );
 };
 
