@@ -46,9 +46,12 @@ const AttachmentDisplay = ({ attachment, checkAttachmentExists, getImageUrl }) =
     );
   }
   
+  // Debug - verificar estrutura do attachment
+  console.log('Vixies - Attachment structure:', attachment);
+  
   const imageUrl = getImageUrl(
-    attachment.coverUrl || 
     attachment.coverImage?.publicUrl || 
+    attachment.coverUrl || 
     attachment.coverImage || 
     attachment.image ||
     attachment.cover ||
@@ -431,17 +434,22 @@ const Vixies = () => {
     return date.toLocaleDateString('pt-BR');
   };
 
-  // Function to handle WebP compatibility
+  // Function to handle WebP compatibility and R2 URLs
   const getImageUrl = (url) => {
     if (!url || typeof url !== 'string') return url;
+    
+    // Handle R2 URLs - already have https protocol
+    if (url.startsWith('https://') || url.startsWith('http://')) {
+      return url;
+    }
     
     // Fix URL construction for media.vixter.com.br
     if (url.startsWith('media.vixter.com.br/')) {
       url = `https://${url}`;
     }
     
-    // For WebP images, add a timestamp to force refresh
-    if (url.includes('.webp')) {
+    // For WebP images, add a timestamp to force refresh (only for local images)
+    if (url.includes('.webp') && !url.includes('https://')) {
       const separator = url.includes('?') ? '&' : '?';
       url = `${url}${separator}t=${Date.now()}`;
     }
