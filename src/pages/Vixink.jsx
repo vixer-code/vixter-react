@@ -46,9 +46,6 @@ const AttachmentDisplay = ({ attachment, checkAttachmentExists, getImageUrl }) =
     );
   }
   
-  // Debug - verificar estrutura do attachment
-  console.log('Vixink - Attachment structure:', attachment);
-  
   const imageUrl = getImageUrl(
     attachment.coverImage?.publicUrl || 
     attachment.coverUrl || 
@@ -223,6 +220,12 @@ const Vixink = () => {
 
   const repostPost = async (post) => {
     if (!currentUser) return;
+    
+    // Prevent reposting of reposts - only allow reposting original posts
+    if (post.isRepost) {
+      showError('Não é possível repostar um repost. Reposte o post original.');
+      return;
+    }
     
     try {
       // Check if user already reposted this post
@@ -665,7 +668,12 @@ const Vixink = () => {
                       <span>{likeCount}</span>
                     </button>
                     
-                    <button className="action-btn share-btn" onClick={() => repostPost(post)}>
+                    <button 
+                      className={`action-btn share-btn ${post.isRepost ? 'disabled' : ''}`} 
+                      onClick={() => !post.isRepost && repostPost(post)}
+                      title={post.isRepost ? 'Não é possível repostar um repost' : 'Repostar'}
+                      disabled={post.isRepost}
+                    >
                       <i className="fas fa-retweet"></i>
                     </button>
                     <button className="action-btn tip-btn" onClick={() => tipPost(post)}>

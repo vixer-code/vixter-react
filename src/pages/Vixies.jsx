@@ -46,9 +46,6 @@ const AttachmentDisplay = ({ attachment, checkAttachmentExists, getImageUrl }) =
     );
   }
   
-  // Debug - verificar estrutura do attachment
-  console.log('Vixies - Attachment structure:', attachment);
-  
   const imageUrl = getImageUrl(
     attachment.coverImage?.publicUrl || 
     attachment.coverUrl || 
@@ -237,6 +234,12 @@ const Vixies = () => {
 
   const repostPost = async (post) => {
     if (!currentUser) return;
+    
+    // Prevent reposting of reposts - only allow reposting original posts
+    if (post.isRepost) {
+      showError('Não é possível repostar um repost. Reposte o post original.');
+      return;
+    }
     
     try {
       // Check if user already reposted this post
@@ -723,9 +726,10 @@ const Vixies = () => {
                       <span>{likeCount}</span>
                     </button>
                     <button 
-                      className={`action-btn share-btn ${isReposted ? 'reposted' : ''}`} 
-                      onClick={() => repostPost(post)}
-                      title={isReposted ? 'Remover repost' : 'Repostar'}
+                      className={`action-btn share-btn ${isReposted ? 'reposted' : ''} ${post.isRepost ? 'disabled' : ''}`} 
+                      onClick={() => !post.isRepost && repostPost(post)}
+                      title={post.isRepost ? 'Não é possível repostar um repost' : (isReposted ? 'Remover repost' : 'Repostar')}
+                      disabled={post.isRepost}
                     >
                       <i className="fas fa-retweet"></i>
                       <span>{post.repostCount || 0}</span>

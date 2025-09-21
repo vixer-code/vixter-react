@@ -663,6 +663,23 @@
   color: #ffffff;
 }
 
+/* ===== Disabled Button Styles ===== */
+.action-btn.disabled {
+  background: rgba(108, 117, 125, 0.1) !important;
+  border-color: rgba(108, 117, 125, 0.2) !important;
+  color: #6c757d !important;
+  cursor: not-allowed !important;
+  opacity: 0.5;
+}
+
+.action-btn.disabled:hover {
+  background: rgba(108, 117, 125, 0.1) !important;
+  border-color: rgba(108, 117, 125, 0.2) !important;
+  color: #6c757d !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 /* ===== Repost Indicator ===== */
 .repost-indicator {
   display: flex;
