@@ -3,7 +3,8 @@
 /* ======================== */
 
 /* ===== Container Geral ===== */
-.vixies-container {
+.vixies-page .vixies-container,
+.vixink-page .vixies-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
@@ -601,8 +602,6 @@
   color: #ffc107;
   font-weight: 600;
   font-size: 0.9rem;
-}
-  transition: all 0.3s ease;
 }
 
 .view-more:hover {

@@ -50,7 +50,9 @@ const AttachmentDisplay = ({ attachment, checkAttachmentExists, getImageUrl }) =
     attachment.coverUrl || 
     attachment.coverImage?.publicUrl || 
     attachment.coverImage || 
-    attachment.image || 
+    attachment.image ||
+    attachment.cover ||
+    attachment.imageUrl ||
     '/images/default-service.jpg'
   );
   
@@ -438,9 +440,12 @@ const Vixink = () => {
     if (!attachment || !attachment.id || !attachment.kind) return false;
     
     try {
-      const refPath = attachment.kind === 'service' ? `services/${attachment.id}` : `packs/${attachment.id}`;
-      const attachmentRef = ref(database, refPath);
-      const snapshot = await get(attachmentRef);
+      const { doc, getDoc } = await import('firebase/firestore');
+      const { firestore } = await import('../../config/firebase');
+      
+      const collectionName = attachment.kind === 'service' ? 'services' : 'packs';
+      const attachmentRef = doc(firestore, collectionName, attachment.id);
+      const snapshot = await getDoc(attachmentRef);
       return snapshot.exists();
     } catch (error) {
       console.error('Error checking attachment existence:', error);
@@ -494,7 +499,8 @@ const Vixink = () => {
   }
 
   return (
-    <div className="vixies-container">
+    <div className="vixink-page">
+      <div className="vixies-container">
       <div className="vixies-header">
         <div className="vixies-title">
           <h1>Vixink</h1>
@@ -710,6 +716,7 @@ const Vixink = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

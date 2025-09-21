@@ -821,7 +821,8 @@ const Feed = () => {
   }
 
   return (
-    <div className="vixies-container">
+    <div className="feed-page">
+      <div className="vixies-container">
       <div className="vixies-header">
         <div className="vixies-title">
           <h1>Feed</h1>
@@ -920,6 +921,7 @@ const Feed = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

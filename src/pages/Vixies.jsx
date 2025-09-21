@@ -50,7 +50,9 @@ const AttachmentDisplay = ({ attachment, checkAttachmentExists, getImageUrl }) =
     attachment.coverUrl || 
     attachment.coverImage?.publicUrl || 
     attachment.coverImage || 
-    attachment.image || 
+    attachment.image ||
+    attachment.cover ||
+    attachment.imageUrl ||
     '/images/default-service.jpg'
   );
   
@@ -555,7 +557,8 @@ const Vixies = () => {
   }
 
   return (
-    <div className="vixies-container">
+    <div className="vixies-page">
+      <div className="vixies-container">
       <div className="vixies-header">
         <div className="vixies-title">
           <h1>Vixies</h1>
@@ -775,6 +778,7 @@ const Vixies = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

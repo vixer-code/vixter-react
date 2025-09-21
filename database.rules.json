@@ -133,7 +133,7 @@
       ".read": "auth != null",
       ".write": "auth != null",
       "$postId": {
-        ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp', 'category'])",
+        ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp']) && (newData.child('category').exists() || newData.child('isRepost').exists())",
         "authorId": {
           ".validate": "newData.isString() && newData.val() == auth.uid"
         },
@@ -143,8 +143,11 @@
         "authorPhotoURL": {
           ".validate": "newData.isString()"
         },
+        "authorUsername": {
+          ".validate": "newData.isString()"
+        },
         "content": {
-          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000"
+          ".validate": "newData.isString() && newData.val().length >= 0 && newData.val().length <= 2000"
         },
         "timestamp": {
           ".validate": "newData.isNumber() && newData.val() <= now + 600000"
@@ -158,14 +161,32 @@
         "mediaType": {
           ".validate": "newData.isString() && (newData.val() == 'image' || newData.val() == 'video' || newData.val() == 'audio')"
         },
+        "media": {
+          ".validate": "newData.val() == null || newData.hasChildren()"
+        },
         "attachment": {
           ".validate": "newData.val() == null || newData.hasChildren()"
         },
         "likes": {
-          ".validate": "newData.hasChildren()",
-          "$userId": {
-            ".validate": "newData.isBoolean()"
-          }
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "likedBy": {
+          ".validate": "newData.hasChildren() || newData.val() == null"
+        },
+        "repostCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "isRepost": {
+          ".validate": "newData.isBoolean()"
+        },
+        "originalPostId": {
+          ".validate": "newData.isString()"
+        },
+        "originalAuthorId": {
+          ".validate": "newData.isString()"
+        },
+        "originalAuthorName": {
+          ".validate": "newData.isString()"
         }
       }
     },
@@ -174,7 +195,7 @@
       ".read": "auth != null",
       ".write": "auth != null",
       "$postId": {
-        ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp', 'category'])",
+        ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp']) && (newData.child('category').exists() || newData.child('isRepost').exists())",
         "authorId": {
           ".validate": "newData.isString() && newData.val() == auth.uid"
         },
@@ -184,8 +205,11 @@
         "authorPhotoURL": {
           ".validate": "newData.isString()"
         },
+        "authorUsername": {
+          ".validate": "newData.isString()"
+        },
         "content": {
-          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000"
+          ".validate": "newData.isString() && newData.val().length >= 0 && newData.val().length <= 2000"
         },
         "timestamp": {
           ".validate": "newData.isNumber() && newData.val() <= now + 600000"
@@ -206,7 +230,25 @@
           ".validate": "newData.val() == null || newData.hasChildren()"
         },
         "likes": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "likedBy": {
           ".validate": "newData.hasChildren() || newData.val() == null"
+        },
+        "repostCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "isRepost": {
+          ".validate": "newData.isBoolean()"
+        },
+        "originalPostId": {
+          ".validate": "newData.isString()"
+        },
+        "originalAuthorId": {
+          ".validate": "newData.isString()"
+        },
+        "originalAuthorName": {
+          ".validate": "newData.isString()"
         }
       }
     },
