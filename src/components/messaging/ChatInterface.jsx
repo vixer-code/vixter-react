@@ -412,7 +412,6 @@ const ChatInterface = ({ conversation, onClose }) => {
           style={{ display: 'none' }}
         />
       </div>
-      </div>
 
       {/* Completed Service Notice */}
       {isServiceCompleted && (
