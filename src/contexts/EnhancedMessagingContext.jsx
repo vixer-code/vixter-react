@@ -40,11 +40,12 @@ const generateConversationId = (userA, userB, serviceOrderId = null) => {
   // Replace special characters that might cause Firebase key issues
   const cleanUserA = sorted[0].replace(/[.#$[\]]/g, '_');
   const cleanUserB = sorted[1].replace(/[.#$[\]]/g, '_');
-  const baseId = `conv_${cleanUserA}_${cleanUserB}`;
   
   // For service orders, always include the serviceOrderId to ensure uniqueness
   // This prevents conflicts when multiple orders exist between the same users
-  return serviceOrderId ? `${baseId}_service_${serviceOrderId}` : baseId;
+  return serviceOrderId ? 
+    `conv_${cleanUserA}_${cleanUserB}_service_${serviceOrderId}` : 
+    `conv_${cleanUserA}_${cleanUserB}`;
 };
 
 const EnhancedMessagingContext = createContext({});
@@ -930,18 +931,60 @@ export const EnhancedMessagingProvider = ({ children }) => {
     }
 
     try {
+      // Generate deterministic conversation ID
+      const sorted = [currentUser.uid, otherUserId].sort();
+      const cleanUserA = sorted[0].replace(/[.#$[\]]/g, '_');
+      const cleanUserB = sorted[1].replace(/[.#$[\]]/g, '_');
+      const conversationId = serviceOrderId ? 
+        `conv_${cleanUserA}_${cleanUserB}_service_${serviceOrderId}` : 
+        `conv_${cleanUserA}_${cleanUserB}`;
+
+      debugLog('Deterministic conversation ID generated', conversationId);
+
       // First check if conversation already exists in local state
       const allConversations = [...conversations, ...serviceConversations];
-      const existingConversation = findExistingConversation(allConversations, currentUser.uid, otherUserId);
+      const localExistingConversation = allConversations.find(conv => conv.id === conversationId);
 
-      if (existingConversation) {
-        debugLog('Found existing conversation in local state', existingConversation.id);
+      if (localExistingConversation) {
+        debugLog('Found existing conversation in local state', localExistingConversation.id);
+        return localExistingConversation;
+      }
+
+      // Check if conversation exists in Firebase Database
+      const conversationRef = ref(database, `conversations/${conversationId}`);
+      const { get } = await import('firebase/database');
+      const conversationSnapshot = await get(conversationRef);
+
+      if (conversationSnapshot.exists()) {
+        const existingConversation = {
+          id: conversationId,
+          ...conversationSnapshot.val()
+        };
+        debugLog('Found existing conversation in Firebase Database', existingConversation.id);
+        
+        // Add to local state
+        if (serviceOrderId) {
+          setServiceConversations(prev => [existingConversation, ...prev]);
+        } else {
+          setConversations(prev => [existingConversation, ...prev]);
+        }
+        
         return existingConversation;
       }
 
       // Create new conversation using utility function
       const otherUser = { uid: otherUserId }; // Minimal user object for creation
-      const newConversation = createConversationObject(currentUser.uid, otherUser);
+      const newConversation = {
+        id: conversationId,
+        participants: { 
+          [currentUser.uid]: true, 
+          [otherUserId]: true 
+        },
+        lastMessage: '',
+        lastMessageTime: Date.now(),
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
       
       // Add service order ID if provided
       if (serviceOrderId) {
@@ -954,8 +997,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
       debugLog('Creating new conversation', newConversation);
 
       // Save to Firebase Realtime Database with messages structure for Centrifugo compatibility
-      const conversationRef = ref(database, `conversations/${newConversation.id}`);
-      await set(conversationRef, {
+      const newConversationRef = ref(database, `conversations/${conversationId}`);
+      await set(newConversationRef, {
         participants: newConversation.participants,
         createdAt: newConversation.createdAt,
         lastMessage: newConversation.lastMessage,
@@ -986,7 +1029,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       showError('Erro ao criar conversa');
       return null;
     }
-  }, [currentUser, conversations, serviceConversations, setConversations, setServiceConversations, showError]);
+  }, [currentUser, conversations, serviceConversations, showError]);
 
   // Create new conversation
   const createConversation = useCallback(async (conversationData) => {
@@ -1000,25 +1043,18 @@ export const EnhancedMessagingProvider = ({ children }) => {
     try {
       const conversationsRef = ref(database, 'conversations');
       
-      // For direct conversations, check if it already exists
+      // For direct conversations, use deterministic approach
       if (conversationData.participantIds.length === 2 && conversationData.type !== 'service') {
-        console.log('createConversation: Checking for existing direct conversation');
+        console.log('createConversation: Using deterministic approach for direct conversation');
         
         const otherUserId = conversationData.participantIds.find(id => id !== currentUser.uid);
         if (otherUserId) {
-          const existingConversation = conversations.find(conv => {
-            const participants = Object.keys(conv.participants || {});
-            return participants.length === 2 && 
-                   participants.includes(currentUser.uid) && 
-                   participants.includes(otherUserId) &&
-                   !conv.serviceOrderId;
-          });
-          
-          if (existingConversation) {
-            console.log('createConversation: Found existing conversation:', existingConversation.id);
-            setSelectedConversation(existingConversation);
+          // Use createOrGetConversation for deterministic behavior
+          const conversation = await createOrGetConversation(otherUserId, null);
+          if (conversation) {
+            setSelectedConversation(conversation);
             setActiveTab('messages');
-            return existingConversation;
+            return conversation;
           }
         }
       }
