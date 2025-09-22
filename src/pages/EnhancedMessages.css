@@ -415,8 +415,6 @@
     visibility: visible !important;
     opacity: 1 !important;
     flex-direction: column !important;
-    /* TODO: Remove this debug border after confirmation */
-    border: 1px solid var(--vixter-accent-primary) !important;
   }
   
   /* Ensure chat interface is always visible on desktop */
