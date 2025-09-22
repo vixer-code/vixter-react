@@ -730,6 +730,13 @@ input.message-input {
   border: 1px solid #444;
   color: #666;
   cursor: not-allowed;
+  position: relative;
+}
+
+.chat-interface.completed-service .message-input:focus {
+  outline: none;
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2);
 }
 
 .chat-interface.completed-service .message-input::placeholder {
@@ -746,6 +753,17 @@ input.message-input {
 .chat-interface.completed-service .send-button:hover {
   background: rgba(42, 42, 42, 0.6);
   transform: none;
+}
+
+/* Animation for disabled input interaction */
+.chat-interface.completed-service .message-input-container:active {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
 }
 
 /* Rich Presence Styles */

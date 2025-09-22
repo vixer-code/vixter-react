@@ -96,8 +96,8 @@ const SearchBar = () => {
   };
 
   const searchServices = async () => {
-    // Allow all authenticated users to search services
-    if (!userProfile) {
+    // Only allow KYC verified users to search services
+    if (!userProfile || !userProfile.kyc) {
       return [];
     }
 
@@ -105,16 +105,21 @@ const SearchBar = () => {
       const servicesRef = collection(db, 'services');
       const searchQuery = firestoreQuery(
         servicesRef,
-        where('title', '>=', searchTerm),
-        where('title', '<=', searchTerm + '\uf8ff'),
-        limit(3)
+        where('isActive', '==', true),
+        limit(20) // Get more results to filter by tags
       );
       
       const snapshot = await getDocs(searchQuery);
       const services = [];
+      const searchTermLower = searchTerm.toLowerCase();
+      
       snapshot.forEach((doc) => {
         const serviceData = doc.data();
-        if (serviceData.title && serviceData.title.toLowerCase().includes(searchTerm.toLowerCase())) {
+        const titleMatch = serviceData.title && serviceData.title.toLowerCase().includes(searchTermLower);
+        const tagMatch = serviceData.tags && Array.isArray(serviceData.tags) && 
+          serviceData.tags.some(tag => tag.toLowerCase().includes(searchTermLower));
+        
+        if (titleMatch || tagMatch) {
           services.push({
             id: doc.id,
             ...serviceData
@@ -122,7 +127,17 @@ const SearchBar = () => {
         }
       });
 
-      return services;
+      // Sort by relevance (title matches first, then tag matches)
+      services.sort((a, b) => {
+        const aTitleMatch = a.title && a.title.toLowerCase().includes(searchTermLower);
+        const bTitleMatch = b.title && b.title.toLowerCase().includes(searchTermLower);
+        
+        if (aTitleMatch && !bTitleMatch) return -1;
+        if (!aTitleMatch && bTitleMatch) return 1;
+        return 0;
+      });
+
+      return services.slice(0, 3); // Return top 3
     } catch (error) {
       console.error('Error searching services:', error);
       return [];
@@ -130,8 +145,8 @@ const SearchBar = () => {
   };
 
   const searchPacks = async () => {
-    // Allow all authenticated users to search packs
-    if (!userProfile) {
+    // Only allow KYC verified users to search packs
+    if (!userProfile || !userProfile.kyc) {
       return [];
     }
 
@@ -139,16 +154,21 @@ const SearchBar = () => {
       const packsRef = collection(db, 'packs');
       const searchQuery = firestoreQuery(
         packsRef,
-        where('title', '>=', searchTerm),
-        where('title', '<=', searchTerm + '\uf8ff'),
-        limit(3)
+        where('isActive', '==', true),
+        limit(20) // Get more results to filter by tags
       );
       
       const snapshot = await getDocs(searchQuery);
       const packs = [];
+      const searchTermLower = searchTerm.toLowerCase();
+      
       snapshot.forEach((doc) => {
         const packData = doc.data();
-        if (packData.title && packData.title.toLowerCase().includes(searchTerm.toLowerCase())) {
+        const titleMatch = packData.title && packData.title.toLowerCase().includes(searchTermLower);
+        const tagMatch = packData.tags && Array.isArray(packData.tags) && 
+          packData.tags.some(tag => tag.toLowerCase().includes(searchTermLower));
+        
+        if (titleMatch || tagMatch) {
           packs.push({
             id: doc.id,
             ...packData
@@ -156,7 +176,17 @@ const SearchBar = () => {
         }
       });
 
-      return packs;
+      // Sort by relevance (title matches first, then tag matches)
+      packs.sort((a, b) => {
+        const aTitleMatch = a.title && a.title.toLowerCase().includes(searchTermLower);
+        const bTitleMatch = b.title && b.title.toLowerCase().includes(searchTermLower);
+        
+        if (aTitleMatch && !bTitleMatch) return -1;
+        if (!aTitleMatch && bTitleMatch) return 1;
+        return 0;
+      });
+
+      return packs.slice(0, 3); // Return top 3
     } catch (error) {
       console.error('Error searching packs:', error);
       return [];
@@ -209,7 +239,7 @@ const SearchBar = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onFocus={() => searchTerm.trim().length >= 2 && setShowDropdown(true)}
-            placeholder="Buscar usuários, serviços, packs..."
+            placeholder={userProfile?.kyc ? "Buscar usuários, serviços, packs..." : "Buscar usuários..."}
             className="search-input"
           />
           <button type="submit" className="search-button">
@@ -263,7 +293,7 @@ const SearchBar = () => {
               )}
 
               {/* Services Results */}
-              {searchResults.services.length > 0 && (
+              {userProfile?.kyc && searchResults.services.length > 0 && (
                 <div className="search-section">
                   <div className="search-section-title">
                     <i className="fas fa-cog"></i>
@@ -293,7 +323,7 @@ const SearchBar = () => {
               )}
 
               {/* Packs Results */}
-              {searchResults.packs.length > 0 && (
+              {userProfile?.kyc && searchResults.packs.length > 0 && (
                 <div className="search-section">
                   <div className="search-section-title">
                     <i className="fas fa-box"></i>

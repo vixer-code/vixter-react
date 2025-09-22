@@ -132,7 +132,7 @@ export const PacksProvider = ({ children }) => {
       }
 
       const snapshot = await getDocs(q);
-      const packsData = [];
+      let packsData = [];
       
       snapshot.forEach((doc) => {
         const data = doc.data();
@@ -143,7 +143,9 @@ export const PacksProvider = ({ children }) => {
           const matchesSearch = (
             data.title.toLowerCase().includes(searchTerm) ||
             data.description.toLowerCase().includes(searchTerm) ||
-            data.searchTerms?.some(term => term.includes(searchTerm))
+            data.searchTerms?.some(term => term.includes(searchTerm)) ||
+            (data.tags && Array.isArray(data.tags) && 
+              data.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
           );
           
           if (!matchesSearch) return;

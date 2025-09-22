@@ -290,3 +290,57 @@
     font-size: 20px;
   }
 }
+
+.search-kyc-required {
+  text-align: center;
+  padding: 60px 20px;
+  background: #1a1a1a;
+  border-radius: 15px;
+  border: 2px solid #ff6b35;
+  margin: 20px 0;
+}
+
+.search-kyc-required i {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  color: #ff6b35;
+}
+
+.search-kyc-required h3 {
+  font-size: 1.8rem;
+  margin-bottom: 15px;
+  color: #ff6b35;
+}
+
+.search-kyc-required p {
+  font-size: 1.1rem;
+  margin-bottom: 25px;
+  color: #ccc;
+  line-height: 1.6;
+}
+
+.kyc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  color: white;
+  text-decoration: none;
+  border-radius: 25px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+}
+
+.kyc-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+  text-decoration: none;
+  color: white;
+}
+
+.kyc-link i {
+  font-size: 1rem;
+  margin: 0;
+}

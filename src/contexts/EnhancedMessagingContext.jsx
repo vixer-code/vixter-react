@@ -1658,7 +1658,14 @@ export const EnhancedMessagingProvider = ({ children }) => {
       return success;
     } catch (error) {
       console.error('Error sending message:', error);
-      showError('Erro ao enviar mensagem');
+      
+      // Check if it's a permission denied error for completed service
+      if (error.code === 'PERMISSION_DENIED' && selectedConversation?.type === 'service') {
+        showError('Esta conversa foi finalizada e não permite mais mensagens');
+      } else {
+        showError('Erro ao enviar mensagem');
+      }
+      
       return false;
     } finally {
       setSending(false);

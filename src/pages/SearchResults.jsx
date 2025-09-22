@@ -82,8 +82,8 @@ const SearchResults = () => {
   };
 
   const searchServices = async (term) => {
-    // Allow all authenticated users to search services
-    if (!userProfile) {
+    // Only allow KYC verified users to search services
+    if (!userProfile || !userProfile.kyc) {
       return [];
     }
 
@@ -91,21 +91,35 @@ const SearchResults = () => {
       const servicesRef = collection(db, 'services');
       const searchQuery = firestoreQuery(
         servicesRef,
-        where('title', '>=', term),
-        where('title', '<=', term + '\uf8ff')
+        where('isActive', '==', true)
       );
       
       const snapshot = await getDocs(searchQuery);
       const services = [];
+      const termLower = term.toLowerCase();
       
       snapshot.forEach((doc) => {
         const serviceData = doc.data();
-        if (serviceData.title && serviceData.title.toLowerCase().includes(term.toLowerCase())) {
+        const titleMatch = serviceData.title && serviceData.title.toLowerCase().includes(termLower);
+        const tagMatch = serviceData.tags && Array.isArray(serviceData.tags) && 
+          serviceData.tags.some(tag => tag.toLowerCase().includes(termLower));
+        
+        if (titleMatch || tagMatch) {
           services.push({
             id: doc.id,
             ...serviceData
           });
         }
+      });
+
+      // Sort by relevance (title matches first, then tag matches)
+      services.sort((a, b) => {
+        const aTitleMatch = a.title && a.title.toLowerCase().includes(termLower);
+        const bTitleMatch = b.title && b.title.toLowerCase().includes(termLower);
+        
+        if (aTitleMatch && !bTitleMatch) return -1;
+        if (!aTitleMatch && bTitleMatch) return 1;
+        return 0;
       });
 
       return services;
@@ -116,8 +130,8 @@ const SearchResults = () => {
   };
 
   const searchPacks = async (term) => {
-    // Allow all authenticated users to search packs
-    if (!userProfile) {
+    // Only allow KYC verified users to search packs
+    if (!userProfile || !userProfile.kyc) {
       return [];
     }
 
@@ -125,21 +139,35 @@ const SearchResults = () => {
       const packsRef = collection(db, 'packs');
       const searchQuery = firestoreQuery(
         packsRef,
-        where('title', '>=', term),
-        where('title', '<=', term + '\uf8ff')
+        where('isActive', '==', true)
       );
       
       const snapshot = await getDocs(searchQuery);
       const packs = [];
+      const termLower = term.toLowerCase();
       
       snapshot.forEach((doc) => {
         const packData = doc.data();
-        if (packData.title && packData.title.toLowerCase().includes(term.toLowerCase())) {
+        const titleMatch = packData.title && packData.title.toLowerCase().includes(termLower);
+        const tagMatch = packData.tags && Array.isArray(packData.tags) && 
+          packData.tags.some(tag => tag.toLowerCase().includes(termLower));
+        
+        if (titleMatch || tagMatch) {
           packs.push({
             id: doc.id,
             ...packData
           });
         }
+      });
+
+      // Sort by relevance (title matches first, then tag matches)
+      packs.sort((a, b) => {
+        const aTitleMatch = a.title && a.title.toLowerCase().includes(termLower);
+        const bTitleMatch = b.title && b.title.toLowerCase().includes(termLower);
+        
+        if (aTitleMatch && !bTitleMatch) return -1;
+        if (!aTitleMatch && bTitleMatch) return 1;
+        return 0;
       });
 
       return packs;
@@ -204,7 +232,7 @@ const SearchResults = () => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar usuários, serviços, packs..."
+              placeholder={userProfile?.kyc ? "Buscar usuários, serviços, packs..." : "Buscar usuários..."}
               className="search-input"
             />
             <button type="submit" className="search-button">
@@ -228,7 +256,7 @@ const SearchResults = () => {
           >
             Usuários ({filteredResults.users.length})
           </button>
-          {userProfile && (
+          {userProfile && userProfile.kyc && (
             <>
               <button 
                 className={`tab-btn ${activeTab === 'services' ? 'active' : ''}`}
@@ -254,6 +282,17 @@ const SearchResults = () => {
             <span>Buscando...</span>
           </div>
         ) : searchTerm ? (
+          !userProfile?.kyc && (activeTab === 'services' || activeTab === 'packs' || activeTab === 'all') ? (
+            <div className="search-kyc-required">
+              <i className="fas fa-shield-alt"></i>
+              <h3>Verificação KYC Necessária</h3>
+              <p>Para pesquisar packs e serviços, você precisa completar a verificação de identidade (KYC).</p>
+              <Link to="/settings" className="kyc-link">
+                <i className="fas fa-cog"></i>
+                Ir para Configurações
+              </Link>
+            </div>
+          ) : (
           totalResults > 0 ? (
             <>
               {/* Users Results */}
@@ -382,11 +421,12 @@ const SearchResults = () => {
               <p>Tente usar termos diferentes ou verifique a ortografia.</p>
             </div>
           )
+          )
         ) : (
           <div className="search-placeholder">
             <i className="fas fa-search"></i>
             <h3>Digite algo para buscar</h3>
-            <p>Encontre usuários, serviços e packs na plataforma.</p>
+            <p>{userProfile?.kyc ? "Encontre usuários, serviços e packs na plataforma." : "Encontre usuários na plataforma. Complete a verificação KYC para pesquisar serviços e packs."}</p>
           </div>
         )}
       </div>

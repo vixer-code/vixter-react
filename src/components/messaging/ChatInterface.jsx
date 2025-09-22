@@ -78,6 +78,12 @@ const ChatInterface = ({ conversation, onClose }) => {
     
     if (!messageText.trim() || sending) return;
 
+    // Check if service is completed
+    if (isServiceCompleted) {
+      showError('Esta conversa foi finalizada e não permite mais mensagens');
+      return;
+    }
+
     const messageToSend = messageText.trim();
     setMessageText('');
 
@@ -121,6 +127,13 @@ const ChatInterface = ({ conversation, onClose }) => {
   // Handle message input change with typing indicators
   const handleMessageChange = (e) => {
     const value = e.target.value;
+    
+    // Check if service is completed and user is trying to type
+    if (isServiceCompleted && value.trim()) {
+      showError('Esta conversa foi finalizada e não permite mais mensagens');
+      return;
+    }
+    
     setMessageText(value);
     
     // Trigger typing indicator

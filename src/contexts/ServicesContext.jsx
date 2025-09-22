@@ -185,7 +185,9 @@ export const ServicesProvider = ({ children }) => {
           const matchesSearch = (
             data.title.toLowerCase().includes(searchTerm) ||
             data.description.toLowerCase().includes(searchTerm) ||
-            data.searchTerms?.some(term => term.includes(searchTerm))
+            data.searchTerms?.some(term => term.includes(searchTerm)) ||
+            (data.tags && Array.isArray(data.tags) && 
+              data.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
           );
           
           if (!matchesSearch) return;
