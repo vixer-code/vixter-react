@@ -449,7 +449,7 @@
   .chat-container.mobile-visible .mobile-back-button {
     display: flex;
     position: fixed;
-    top: 90px; /* Below the main header */
+    top: 90px; /* Between main header and chat header */
     left: 15px;
     z-index: 1000; /* Very high z-index to be above everything */
     background: linear-gradient(135deg, #00FFCA 0%, #8A2BE2 100%);
@@ -577,7 +577,7 @@
     width: 40px;
     height: 40px;
     font-size: 18px;
-    top: 85px; /* Adjusted for smaller screens */
+    top: 90px; /* Keep consistent with main positioning */
     left: 12px;
   }
 }
