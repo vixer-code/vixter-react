@@ -25,16 +25,6 @@ const MyPurchases = () => {
   const { canReviewOrder, canReviewBuyerBehavior } = useReview();
   const navigate = useNavigate();
   
-  // Debug: Log current user info
-  console.log('🔍 MyPurchases - Current User:', {
-    uid: currentUser?.uid,
-    email: currentUser?.email,
-    exists: !!currentUser
-  });
-  console.log('🔍 MyPurchases - User Profile:', {
-    accountType: userProfile?.accountType,
-    exists: !!userProfile
-  });
   
   const [purchasedPacks, setPurchasedPacks] = useState([]);
   const [purchasedServices, setPurchasedServices] = useState([]);
@@ -67,30 +57,19 @@ const MyPurchases = () => {
       return;
     }
     
-    console.log('🔍 Setting up real-time listener for purchased packs...');
-    
     const packOrdersRef = collection(db, 'packOrders');
     const queryRef = fsQuery(
       packOrdersRef,
-      where('buyerId', '==', currentUser.uid)
-      // Temporarily removed orderBy to debug
-      // orderBy('timestamps.createdAt', 'desc')
+      where('buyerId', '==', currentUser.uid),
+      orderBy('timestamps.createdAt', 'desc')
     );
     
     // Use onSnapshot for real-time updates
     const unsubscribe = onSnapshot(queryRef,
       (snapshot) => {
-        console.log('📦 Purchased packs snapshot received:', snapshot.size, 'documents');
-        
         const orders = [];
         snapshot.forEach((doc) => {
           const orderData = doc.data();
-          console.log('🔍 Processing purchased pack:', doc.id, {
-            status: orderData.status,
-            sellerId: orderData.sellerId,
-            packId: orderData.packId,
-            timestamps: orderData.timestamps
-          });
           
           // Include all pack orders except cancelled and banned
           if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
@@ -102,19 +81,10 @@ const MyPurchases = () => {
           }
         });
         
-        console.log('✅ All purchased packs loaded:', orders.length);
-        console.log('📊 Packs by status:', {
-          pending: orders.filter(o => o.status === 'PENDING_ACCEPTANCE').length,
-          accepted: orders.filter(o => o.status === 'ACCEPTED').length,
-          delivered: orders.filter(o => o.status === 'DELIVERED').length,
-          confirmed: orders.filter(o => o.status === 'CONFIRMED').length,
-          completed: orders.filter(o => o.status === 'COMPLETED').length
-        });
-        
         setPurchasedPacks(orders);
       },
       (error) => {
-        console.error('❌ Error loading purchased packs:', error);
+        console.error('Error loading purchased packs:', error);
         showError('Erro ao carregar packs comprados');
       }
     );
@@ -181,63 +151,58 @@ const MyPurchases = () => {
     setSellerData(sellerDataMap);
   }, [getUserById]);
 
-  // Load purchased services with real-time updates
+  // Load purchased services with real-time updates (supports both old and new data structures)
   const loadPurchasedServices = useCallback(() => {
     if (!currentUser) {
       setPurchasedServices([]);
       return;
     }
     
-    console.log('🔍 Setting up real-time listener for purchased services...');
-    console.log('🔍 Current user UID:', currentUser.uid);
-    
     const serviceOrdersRef = collection(db, 'serviceOrders');
+    
+    // We need to get all documents and filter client-side because Firebase doesn't support OR queries easily
+    // and buyerId can be in different locations (root vs additionalFeatures)
     const queryRef = fsQuery(
       serviceOrdersRef,
-      where('buyerId', '==', currentUser.uid),
       orderBy('timestamps.createdAt', 'desc')
     );
     
     // Use onSnapshot for real-time updates
     const unsubscribe = onSnapshot(queryRef, 
       async (snapshot) => {
-        console.log('📦 Purchased services snapshot received:', snapshot.size, 'documents');
-        console.log('🔍 Snapshot metadata:', {
-          empty: snapshot.empty,
-          size: snapshot.size,
-          hasPendingWrites: snapshot.metadata.hasPendingWrites,
-          isFromCache: snapshot.metadata.fromCache
-        });
-        
         const orders = [];
         snapshot.forEach((doc) => {
           const orderData = doc.data();
-          console.log('🔍 Raw document data:', doc.id, orderData);
-          console.log('🔍 Processing purchased service:', doc.id, {
-            status: orderData.status,
-            buyerId: orderData.buyerId,
-            sellerId: orderData.sellerId,
-            serviceId: orderData.serviceId,
-            timestamps: orderData.timestamps,
-            fullData: orderData
-          });
           
-          if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
-            orders.push({
+          // Check buyerId in both locations (old and new structure)
+          const buyerIdRoot = orderData.buyerId; // Old structure
+          
+          // For new structure, buyerId might be nested in additionalFeatures array or object
+          let buyerIdInFeatures = null;
+          if (orderData.additionalFeatures) {
+            if (Array.isArray(orderData.additionalFeatures)) {
+              // If it's an array, look for buyerId in each feature
+              const featureWithBuyer = orderData.additionalFeatures.find(feature => feature.buyerId);
+              buyerIdInFeatures = featureWithBuyer?.buyerId;
+            } else if (typeof orderData.additionalFeatures === 'object') {
+              // If it's an object, check if it has buyerId
+              buyerIdInFeatures = orderData.additionalFeatures.buyerId;
+            }
+          }
+          
+          const isCurrentUserOrder = buyerIdRoot === currentUser.uid || buyerIdInFeatures === currentUser.uid;
+          
+          if (isCurrentUserOrder && orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
+            // Normalize the structure - ensure buyerId is always at root level
+            const normalizedOrder = {
               id: doc.id,
               type: 'service',
-              ...orderData
-            });
+              ...orderData,
+              buyerId: buyerIdRoot || buyerIdInFeatures // Ensure buyerId is at root
+            };
+            
+            orders.push(normalizedOrder);
           }
-        });
-        
-        console.log('✅ All purchased services loaded:', orders.length);
-        console.log('🔍 Full orders array:', orders);
-        console.log('📊 Services by status:', {
-          pending: orders.filter(o => o.status === 'PENDING_ACCEPTANCE').length,
-          accepted: orders.filter(o => o.status === 'ACCEPTED').length,
-          delivered: orders.filter(o => o.status === 'DELIVERED').length,
-          confirmed: orders.filter(o => o.status === 'CONFIRMED').length
         });
         
         setPurchasedServices(orders);
@@ -248,53 +213,13 @@ const MyPurchases = () => {
         }
       },
       (error) => {
-        console.error('❌ Error loading purchased services:', error);
-        console.error('❌ Error details:', {
-          code: error.code,
-          message: error.message,
-          stack: error.stack
-        });
+        console.error('Error loading purchased services:', error);
         showError('Erro ao carregar serviços comprados');
       }
     );
     
     return unsubscribe;
   }, [currentUser, showError, loadSellerData]);
-
-  // Debug: Test direct Firebase query
-  const testDirectQuery = useCallback(async () => {
-    if (!currentUser) return;
-    
-    console.log('🧪 Testing direct Firebase query...');
-    try {
-      // Test without any filters first
-      const allOrdersRef = collection(db, 'serviceOrders');
-      const allOrdersSnapshot = await getDocs(allOrdersRef);
-      console.log('🔍 Total serviceOrders in database:', allOrdersSnapshot.size);
-      
-      // Log all orders to see the structure
-      allOrdersSnapshot.forEach((doc) => {
-        const data = doc.data();
-        console.log('🔍 Found serviceOrder:', doc.id, {
-          buyerId: data.buyerId,
-          sellerId: data.sellerId,
-          status: data.status,
-          currentUserMatch: data.buyerId === currentUser.uid
-        });
-      });
-      
-      // Test specific query
-      const userOrdersRef = fsQuery(
-        allOrdersRef,
-        where('buyerId', '==', currentUser.uid)
-      );
-      const userOrdersSnapshot = await getDocs(userOrdersRef);
-      console.log('🔍 Orders for current user:', userOrdersSnapshot.size);
-      
-    } catch (error) {
-      console.error('❌ Direct query test failed:', error);
-    }
-  }, [currentUser]);
 
   // Setup real-time listeners for purchases
   useEffect(() => {
@@ -303,11 +228,7 @@ const MyPurchases = () => {
       return;
     }
 
-    console.log('🚀 Setting up real-time purchase listeners for user:', currentUser.uid);
     setLoading(true);
-
-    // Run direct query test
-    testDirectQuery();
 
     // Setup listeners
     const unsubscribePacks = loadPurchasedPacks();
@@ -318,11 +239,10 @@ const MyPurchases = () => {
 
     // Cleanup function
     return () => {
-      console.log('🧹 Cleaning up purchase listeners');
       if (unsubscribePacks) unsubscribePacks();
       if (unsubscribeServices) unsubscribeServices();
     };
-  }, [currentUser, loadPurchasedPacks, loadPurchasedServices, testDirectQuery]);
+  }, [currentUser, loadPurchasedPacks, loadPurchasedServices]);
 
   // Check which orders can be reviewed
   useEffect(() => {
