@@ -7,7 +7,7 @@ import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import { usePacksR2 } from '../contexts/PacksContextR2';
 import { useReview } from '../contexts/ReviewContext';
 import ServicePackReviewModal from '../components/ServicePackReviewModal';
-import { collection, query as fsQuery, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query as fsQuery, where, orderBy, getDocs, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { Link, useNavigate } from 'react-router-dom';
 import SmartMediaViewer from '../components/SmartMediaViewer';
@@ -49,40 +49,66 @@ const MyPurchases = () => {
     }
   }, [userProfile, showError, navigate]);
 
-  // Load purchased packs
-  const loadPurchasedPacks = useCallback(async () => {
-    if (!currentUser) return;
-    
-    try {
-      const packOrdersRef = collection(db, 'packOrders');
-      const queryRef = fsQuery(
-        packOrdersRef,
-        where('buyerId', '==', currentUser.uid)
-        // Temporarily removed orderBy to debug
-        // orderBy('timestamps.createdAt', 'desc')
-      );
-      const snapshot = await getDocs(queryRef);
-      
-      const orders = [];
-      snapshot.forEach((doc) => {
-        const orderData = doc.data();
-        console.log('Pack order found:', doc.id, orderData.status, orderData);
-        // Include all pack orders except cancelled and banned
-        if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
-          orders.push({
-            id: doc.id,
-            type: 'pack',
-            ...orderData
-          });
-        }
-      });
-      
-      console.log('All pack orders loaded:', orders);
-      setPurchasedPacks(orders);
-    } catch (error) {
-      console.error('Error loading purchased packs:', error);
-      showError('Erro ao carregar packs comprados');
+  // Load purchased packs with real-time updates
+  const loadPurchasedPacks = useCallback(() => {
+    if (!currentUser) {
+      setPurchasedPacks([]);
+      return;
     }
+    
+    console.log('🔍 Setting up real-time listener for purchased packs...');
+    
+    const packOrdersRef = collection(db, 'packOrders');
+    const queryRef = fsQuery(
+      packOrdersRef,
+      where('buyerId', '==', currentUser.uid)
+      // Temporarily removed orderBy to debug
+      // orderBy('timestamps.createdAt', 'desc')
+    );
+    
+    // Use onSnapshot for real-time updates
+    const unsubscribe = onSnapshot(queryRef,
+      (snapshot) => {
+        console.log('📦 Purchased packs snapshot received:', snapshot.size, 'documents');
+        
+        const orders = [];
+        snapshot.forEach((doc) => {
+          const orderData = doc.data();
+          console.log('🔍 Processing purchased pack:', doc.id, {
+            status: orderData.status,
+            sellerId: orderData.sellerId,
+            packId: orderData.packId,
+            timestamps: orderData.timestamps
+          });
+          
+          // Include all pack orders except cancelled and banned
+          if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
+            orders.push({
+              id: doc.id,
+              type: 'pack',
+              ...orderData
+            });
+          }
+        });
+        
+        console.log('✅ All purchased packs loaded:', orders.length);
+        console.log('📊 Packs by status:', {
+          pending: orders.filter(o => o.status === 'PENDING_ACCEPTANCE').length,
+          accepted: orders.filter(o => o.status === 'ACCEPTED').length,
+          delivered: orders.filter(o => o.status === 'DELIVERED').length,
+          confirmed: orders.filter(o => o.status === 'CONFIRMED').length,
+          completed: orders.filter(o => o.status === 'COMPLETED').length
+        });
+        
+        setPurchasedPacks(orders);
+      },
+      (error) => {
+        console.error('❌ Error loading purchased packs:', error);
+        showError('Erro ao carregar packs comprados');
+      }
+    );
+    
+    return unsubscribe;
   }, [currentUser, showError]);
 
   // Load pack data for purchased packs
@@ -144,57 +170,93 @@ const MyPurchases = () => {
     setSellerData(sellerDataMap);
   }, [getUserById]);
 
-  // Load purchased services
-  const loadPurchasedServices = useCallback(async () => {
-    if (!currentUser) return;
-    
-    try {
-      const serviceOrdersRef = collection(db, 'serviceOrders');
-      const queryRef = fsQuery(
-        serviceOrdersRef,
-        where('buyerId', '==', currentUser.uid),
-        orderBy('timestamps.createdAt', 'desc')
-      );
-      const snapshot = await getDocs(queryRef);
-      
-      const orders = [];
-      snapshot.forEach((doc) => {
-        const orderData = doc.data();
-        if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
-          orders.push({
-            id: doc.id,
-            type: 'service',
-            ...orderData
-          });
-        }
-      });
-      
-      setPurchasedServices(orders);
-      
-      // Load seller data for services
-      if (orders.length > 0) {
-        await loadSellerData(orders);
-      }
-    } catch (error) {
-      console.error('Error loading purchased services:', error);
-      showError('Erro ao carregar serviços comprados');
+  // Load purchased services with real-time updates
+  const loadPurchasedServices = useCallback(() => {
+    if (!currentUser) {
+      setPurchasedServices([]);
+      return;
     }
+    
+    console.log('🔍 Setting up real-time listener for purchased services...');
+    
+    const serviceOrdersRef = collection(db, 'serviceOrders');
+    const queryRef = fsQuery(
+      serviceOrdersRef,
+      where('buyerId', '==', currentUser.uid),
+      orderBy('timestamps.createdAt', 'desc')
+    );
+    
+    // Use onSnapshot for real-time updates
+    const unsubscribe = onSnapshot(queryRef, 
+      async (snapshot) => {
+        console.log('📦 Purchased services snapshot received:', snapshot.size, 'documents');
+        
+        const orders = [];
+        snapshot.forEach((doc) => {
+          const orderData = doc.data();
+          console.log('🔍 Processing purchased service:', doc.id, {
+            status: orderData.status,
+            sellerId: orderData.sellerId,
+            serviceId: orderData.serviceId,
+            timestamps: orderData.timestamps
+          });
+          
+          if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
+            orders.push({
+              id: doc.id,
+              type: 'service',
+              ...orderData
+            });
+          }
+        });
+        
+        console.log('✅ All purchased services loaded:', orders.length);
+        console.log('📊 Services by status:', {
+          pending: orders.filter(o => o.status === 'PENDING_ACCEPTANCE').length,
+          accepted: orders.filter(o => o.status === 'ACCEPTED').length,
+          delivered: orders.filter(o => o.status === 'DELIVERED').length,
+          confirmed: orders.filter(o => o.status === 'CONFIRMED').length
+        });
+        
+        setPurchasedServices(orders);
+        
+        // Load seller data for services
+        if (orders.length > 0) {
+          await loadSellerData(orders);
+        }
+      },
+      (error) => {
+        console.error('❌ Error loading purchased services:', error);
+        showError('Erro ao carregar serviços comprados');
+      }
+    );
+    
+    return unsubscribe;
   }, [currentUser, showError, loadSellerData]);
 
-  // Load all purchases
+  // Setup real-time listeners for purchases
   useEffect(() => {
-    const loadPurchases = async () => {
-      setLoading(true);
-      await Promise.all([
-        loadPurchasedPacks(),
-        loadPurchasedServices()
-      ]);
+    if (!currentUser) {
       setLoading(false);
-    };
-
-    if (currentUser) {
-      loadPurchases();
+      return;
     }
+
+    console.log('🚀 Setting up real-time purchase listeners for user:', currentUser.uid);
+    setLoading(true);
+
+    // Setup listeners
+    const unsubscribePacks = loadPurchasedPacks();
+    const unsubscribeServices = loadPurchasedServices();
+    
+    // Set loading to false after initial setup
+    setTimeout(() => setLoading(false), 1000);
+
+    // Cleanup function
+    return () => {
+      console.log('🧹 Cleaning up purchase listeners');
+      if (unsubscribePacks) unsubscribePacks();
+      if (unsubscribeServices) unsubscribeServices();
+    };
   }, [currentUser, loadPurchasedPacks, loadPurchasedServices]);
 
   // Check which orders can be reviewed
