@@ -48,6 +48,11 @@
   .messages-list {
     margin-top: 0 !important;
   }
+  
+  .message-input {
+    color: #FFFFFF !important;
+    font-size: 14px !important;
+  }
 }
 
 .chat-interface.no-conversation {
@@ -397,6 +402,7 @@
   border-radius: 20px;
   padding: 8px 12px;
   transition: border-color 0.2s;
+  position: relative;
 }
 
 .input-wrapper:focus-within {
@@ -415,11 +421,45 @@
   line-height: 1.4;
   max-height: 120px;
   min-height: 20px;
-  color: var(--vixter-text-primary);
+  color: #FFFFFF !important;
+  caret-color: #00FFCA;
 }
 
 .message-input::placeholder {
   color: var(--vixter-text-secondary);
+}
+
+/* Ensure input text is always visible */
+.message-input:focus {
+  color: #FFFFFF !important;
+  background: transparent !important;
+}
+
+/* Additional visibility fixes */
+textarea.message-input,
+input.message-input {
+  color: #FFFFFF !important;
+  background: transparent !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+/* Fix for potential autocomplete issues */
+.message-input:-webkit-autofill {
+  -webkit-text-fill-color: #FFFFFF !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--vixter-bg-primary) inset !important;
+}
+
+.message-input::-webkit-input-placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.message-input::-moz-placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.message-input:-ms-input-placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
 }
 
 .send-button {
@@ -542,6 +582,12 @@
   
   .message-input-container {
     padding: 12px 15px;
+  }
+  
+  .message-input {
+    color: #FFFFFF !important;
+    font-size: 14px !important;
+    caret-color: #00FFCA !important;
   }
   
   .media-options {

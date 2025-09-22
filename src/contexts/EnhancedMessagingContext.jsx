@@ -227,27 +227,44 @@ export const EnhancedMessagingProvider = ({ children }) => {
       const conversationsData = [];
       
       if (snapshot.exists()) {
+        console.log('📁 Firebase conversations snapshot received, total conversations:', snapshot.size);
+        
         snapshot.forEach((childSnapshot) => {
           const conversation = {
             id: childSnapshot.key,
             ...childSnapshot.val()
           };
           
+          console.log('🔍 Processing conversation:', conversation.id, {
+            participants: conversation.participants,
+            hasCurrentUser: conversation.participants?.[currentUser.uid],
+            isService: !!conversation.serviceOrderId,
+            lastMessage: conversation.lastMessage,
+            lastMessageTime: conversation.lastMessageTime
+          });
+          
           // Check if current user is a participant
           if (conversation.participants && conversation.participants[currentUser.uid]) {
             // Filter out service conversations from regular list
             if (!conversation.serviceOrderId) {
               conversationsData.push(conversation);
+              console.log('✅ Added regular conversation:', conversation.id);
+            } else {
+              console.log('🛠️ Skipped service conversation:', conversation.id);
             }
+          } else {
+            console.log('❌ User not participant in conversation:', conversation.id);
           }
         });
         
         // Sort by last message time
         conversationsData.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+      } else {
+        console.log('📭 No conversations found in Firebase');
       }
       
-      console.log('Regular conversations loaded:', conversationsData.length);
-      console.log('Conversations data:', conversationsData);
+      console.log('📋 Final regular conversations loaded:', conversationsData.length);
+      console.log('📋 Conversations IDs:', conversationsData.map(c => c.id));
       setConversations(conversationsData);
       
       // Load user data for all participants
@@ -288,6 +305,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
       const serviceConversationsData = [];
       
       if (snapshot.exists()) {
+        console.log('🛠️ Loading service conversations from snapshot');
+        
         snapshot.forEach((childSnapshot) => {
           const conversation = {
             id: childSnapshot.key,
@@ -299,20 +318,23 @@ export const EnhancedMessagingProvider = ({ children }) => {
             // Only include service conversations (both active and completed)
             if (conversation.serviceOrderId) {
               serviceConversationsData.push(conversation);
+              console.log('✅ Added service conversation:', conversation.id, 'Order:', conversation.serviceOrderId);
             }
           }
         });
         
         // Sort by last message time
         serviceConversationsData.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+      } else {
+        console.log('🛠️ No service conversations found');
       }
       
-      console.log('Service conversations loaded:', serviceConversationsData.length);
-      console.log('Service conversations data:', serviceConversationsData);
+      console.log('🛠️ Final service conversations loaded:', serviceConversationsData.length);
+      console.log('🛠️ Service conversation IDs:', serviceConversationsData.map(c => `${c.id} (Order: ${c.serviceOrderId})`));
       
       // Debug: Check for completed conversations
       const completedConversations = serviceConversationsData.filter(conv => conv.isCompleted);
-      console.log('Completed service conversations:', completedConversations.length);
+      console.log('🔒 Completed service conversations:', completedConversations.length);
       
       setServiceConversations(serviceConversationsData);
     });
@@ -327,12 +349,15 @@ export const EnhancedMessagingProvider = ({ children }) => {
   // Reset state when user changes or logs out
   useEffect(() => {
     if (!currentUser || !currentUser.uid) {
+      console.log('🔄 User logged out or changed, clearing conversation state');
       setConversations([]);
       setServiceConversations([]);
       setSelectedConversation(null);
       setMessages([]);
       setUsers({});
       setLoading(false);
+    } else {
+      console.log('👤 User logged in:', currentUser.uid);
     }
   }, [currentUser]);
 
@@ -976,10 +1001,27 @@ export const EnhancedMessagingProvider = ({ children }) => {
         debugLog('Found existing conversation in Firebase Database', existingConversation.id);
         
         // Add to local state
+        console.log('🔄 Adding existing conversation to local state:', existingConversation.id);
         if (serviceOrderId) {
-          setServiceConversations(prev => [existingConversation, ...prev]);
+          setServiceConversations(prev => {
+            const exists = prev.find(c => c.id === existingConversation.id);
+            if (!exists) {
+              console.log('➕ Adding to service conversations');
+              return [existingConversation, ...prev];
+            }
+            console.log('⚠️ Service conversation already in state');
+            return prev;
+          });
         } else {
-          setConversations(prev => [existingConversation, ...prev]);
+          setConversations(prev => {
+            const exists = prev.find(c => c.id === existingConversation.id);
+            if (!exists) {
+              console.log('➕ Adding to regular conversations');
+              return [existingConversation, ...prev];
+            }
+            console.log('⚠️ Regular conversation already in state');
+            return prev;
+          });
         }
         
         return existingConversation;
@@ -1176,6 +1218,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
       };
 
       await update(conversationRef, conversationUpdates);
+      
+      console.log('💾 Conversation metadata updated:', conversationId, conversationUpdates);
 
       // Publish message via Centrifugo for real-time delivery
       console.log('🔍 Centrifugo status:', {
