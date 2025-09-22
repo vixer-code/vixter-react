@@ -15,6 +15,7 @@ import {
   runTransaction
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
+import { useNavigate } from 'react-router-dom';
 import { db, functions } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
@@ -36,6 +37,7 @@ export const WalletProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const { userProfile } = useUser();
+  const navigate = useNavigate();
   
   // Wallet state
   const [wallet, setWallet] = useState(null);
@@ -297,7 +299,14 @@ export const WalletProvider = ({ children }) => {
       if (result.data.success) {
         showSuccess(
           `Serviço adquirido! ${vpAmount} VP foram debitados. O vendedor receberá VC após a confirmação.`,
-          'Compra Realizada'
+          'Compra Realizada',
+          7000,
+          {
+            onClick: () => {
+              navigate('/my-products');
+            },
+            data: { action: 'view_my_products' }
+          }
         );
         return { success: true, serviceOrderId: result.data.order?.id };
       }
@@ -306,7 +315,7 @@ export const WalletProvider = ({ children }) => {
       handleWalletError(error, 'processServicePurchase');
       return false;
     }
-  }, [currentUser, apiFunc, showSuccess, showError]);
+  }, [currentUser, apiFunc, showSuccess, showError, navigate]);
 
   // Create pack order (requires seller approval)
   const createPackOrder = useCallback(async (buyerId, sellerId, packId, packName, vpAmount, buyerInfo = {}) => {
@@ -349,7 +358,14 @@ export const WalletProvider = ({ children }) => {
 
         showSuccess(
           `Pedido de pack enviado! A vendedora tem 24h para aprovar.`,
-          'Pedido Enviado'
+          'Pedido Enviado',
+          7000,
+          {
+            onClick: () => {
+              navigate('/my-products');
+            },
+            data: { action: 'view_my_products' }
+          }
         );
         return { success: true, packOrderId: result.data.packOrderId };
       }
@@ -358,7 +374,7 @@ export const WalletProvider = ({ children }) => {
       handleWalletError(error, 'createPackOrder');
       return false;
     }
-  }, [currentUser, apiFunc, showSuccess, showError]);
+  }, [currentUser, apiFunc, showSuccess, showError, navigate]);
 
   // Enhanced error handling (moved up to avoid circular dependency)
   const handleWalletError = useCallback((error, operation) => {

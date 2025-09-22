@@ -823,9 +823,7 @@ async function acceptServiceOrderInternal(sellerId, orderId) {
   await orderRef.update({
     status: 'ACCEPTED',
     chatId: chatRef.id,
-    timestamps: {
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    }
+    'timestamps.updatedAt': admin.firestore.FieldValue.serverTimestamp()
   });
 
   // Create chat

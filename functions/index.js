@@ -39,6 +39,11 @@ import {
   generateKycDownloadUrl,
 } from './kyc-functions.js';
 
+import {
+  // Email Functions
+  sendServiceStatusEmail,
+} from './email-functions.js';
+
 export {
   // Wallet & Payments
   initializeWallet,
@@ -75,4 +80,7 @@ export {
   getKycDocument,
   listPendingKycDocuments,
   generateKycDownloadUrl,
+
+  // Email Functions
+  sendServiceStatusEmail,
 };

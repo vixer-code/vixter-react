@@ -12,6 +12,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
+import { useNavigate } from 'react-router-dom';
 import { db, functions } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
@@ -42,6 +43,7 @@ export const ServiceOrderProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const { processServicePurchase } = useWallet();
+  const navigate = useNavigate();
   
   // Safely get messaging functions with fallbacks
   let sendServiceNotification, createServiceConversation, markServiceConversationCompleted;
@@ -92,8 +94,9 @@ export const ServiceOrderProvider = ({ children }) => {
     const receivedOrdersRef = collection(db, 'serviceOrders');
     const receivedOrdersQuery = query(
       receivedOrdersRef,
-      where('sellerId', '==', currentUser.uid),
-      orderBy('timestamps.createdAt', 'desc')
+      where('sellerId', '==', currentUser.uid)
+      // Temporarily removed orderBy to debug
+      // orderBy('timestamps.createdAt', 'desc')
     );
 
     const unsubscribeReceived = onSnapshot(receivedOrdersQuery, (snapshot) => {
@@ -105,6 +108,8 @@ export const ServiceOrderProvider = ({ children }) => {
         });
       });
       setReceivedOrders(orders);
+    }, (error) => {
+      console.error('Error loading received orders:', error);
     });
 
     // Load orders where user is the buyer (sent orders)
@@ -235,7 +240,17 @@ export const ServiceOrderProvider = ({ children }) => {
           totalVpAmount
         );
 
-        showSuccess('Pedido de serviço enviado com sucesso! O provedor foi notificado e receberá o pedido em breve.');
+        showSuccess(
+          'Pedido de serviço enviado com sucesso! O provedor foi notificado e receberá o pedido em breve.',
+          'Pedido Enviado',
+          7000,
+          {
+            onClick: () => {
+              navigate('/my-products');
+            },
+            data: { action: 'view_my_products' }
+          }
+        );
         return { success: true, orderId: orderData.id };
       }
 
@@ -247,7 +262,7 @@ export const ServiceOrderProvider = ({ children }) => {
     } finally {
       setProcessing(false);
     }
-  }, [currentUser, apiFunc, sendServiceNotification, showSuccess, showError]);
+  }, [currentUser, apiFunc, sendServiceNotification, showSuccess, showError, navigate]);
 
   // Accept service order
   const acceptServiceOrder = useCallback(async (orderId) => {
@@ -267,7 +282,6 @@ export const ServiceOrderProvider = ({ children }) => {
         
         // Update the order in messaging and create conversation
         const order = serviceOrders.find(o => o.id === orderId);
-        console.log('Found order for conversation creation:', order);
         
         if (order) {
           await sendServiceNotification({
@@ -306,6 +320,7 @@ export const ServiceOrderProvider = ({ children }) => {
         } else {
           console.error('Order not found for conversation creation:', orderId);
         }
+        
         
         return true;
       }
