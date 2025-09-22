@@ -46,7 +46,7 @@ const EnhancedMessages = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   
   // Force desktop mode for debugging
-  const isDesktop = !isMobile || window.innerWidth > 768;
+  const isDesktop = !isMobile && window.innerWidth > 768;
 
   // Remove header padding for messages page
   useEffect(() => {
@@ -134,6 +134,11 @@ const EnhancedMessages = () => {
 
   // Handle conversation selection
   const handleConversationSelect = (conversation) => {
+    console.log('🎯 Conversation selected:', conversation?.id);
+    console.log('🎯 Desktop mode:', isDesktop);
+    console.log('🎯 Mobile mode:', isMobile);
+    console.log('🎯 Window width:', window.innerWidth);
+    
     debugLog('Conversation selected', conversation?.id);
     setSelectedConversation(conversation);
     
@@ -150,13 +155,15 @@ const EnhancedMessages = () => {
       }
     }
     
-    // Show mobile chat on mobile devices, but don't hide on desktop
+    // Show mobile chat on mobile devices, on desktop it's always visible
     if (isMobile) {
+      console.log('📱 Mobile detected - showing mobile chat');
       debugLog('Mobile detected - showing mobile chat');
       setShowMobileChat(true);
     } else {
-      debugLog('Desktop detected - ensuring chat is visible');
-      // On desktop, ensure chat is visible
+      console.log('🖥️ Desktop detected - chat should be visible by default');
+      debugLog('Desktop detected - chat should be visible by default');
+      // On desktop, we don't use showMobileChat, the chat is always visible
       setShowMobileChat(false);
     }
   };
@@ -203,8 +210,10 @@ const EnhancedMessages = () => {
     selectedConversation: selectedConversation?.id,
     activeTab,
     isMobile,
+    isDesktop,
     showMobileChat,
-    hasSelectedConversation: !!selectedConversation
+    hasSelectedConversation: !!selectedConversation,
+    windowWidth: window.innerWidth
   });
 
   if (loading) {
@@ -475,6 +484,12 @@ const EnhancedMessages = () => {
         {/* Chat Interface */}
         <div 
           className={`chat-container ${showMobileChat ? 'mobile-visible' : ''} ${selectedConversation ? 'has-conversation' : ''} ${isDesktop && selectedConversation ? 'desktop-visible' : ''}`}
+          style={isDesktop ? { 
+            display: 'flex',
+            visibility: 'visible',
+            position: 'relative',
+            opacity: 1
+          } : {}}
         >
           <ChatInterface
             conversation={selectedConversation}

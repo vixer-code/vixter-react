@@ -389,9 +389,9 @@
   display: flex !important;
 }
 
-/* Desktop: Always show chat container when there's a conversation */
-@media (min-width: 769px) {
-  .chat-container {
+/* Desktop: Always show chat container - HIGH PRIORITY */
+@media screen and (min-width: 769px) {
+  .enhanced-messages .chat-container {
     display: flex !important;
     position: relative !important;
     width: auto !important;
@@ -402,19 +402,31 @@
     bottom: auto !important;
     z-index: auto !important;
     visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
   
-  .chat-container.has-conversation,
-  .chat-container.desktop-visible {
+  /* Force chat container to be visible on desktop regardless of mobile classes */
+  .enhanced-messages .chat-container.has-conversation,
+  .enhanced-messages .chat-container.desktop-visible,
+  .enhanced-messages .chat-container:not(.mobile-visible),
+  .enhanced-messages .messages-container .chat-container {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
   }
   
   /* Ensure chat interface is always visible on desktop */
-  .chat-container .chat-interface {
+  .enhanced-messages .chat-container .chat-interface {
     display: flex !important;
     visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  /* Override mobile-specific hiding on desktop */
+  .enhanced-messages .conversations-sidebar.mobile-hidden {
+    transform: none !important;
+    display: flex !important;
   }
 }
 
