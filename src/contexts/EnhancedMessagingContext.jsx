@@ -20,7 +20,13 @@ import {
   ref as storageRef,
   deleteObject
 } from 'firebase/storage';
-import { database, storage } from '../../config/firebase';
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs 
+} from 'firebase/firestore';
+import { database, storage, db } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import { useUser } from './UserContext';
@@ -294,7 +300,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       clearTimeout(loadingTimeout);
     });
 
-    // Load service conversations
+    // Load service conversations from RTDB
     const unsubscribeServiceConversations = onValue(conversationsRef, (snapshot) => {
       const serviceConversationsData = [];
       
@@ -311,7 +317,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
             // Only include service conversations (both active and completed)
             if (conversation.serviceOrderId) {
               serviceConversationsData.push(conversation);
-              console.log('✅ Added service conversation:', conversation.id, 'Order:', conversation.serviceOrderId);
+              console.log('✅ Added service conversation from RTDB:', conversation.id, 'Order:', conversation.serviceOrderId);
             }
           }
         });
@@ -319,11 +325,11 @@ export const EnhancedMessagingProvider = ({ children }) => {
         // Sort by last message time
         serviceConversationsData.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
       } else {
-        console.log('🛠️ No service conversations found');
+        console.log('🛠️ No service conversations found in RTDB');
       }
       
-      console.log('🛠️ Final service conversations loaded:', serviceConversationsData.length);
-      console.log('🛠️ Service conversation IDs:', serviceConversationsData.map(c => `${c.id} (Order: ${c.serviceOrderId})`));
+      console.log('🛠️ RTDB service conversations loaded:', serviceConversationsData.length);
+      console.log('🛠️ RTDB service conversation IDs:', serviceConversationsData.map(c => `${c.id} (Order: ${c.serviceOrderId})`));
       
       // Debug: Check for completed conversations
       const completedConversations = serviceConversationsData.filter(conv => conv.isCompleted);
@@ -331,6 +337,151 @@ export const EnhancedMessagingProvider = ({ children }) => {
       
       setServiceConversations(serviceConversationsData);
     });
+
+    // Load service conversations from Firestore based on chatId in serviceOrders
+    const loadFirestoreServiceConversations = async () => {
+      try {
+        console.log('🔍 Loading Firestore service conversations for user:', currentUser.uid);
+        
+        // Query service orders where user is buyer or seller
+        const serviceOrdersRef = collection(db, 'serviceOrders');
+        const buyerQuery = query(
+          serviceOrdersRef,
+          where('buyerId', '==', currentUser.uid),
+          where('chatId', '!=', null)
+        );
+        
+        const sellerQuery = query(
+          serviceOrdersRef,
+          where('sellerId', '==', currentUser.uid),
+          where('chatId', '!=', null)
+        );
+        
+        // Also check additionalFeatures.buyerId for new structure
+        const additionalBuyerQuery = query(
+          serviceOrdersRef,
+          where('additionalFeatures.buyerId', '==', currentUser.uid),
+          where('additionalFeatures.chatId', '!=', null)
+        );
+        
+        const [buyerSnapshot, sellerSnapshot, additionalSnapshot] = await Promise.all([
+          getDocs(buyerQuery).catch(error => {
+            console.warn('Buyer query failed:', error.message);
+            return { docs: [] };
+          }),
+          getDocs(sellerQuery).catch(error => {
+            console.warn('Seller query failed:', error.message);
+            return { docs: [] };
+          }),
+          getDocs(additionalBuyerQuery).catch(error => {
+            console.warn('Additional buyer query failed:', error.message);
+            return { docs: [] };
+          })
+        ]);
+        
+        const firestoreConversations = [];
+        
+        // Process buyer orders
+        buyerSnapshot.docs.forEach(doc => {
+          const orderData = doc.data();
+          if (orderData.chatId) {
+            firestoreConversations.push({
+              id: orderData.chatId,
+              serviceOrderId: orderData.id,
+              participants: {
+                [orderData.buyerId]: true,
+                [orderData.sellerId]: true
+              },
+              participantIds: [orderData.buyerId, orderData.sellerId],
+              lastMessage: `Conversa iniciada para o serviço: ${orderData.metadata?.serviceName || 'Serviço'}`,
+              lastMessageTime: orderData.timestamps?.createdAt?.toMillis?.() || Date.now(),
+              isCompleted: orderData.status === 'COMPLETED' || orderData.status === 'CONFIRMED',
+              _source: 'firestore'
+            });
+            console.log('✅ Added Firestore conversation from buyer order:', orderData.chatId, 'Order:', orderData.id);
+          }
+        });
+        
+        // Process seller orders
+        sellerSnapshot.docs.forEach(doc => {
+          const orderData = doc.data();
+          if (orderData.chatId) {
+            firestoreConversations.push({
+              id: orderData.chatId,
+              serviceOrderId: orderData.id,
+              participants: {
+                [orderData.buyerId]: true,
+                [orderData.sellerId]: true
+              },
+              participantIds: [orderData.buyerId, orderData.sellerId],
+              lastMessage: `Conversa iniciada para o serviço: ${orderData.metadata?.serviceName || 'Serviço'}`,
+              lastMessageTime: orderData.timestamps?.createdAt?.toMillis?.() || Date.now(),
+              isCompleted: orderData.status === 'COMPLETED' || orderData.status === 'CONFIRMED',
+              _source: 'firestore'
+            });
+            console.log('✅ Added Firestore conversation from seller order:', orderData.chatId, 'Order:', orderData.id);
+          }
+        });
+        
+        // Process additional features orders
+        additionalSnapshot.docs.forEach(doc => {
+          const orderData = doc.data();
+          const chatId = orderData.additionalFeatures?.chatId;
+          const buyerId = orderData.additionalFeatures?.buyerId || orderData.buyerId;
+          
+          if (chatId) {
+            firestoreConversations.push({
+              id: chatId,
+              serviceOrderId: orderData.id,
+              participants: {
+                [buyerId]: true,
+                [orderData.sellerId]: true
+              },
+              participantIds: [buyerId, orderData.sellerId],
+              lastMessage: `Conversa iniciada para o serviço: ${orderData.metadata?.serviceName || 'Serviço'}`,
+              lastMessageTime: orderData.timestamps?.createdAt?.toMillis?.() || Date.now(),
+              isCompleted: orderData.status === 'COMPLETED' || orderData.status === 'CONFIRMED',
+              _source: 'firestore'
+            });
+            console.log('✅ Added Firestore conversation from additional features order:', chatId, 'Order:', orderData.id);
+          }
+        });
+        
+        // Remove duplicates and merge with RTDB conversations
+        const existingIds = new Set();
+        const mergedConversations = [];
+        
+        // Add RTDB conversations first
+        setServiceConversations(prev => {
+          prev.forEach(conv => {
+            existingIds.add(conv.id);
+            mergedConversations.push(conv);
+          });
+          
+          // Add Firestore conversations that don't exist in RTDB
+          firestoreConversations.forEach(conv => {
+            if (!existingIds.has(conv.id)) {
+              mergedConversations.push(conv);
+              console.log('✅ Added new Firestore conversation:', conv.id, 'Order:', conv.serviceOrderId);
+            }
+          });
+          
+          // Sort by last message time
+          mergedConversations.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+          
+          console.log('🛠️ Final merged service conversations:', mergedConversations.length);
+          console.log('🛠️ Merged conversation IDs:', mergedConversations.map(c => `${c.id} (Order: ${c.serviceOrderId}, Source: ${c._source || 'RTDB'})`));
+          
+          return mergedConversations;
+        });
+        
+      } catch (error) {
+        console.error('❌ Error loading Firestore service conversations:', error);
+      }
+    };
+    
+    // Load Firestore conversations
+    loadFirestoreServiceConversations();
 
     return () => {
       unsubscribeConversations();
