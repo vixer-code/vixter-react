@@ -134,6 +134,7 @@ const EnhancedMessages = () => {
 
   // Handle conversation selection
   const handleConversationSelect = (conversation) => {
+    debugLog('Conversation selected', conversation?.id);
     setSelectedConversation(conversation);
     
     // Load user data for the other participant if not already loaded
@@ -151,8 +152,10 @@ const EnhancedMessages = () => {
     
     // Show mobile chat on mobile devices, but don't hide on desktop
     if (isMobile) {
+      debugLog('Mobile detected - showing mobile chat');
       setShowMobileChat(true);
     } else {
+      debugLog('Desktop detected - ensuring chat is visible');
       // On desktop, ensure chat is visible
       setShowMobileChat(false);
     }
@@ -471,13 +474,8 @@ const EnhancedMessages = () => {
 
         {/* Chat Interface */}
         <div 
-          className={`chat-container ${showMobileChat ? 'mobile-visible' : ''} ${selectedConversation ? 'has-conversation' : ''}`}
-          style={{
-            // Force visibility when conversation is selected
-            display: selectedConversation ? 'flex' : undefined
-          }}
+          className={`chat-container ${showMobileChat ? 'mobile-visible' : ''} ${selectedConversation ? 'has-conversation' : ''} ${isDesktop && selectedConversation ? 'desktop-visible' : ''}`}
         >
-          
           <ChatInterface
             conversation={selectedConversation}
             onClose={handleCloseMobileChat}

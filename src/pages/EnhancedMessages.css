@@ -384,6 +384,11 @@
   position: relative;
 }
 
+/* Ensure chat container is visible when conversation is selected */
+.chat-container.has-conversation {
+  display: flex !important;
+}
+
 /* Desktop: Always show chat container when there's a conversation */
 @media (min-width: 769px) {
   .chat-container {
@@ -396,10 +401,20 @@
     right: auto !important;
     bottom: auto !important;
     z-index: auto !important;
+    visibility: visible !important;
   }
   
-  .chat-container.has-conversation {
+  .chat-container.has-conversation,
+  .chat-container.desktop-visible {
     display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  /* Ensure chat interface is always visible on desktop */
+  .chat-container .chat-interface {
+    display: flex !important;
+    visibility: visible !important;
   }
 }
 
