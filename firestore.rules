@@ -227,6 +227,10 @@ service cloud.firestore {
                     (isOwner(resource.data.buyerId) || 
                      isOwner(resource.data.sellerId));
       
+      // Allow limited read access for statistics calculation (count completed orders)
+      allow read: if isAuthenticated() && 
+                    resource.data.status in ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'];
+      
       // Service order creation via Cloud Functions only (but allow client reads)
       allow create: if isAuthenticated() && 
                       isOwner(request.resource.data.buyerId) &&
@@ -290,6 +294,10 @@ service cloud.firestore {
       
       // Cloud Functions need read access for watermarking (order validation)
       allow read: if isCloudFunction();
+      
+      // Allow limited read access for statistics calculation (count completed orders)
+      allow read: if isAuthenticated() && 
+                    resource.data.status in ['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'];
       
       // Pack order creation via Cloud Functions only (but allow client reads)
       allow create: if isAuthenticated() && 
@@ -368,8 +376,11 @@ service cloud.firestore {
     // =====================================================
     
     match /reviews/{reviewId} {
-      // Any authenticated user can read reviews (for profile display)
+      // Any authenticated user can read reviews (for profile display and statistics)
       allow read: if isAuthenticated();
+      
+      // Allow list queries for statistics calculation (pack/service ratings)
+      allow list: if isAuthenticated();
       
       // Users can create reviews (with validation)
       allow create: if isAuthenticated() && 

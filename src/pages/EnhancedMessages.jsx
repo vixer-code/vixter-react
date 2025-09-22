@@ -132,6 +132,20 @@ const EnhancedMessages = () => {
   // Handle conversation selection
   const handleConversationSelect = (conversation) => {
     setSelectedConversation(conversation);
+    
+    // Load user data for the other participant if not already loaded
+    if (conversation?.participants && currentUser?.uid) {
+      const participantIds = Object.keys(conversation.participants);
+      const otherId = participantIds.find(id => id !== currentUser.uid);
+      
+      if (otherId && !users[otherId]) {
+        // Load user data asynchronously
+        loadUserData(otherId).catch(error => {
+          console.error('Error loading user data for conversation:', error);
+        });
+      }
+    }
+    
     // Only show mobile chat on mobile devices
     if (isMobile) {
       setShowMobileChat(true);
@@ -312,9 +326,32 @@ const EnhancedMessages = () => {
                       onClick={() => handleConversationSelect(conversation)}
                     >
                       <div className="conversation-avatar">
-                        <div className="default-avatar">
-                          {displayName && displayName.length > 0 ? displayName.charAt(0).toUpperCase() : '?'}
-                        </div>
+                        {(() => {
+                          // Get other participant data for avatar
+                          const participantIds = Object.keys(conversation.participants || {});
+                          const otherId = participantIds.find(id => id !== currentUser?.uid);
+                          const otherUser = otherId ? users[otherId] : null;
+                          
+                          if (otherUser?.photoURL) {
+                            return (
+                              <img 
+                                src={otherUser.photoURL} 
+                                alt={displayName || 'Usuário'} 
+                                className="user-avatar-img"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            );
+                          }
+                          
+                          return (
+                            <div className="default-avatar">
+                              {displayName && displayName.length > 0 ? displayName.charAt(0).toUpperCase() : '?'}
+                            </div>
+                          );
+                        })()}
                       </div>
                       <div className="conversation-content">
                         <div className="conversation-header">
@@ -383,7 +420,7 @@ const EnhancedMessages = () => {
         </div>
 
         {/* Chat Interface */}
-        <div className={`chat-container ${showMobileChat ? 'mobile-visible' : ''}`}>
+        <div className={`chat-container ${showMobileChat ? 'mobile-visible' : ''} ${selectedConversation ? 'has-conversation' : ''}`}>
           {/* Mobile back button */}
           {showMobileChat && (
             <button 
