@@ -12,7 +12,6 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { useNavigate } from 'react-router-dom';
 import { db, functions } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
@@ -43,7 +42,6 @@ export const ServiceOrderProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const { processServicePurchase } = useWallet();
-  const navigate = useNavigate();
   
   // Safely get messaging functions with fallbacks
   let sendServiceNotification, createServiceConversation, markServiceConversationCompleted;
@@ -246,7 +244,7 @@ export const ServiceOrderProvider = ({ children }) => {
           7000,
           {
             onClick: () => {
-              navigate('/my-products');
+              window.location.href = '/my-products';
             },
             data: { action: 'view_my_products' }
           }
@@ -262,7 +260,7 @@ export const ServiceOrderProvider = ({ children }) => {
     } finally {
       setProcessing(false);
     }
-  }, [currentUser, apiFunc, sendServiceNotification, showSuccess, showError, navigate]);
+  }, [currentUser, apiFunc, sendServiceNotification, showSuccess, showError]);
 
   // Accept service order
   const acceptServiceOrder = useCallback(async (orderId) => {
