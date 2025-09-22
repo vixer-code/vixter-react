@@ -357,24 +357,13 @@ export const EnhancedMessagingProvider = ({ children }) => {
           where('chatId', '!=', null)
         );
         
-        // Also check additionalFeatures.buyerId for new structure
-        const additionalBuyerQuery = fsQuery(
-          serviceOrdersRef,
-          where('additionalFeatures.buyerId', '==', currentUser.uid),
-          where('additionalFeatures.chatId', '!=', null)
-        );
-        
-        const [buyerSnapshot, sellerSnapshot, additionalSnapshot] = await Promise.all([
+        const [buyerSnapshot, sellerSnapshot] = await Promise.all([
           getDocs(buyerQuery).catch(error => {
             console.warn('Buyer query failed:', error.message);
             return { docs: [] };
           }),
           getDocs(sellerQuery).catch(error => {
             console.warn('Seller query failed:', error.message);
-            return { docs: [] };
-          }),
-          getDocs(additionalBuyerQuery).catch(error => {
-            console.warn('Additional buyer query failed:', error.message);
             return { docs: [] };
           })
         ]);
@@ -423,29 +412,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
           }
         });
         
-        // Process additional features orders
-        additionalSnapshot.docs.forEach(doc => {
-          const orderData = doc.data();
-          const chatId = orderData.additionalFeatures?.chatId;
-          const buyerId = orderData.additionalFeatures?.buyerId || orderData.buyerId;
-          
-          if (chatId) {
-            firestoreConversations.push({
-              id: chatId,
-              serviceOrderId: orderData.id,
-              participants: {
-                [buyerId]: true,
-                [orderData.sellerId]: true
-              },
-              participantIds: [buyerId, orderData.sellerId],
-              lastMessage: `Conversa iniciada para o serviço: ${orderData.metadata?.serviceName || 'Serviço'}`,
-              lastMessageTime: orderData.timestamps?.createdAt?.toMillis?.() || Date.now(),
-              isCompleted: orderData.status === 'COMPLETED' || orderData.status === 'CONFIRMED',
-              _source: 'firestore'
-            });
-            console.log('✅ Added Firestore conversation from additional features order:', chatId, 'Order:', orderData.id);
-          }
-        });
+        // Removed additionalFeatures processing - all conversations now use chatId at root level
         
         // Remove duplicates and merge with RTDB conversations
         const existingIds = new Set();

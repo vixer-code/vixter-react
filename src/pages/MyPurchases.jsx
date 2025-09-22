@@ -60,21 +60,34 @@ const MyPurchases = () => {
     const packOrdersRef = collection(db, 'packOrders');
     
     
-    // Try without orderBy first to see if that's the issue
+    // Query without orderBy since timestamps.createdAt might not exist in all documents
     const queryRef = fsQuery(
       packOrdersRef,
       where('buyerId', '==', currentUser.uid)
-      // Temporarily removed orderBy to debug
-      // orderBy('timestamps.createdAt', 'desc')
     );
     
     // Use onSnapshot for real-time updates
     const unsubscribe = onSnapshot(queryRef,
       (snapshot) => {
+        console.log('Pack orders query result:', {
+          size: snapshot.size,
+          empty: snapshot.empty,
+          docs: snapshot.docs.map(doc => ({
+            id: doc.id,
+            data: doc.data()
+          }))
+        });
         
         const orders = [];
         snapshot.forEach((doc) => {
           const orderData = doc.data();
+          console.log('Processing pack order:', {
+            id: doc.id,
+            buyerId: orderData.buyerId,
+            status: orderData.status,
+            packId: orderData.packId,
+            sellerId: orderData.sellerId
+          });
           
           // Include all pack orders except cancelled and banned
           if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
@@ -86,6 +99,7 @@ const MyPurchases = () => {
           }
         });
         
+        console.log('Filtered pack orders:', orders.length);
         setPurchasedPacks(orders);
         
         // Load pack data for purchased packs
@@ -168,21 +182,26 @@ const MyPurchases = () => {
       return;
     }
     
+    console.log('Loading purchased services for user:', currentUser.uid);
+    
     const serviceOrdersRef = collection(db, 'serviceOrders');
     let allOrders = [];
-    let hasAdditionalQuery = false;
     
     const updateOrders = async () => {
-      // Remove duplicates by ID and sort by creation time
+      // Remove duplicates by ID and sort by creation/update time
       const uniqueOrders = allOrders.filter((order, index, self) => 
         index === self.findIndex((o) => o.id === order.id)
       );
       uniqueOrders.sort((a, b) => {
-        const aTime = a.timestamps?.createdAt?.toMillis?.() || 0;
-        const bTime = b.timestamps?.createdAt?.toMillis?.() || 0;
+        // Try createdAt first, fallback to updatedAt
+        const aTime = a.timestamps?.createdAt?.toMillis?.() || 
+                     a.timestamps?.updatedAt?.toMillis?.() || 0;
+        const bTime = b.timestamps?.createdAt?.toMillis?.() || 
+                     b.timestamps?.updatedAt?.toMillis?.() || 0;
         return bTime - aTime;
       });
       
+      console.log('Final service orders to display:', uniqueOrders.length);
       setPurchasedServices(uniqueOrders);
       
       // Load seller data for services
@@ -194,20 +213,37 @@ const MyPurchases = () => {
     // Query 1: buyerId at root level (primary query - always works)
     const rootQuery = fsQuery(
       serviceOrdersRef,
-      where('buyerId', '==', currentUser.uid),
-      orderBy('timestamps.createdAt', 'desc')
+      where('buyerId', '==', currentUser.uid)
+      // Note: orderBy removed temporarily since timestamps.createdAt might not exist in all documents
     );
     
     const unsubscribeRoot = onSnapshot(rootQuery, 
       (snapshot) => {
+        console.log('Service orders query result:', {
+          size: snapshot.size,
+          empty: snapshot.empty,
+          docs: snapshot.docs.map(doc => ({
+            id: doc.id,
+            data: doc.data()
+          }))
+        });
         
         const orders = [];
         snapshot.forEach((doc) => {
           const orderData = doc.data();
+          console.log('Processing service order:', {
+            id: doc.id,
+            buyerId: orderData.buyerId,
+            currentUserUid: currentUser.uid,
+            buyerIdMatch: orderData.buyerId === currentUser.uid,
+            status: orderData.status,
+            serviceId: orderData.serviceId,
+            sellerId: orderData.sellerId
+          });
           
           // Include service orders that should be visible to buyers
           const validStatuses = ['PENDING_ACCEPTANCE', 'ACCEPTED', 'DELIVERED', 'CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'];
-          if (orderData && validStatuses.includes(orderData.status)) {
+          if (orderData && orderData.buyerId === currentUser.uid && validStatuses.includes(orderData.status)) {
             orders.push({
               id: doc.id,
               type: 'service',
@@ -216,15 +252,13 @@ const MyPurchases = () => {
           }
         });
         
+        console.log('Filtered service orders:', orders.length);
         
         // Replace all orders from root source
         allOrders = allOrders.filter(order => order._source !== 'root');
         allOrders.push(...orders.map(order => ({ ...order, _source: 'root' })));
         
-        // If no additional query is running, update immediately
-        if (!hasAdditionalQuery) {
-          updateOrders();
-        }
+        updateOrders();
       },
       (error) => {
         console.error('Error loading services (root buyerId):', error);
@@ -232,60 +266,10 @@ const MyPurchases = () => {
       }
     );
     
-    // Query 2: Try buyerId in additionalFeatures (optional - for new structure)
-    let unsubscribeFeatures = null;
-    
-    try {
-      const featuresQuery = fsQuery(
-        serviceOrdersRef,
-        where('additionalFeatures.buyerId', '==', currentUser.uid),
-        orderBy('timestamps.createdAt', 'desc')
-      );
-      
-      hasAdditionalQuery = true;
-      
-         unsubscribeFeatures = onSnapshot(featuresQuery, 
-           (snapshot) => {
-             const orders = [];
-             snapshot.forEach((doc) => {
-               const orderData = doc.data();
-               
-               if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
-                 orders.push({
-                   id: doc.id,
-                   type: 'service',
-                   ...orderData,
-                   // Normalize buyerId to root for consistency
-                   buyerId: orderData.buyerId || orderData.additionalFeatures?.buyerId || currentUser.uid
-                 });
-               }
-             });
-             
-             // Replace all orders from features source
-             allOrders = allOrders.filter(order => order._source !== 'features');
-             allOrders.push(...orders.map(order => ({ ...order, _source: 'features' })));
-             
-             updateOrders();
-           },
-        (error) => {
-          // If this query fails (missing index, permissions, etc), that's OK
-          // We'll continue with just the root query
-          console.warn('Additional query for additionalFeatures.buyerId failed:', error.message);
-          hasAdditionalQuery = false;
-          updateOrders();
-        }
-      );
-    } catch (error) {
-      // If we can't even create the second query, that's fine
-      console.warn('Could not create additionalFeatures query (this is OK):', error.message);
-      hasAdditionalQuery = false;
-    }
+    // Removed additionalFeatures.buyerId query - all orders now use buyerId at root level
     
     return () => {
       unsubscribeRoot();
-      if (unsubscribeFeatures) {
-        unsubscribeFeatures();
-      }
     };
   }, [currentUser, showError, loadSellerData]);
 
@@ -567,7 +551,8 @@ const MyPurchases = () => {
     const startDate = serviceOrder.serviceStartDate || 
                      serviceOrder.timestamps?.serviceStartDate || 
                      serviceOrder.timestamps?.acceptedAt || 
-                     serviceOrder.timestamps?.createdAt;
+                     serviceOrder.timestamps?.createdAt ||
+                     serviceOrder.timestamps?.updatedAt;
     
     if (!startDate) return 'Data não disponível';
     const date = startDate.toDate ? startDate.toDate() : new Date(startDate);
@@ -738,7 +723,7 @@ const MyPurchases = () => {
                         {isService ? 'Serviço' : 'Pack'}
                       </span>
                       <span className="purchase-id">#{purchase.id.slice(-8)}</span>
-                      <span className="purchase-date">{formatDate(purchase.timestamps?.createdAt)}</span>
+                      <span className="purchase-date">{formatDate(purchase.timestamps?.createdAt || purchase.timestamps?.updatedAt)}</span>
                     </div>
                   </div>
                   <div className={`purchase-status status-${statusInfo.color}`}>

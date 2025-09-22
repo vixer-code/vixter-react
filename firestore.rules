@@ -222,13 +222,10 @@ service cloud.firestore {
     // =====================================================
     
     match /serviceOrders/{orderId} {
-      // Buyers and sellers can read their orders (supports both buyerId locations)
+      // Buyers and sellers can read their orders (buyerId at root level only)
       allow read: if isAuthenticated() && 
                     (isOwner(resource.data.buyerId) || 
-                     isOwner(resource.data.sellerId) ||
-                     (resource.data.additionalFeatures != null && 
-                      resource.data.additionalFeatures.buyerId != null && 
-                      isOwner(resource.data.additionalFeatures.buyerId)));
+                     isOwner(resource.data.sellerId));
       
       // Allow limited read access for statistics calculation (count completed orders)
       allow read: if isAuthenticated() && 
@@ -236,19 +233,13 @@ service cloud.firestore {
       
       // Service order creation via Cloud Functions only (but allow client reads)
       allow create: if isAuthenticated() && 
-                      (isOwner(request.resource.data.buyerId) ||
-                       (request.resource.data.additionalFeatures != null && 
-                        request.resource.data.additionalFeatures.buyerId != null && 
-                        isOwner(request.resource.data.additionalFeatures.buyerId))) &&
+                      isOwner(request.resource.data.buyerId) &&
                       isValidServiceOrder(request.resource.data);
       
-      // Allow status updates for order workflow (supports both buyerId locations)
+      // Allow status updates for order workflow (buyerId at root level only)
       allow update: if isAuthenticated() && 
                       (isOwner(resource.data.buyerId) || 
-                       isOwner(resource.data.sellerId) ||
-                       (resource.data.additionalFeatures != null && 
-                        resource.data.additionalFeatures.buyerId != null && 
-                        isOwner(resource.data.additionalFeatures.buyerId))) &&
+                       isOwner(resource.data.sellerId)) &&
                       isValidStatusUpdate(resource.data, request.resource.data);
       
       allow delete: if false;
@@ -259,12 +250,9 @@ service cloud.firestore {
     
     // Helper function for service order validation
     function isValidServiceOrder(data) {
-      return data.keys().hasAll(['serviceId', 'sellerId', 'vpAmount', 'status']) &&
+      return data.keys().hasAll(['serviceId', 'sellerId', 'buyerId', 'vpAmount', 'status']) &&
              data.status == 'PENDING_ACCEPTANCE' &&
-             data.vpAmount > 0 &&
-             // buyerId can be at root level OR in additionalFeatures
-             (data.keys().hasAny(['buyerId']) || 
-              (data.additionalFeatures != null && data.additionalFeatures.buyerId != null));
+             data.vpAmount > 0;
     }
     
     // Helper function for status update validation

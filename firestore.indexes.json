@@ -182,9 +182,27 @@
       "collectionGroup": "serviceOrders",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "buyerId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "timestamps.updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "serviceOrders",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "sellerId", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "timestamps.createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "serviceOrders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sellerId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "timestamps.updatedAt", "order": "DESCENDING" }
       ]
     },
     {
@@ -209,6 +227,38 @@
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "likedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "packOrders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "buyerId", "order": "ASCENDING" },
+        { "fieldPath": "timestamps.createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "packOrders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "buyerId", "order": "ASCENDING" },
+        { "fieldPath": "timestamps.updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "packOrders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sellerId", "order": "ASCENDING" },
+        { "fieldPath": "timestamps.createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "packOrders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sellerId", "order": "ASCENDING" },
+        { "fieldPath": "timestamps.updatedAt", "order": "DESCENDING" }
       ]
     }
   ],
