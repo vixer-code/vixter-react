@@ -82,6 +82,11 @@ const MyPurchases = () => {
         });
         
         setPurchasedPacks(orders);
+        
+        // Load pack data for purchased packs
+        if (orders.length > 0) {
+          loadPackData(orders);
+        }
       },
       (error) => {
         console.error('Error loading purchased packs:', error);
@@ -151,7 +156,7 @@ const MyPurchases = () => {
     setSellerData(sellerDataMap);
   }, [getUserById]);
 
-  // Load purchased services with real-time updates (supports both old and new data structures)
+  // Load purchased services with real-time updates (supports both buyerId locations)
   const loadPurchasedServices = useCallback(() => {
     if (!currentUser) {
       setPurchasedServices([]);
@@ -159,66 +164,116 @@ const MyPurchases = () => {
     }
     
     const serviceOrdersRef = collection(db, 'serviceOrders');
+    let allOrders = [];
+    let pendingQueries = 2;
     
-    // We need to get all documents and filter client-side because Firebase doesn't support OR queries easily
-    // and buyerId can be in different locations (root vs additionalFeatures)
-    const queryRef = fsQuery(
+    const updateOrders = async () => {
+      // Remove duplicates by ID and sort by creation time
+      const uniqueOrders = allOrders.filter((order, index, self) => 
+        index === self.findIndex((o) => o.id === order.id)
+      );
+      uniqueOrders.sort((a, b) => {
+        const aTime = a.timestamps?.createdAt?.toMillis?.() || 0;
+        const bTime = b.timestamps?.createdAt?.toMillis?.() || 0;
+        return bTime - aTime;
+      });
+      
+      setPurchasedServices(uniqueOrders);
+      
+      // Load seller data for services
+      if (uniqueOrders.length > 0) {
+        await loadSellerData(uniqueOrders);
+      }
+    };
+    
+    // Query 1: buyerId at root level (old structure)
+    const rootQuery = fsQuery(
       serviceOrdersRef,
+      where('buyerId', '==', currentUser.uid),
       orderBy('timestamps.createdAt', 'desc')
     );
     
-    // Use onSnapshot for real-time updates
-    const unsubscribe = onSnapshot(queryRef, 
-      async (snapshot) => {
+    const unsubscribeRoot = onSnapshot(rootQuery, 
+      (snapshot) => {
         const orders = [];
         snapshot.forEach((doc) => {
           const orderData = doc.data();
-          
-          // Check buyerId in both locations (old and new structure)
-          const buyerIdRoot = orderData.buyerId; // Old structure
-          
-          // For new structure, buyerId might be nested in additionalFeatures array or object
-          let buyerIdInFeatures = null;
-          if (orderData.additionalFeatures) {
-            if (Array.isArray(orderData.additionalFeatures)) {
-              // If it's an array, look for buyerId in each feature
-              const featureWithBuyer = orderData.additionalFeatures.find(feature => feature.buyerId);
-              buyerIdInFeatures = featureWithBuyer?.buyerId;
-            } else if (typeof orderData.additionalFeatures === 'object') {
-              // If it's an object, check if it has buyerId
-              buyerIdInFeatures = orderData.additionalFeatures.buyerId;
-            }
-          }
-          
-          const isCurrentUserOrder = buyerIdRoot === currentUser.uid || buyerIdInFeatures === currentUser.uid;
-          
-          if (isCurrentUserOrder && orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
-            // Normalize the structure - ensure buyerId is always at root level
-            const normalizedOrder = {
+          if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
+            orders.push({
               id: doc.id,
               type: 'service',
               ...orderData,
-              buyerId: buyerIdRoot || buyerIdInFeatures // Ensure buyerId is at root
-            };
-            
-            orders.push(normalizedOrder);
+              _source: 'root' // Debug marker
+            });
           }
         });
         
-        setPurchasedServices(orders);
+        // Update only root orders in allOrders
+        allOrders = allOrders.filter(order => order._source !== 'root');
+        allOrders.push(...orders);
         
-        // Load seller data for services
-        if (orders.length > 0) {
-          await loadSellerData(orders);
+        pendingQueries--;
+        if (pendingQueries === 0) {
+          updateOrders();
         }
       },
       (error) => {
-        console.error('Error loading purchased services:', error);
-        showError('Erro ao carregar serviços comprados');
+        console.error('Error loading services (root buyerId):', error);
+        pendingQueries--;
+        if (pendingQueries === 0) {
+          updateOrders();
+        }
       }
     );
     
-    return unsubscribe;
+    // Query 2: buyerId in additionalFeatures (new structure)
+    // Note: This assumes you have a compound index on additionalFeatures.buyerId + timestamps.createdAt
+    const featuresQuery = fsQuery(
+      serviceOrdersRef,
+      where('additionalFeatures.buyerId', '==', currentUser.uid),
+      orderBy('timestamps.createdAt', 'desc')
+    );
+    
+    const unsubscribeFeatures = onSnapshot(featuresQuery, 
+      (snapshot) => {
+        const orders = [];
+        snapshot.forEach((doc) => {
+          const orderData = doc.data();
+          if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
+            orders.push({
+              id: doc.id,
+              type: 'service',
+              ...orderData,
+              // Normalize buyerId to root for consistency
+              buyerId: orderData.buyerId || orderData.additionalFeatures?.buyerId || currentUser.uid,
+              _source: 'features' // Debug marker
+            });
+          }
+        });
+        
+        // Update only features orders in allOrders
+        allOrders = allOrders.filter(order => order._source !== 'features');
+        allOrders.push(...orders);
+        
+        pendingQueries--;
+        if (pendingQueries === 0) {
+          updateOrders();
+        }
+      },
+      (error) => {
+        console.error('Error loading services (additionalFeatures buyerId):', error);
+        // This might fail if the index doesn't exist - that's ok, we'll rely on root query
+        pendingQueries--;
+        if (pendingQueries === 0) {
+          updateOrders();
+        }
+      }
+    );
+    
+    return () => {
+      unsubscribeRoot();
+      unsubscribeFeatures();
+    };
   }, [currentUser, showError, loadSellerData]);
 
   // Setup real-time listeners for purchases
