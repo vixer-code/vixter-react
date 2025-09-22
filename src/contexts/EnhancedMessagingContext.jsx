@@ -390,6 +390,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
               serviceName: orderData.metadata?.serviceName || 'Serviço',
               buyerId: orderData.buyerId,
               sellerId: orderData.sellerId,
+              additionalFeatures: orderData.additionalFeatures || [],
               _source: 'firestore'
             });
             console.log('✅ Added Firestore conversation from buyer order:', orderData.chatId, 'Order:', orderData.id, 'Completed:', isCompleted);
@@ -416,6 +417,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
               serviceName: orderData.metadata?.serviceName || 'Serviço',
               buyerId: orderData.buyerId,
               sellerId: orderData.sellerId,
+              additionalFeatures: orderData.additionalFeatures || [],
               _source: 'firestore'
             });
             console.log('✅ Added Firestore conversation from seller order:', orderData.chatId, 'Order:', orderData.id, 'Completed:', isCompleted);
@@ -1976,6 +1978,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
         serviceName: serviceName,
         buyerId: serviceOrder.buyerId,
         sellerId: serviceOrder.sellerId,
+        additionalFeatures: serviceOrder.additionalFeatures || [],
         createdAt: Date.now(),
         lastMessageTime: Date.now(),
         lastMessage: `Esta é a conversa do serviço "${serviceName}", entre @${sellerUsername} e @${buyerUsername}`,

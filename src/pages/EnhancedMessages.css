@@ -665,8 +665,9 @@
 }
 
 .conversation-item.service-conversation.completed {
-  opacity: 0.7;
+  opacity: 0.8;
   background: rgba(100, 100, 100, 0.1);
+  /* Allow viewing but indicate it's completed */
 }
 
 .conversation-item.service-conversation.completed:hover {
@@ -702,4 +703,36 @@
   color: #888;
   font-size: 0.85rem;
   font-style: italic;
+}
+
+.conversation-participant {
+  font-size: 0.85rem;
+  margin: 4px 0;
+  color: #ccc;
+}
+
+.participant-role {
+  font-weight: 500;
+  color: #00FFCA;
+}
+
+.participant-name {
+  color: #fff;
+  margin-left: 4px;
+}
+
+.conversation-additionals {
+  font-size: 0.8rem;
+  margin: 4px 0;
+  color: #aaa;
+}
+
+.additionals-label {
+  font-weight: 500;
+  color: #FF6B6B;
+}
+
+.additionals-list {
+  color: #ccc;
+  margin-left: 4px;
 }

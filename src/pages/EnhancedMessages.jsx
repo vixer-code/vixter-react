@@ -397,11 +397,15 @@ const EnhancedMessages = () => {
                     return null;
                   }
                   
-                  // Get seller info for avatar
-                  const sellerId = conversation.sellerId || conversation.participantIds?.find(id => id !== currentUser?.uid);
-                  const sellerUser = sellerId ? users[sellerId] : null;
-                  const sellerName = sellerUser?.displayName || sellerUser?.username || 'Vendedor';
+                  // Get the other participant info for avatar (buyer if current user is seller, seller if current user is buyer)
+                  const otherParticipantId = conversation.participantIds?.find(id => id !== currentUser?.uid);
+                  const otherUser = otherParticipantId ? users[otherParticipantId] : null;
+                  const otherUserName = otherUser?.displayName || otherUser?.username || 'Usuário';
                   const serviceName = conversation.serviceName || 'Serviço';
+                  
+                  // Determine if current user is seller or buyer
+                  const isCurrentUserSeller = conversation.sellerId === currentUser?.uid;
+                  const participantRole = isCurrentUserSeller ? 'Comprador' : 'Vendedor';
                   
                   return (
                     <div
@@ -413,14 +417,14 @@ const EnhancedMessages = () => {
                     >
                       <div className="conversation-avatar">
                         {(() => {
-                          // Try to get seller's profile picture
-                          const imageUrl = sellerUser?.photoURL || sellerUser?.profilePictureURL;
+                          // Try to get other participant's profile picture
+                          const imageUrl = otherUser?.photoURL || otherUser?.profilePictureURL;
                           
                           if (imageUrl) {
                             return (
                               <img 
                                 src={imageUrl} 
-                                alt={sellerName} 
+                                alt={otherUserName} 
                                 className="user-avatar-img"
                                 onError={(e) => {
                                   e.target.style.display = 'none';
@@ -432,7 +436,7 @@ const EnhancedMessages = () => {
                           
                           return (
                             <div className="default-avatar">
-                              {sellerName && sellerName.length > 0 ? sellerName.charAt(0).toUpperCase() : 'V'}
+                              {otherUserName && otherUserName.length > 0 ? otherUserName.charAt(0).toUpperCase() : 'U'}
                             </div>
                           );
                         })()}
@@ -443,7 +447,7 @@ const EnhancedMessages = () => {
                       <div className="conversation-content">
                         <div className="conversation-header">
                           <div className="conversation-name">
-                            {serviceName}
+                            {serviceName} - @{otherUserName}
                             {conversation.isCompleted && (
                               <span className="completed-text"> (Concluído)</span>
                             )}
@@ -452,9 +456,23 @@ const EnhancedMessages = () => {
                             {formatLastMessageTime(conversation.lastMessageTime)}
                           </div>
                         </div>
+                        <div className="conversation-participant">
+                          <span className="participant-role">{participantRole}:</span>
+                          <span className="participant-name">@{otherUserName}</span>
+                        </div>
+                        {conversation.additionalFeatures && conversation.additionalFeatures.length > 0 && (
+                          <div className="conversation-additionals">
+                            <span className="additionals-label">Recursos:</span>
+                            <span className="additionals-list">
+                              {conversation.additionalFeatures.map((feature, index) => 
+                                feature.name || feature.title || `Recurso ${index + 1}`
+                              ).join(', ')}
+                            </span>
+                          </div>
+                        )}
                         <div className="conversation-preview">
                           {conversation.isCompleted ? 
-                            'Serviço concluído - Conversa arquivada' : 
+                            'Serviço concluído - Somente visualização' : 
                             getLastMessagePreview(conversation)
                           }
                         </div>
