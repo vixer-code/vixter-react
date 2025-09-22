@@ -22,6 +22,21 @@
   overflow: hidden;
   position: relative;
   visibility: visible;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Desktop chat interface */
+@media screen and (min-width: 769px) {
+  .chat-interface {
+    display: flex !important;
+    flex: 1 !important;
+    min-width: 300px !important;
+    width: 100% !important;
+    height: 100% !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
 }
 
 .chat-interface.no-conversation {

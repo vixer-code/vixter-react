@@ -391,11 +391,19 @@
 
 /* Desktop: Always show chat container - HIGH PRIORITY */
 @media screen and (min-width: 769px) {
+  .enhanced-messages .messages-container {
+    display: flex !important;
+    width: 100% !important;
+    height: calc(100vh - 80px - 50px) !important;
+  }
+  
   .enhanced-messages .chat-container {
     display: flex !important;
-    position: relative !important;
+    flex: 1 !important;
+    min-width: 0 !important;
     width: auto !important;
-    height: auto !important;
+    height: 100% !important;
+    position: relative !important;
     top: auto !important;
     left: auto !important;
     right: auto !important;
@@ -404,6 +412,9 @@
     visibility: visible !important;
     opacity: 1 !important;
     transform: none !important;
+    flex-direction: column !important;
+    /* Temporary border for debugging - remove after confirmation */
+    border: 2px solid #00FFCA !important;
   }
   
   /* Force chat container to be visible on desktop regardless of mobile classes */
@@ -412,15 +423,21 @@
   .enhanced-messages .chat-container:not(.mobile-visible),
   .enhanced-messages .messages-container .chat-container {
     display: flex !important;
+    flex: 1 !important;
     visibility: visible !important;
     opacity: 1 !important;
+    min-width: 300px !important;
+    width: auto !important;
   }
   
   /* Ensure chat interface is always visible on desktop */
   .enhanced-messages .chat-container .chat-interface {
     display: flex !important;
+    flex: 1 !important;
     visibility: visible !important;
     opacity: 1 !important;
+    height: 100% !important;
+    width: 100% !important;
   }
   
   /* Override mobile-specific hiding on desktop */

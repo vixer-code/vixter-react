@@ -486,9 +486,13 @@ const EnhancedMessages = () => {
           className={`chat-container ${showMobileChat ? 'mobile-visible' : ''} ${selectedConversation ? 'has-conversation' : ''} ${isDesktop && selectedConversation ? 'desktop-visible' : ''}`}
           style={isDesktop ? { 
             display: 'flex',
+            flex: '1',
             visibility: 'visible',
             position: 'relative',
-            opacity: 1
+            opacity: 1,
+            minWidth: '300px',
+            height: '100%',
+            flexDirection: 'column'
           } : {}}
         >
           <ChatInterface
