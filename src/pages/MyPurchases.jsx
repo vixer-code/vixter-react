@@ -61,19 +61,41 @@ const MyPurchases = () => {
     
     console.log('🔍 Setting up pack orders query for user:', currentUser.uid);
     
-    // Test: Try to read all pack orders to see if our document exists
-    getDocs(collection(db, 'packOrders')).then(allPacksSnapshot => {
-      console.log('🧪 All pack orders in database:', allPacksSnapshot.size);
-      allPacksSnapshot.forEach(doc => {
+    // Test: Check all service orders to see if our document with additionalFeatures exists
+    getDocs(collection(db, 'serviceOrders')).then(allServicesSnapshot => {
+      console.log('🧪 All service orders in database:', allServicesSnapshot.size);
+      allServicesSnapshot.forEach(doc => {
         const data = doc.data();
-        console.log('🧪 Found pack order:', doc.id, {
+        console.log('🧪 Found service order:', doc.id, {
           buyerId: data.buyerId,
+          additionalFeaturesBuyerId: data.additionalFeatures?.buyerId,
           status: data.status,
-          isCurrentUser: data.buyerId === currentUser.uid
+          isCurrentUserRoot: data.buyerId === currentUser.uid,
+          isCurrentUserFeatures: data.additionalFeatures?.buyerId === currentUser.uid
         });
       });
     }).catch(error => {
-      console.error('🧪 Error reading all pack orders:', error);
+      console.error('🧪 Error reading all service orders:', error);
+    });
+    
+    // Test: Try the specific additionalFeatures query
+    const testFeaturesQuery = fsQuery(
+      collection(db, 'serviceOrders'),
+      where('additionalFeatures.buyerId', '==', currentUser.uid)
+    );
+    
+    getDocs(testFeaturesQuery).then(testSnapshot => {
+      console.log('🧪 Additional features query test result:', testSnapshot.size, 'documents');
+      testSnapshot.forEach(doc => {
+        const data = doc.data();
+        console.log('🧪 Additional features test found:', doc.id, {
+          buyerId: data.buyerId,
+          additionalFeaturesBuyerId: data.additionalFeatures?.buyerId,
+          status: data.status
+        });
+      });
+    }).catch(error => {
+      console.error('🧪 Additional features query test failed:', error);
     });
     
     // Try without orderBy first to see if that's the issue
@@ -88,24 +110,10 @@ const MyPurchases = () => {
     const unsubscribe = onSnapshot(queryRef,
       (snapshot) => {
         console.log('📦 Pack orders snapshot received:', snapshot.size, 'documents');
-        console.log('📦 Snapshot metadata:', {
-          empty: snapshot.empty,
-          size: snapshot.size,
-          hasPendingWrites: snapshot.metadata.hasPendingWrites,
-          isFromCache: snapshot.metadata.fromCache
-        });
         
         const orders = [];
         snapshot.forEach((doc) => {
           const orderData = doc.data();
-          console.log('🔍 Processing pack order:', doc.id, {
-            buyerId: orderData.buyerId,
-            status: orderData.status,
-            packId: orderData.packId,
-            currentUserMatch: orderData.buyerId === currentUser.uid,
-            timestamps: orderData.timestamps,
-            fullData: orderData
-          });
           
           // Include all pack orders except cancelled and banned
           if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
@@ -114,14 +122,10 @@ const MyPurchases = () => {
               type: 'pack',
               ...orderData
             });
-            console.log('✅ Added pack order:', doc.id);
-          } else {
-            console.log('❌ Filtered out pack order:', doc.id, 'Status:', orderData?.status);
           }
         });
         
         console.log('📦 Final pack orders:', orders.length);
-        console.log('📦 Orders array:', orders);
         setPurchasedPacks(orders);
         
         // Load pack data for purchased packs
@@ -236,9 +240,17 @@ const MyPurchases = () => {
     
     const unsubscribeRoot = onSnapshot(rootQuery, 
       (snapshot) => {
+        console.log('🔍 Root query snapshot received:', snapshot.size, 'documents');
+        
         const orders = [];
         snapshot.forEach((doc) => {
           const orderData = doc.data();
+          console.log('🔍 Processing root service:', doc.id, {
+            buyerId: orderData.buyerId,
+            status: orderData.status,
+            serviceId: orderData.serviceId
+          });
+          
           // Include service orders that should be visible to buyers
           const validStatuses = ['PENDING_ACCEPTANCE', 'ACCEPTED', 'DELIVERED', 'CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'];
           if (orderData && validStatuses.includes(orderData.status)) {
@@ -247,8 +259,11 @@ const MyPurchases = () => {
               type: 'service',
               ...orderData
             });
+            console.log('✅ Added root service:', doc.id);
           }
         });
+        
+        console.log('🔍 Root services found:', orders.length);
         
         // Replace all orders from root source
         allOrders = allOrders.filter(order => order._source !== 'root');
@@ -279,9 +294,18 @@ const MyPurchases = () => {
       
       unsubscribeFeatures = onSnapshot(featuresQuery, 
         (snapshot) => {
+          console.log('🔍 Additional features query snapshot received:', snapshot.size, 'documents');
+          
           const orders = [];
           snapshot.forEach((doc) => {
             const orderData = doc.data();
+            console.log('🔍 Processing additional features service:', doc.id, {
+              buyerId: orderData.buyerId,
+              additionalFeaturesBuyerId: orderData.additionalFeatures?.buyerId,
+              status: orderData.status,
+              serviceId: orderData.serviceId
+            });
+            
             if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
               orders.push({
                 id: doc.id,
@@ -290,8 +314,11 @@ const MyPurchases = () => {
                 // Normalize buyerId to root for consistency
                 buyerId: orderData.buyerId || orderData.additionalFeatures?.buyerId || currentUser.uid
               });
+              console.log('✅ Added additional features service:', doc.id);
             }
           });
+          
+          console.log('🔍 Additional features services found:', orders.length);
           
           // Replace all orders from features source
           allOrders = allOrders.filter(order => order._source !== 'features');
@@ -302,7 +329,7 @@ const MyPurchases = () => {
         (error) => {
           // If this query fails (missing index, permissions, etc), that's OK
           // We'll continue with just the root query
-          console.warn('Additional query for additionalFeatures.buyerId failed (this is OK):', error.message);
+          console.warn('Additional query for additionalFeatures.buyerId failed:', error.message);
           hasAdditionalQuery = false;
           updateOrders();
         }
