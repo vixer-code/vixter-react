@@ -22,7 +22,7 @@ import {
 } from 'firebase/storage';
 import { 
   collection, 
-  query, 
+  query as fsQuery, 
   where, 
   getDocs 
 } from 'firebase/firestore';
@@ -345,20 +345,20 @@ export const EnhancedMessagingProvider = ({ children }) => {
         
         // Query service orders where user is buyer or seller
         const serviceOrdersRef = collection(db, 'serviceOrders');
-        const buyerQuery = query(
+        const buyerQuery = fsQuery(
           serviceOrdersRef,
           where('buyerId', '==', currentUser.uid),
           where('chatId', '!=', null)
         );
         
-        const sellerQuery = query(
+        const sellerQuery = fsQuery(
           serviceOrdersRef,
           where('sellerId', '==', currentUser.uid),
           where('chatId', '!=', null)
         );
         
         // Also check additionalFeatures.buyerId for new structure
-        const additionalBuyerQuery = query(
+        const additionalBuyerQuery = fsQuery(
           serviceOrdersRef,
           where('additionalFeatures.buyerId', '==', currentUser.uid),
           where('additionalFeatures.chatId', '!=', null)
