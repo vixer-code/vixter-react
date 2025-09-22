@@ -161,8 +161,8 @@ const EnhancedMessages = () => {
   // Close mobile chat and return to conversations list
   const handleCloseMobileChat = () => {
     setShowMobileChat(false);
-    // Don't clear selected conversation - keep it for desktop view
-    // setSelectedConversation(null);
+    // Clear selected conversation to return to main menu
+    setSelectedConversation(null);
   };
 
   // Helper functions now use utility functions from conversation.js

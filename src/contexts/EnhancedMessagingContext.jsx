@@ -1448,7 +1448,11 @@ export const EnhancedMessagingProvider = ({ children }) => {
     // Return user data with fallback to basic info
     const userData = users[otherId];
     if (userData) {
-      return userData;
+      return {
+        ...userData,
+        // Ensure we have uid for consistency
+        uid: otherId
+      };
     }
     
     // Fallback: return basic user info with uid
@@ -1456,7 +1460,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
       uid: otherId,
       displayName: `Usuário ${otherId.slice(0, 8)}`,
       name: `Usuário ${otherId.slice(0, 8)}`,
-      photoURL: null
+      photoURL: null,
+      profilePictureURL: null
     };
   }, [currentUser, users]);
 

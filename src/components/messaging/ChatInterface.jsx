@@ -33,6 +33,16 @@ const ChatInterface = ({ conversation, onClose }) => {
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   const otherUser = getOtherParticipant(conversation);
+  
+  // Debug log to check user data
+  console.log('🔍 ChatInterface - otherUser data:', {
+    otherUser,
+    conversation: conversation?.id,
+    hasPhotoURL: !!otherUser?.photoURL,
+    hasProfilePictureURL: !!otherUser?.profilePictureURL,
+    displayName: otherUser?.displayName,
+    name: otherUser?.name
+  });
 
   // Check if user is near bottom to determine auto-scroll behavior
   const isNearBottom = () => {
@@ -160,13 +170,24 @@ const ChatInterface = ({ conversation, onClose }) => {
       <div className="chat-header">
         <div className="chat-user-info">
           <div className="user-avatar">
-            {otherUser.photoURL ? (
-              <img src={otherUser.photoURL} alt={otherUser.displayName || otherUser.name} />
-            ) : (
-              <div className="default-avatar">
-                {(otherUser.displayName || otherUser.name || 'U').charAt(0).toUpperCase()}
-              </div>
-            )}
+            {(otherUser.photoURL || otherUser.profilePictureURL) ? (
+              <img 
+                src={otherUser.photoURL || otherUser.profilePictureURL} 
+                alt={otherUser.displayName || otherUser.name}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div 
+              className="default-avatar"
+              style={{ 
+                display: (otherUser.photoURL || otherUser.profilePictureURL) ? 'none' : 'flex' 
+              }}
+            >
+              {(otherUser.displayName || otherUser.name || 'U').charAt(0).toUpperCase()}
+            </div>
           </div>
           <div className="user-details">
             <div className="user-name">

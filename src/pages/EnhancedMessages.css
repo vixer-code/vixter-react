@@ -456,9 +456,9 @@
     border: none;
     color: white;
     border-radius: 50%;
-    width: 45px;
-    height: 45px;
-    font-size: 20px;
+    width: 35px; /* Reduced size */
+    height: 35px; /* Reduced size */
+    font-size: 16px; /* Reduced font size */
     font-weight: bold;
     cursor: pointer;
     align-items: center;
@@ -574,9 +574,9 @@
   
   /* Smaller mobile back button for very small screens */
   .chat-container.mobile-visible .mobile-back-button {
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
+    width: 32px; /* Even smaller for small screens */
+    height: 32px; /* Even smaller for small screens */
+    font-size: 14px; /* Smaller font */
     top: 90px; /* Keep consistent with main positioning */
     left: 12px;
   }
