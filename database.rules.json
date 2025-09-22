@@ -40,7 +40,7 @@
         },
         "messages": {
           ".read": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
-          ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
+          ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists() && (root.child('conversations').child($conversationId).child('isCompleted').val() != true)",
           "$messageId": {
             ".validate": "newData.hasChildren(['senderId', 'type', 'content', 'timestamp']) && (newData.child('senderId').val() == auth.uid || newData.child('senderId').val() == 'system')"
           }
@@ -50,7 +50,7 @@
     "messages": {
       "$conversationId": {
         ".read": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
-        ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
+        ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists() && (root.child('conversations').child($conversationId).child('isCompleted').val() != true)",
         "$messageId": {
           ".validate": "newData.hasChildren(['senderId', 'type', 'content', 'timestamp']) && (newData.child('senderId').val() == auth.uid || newData.child('senderId').val() == 'system')",
           "senderId": {

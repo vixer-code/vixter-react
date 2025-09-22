@@ -205,6 +205,28 @@ export const EnhancedMessagingProvider = ({ children }) => {
     setOfflineMessages([]);
   }, [offlineMessages]);
 
+  // Function to enrich conversation with user data
+  const enrichConversationWithUserData = async (conversation) => {
+    try {
+      // Get buyer and seller data
+      const [buyerData, sellerData] = await Promise.all([
+        getUserById(conversation.buyerId),
+        getUserById(conversation.sellerId)
+      ]);
+      
+      return {
+        ...conversation,
+        buyerUsername: buyerData?.username || buyerData?.displayName || 'Comprador',
+        sellerUsername: sellerData?.username || sellerData?.displayName || 'Vendedor',
+        buyerPhotoURL: buyerData?.photoURL || buyerData?.profilePictureURL,
+        sellerPhotoURL: sellerData?.photoURL || sellerData?.profilePictureURL
+      };
+    } catch (error) {
+      console.error('Error enriching conversation with user data:', error);
+      return conversation;
+    }
+  };
+
   // Load conversations
   useEffect(() => {
     if (authLoading) {
@@ -371,12 +393,12 @@ export const EnhancedMessagingProvider = ({ children }) => {
         const firestoreConversations = [];
         
         // Process buyer orders
-        buyerSnapshot.docs.forEach(doc => {
+        for (const doc of buyerSnapshot.docs) {
           const orderData = doc.data();
           if (orderData.chatId) {
             const isCompleted = orderData.status === 'COMPLETED' || orderData.status === 'CONFIRMED' || orderData.status === 'AUTO_RELEASED';
             
-            firestoreConversations.push({
+            const conversation = {
               id: orderData.chatId,
               serviceOrderId: orderData.id,
               participants: {
@@ -392,18 +414,22 @@ export const EnhancedMessagingProvider = ({ children }) => {
               sellerId: orderData.sellerId,
               additionalFeatures: orderData.additionalFeatures || [],
               _source: 'firestore'
-            });
+            };
+            
+            // Enrich with user data
+            const enrichedConversation = await enrichConversationWithUserData(conversation);
+            firestoreConversations.push(enrichedConversation);
             console.log('✅ Added Firestore conversation from buyer order:', orderData.chatId, 'Order:', orderData.id, 'Completed:', isCompleted);
           }
-        });
+        }
         
         // Process seller orders
-        sellerSnapshot.docs.forEach(doc => {
+        for (const doc of sellerSnapshot.docs) {
           const orderData = doc.data();
           if (orderData.chatId) {
             const isCompleted = orderData.status === 'COMPLETED' || orderData.status === 'CONFIRMED' || orderData.status === 'AUTO_RELEASED';
             
-            firestoreConversations.push({
+            const conversation = {
               id: orderData.chatId,
               serviceOrderId: orderData.id,
               participants: {
@@ -419,10 +445,14 @@ export const EnhancedMessagingProvider = ({ children }) => {
               sellerId: orderData.sellerId,
               additionalFeatures: orderData.additionalFeatures || [],
               _source: 'firestore'
-            });
+            };
+            
+            // Enrich with user data
+            const enrichedConversation = await enrichConversationWithUserData(conversation);
+            firestoreConversations.push(enrichedConversation);
             console.log('✅ Added Firestore conversation from seller order:', orderData.chatId, 'Order:', orderData.id, 'Completed:', isCompleted);
           }
-        });
+        }
         
         // Removed additionalFeatures processing - all conversations now use chatId at root level
         

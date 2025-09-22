@@ -400,7 +400,12 @@ const EnhancedMessages = () => {
                   // Get the other participant info for avatar (buyer if current user is seller, seller if current user is buyer)
                   const otherParticipantId = conversation.participantIds?.find(id => id !== currentUser?.uid);
                   const otherUser = otherParticipantId ? users[otherParticipantId] : null;
-                  const otherUserName = otherUser?.displayName || otherUser?.username || 'Usuário';
+                  
+                  // Use enriched data if available, fallback to users context
+                  const otherUserName = conversation.buyerUsername && conversation.sellerUsername ? 
+                    (conversation.sellerId === currentUser?.uid ? conversation.buyerUsername : conversation.sellerUsername) :
+                    (otherUser?.displayName || otherUser?.username || 'Usuário');
+                  
                   const serviceName = conversation.serviceName || 'Serviço';
                   
                   // Determine if current user is seller or buyer
@@ -417,8 +422,10 @@ const EnhancedMessages = () => {
                     >
                       <div className="conversation-avatar">
                         {(() => {
-                          // Try to get other participant's profile picture
-                          const imageUrl = otherUser?.photoURL || otherUser?.profilePictureURL;
+                          // Try to get other participant's profile picture from enriched data or users context
+                          const imageUrl = conversation.buyerPhotoURL && conversation.sellerPhotoURL ? 
+                            (conversation.sellerId === currentUser?.uid ? conversation.buyerPhotoURL : conversation.sellerPhotoURL) :
+                            (otherUser?.photoURL || otherUser?.profilePictureURL);
                           
                           if (imageUrl) {
                             return (
