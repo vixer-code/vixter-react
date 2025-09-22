@@ -411,6 +411,73 @@ export const EnhancedMessagingProvider = ({ children }) => {
     }
   }, [currentUser?.uid, selectedConversation?.id]);
 
+  // Force reload conversations from Firebase (diagnostic function)
+  const forceReloadConversations = useCallback(async () => {
+    if (!currentUser?.uid) return;
+    
+    console.log('🔄 Force reloading conversations for user:', currentUser.uid);
+    
+    try {
+      const conversationsRef = ref(database, 'conversations');
+      const { get } = await import('firebase/database');
+      const snapshot = await get(conversationsRef);
+      
+      if (snapshot.exists()) {
+        console.log('💾 Total conversations in Firebase:', snapshot.size);
+        const allConversations = [];
+        const regularConversations = [];
+        const serviceConversations = [];
+        
+        snapshot.forEach((childSnapshot) => {
+          const conversation = {
+            id: childSnapshot.key,
+            ...childSnapshot.val()
+          };
+          
+          allConversations.push(conversation);
+          
+          if (conversation.participants?.[currentUser.uid]) {
+            if (conversation.serviceOrderId) {
+              serviceConversations.push(conversation);
+            } else {
+              regularConversations.push(conversation);
+            }
+          }
+        });
+        
+        console.log('📊 Conversation analysis:', {
+          total: allConversations.length,
+          userParticipant: regularConversations.length + serviceConversations.length,
+          regular: regularConversations.length,
+          service: serviceConversations.length,
+          conversationIds: regularConversations.map(c => c.id)
+        });
+        
+        // Sort and update state
+        regularConversations.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+        serviceConversations.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+        
+        setConversations(regularConversations);
+        setServiceConversations(serviceConversations);
+        
+        console.log('✅ Conversations force reloaded successfully');
+        
+        // Additional debug: check for conversations without proper lastMessage
+        const incompleteConversations = regularConversations.filter(c => !c.lastMessage || !c.lastMessageTime);
+        if (incompleteConversations.length > 0) {
+          console.warn('⚠️ Found conversations without lastMessage/Time:', 
+            incompleteConversations.map(c => ({ id: c.id, lastMessage: c.lastMessage, lastMessageTime: c.lastMessageTime }))
+          );
+        }
+        
+      } else {
+        console.log('📭 No conversations found in Firebase database');
+      }
+    } catch (error) {
+      console.error('❌ Error force reloading conversations:', error);
+    }
+  }, [currentUser?.uid]);
+
   // Load user data for all participants in conversations
   useEffect(() => {
     if (!currentUser?.uid || conversations.length === 0) return;
@@ -1214,12 +1281,33 @@ export const EnhancedMessagingProvider = ({ children }) => {
         lastMessageTime: Date.now(),
         lastSenderId: currentUser.uid,
         messageCount: serverTimestamp(), // Increment message count
-        lastActivity: Date.now()
+        lastActivity: Date.now(),
+        // Ensure participants are preserved
+        [`participants/${currentUser.uid}`]: true
       };
 
       await update(conversationRef, conversationUpdates);
       
       console.log('💾 Conversation metadata updated:', conversationId, conversationUpdates);
+      
+      // Update local conversation state immediately to ensure UI consistency
+      setConversations(prevConversations => {
+        const updatedConversations = prevConversations.map(conv => {
+          if (conv.id === conversationId) {
+            return {
+              ...conv,
+              lastMessage: text.trim(),
+              lastMessageTime: Date.now(),
+              lastSenderId: currentUser.uid
+            };
+          }
+          return conv;
+        });
+        
+        // Re-sort by lastMessageTime
+        updatedConversations.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+        return updatedConversations;
+      });
 
       // Publish message via Centrifugo for real-time delivery
       console.log('🔍 Centrifugo status:', {
@@ -1828,6 +1916,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     getOtherParticipant,
     loadUserData,
     formatTime,
+    forceReloadConversations,
     
     // Constants
     MESSAGE_TYPES

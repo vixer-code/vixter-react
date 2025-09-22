@@ -27,7 +27,8 @@ const EnhancedMessages = () => {
     isOnline,
     offlineMessages,
     users,
-    loadUserData
+    loadUserData,
+    forceReloadConversations
   } = useEnhancedMessaging();
   
   const { isConnected, isConnecting } = useCentrifugo();
@@ -312,13 +313,31 @@ const EnhancedMessages = () => {
         <div className={`conversations-sidebar ${showMobileChat ? 'mobile-hidden' : ''}`}>
           <div className="sidebar-header">
             <h2>Mensagens</h2>
-            <button
-              className="new-chat-button"
-              onClick={() => setShowUserSelector(true)}
-              title="Nova conversa"
-            >
-              ✏️
-            </button>
+            <div className="header-actions">
+              <button
+                className="debug-button"
+                onClick={() => forceReloadConversations()}
+                title="Recarregar conversas (Debug)"
+                style={{ 
+                  fontSize: '12px', 
+                  padding: '4px 8px', 
+                  marginRight: '8px',
+                  background: '#ff6b6b',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px'
+                }}
+              >
+                🔄
+              </button>
+              <button
+                className="new-chat-button"
+                onClick={() => setShowUserSelector(true)}
+                title="Nova conversa"
+              >
+                ✏️
+              </button>
+            </div>
           </div>
 
           <div className="sidebar-tabs">
@@ -343,11 +362,25 @@ const EnhancedMessages = () => {
           </div>
 
           <div className="conversations-list">
+            {/* Debug info */}
+            <div style={{ 
+              padding: '10px', 
+              fontSize: '11px', 
+              color: '#666',
+              borderBottom: '1px solid #333',
+              background: '#1a1a2e'
+            }}>
+              📊 Debug: {conversations.length} conversas | Loading: {loading ? 'Sim' : 'Não'} | User: {currentUser?.uid?.slice(0, 8)}
+            </div>
+            
             {activeTab === 'messages' ? (
               conversations.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-icon">💬</div>
                   <p>Nenhuma conversa ainda</p>
+                  <p style={{ fontSize: '12px', color: '#666' }}>
+                    Use o botão 🔄 para recarregar ou ✏️ para nova conversa
+                  </p>
                   <button
                     className="start-conversation-button"
                     onClick={() => setShowUserSelector(true)}

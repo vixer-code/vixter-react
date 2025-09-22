@@ -135,6 +135,11 @@
   background: #0F0F1A;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
 .sidebar-header h2 {
   margin: 0;
   color: #FFFFFF;
