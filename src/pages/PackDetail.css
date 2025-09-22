@@ -125,7 +125,7 @@
 
 .image-gallery {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 15px;
 }
 
@@ -652,8 +652,8 @@
   transform: translateY(-2px);
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+/* Mobile Responsiveness - Improved */
+@media (max-width: 1024px) {
   .pack-detail-content {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -662,6 +662,16 @@
   .pack-sidebar {
     position: static;
   }
+}
+
+@media (max-width: 768px) {
+  .pack-detail-container {
+    padding: 15px;
+  }
+  
+  .pack-main {
+    padding: 20px;
+  }
   
   .pack-header {
     flex-direction: column;
@@ -669,12 +679,43 @@
     align-items: flex-start;
   }
   
+  .pack-title-section h1 {
+    font-size: 1.8rem;
+  }
+  
   .pack-price {
     text-align: left;
   }
   
+  .price-amount {
+    font-size: 2rem;
+  }
+  
   .image-gallery {
     grid-template-columns: 1fr;
+  }
+  
+  .pack-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .pack-categories {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .provider-info {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+  
+  .provider-stats {
+    justify-content: center;
+    flex-wrap: wrap;
   }
   
   .showcase-grid {
@@ -696,6 +737,7 @@
   
   .modal-content {
     margin: 20px;
+    padding: 20px;
     width: calc(100% - 40px);
   }
   
@@ -755,4 +797,65 @@
     height: 50px;
     font-size: 20px;
   }
+}
+
+/* Balance confirmation styles */
+.balance-confirmation {
+  margin: 20px 0;
+  padding: 16px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.balance-confirmation h5 {
+  margin: 0 0 12px 0;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.balance-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.balance-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.balance-item:last-child {
+  border-bottom: none;
+}
+
+.balance-item.total {
+  font-weight: bold;
+  font-size: 1.1rem;
+  padding-top: 12px;
+  border-top: 2px solid #444;
+  border-bottom: none;
+}
+
+.current-balance {
+  color: #4CAF50;
+  font-weight: 500;
+}
+
+.purchase-amount {
+  color: #FF9800;
+  font-weight: 500;
+}
+
+.remaining-balance {
+  color: #4CAF50;
+  font-weight: 500;
+}
+
+.remaining-balance.insufficient {
+  color: #f44336;
+  font-weight: bold;
 }

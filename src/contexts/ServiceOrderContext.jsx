@@ -40,7 +40,7 @@ export const useServiceOrder = () => {
 
 export const ServiceOrderProvider = ({ children }) => {
   const { currentUser } = useAuth();
-  const { showSuccess, showError, showInfo } = useNotification();
+  const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const { processServicePurchase } = useWallet();
   
   // Safely get messaging functions with fallbacks
