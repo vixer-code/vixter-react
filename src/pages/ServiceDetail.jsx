@@ -89,31 +89,41 @@ const ServiceDetail = () => {
     try {
       console.log('Calculating service stats for serviceId:', serviceId);
       
-      // Calculate service rating from reviews (simplified query)
+      // Calculate service rating from reviews
+      const serviceReviewsQuery = query(
+        collection(db, 'reviews'),
+        where('itemId', '==', serviceId),
+        where('type', '==', 'service')
+      );
+      const serviceReviewsSnap = await getDocs(serviceReviewsQuery);
+      
+      console.log('Found service reviews:', serviceReviewsSnap.size);
+      
+      // Also try without type filter to debug
       const allServiceReviewsQuery = query(
         collection(db, 'reviews'),
         where('itemId', '==', serviceId)
       );
       const allServiceReviewsSnap = await getDocs(allServiceReviewsQuery);
-      console.log('All reviews for this serviceId:', allServiceReviewsSnap.size);
-      
-      let totalRating = 0;
-      let reviewCount = 0;
+      console.log('All reviews for this serviceId (any type):', allServiceReviewsSnap.size);
       
       allServiceReviewsSnap.forEach((doc) => {
         const reviewData = doc.data();
-        console.log('Review data:', {
+        console.log('All review data:', {
           id: doc.id,
           itemId: reviewData.itemId,
           type: reviewData.type,
           rating: reviewData.rating
         });
-        
-        // Filter by type and validate rating
-        if (reviewData.type === 'service' && 
-            reviewData.rating && 
-            reviewData.rating >= 1 && 
-            reviewData.rating <= 5) {
+      });
+      
+      let totalRating = 0;
+      let reviewCount = 0;
+      
+      serviceReviewsSnap.forEach((doc) => {
+        const reviewData = doc.data();
+        console.log('Review data:', reviewData);
+        if (reviewData.rating && reviewData.rating >= 1 && reviewData.rating <= 5) {
           totalRating += reviewData.rating;
           reviewCount++;
         }
