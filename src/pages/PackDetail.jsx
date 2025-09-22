@@ -101,6 +101,8 @@ const PackDetail = () => {
   // Function to calculate pack specific statistics
   const calculatePackStats = async (packData, packId) => {
     try {
+      console.log('Calculating pack stats for packId:', packId);
+      
       // Calculate pack rating from reviews
       const packReviewsQuery = query(
         collection(db, 'reviews'),
@@ -109,11 +111,32 @@ const PackDetail = () => {
       );
       const packReviewsSnap = await getDocs(packReviewsQuery);
       
+      console.log('Found pack reviews:', packReviewsSnap.size);
+      
+      // Also try without type filter to debug
+      const allPackReviewsQuery = query(
+        collection(db, 'reviews'),
+        where('itemId', '==', packId)
+      );
+      const allPackReviewsSnap = await getDocs(allPackReviewsQuery);
+      console.log('All reviews for this packId (any type):', allPackReviewsSnap.size);
+      
+      allPackReviewsSnap.forEach((doc) => {
+        const reviewData = doc.data();
+        console.log('All review data:', {
+          id: doc.id,
+          itemId: reviewData.itemId,
+          type: reviewData.type,
+          rating: reviewData.rating
+        });
+      });
+      
       let totalRating = 0;
       let reviewCount = 0;
       
       packReviewsSnap.forEach((doc) => {
         const reviewData = doc.data();
+        console.log('Review data:', reviewData);
         if (reviewData.rating && reviewData.rating >= 1 && reviewData.rating <= 5) {
           totalRating += reviewData.rating;
           reviewCount++;
@@ -131,15 +154,19 @@ const PackDetail = () => {
       const packSalesSnap = await getDocs(packSalesQuery);
       const salesCount = packSalesSnap.size;
 
+      console.log('Pack sales count:', salesCount);
+
       // Update pack data with calculated stats
       packData.rating = averageRating;
       packData.reviewCount = reviewCount;
       packData.salesCount = salesCount;
 
       console.log('Pack stats calculated:', {
+        packId: packId,
         rating: averageRating,
         reviewCount: reviewCount,
-        salesCount: salesCount
+        salesCount: salesCount,
+        totalRating: totalRating
       });
 
     } catch (error) {

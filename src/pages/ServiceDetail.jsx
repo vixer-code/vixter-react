@@ -87,6 +87,8 @@ const ServiceDetail = () => {
   // Function to calculate service specific statistics
   const calculateServiceStats = async (serviceData, serviceId) => {
     try {
+      console.log('Calculating service stats for serviceId:', serviceId);
+      
       // Calculate service rating from reviews
       const serviceReviewsQuery = query(
         collection(db, 'reviews'),
@@ -95,11 +97,32 @@ const ServiceDetail = () => {
       );
       const serviceReviewsSnap = await getDocs(serviceReviewsQuery);
       
+      console.log('Found service reviews:', serviceReviewsSnap.size);
+      
+      // Also try without type filter to debug
+      const allServiceReviewsQuery = query(
+        collection(db, 'reviews'),
+        where('itemId', '==', serviceId)
+      );
+      const allServiceReviewsSnap = await getDocs(allServiceReviewsQuery);
+      console.log('All reviews for this serviceId (any type):', allServiceReviewsSnap.size);
+      
+      allServiceReviewsSnap.forEach((doc) => {
+        const reviewData = doc.data();
+        console.log('All review data:', {
+          id: doc.id,
+          itemId: reviewData.itemId,
+          type: reviewData.type,
+          rating: reviewData.rating
+        });
+      });
+      
       let totalRating = 0;
       let reviewCount = 0;
       
       serviceReviewsSnap.forEach((doc) => {
         const reviewData = doc.data();
+        console.log('Review data:', reviewData);
         if (reviewData.rating && reviewData.rating >= 1 && reviewData.rating <= 5) {
           totalRating += reviewData.rating;
           reviewCount++;
@@ -117,15 +140,19 @@ const ServiceDetail = () => {
       const serviceSalesSnap = await getDocs(serviceSalesQuery);
       const salesCount = serviceSalesSnap.size;
 
+      console.log('Service sales count:', salesCount);
+
       // Update service data with calculated stats
       serviceData.rating = averageRating;
       serviceData.reviewCount = reviewCount;
       serviceData.salesCount = salesCount;
 
       console.log('Service stats calculated:', {
+        serviceId: serviceId,
         rating: averageRating,
         reviewCount: reviewCount,
-        salesCount: salesCount
+        salesCount: salesCount,
+        totalRating: totalRating
       });
 
     } catch (error) {
