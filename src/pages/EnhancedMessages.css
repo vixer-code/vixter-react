@@ -319,6 +319,50 @@
   white-space: nowrap;
 }
 
+.conversation-badges {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.conversation-badges .account-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.conversation-badges .account-badge.provider {
+  background: rgba(255, 193, 7, 0.2);
+  color: #FFC107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.conversation-badges .account-badge.client {
+  background: rgba(0, 200, 83, 0.2);
+  color: #00C853;
+  border: 1px solid rgba(0, 200, 83, 0.3);
+}
+
+.conversation-badges .account-badge.both {
+  background: rgba(138, 43, 226, 0.2);
+  color: #8A2BE2;
+  border: 1px solid rgba(138, 43, 226, 0.3);
+}
+
+.conversation-badges .kyc-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 500;
+  background: rgba(0, 255, 202, 0.2);
+  color: #00FFCA;
+  border: 1px solid rgba(0, 255, 202, 0.3);
+}
+
 .conversation-preview {
   font-size: 0.9rem;
   color: #666;
@@ -343,6 +387,13 @@
 /* Ensure chat container is visible when there's a conversation selected */
 .chat-container.has-conversation {
   display: flex;
+}
+
+/* Desktop: Always show chat container when there's a conversation */
+@media (min-width: 769px) {
+  .chat-container.has-conversation {
+    display: flex !important;
+  }
 }
 
 /* Mobile Responsive */
@@ -377,6 +428,10 @@
     right: 0;
     bottom: 0;
     z-index: 15; /* Higher than sidebar */
+  }
+  
+  .chat-container.has-conversation {
+    display: flex; /* Show chat when conversation is selected on mobile */
   }
   
   .chat-container.mobile-visible {
@@ -445,6 +500,12 @@
     font-size: 0.9rem;
   }
   
+  .conversation-badges .account-badge,
+  .conversation-badges .kyc-badge {
+    font-size: 0.6rem;
+    padding: 1px 4px;
+  }
+  
   .conversation-preview {
     font-size: 0.8rem;
   }
@@ -500,6 +561,12 @@
   
   .conversation-preview {
     font-size: 0.75rem;
+  }
+  
+  .conversation-badges .account-badge,
+  .conversation-badges .kyc-badge {
+    font-size: 0.55rem;
+    padding: 1px 3px;
   }
   
   .conversation-time {

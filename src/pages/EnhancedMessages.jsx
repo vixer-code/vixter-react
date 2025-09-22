@@ -146,9 +146,12 @@ const EnhancedMessages = () => {
       }
     }
     
-    // Only show mobile chat on mobile devices
+    // Show mobile chat on mobile devices, but don't hide on desktop
     if (isMobile) {
       setShowMobileChat(true);
+    } else {
+      // On desktop, ensure chat is visible
+      setShowMobileChat(false);
     }
   };
 
@@ -162,13 +165,40 @@ const EnhancedMessages = () => {
   // Helper functions now use utility functions from conversation.js
   // These are imported at the top of the file
 
+  // Get account type badge for user
+  const getAccountTypeBadge = (user) => {
+    if (!user?.accountType) return null;
+    
+    switch (user.accountType) {
+      case 'provider':
+        return <span className="account-badge provider">Vendedor</span>;
+      case 'client':
+        return <span className="account-badge client">Cliente</span>;
+      case 'both':
+        return <span className="account-badge both">Ambos</span>;
+      default:
+        return null;
+    }
+  };
+
+  // Get KYC badge for user
+  const getKycBadge = (user) => {
+    if (user?.kyc === true) {
+      return <span className="kyc-badge">✓ Verificado</span>;
+    }
+    return null;
+  };
+
   // Debug logging
   debugLog('EnhancedMessages render', {
     loading,
     conversationsCount: conversations.length,
     serviceConversationsCount: serviceConversations.length,
     selectedConversation: selectedConversation?.id,
-    activeTab
+    activeTab,
+    isMobile,
+    showMobileChat,
+    hasSelectedConversation: !!selectedConversation
   });
 
   if (loading) {
@@ -332,10 +362,13 @@ const EnhancedMessages = () => {
                           const otherId = participantIds.find(id => id !== currentUser?.uid);
                           const otherUser = otherId ? users[otherId] : null;
                           
-                          if (otherUser?.photoURL) {
+                          // Try both photoURL and profilePictureURL
+                          const imageUrl = otherUser?.photoURL || otherUser?.profilePictureURL;
+                          
+                          if (imageUrl) {
                             return (
                               <img 
-                                src={otherUser.photoURL} 
+                                src={imageUrl} 
                                 alt={displayName || 'Usuário'} 
                                 className="user-avatar-img"
                                 onError={(e) => {
@@ -361,6 +394,20 @@ const EnhancedMessages = () => {
                           <div className="conversation-time">
                             {formatLastMessageTime(conversation.lastMessageTime)}
                           </div>
+                        </div>
+                        <div className="conversation-badges">
+                          {(() => {
+                            const participantIds = Object.keys(conversation.participants || {});
+                            const otherId = participantIds.find(id => id !== currentUser?.uid);
+                            const otherUser = otherId ? users[otherId] : null;
+                            
+                            return (
+                              <>
+                                {getAccountTypeBadge(otherUser)}
+                                {getKycBadge(otherUser)}
+                              </>
+                            );
+                          })()}
                         </div>
                         <div className="conversation-preview">
                           {getLastMessagePreview(conversation)}
