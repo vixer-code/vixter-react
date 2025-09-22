@@ -482,7 +482,7 @@ const EnhancedMessages = () => {
           </div>
         </div>
 
-        {/* Chat Interface */}
+        {/* Chat Interface - moved to be sibling of sidebar for desktop */}
         <div 
           className={`chat-container ${showMobileChat ? 'mobile-visible' : ''} ${selectedConversation ? 'has-conversation' : ''} ${isDesktop ? 'desktop-always-visible' : ''}`}
           style={isDesktop ? { 
@@ -495,6 +495,7 @@ const EnhancedMessages = () => {
             height: '100%',
             flexDirection: 'column'
           } : {}}
+          data-debug={`desktop:${isDesktop}, mobile:${isMobile}, width:${window.innerWidth}`}
         >
           <ChatInterface
             conversation={selectedConversation}
