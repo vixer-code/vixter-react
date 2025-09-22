@@ -388,6 +388,14 @@
 @media (min-width: 769px) {
   .chat-container {
     display: flex !important;
+    position: relative !important;
+    width: auto !important;
+    height: auto !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    z-index: auto !important;
   }
   
   .chat-container.has-conversation {
@@ -438,12 +446,16 @@
   }
   
   .sidebar-header {
-    padding: 15px;
+    padding: 10px 15px;
+    margin-top: 0;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: #0F0F1A;
   }
   
-  
   .sidebar-header h2 {
-    font-size: 1.3rem;
+    font-size: 1.1rem;
   }
   
   .conversation-item {
@@ -487,11 +499,15 @@
   }
   
   .sidebar-header {
-    padding: 12px 15px;
+    padding: 8px 15px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: #0F0F1A;
   }
   
   .sidebar-header h2 {
-    font-size: 1.2rem;
+    font-size: 1rem;
   }
   
   .new-chat-button {

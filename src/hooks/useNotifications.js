@@ -33,30 +33,8 @@ export const useNotifications = () => {
         // Sort by timestamp (newest first)
         notificationsData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         
-        // Check for new message notifications and show toast
-        if (notificationsData.length > 0 && !loading) {
-          const latestNotification = notificationsData[0];
-          
-          // Only show toast for new notifications
-          if (latestNotification.id !== lastNotificationId && 
-              latestNotification.type === 'message' && 
-              !latestNotification.read) {
-            
-            setLastNotificationId(latestNotification.id);
-            
-            // Show toast notification
-            showInfo(
-              `${latestNotification.senderName || 'Alguém'} enviou uma mensagem`,
-              'Nova Mensagem',
-              7000,
-              {
-                onClick: () => {
-                  window.location.href = '/messages';
-                }
-              }
-            );
-          }
-        }
+        // NOTE: Removed duplicate toast notifications here since they're now handled
+        // by Centrifugo in EnhancedMessagingContext to prevent duplicates
       }
       setNotifications(notificationsData);
       setLoading(false);
@@ -66,7 +44,7 @@ export const useNotifications = () => {
     });
 
     return unsubscribe;
-  }, [currentUser?.uid, lastNotificationId, loading, showInfo]);
+  }, [currentUser?.uid, showInfo]);
 
   useEffect(() => {
     const unsubscribe = loadNotifications();

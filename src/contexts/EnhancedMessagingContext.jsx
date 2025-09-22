@@ -685,6 +685,19 @@ export const EnhancedMessagingProvider = ({ children }) => {
                 data: { conversationId, messageId: message.id }
               }
             );
+
+            // Send Firebase notification for persistence (since this only fires once)
+            sendMessageNotification(
+              currentUser.uid,
+              message.senderId,
+              message.senderName || 'Alguém',
+              conversationId,
+              message.content
+            ).then(() => {
+              console.log('✅ Firebase notification sent for message');
+            }).catch((notificationError) => {
+              console.error('❌ Error sending Firebase notification:', notificationError);
+            });
             
             if (!conversationUpdated) {
               console.warn('⚠️ Received message for conversation not in local state:', conversationId);
@@ -1207,14 +1220,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
                 });
                 console.log('✅ Global notification sent to:', recipientId);
                 
-                // Send push notification
-                await sendMessageNotification(
-                  recipientId,
-                  currentUser.uid,
-                  currentUser.displayName || currentUser.name || 'Alguém',
-                  conversationId,
-                  text.trim()
-                );
+                // Push notification will be sent by the global subscription handler
+                // to prevent duplicates
               } catch (globalError) {
                 console.error('Error sending global notification to', recipientId, ':', globalError);
               }
@@ -1240,14 +1247,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
             try {
               console.log('📧 Sending fallback notification to:', recipientId);
               
-              // Send push notification
-              await sendMessageNotification(
-                recipientId,
-                currentUser.uid,
-                currentUser.displayName || currentUser.name || 'Alguém',
-                conversationId,
-                text.trim()
-              );
+              // Push notification will be sent by the global subscription handler
+              // to prevent duplicates
               console.log('✅ Fallback notification sent to:', recipientId);
             } catch (globalError) {
               console.error('Error sending fallback notification to', recipientId, ':', globalError);
