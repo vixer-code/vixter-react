@@ -299,81 +299,82 @@ const ChatInterface = ({ conversation, onClose }) => {
       </div>
 
       {/* Message Input */}
-      {!isServiceCompleted && (
-        <div className="message-input-container">
-          <form onSubmit={handleSendMessage} className="message-input-form">
-          <div className="input-actions">
-            <button
-              type="button"
-              className="action-button"
-              onClick={() => setShowMediaOptions(!showMediaOptions)}
-              title="Anexar arquivo"
-            >
-              📎
-            </button>
-            <button
-              type="button"
-              className="action-button"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              title="Emojis"
-            >
-              😀
-            </button>
-          </div>
-          
-          <div className="input-wrapper">
-            <textarea
-              ref={textareaRef}
-              value={messageText}
-              onChange={handleMessageChange}
-              onKeyPress={handleKeyPress}
-              placeholder="Digite sua mensagem..."
-              className="message-input"
-              rows="1"
-              disabled={sending}
-            />
-            <button
-              type="submit"
-              className="send-button"
-              disabled={!messageText.trim() || sending}
-            >
-              {sending ? '⏳' : '➤'}
-            </button>
-          </div>
-        </form>
+      <div className="message-input-container">
+        <form onSubmit={handleSendMessage} className="message-input-form">
+        <div className="input-actions">
+          <button
+            type="button"
+            className="action-button"
+            onClick={() => setShowMediaOptions(!showMediaOptions)}
+            title="Anexar arquivo"
+            disabled={isServiceCompleted}
+          >
+            📎
+          </button>
+          <button
+            type="button"
+            className="action-button"
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            title="Emojis"
+            disabled={isServiceCompleted}
+          >
+            😀
+          </button>
+        </div>
+        
+        <div className="input-wrapper">
+          <textarea
+            ref={textareaRef}
+            value={messageText}
+            onChange={handleMessageChange}
+            onKeyPress={handleKeyPress}
+            placeholder={isServiceCompleted ? "Serviço finalizado - Conversa arquivada" : "Digite sua mensagem..."}
+            className="message-input"
+            rows="1"
+            disabled={sending || isServiceCompleted}
+          />
+          <button
+            type="submit"
+            className="send-button"
+            disabled={!messageText.trim() || sending || isServiceCompleted}
+          >
+            {sending ? '⏳' : '➤'}
+          </button>
+        </div>
+      </form>
 
-        {/* Media Options */}
-        {showMediaOptions && (
-          <div className="media-options">
-            <button
-              className="media-option"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              📷 Foto
-            </button>
-            <button
-              className="media-option"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              🎥 Vídeo
-            </button>
-            <button
-              className="media-option"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              🎵 Áudio
-            </button>
-            <button
-              className="media-option"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              📄 Arquivo
-            </button>
-          </div>
-        )}
+      {/* Media Options */}
+      {showMediaOptions && !isServiceCompleted && (
+        <div className="media-options">
+          <button
+            className="media-option"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            📷 Foto
+          </button>
+          <button
+            className="media-option"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            🎥 Vídeo
+          </button>
+          <button
+            className="media-option"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            🎵 Áudio
+          </button>
+          <button
+            className="media-option"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            📄 Arquivo
+          </button>
+        </div>
+      )}
 
-        {/* Emoji Picker */}
-        {showEmojiPicker && (
+      {/* Emoji Picker */}
+      {showEmojiPicker && !isServiceCompleted && (
           <div className="emoji-picker">
             <div className="emoji-grid">
               {emojis.map((emoji, index) => (
@@ -398,7 +399,7 @@ const ChatInterface = ({ conversation, onClose }) => {
           style={{ display: 'none' }}
         />
       </div>
-      )}
+      </div>
 
       {/* Completed Service Notice */}
       {isServiceCompleted && (

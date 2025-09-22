@@ -701,6 +701,53 @@ input.message-input {
   border: 1px solid #444;
 }
 
+/* Completed Service Input Styles */
+.chat-interface.completed-service .message-input-container {
+  opacity: 0.4;
+  pointer-events: none;
+  position: relative;
+}
+
+.chat-interface.completed-service .message-input-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+  border-radius: 12px;
+}
+
+.chat-interface.completed-service .message-input-form {
+  position: relative;
+  z-index: 0;
+}
+
+.chat-interface.completed-service .message-input {
+  background: rgba(42, 42, 42, 0.6);
+  border: 1px solid #444;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.chat-interface.completed-service .message-input::placeholder {
+  color: #555;
+}
+
+.chat-interface.completed-service .action-button,
+.chat-interface.completed-service .send-button {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chat-interface.completed-service .action-button:hover,
+.chat-interface.completed-service .send-button:hover {
+  background: rgba(42, 42, 42, 0.6);
+  transform: none;
+}
+
 /* Rich Presence Styles */
 .status-online {
   color: #22c55e;

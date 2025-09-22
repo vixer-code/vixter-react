@@ -357,7 +357,24 @@ export const EnhancedMessagingProvider = ({ children }) => {
       const completedConversations = serviceConversationsData.filter(conv => conv.isCompleted);
       console.log('🔒 Completed service conversations:', completedConversations.length);
       
-      setServiceConversations(serviceConversationsData);
+      // Update service conversations with RTDB data only
+      setServiceConversations(prev => {
+        // Keep Firestore conversations that are not in RTDB
+        const firestoreConversations = prev.filter(conv => conv._source === 'firestore');
+        const rtdbConversationIds = new Set(serviceConversationsData.map(conv => conv.id));
+        const uniqueFirestoreConversations = firestoreConversations.filter(conv => !rtdbConversationIds.has(conv.id));
+        
+        // Combine RTDB and unique Firestore conversations
+        const allConversations = [...serviceConversationsData, ...uniqueFirestoreConversations];
+        
+        // Sort by last message time
+        allConversations.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+        
+        console.log('🛠️ Combined service conversations:', allConversations.length);
+        console.log('🛠️ RTDB:', serviceConversationsData.length, 'Firestore:', uniqueFirestoreConversations.length);
+        
+        return allConversations;
+      });
     });
 
     // Load service conversations from Firestore based on chatId in serviceOrders
@@ -456,32 +473,28 @@ export const EnhancedMessagingProvider = ({ children }) => {
         
         // Removed additionalFeatures processing - all conversations now use chatId at root level
         
-        // Remove duplicates and merge with RTDB conversations
-        const existingIds = new Set();
-        const mergedConversations = [];
-        
-        // Add RTDB conversations first
+        // Merge Firestore conversations with existing RTDB conversations
         setServiceConversations(prev => {
-          prev.forEach(conv => {
-            existingIds.add(conv.id);
-            mergedConversations.push(conv);
-          });
+          const existingIds = new Set(prev.map(conv => conv.id));
+          const newFirestoreConversations = firestoreConversations.filter(conv => !existingIds.has(conv.id));
           
-          // Add Firestore conversations that don't exist in RTDB
-          firestoreConversations.forEach(conv => {
-            if (!existingIds.has(conv.id)) {
-              mergedConversations.push(conv);
+          if (newFirestoreConversations.length > 0) {
+            console.log('✅ Adding new Firestore conversations:', newFirestoreConversations.length);
+            newFirestoreConversations.forEach(conv => {
               console.log('✅ Added new Firestore conversation:', conv.id, 'Order:', conv.serviceOrderId, 'Completed:', conv.isCompleted);
-            }
-          });
+            });
+          }
+          
+          // Combine existing conversations with new Firestore conversations
+          const allConversations = [...prev, ...newFirestoreConversations];
           
           // Sort by last message time
-          mergedConversations.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+          allConversations.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
           
-          console.log('🛠️ Final service conversations:', mergedConversations.length);
-          console.log('🛠️ Conversation IDs:', mergedConversations.map(c => `${c.id} (Order: ${c.serviceOrderId}, Source: ${c._source || 'RTDB'}, Completed: ${c.isCompleted})`));
+          console.log('🛠️ Final service conversations:', allConversations.length);
+          console.log('🛠️ Conversation IDs:', allConversations.map(c => `${c.id} (Order: ${c.serviceOrderId}, Source: ${c._source || 'RTDB'}, Completed: ${c.isCompleted})`));
           
-          return mergedConversations;
+          return allConversations;
         });
         
       } catch (error) {
