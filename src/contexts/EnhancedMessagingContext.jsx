@@ -1129,14 +1129,20 @@ export const EnhancedMessagingProvider = ({ children }) => {
       await update(conversationRef, conversationUpdates);
 
       // Publish message via Centrifugo for real-time delivery
+      console.log('🔍 Centrifugo status:', {
+        centrifugoAvailable,
+        hasPublish: !!publish,
+        isConnected
+      });
+      
       if (centrifugoAvailable && publish) {
         try {
           const channelName = `conversation:${conversationId}`;
           console.log('📤 PUBLISHING TO CHANNEL:', channelName);
-          console.log('📤 MESSAGE DATA:', newMessage);
+          console.log('📤 MESSAGE DATA:', messageData);
           await publish(channelName, {
             type: 'new_message',
-            message: newMessage,
+            message: messageData,
             conversationId: conversationId,
             timestamp: Date.now()
           });
@@ -1157,8 +1163,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
                 await publish(userChannel, {
                   type: 'new_message',
                   message: {
-                    ...newMessage,
-                    senderName: currentUser.displayName || 'Someone'
+                    ...messageData,
+                    senderName: currentUser.displayName || currentUser.name || 'Alguém'
                   },
                   conversationId: conversationId,
                   timestamp: Date.now()
@@ -1169,7 +1175,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
                 await sendMessageNotification(
                   recipientId,
                   currentUser.uid,
-                  currentUser.displayName || 'Alguém',
+                  currentUser.displayName || currentUser.name || 'Alguém',
                   conversationId,
                   text.trim()
                 );
@@ -1184,7 +1190,34 @@ export const EnhancedMessagingProvider = ({ children }) => {
           setCentrifugoAvailable(false);
         }
       } else {
-        console.log('Centrifugo not available - message saved to Firebase only');
+        console.log('Centrifugo not available - using Firebase notifications only');
+        
+        // Fallback: send notification directly via Firebase Database when Centrifugo is not available
+        const conversation = conversations.find(c => c.id === conversationId) || 
+                            serviceConversations.find(c => c.id === conversationId);
+        
+        if (conversation) {
+          const participantIds = Object.keys(conversation.participants || {});
+          const recipientIds = participantIds.filter(id => id !== currentUser.uid);
+          
+          for (const recipientId of recipientIds) {
+            try {
+              console.log('📧 Sending fallback notification to:', recipientId);
+              
+              // Send push notification
+              await sendMessageNotification(
+                recipientId,
+                currentUser.uid,
+                currentUser.displayName || currentUser.name || 'Alguém',
+                conversationId,
+                text.trim()
+              );
+              console.log('✅ Fallback notification sent to:', recipientId);
+            } catch (globalError) {
+              console.error('Error sending fallback notification to', recipientId, ':', globalError);
+            }
+          }
+        }
       }
 
       return true;

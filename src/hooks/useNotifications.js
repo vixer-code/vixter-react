@@ -2,11 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { ref, onValue, off } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lastNotificationId, setLastNotificationId] = useState(null);
   const { currentUser } = useAuth();
+  const { showInfo } = useNotification();
 
   const loadNotifications = useCallback(() => {
     if (!currentUser?.uid) {
@@ -29,6 +32,31 @@ export const useNotifications = () => {
         
         // Sort by timestamp (newest first)
         notificationsData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        
+        // Check for new message notifications and show toast
+        if (notificationsData.length > 0 && !loading) {
+          const latestNotification = notificationsData[0];
+          
+          // Only show toast for new notifications
+          if (latestNotification.id !== lastNotificationId && 
+              latestNotification.type === 'message' && 
+              !latestNotification.read) {
+            
+            setLastNotificationId(latestNotification.id);
+            
+            // Show toast notification
+            showInfo(
+              `${latestNotification.senderName || 'Alguém'} enviou uma mensagem`,
+              'Nova Mensagem',
+              7000,
+              {
+                onClick: () => {
+                  window.location.href = '/messages';
+                }
+              }
+            );
+          }
+        }
       }
       setNotifications(notificationsData);
       setLoading(false);
@@ -38,7 +66,7 @@ export const useNotifications = () => {
     });
 
     return unsubscribe;
-  }, [currentUser?.uid]);
+  }, [currentUser?.uid, lastNotificationId, loading, showInfo]);
 
   useEffect(() => {
     const unsubscribe = loadNotifications();
