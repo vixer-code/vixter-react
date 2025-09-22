@@ -255,15 +255,49 @@ const MyProducts = () => {
   };
 
   const formatDate = (timestamp) => {
-    if (!timestamp) return 'Data não disponível';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    if (!timestamp) {
+      console.log('🔍 formatDate - Timestamp is null/undefined:', timestamp);
+      return 'Data não disponível';
+    }
+    
+    try {
+      let date;
+      
+      // Check different timestamp formats
+      if (timestamp.toDate) {
+        // Firestore Timestamp
+        date = timestamp.toDate();
+      } else if (timestamp.seconds) {
+        // Firestore Timestamp object format
+        date = new Date(timestamp.seconds * 1000);
+      } else if (typeof timestamp === 'number') {
+        // Unix timestamp
+        date = new Date(timestamp);
+      } else if (typeof timestamp === 'string') {
+        // ISO string
+        date = new Date(timestamp);
+      } else {
+        // Try direct conversion
+        date = new Date(timestamp);
+      }
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.log('🔍 formatDate - Invalid date created from:', timestamp);
+        return 'Data inválida';
+      }
+      
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.log('🔍 formatDate - Error formatting timestamp:', timestamp, error);
+      return 'Data inválida';
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -429,7 +463,13 @@ const MyProducts = () => {
                         {isService ? 'Serviço' : 'Pack'}
                       </span>
                       <span className="order-id">#{order.id.slice(-8)}</span>
-                      <span className="order-date">{formatDate(order.timestamps?.createdAt)}</span>
+                      <span className="order-date">
+                        {(() => {
+                          console.log('🔍 Order timestamps structure:', order.timestamps);
+                          console.log('🔍 Order createdAt:', order.timestamps?.createdAt);
+                          return formatDate(order.timestamps?.createdAt);
+                        })()}
+                      </span>
                     </div>
                   </div>
                   <div className={`order-status status-${statusInfo.color}`}>

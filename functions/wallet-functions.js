@@ -800,37 +800,18 @@ async function acceptServiceOrderInternal(sellerId, orderId) {
     throw new HttpsError("invalid-argument", "Pedido não está pendente de aceitação");
   }
 
-  // Create chat conversation
-  const chatRef = db.collection('conversations').doc();
-  const chatData = {
-    id: chatRef.id,
-    participants: [order.buyerId, order.sellerId],
-    type: 'SERVICE_ORDER',
-    metadata: {
-      orderId: orderId,
-      serviceId: order.serviceId,
-      serviceName: order.metadata.serviceName,
-      status: 'ACTIVE'
-    },
-    lastMessage: null,
-    timestamps: {
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    }
-  };
-
-  // Update order with chat ID and status
+  // Update order with status (conversation will be created by frontend)
   await orderRef.update({
     status: 'ACCEPTED',
-    chatId: chatRef.id,
-    'timestamps.updatedAt': admin.firestore.FieldValue.serverTimestamp()
+    timestamps: {
+      createdAt: order.timestamps.createdAt, // Preserve original createdAt
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      acceptedAt: admin.firestore.FieldValue.serverTimestamp()
+    }
   });
 
-  // Create chat
-  await chatRef.set(chatData);
-
   logger.info(`✅ Service order accepted: ${orderId}`);
-  return { success: true, chatId: chatRef.id };
+  return { success: true };
 }
 
 // Decline service order

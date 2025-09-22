@@ -280,6 +280,8 @@ export const ServiceOrderProvider = ({ children }) => {
         
         // Update the order in messaging and create conversation
         const order = serviceOrders.find(o => o.id === orderId);
+        console.log('🔍 Found order for conversation:', order);
+        console.log('🔍 createServiceConversation function:', typeof createServiceConversation);
         
         if (order) {
           await sendServiceNotification({
@@ -288,9 +290,20 @@ export const ServiceOrderProvider = ({ children }) => {
           });
           
           // Create service conversation
-          console.log('Creating service conversation...');
+          console.log('🚀 Creating service conversation...');
+          console.log('🔍 Order data being passed:', {
+            id: order.id,
+            buyerId: order.buyerId,
+            sellerId: order.sellerId,
+            metadata: order.metadata
+          });
+          
           const conversation = await createServiceConversation(order);
-          console.log('Service conversation created:', conversation);
+          console.log('✅ Service conversation result:', conversation);
+          
+          if (!conversation) {
+            console.error('❌ Failed to create service conversation');
+          }
 
           // Send email notification to buyer
           try {

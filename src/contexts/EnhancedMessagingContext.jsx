@@ -6,6 +6,7 @@ import {
   set, 
   update,
   off, 
+  get,
   query, 
   orderByChild, 
   equalTo,
@@ -1847,6 +1848,15 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
       // Save to RTDB with messages structure for Centrifugo compatibility
       const conversationRef = ref(database, `conversations/${conversationId}`);
+      
+      console.log('🚀 Saving service conversation to RTDB:', conversationId);
+      console.log('🔍 Conversation data being saved:', {
+        ...conversationData,
+        messages: {},
+        messageCount: 0,
+        lastActivity: Date.now()
+      });
+      
       await set(conversationRef, {
         ...conversationData,
         // Initialize messages structure for Centrifugo compatibility
@@ -1854,7 +1864,22 @@ export const EnhancedMessagingProvider = ({ children }) => {
         messageCount: 0,
         lastActivity: Date.now()
       });
-      console.log('Service conversation saved to RTDB:', conversationId);
+      
+      console.log('✅ Service conversation saved to RTDB successfully:', conversationId);
+      
+      // Verify it was saved by reading it back
+      setTimeout(async () => {
+        try {
+          const savedConversationSnapshot = await get(conversationRef);
+          if (savedConversationSnapshot.exists()) {
+            console.log('✅ Verification: Service conversation exists in RTDB:', savedConversationSnapshot.val());
+          } else {
+            console.log('❌ Verification: Service conversation NOT found in RTDB');
+          }
+        } catch (verifyError) {
+          console.error('❌ Error verifying service conversation:', verifyError);
+        }
+      }, 1000);
 
       // Service conversations are stored in RTDB only
       console.log('Service conversation saved to RTDB:', conversationId);
