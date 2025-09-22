@@ -67,9 +67,15 @@ const MyPurchases = () => {
     // Use onSnapshot for real-time updates
     const unsubscribe = onSnapshot(queryRef,
       (snapshot) => {
+        console.log('Pack orders snapshot received:', snapshot.size, 'documents');
         const orders = [];
         snapshot.forEach((doc) => {
           const orderData = doc.data();
+          console.log('Processing pack order:', doc.id, {
+            buyerId: orderData.buyerId,
+            status: orderData.status,
+            packId: orderData.packId
+          });
           
           // Include all pack orders except cancelled and banned
           if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
@@ -81,6 +87,7 @@ const MyPurchases = () => {
           }
         });
         
+        console.log('Final pack orders:', orders.length);
         setPurchasedPacks(orders);
         
         // Load pack data for purchased packs
@@ -165,7 +172,7 @@ const MyPurchases = () => {
     
     const serviceOrdersRef = collection(db, 'serviceOrders');
     let allOrders = [];
-    let pendingQueries = 2;
+    let hasAdditionalQuery = false;
     
     const updateOrders = async () => {
       // Remove duplicates by ID and sort by creation time
@@ -186,7 +193,7 @@ const MyPurchases = () => {
       }
     };
     
-    // Query 1: buyerId at root level (old structure)
+    // Query 1: buyerId at root level (primary query - always works)
     const rootQuery = fsQuery(
       serviceOrdersRef,
       where('buyerId', '==', currentUser.uid),
@@ -202,77 +209,79 @@ const MyPurchases = () => {
             orders.push({
               id: doc.id,
               type: 'service',
-              ...orderData,
-              _source: 'root' // Debug marker
+              ...orderData
             });
           }
         });
         
-        // Update only root orders in allOrders
+        // Replace all orders from root source
         allOrders = allOrders.filter(order => order._source !== 'root');
-        allOrders.push(...orders);
+        allOrders.push(...orders.map(order => ({ ...order, _source: 'root' })));
         
-        pendingQueries--;
-        if (pendingQueries === 0) {
+        // If no additional query is running, update immediately
+        if (!hasAdditionalQuery) {
           updateOrders();
         }
       },
       (error) => {
         console.error('Error loading services (root buyerId):', error);
-        pendingQueries--;
-        if (pendingQueries === 0) {
-          updateOrders();
-        }
+        showError('Erro ao carregar serviços comprados');
       }
     );
     
-    // Query 2: buyerId in additionalFeatures (new structure)
-    // Note: This assumes you have a compound index on additionalFeatures.buyerId + timestamps.createdAt
-    const featuresQuery = fsQuery(
-      serviceOrdersRef,
-      where('additionalFeatures.buyerId', '==', currentUser.uid),
-      orderBy('timestamps.createdAt', 'desc')
-    );
+    // Query 2: Try buyerId in additionalFeatures (optional - for new structure)
+    let unsubscribeFeatures = null;
     
-    const unsubscribeFeatures = onSnapshot(featuresQuery, 
-      (snapshot) => {
-        const orders = [];
-        snapshot.forEach((doc) => {
-          const orderData = doc.data();
-          if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
-            orders.push({
-              id: doc.id,
-              type: 'service',
-              ...orderData,
-              // Normalize buyerId to root for consistency
-              buyerId: orderData.buyerId || orderData.additionalFeatures?.buyerId || currentUser.uid,
-              _source: 'features' // Debug marker
-            });
-          }
-        });
-        
-        // Update only features orders in allOrders
-        allOrders = allOrders.filter(order => order._source !== 'features');
-        allOrders.push(...orders);
-        
-        pendingQueries--;
-        if (pendingQueries === 0) {
+    try {
+      const featuresQuery = fsQuery(
+        serviceOrdersRef,
+        where('additionalFeatures.buyerId', '==', currentUser.uid),
+        orderBy('timestamps.createdAt', 'desc')
+      );
+      
+      hasAdditionalQuery = true;
+      
+      unsubscribeFeatures = onSnapshot(featuresQuery, 
+        (snapshot) => {
+          const orders = [];
+          snapshot.forEach((doc) => {
+            const orderData = doc.data();
+            if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
+              orders.push({
+                id: doc.id,
+                type: 'service',
+                ...orderData,
+                // Normalize buyerId to root for consistency
+                buyerId: orderData.buyerId || orderData.additionalFeatures?.buyerId || currentUser.uid
+              });
+            }
+          });
+          
+          // Replace all orders from features source
+          allOrders = allOrders.filter(order => order._source !== 'features');
+          allOrders.push(...orders.map(order => ({ ...order, _source: 'features' })));
+          
+          updateOrders();
+        },
+        (error) => {
+          // If this query fails (missing index, permissions, etc), that's OK
+          // We'll continue with just the root query
+          console.warn('Additional query for additionalFeatures.buyerId failed (this is OK):', error.message);
+          hasAdditionalQuery = false;
           updateOrders();
         }
-      },
-      (error) => {
-        console.error('Error loading services (additionalFeatures buyerId):', error);
-        // This might fail if the index doesn't exist - that's ok, we'll rely on root query
-        pendingQueries--;
-        if (pendingQueries === 0) {
-          updateOrders();
-        }
-      }
-    );
+      );
+    } catch (error) {
+      // If we can't even create the second query, that's fine
+      console.warn('Could not create additionalFeatures query (this is OK):', error.message);
+      hasAdditionalQuery = false;
+    }
     
     return () => {
       unsubscribeRoot();
-      unsubscribeFeatures();
+      if (unsubscribeFeatures) {
+        unsubscribeFeatures();
+      }
     };
   }, [currentUser, showError, loadSellerData]);
 
