@@ -103,41 +103,31 @@ const PackDetail = () => {
     try {
       console.log('Calculating pack stats for packId:', packId);
       
-      // Calculate pack rating from reviews
-      const packReviewsQuery = query(
-        collection(db, 'reviews'),
-        where('itemId', '==', packId),
-        where('type', '==', 'pack')
-      );
-      const packReviewsSnap = await getDocs(packReviewsQuery);
-      
-      console.log('Found pack reviews:', packReviewsSnap.size);
-      
-      // Also try without type filter to debug
+      // Calculate pack rating from reviews (simplified query)
       const allPackReviewsQuery = query(
         collection(db, 'reviews'),
         where('itemId', '==', packId)
       );
       const allPackReviewsSnap = await getDocs(allPackReviewsQuery);
-      console.log('All reviews for this packId (any type):', allPackReviewsSnap.size);
+      console.log('All reviews for this packId:', allPackReviewsSnap.size);
+      
+      let totalRating = 0;
+      let reviewCount = 0;
       
       allPackReviewsSnap.forEach((doc) => {
         const reviewData = doc.data();
-        console.log('All review data:', {
+        console.log('Review data:', {
           id: doc.id,
           itemId: reviewData.itemId,
           type: reviewData.type,
           rating: reviewData.rating
         });
-      });
-      
-      let totalRating = 0;
-      let reviewCount = 0;
-      
-      packReviewsSnap.forEach((doc) => {
-        const reviewData = doc.data();
-        console.log('Review data:', reviewData);
-        if (reviewData.rating && reviewData.rating >= 1 && reviewData.rating <= 5) {
+        
+        // Filter by type and validate rating
+        if (reviewData.type === 'pack' && 
+            reviewData.rating && 
+            reviewData.rating >= 1 && 
+            reviewData.rating <= 5) {
           totalRating += reviewData.rating;
           reviewCount++;
         }
