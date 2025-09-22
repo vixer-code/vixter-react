@@ -62,9 +62,16 @@
 }
 
 .no-conversation-content p {
-  margin: 0;
+  margin: 0.25rem 0;
   font-size: 0.9rem;
   color: var(--vixter-text-secondary);
+}
+
+.conversation-hint {
+  font-size: 0.8rem !important;
+  color: var(--vixter-accent-primary) !important;
+  opacity: 0.8;
+  margin-top: 1rem !important;
 }
 
 /* Chat Header */

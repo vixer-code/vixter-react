@@ -400,7 +400,7 @@
   .enhanced-messages .chat-container {
     display: flex !important;
     flex: 1 !important;
-    min-width: 0 !important;
+    min-width: 300px !important;
     width: auto !important;
     height: 100% !important;
     position: relative !important;
@@ -413,13 +413,14 @@
     opacity: 1 !important;
     transform: none !important;
     flex-direction: column !important;
-    /* Temporary border for debugging - remove after confirmation */
-    border: 2px solid #00FFCA !important;
+    background: linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 100%) !important;
+    /* TODO: Remove this debug border after confirmation */
+    border: 1px solid var(--vixter-accent-primary) !important;
   }
   
   /* Force chat container to be visible on desktop regardless of mobile classes */
   .enhanced-messages .chat-container.has-conversation,
-  .enhanced-messages .chat-container.desktop-visible,
+  .enhanced-messages .chat-container.desktop-always-visible,
   .enhanced-messages .chat-container:not(.mobile-visible),
   .enhanced-messages .messages-container .chat-container {
     display: flex !important;

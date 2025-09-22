@@ -161,9 +161,10 @@ const EnhancedMessages = () => {
       debugLog('Mobile detected - showing mobile chat');
       setShowMobileChat(true);
     } else {
-      console.log('🖥️ Desktop detected - chat should be visible by default');
-      debugLog('Desktop detected - chat should be visible by default');
-      // On desktop, we don't use showMobileChat, the chat is always visible
+      console.log('🖥️ Desktop detected - chat container is always visible, only content changes');
+      debugLog('Desktop detected - chat container is always visible, only content changes');
+      // On desktop, we don't use showMobileChat, the chat container is always visible
+      // Only the ChatInterface content changes based on selectedConversation
       setShowMobileChat(false);
     }
   };
@@ -483,7 +484,7 @@ const EnhancedMessages = () => {
 
         {/* Chat Interface */}
         <div 
-          className={`chat-container ${showMobileChat ? 'mobile-visible' : ''} ${selectedConversation ? 'has-conversation' : ''} ${isDesktop && selectedConversation ? 'desktop-visible' : ''}`}
+          className={`chat-container ${showMobileChat ? 'mobile-visible' : ''} ${selectedConversation ? 'has-conversation' : ''} ${isDesktop ? 'desktop-always-visible' : ''}`}
           style={isDesktop ? { 
             display: 'flex',
             flex: '1',

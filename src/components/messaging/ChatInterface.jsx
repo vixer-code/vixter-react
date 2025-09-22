@@ -146,8 +146,9 @@ const ChatInterface = ({ conversation, onClose }) => {
       <div className="chat-interface no-conversation">
         <div className="no-conversation-content">
           <div className="no-conversation-icon">💬</div>
-          <h3>Selecione uma conversa</h3>
-          <p>Escolha uma conversa existente ou inicie uma nova conversa</p>
+          <h3>Sem conversas ativas</h3>
+          <p>Clique em uma conversa na lista ao lado para iniciar</p>
+          <p className="conversation-hint">Ou use o botão ✏️ para iniciar uma nova conversa</p>
         </div>
       </div>
     );
