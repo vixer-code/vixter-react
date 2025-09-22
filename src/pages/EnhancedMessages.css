@@ -384,13 +384,12 @@
   position: relative;
 }
 
-/* Ensure chat container is visible when there's a conversation selected */
-.chat-container.has-conversation {
-  display: flex;
-}
-
 /* Desktop: Always show chat container when there's a conversation */
 @media (min-width: 769px) {
+  .chat-container {
+    display: flex !important;
+  }
+  
   .chat-container.has-conversation {
     display: flex !important;
   }

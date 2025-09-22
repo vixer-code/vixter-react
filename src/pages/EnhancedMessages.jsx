@@ -44,6 +44,9 @@ const EnhancedMessages = () => {
   const [showUserSelector, setShowUserSelector] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  
+  // Force desktop mode for debugging
+  const isDesktop = !isMobile || window.innerWidth > 768;
 
   // Remove header padding for messages page
   useEffect(() => {
@@ -147,7 +150,7 @@ const EnhancedMessages = () => {
     }
     
     // Show mobile chat on mobile devices, but don't hide on desktop
-    if (isMobile) {
+    if (isMobile && !isDesktop) {
       setShowMobileChat(true);
     } else {
       // On desktop, ensure chat is visible
@@ -467,7 +470,14 @@ const EnhancedMessages = () => {
         </div>
 
         {/* Chat Interface */}
-        <div className={`chat-container ${showMobileChat ? 'mobile-visible' : ''} ${selectedConversation ? 'has-conversation' : ''}`}>
+        <div 
+          className={`chat-container ${showMobileChat ? 'mobile-visible' : ''} ${selectedConversation ? 'has-conversation' : ''}`}
+          style={{
+            // Force visibility on desktop when conversation is selected
+            display: (selectedConversation && isDesktop) ? 'flex' : undefined
+          }}
+        >
+          
           {/* Mobile back button */}
           {showMobileChat && (
             <button 
