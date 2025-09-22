@@ -25,6 +25,17 @@ const MyPurchases = () => {
   const { canReviewOrder, canReviewBuyerBehavior } = useReview();
   const navigate = useNavigate();
   
+  // Debug: Log current user info
+  console.log('🔍 MyPurchases - Current User:', {
+    uid: currentUser?.uid,
+    email: currentUser?.email,
+    exists: !!currentUser
+  });
+  console.log('🔍 MyPurchases - User Profile:', {
+    accountType: userProfile?.accountType,
+    exists: !!userProfile
+  });
+  
   const [purchasedPacks, setPurchasedPacks] = useState([]);
   const [purchasedServices, setPurchasedServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -178,6 +189,7 @@ const MyPurchases = () => {
     }
     
     console.log('🔍 Setting up real-time listener for purchased services...');
+    console.log('🔍 Current user UID:', currentUser.uid);
     
     const serviceOrdersRef = collection(db, 'serviceOrders');
     const queryRef = fsQuery(
@@ -190,15 +202,24 @@ const MyPurchases = () => {
     const unsubscribe = onSnapshot(queryRef, 
       async (snapshot) => {
         console.log('📦 Purchased services snapshot received:', snapshot.size, 'documents');
+        console.log('🔍 Snapshot metadata:', {
+          empty: snapshot.empty,
+          size: snapshot.size,
+          hasPendingWrites: snapshot.metadata.hasPendingWrites,
+          isFromCache: snapshot.metadata.fromCache
+        });
         
         const orders = [];
         snapshot.forEach((doc) => {
           const orderData = doc.data();
+          console.log('🔍 Raw document data:', doc.id, orderData);
           console.log('🔍 Processing purchased service:', doc.id, {
             status: orderData.status,
+            buyerId: orderData.buyerId,
             sellerId: orderData.sellerId,
             serviceId: orderData.serviceId,
-            timestamps: orderData.timestamps
+            timestamps: orderData.timestamps,
+            fullData: orderData
           });
           
           if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
@@ -211,6 +232,7 @@ const MyPurchases = () => {
         });
         
         console.log('✅ All purchased services loaded:', orders.length);
+        console.log('🔍 Full orders array:', orders);
         console.log('📊 Services by status:', {
           pending: orders.filter(o => o.status === 'PENDING_ACCEPTANCE').length,
           accepted: orders.filter(o => o.status === 'ACCEPTED').length,
@@ -227,12 +249,52 @@ const MyPurchases = () => {
       },
       (error) => {
         console.error('❌ Error loading purchased services:', error);
+        console.error('❌ Error details:', {
+          code: error.code,
+          message: error.message,
+          stack: error.stack
+        });
         showError('Erro ao carregar serviços comprados');
       }
     );
     
     return unsubscribe;
   }, [currentUser, showError, loadSellerData]);
+
+  // Debug: Test direct Firebase query
+  const testDirectQuery = useCallback(async () => {
+    if (!currentUser) return;
+    
+    console.log('🧪 Testing direct Firebase query...');
+    try {
+      // Test without any filters first
+      const allOrdersRef = collection(db, 'serviceOrders');
+      const allOrdersSnapshot = await getDocs(allOrdersRef);
+      console.log('🔍 Total serviceOrders in database:', allOrdersSnapshot.size);
+      
+      // Log all orders to see the structure
+      allOrdersSnapshot.forEach((doc) => {
+        const data = doc.data();
+        console.log('🔍 Found serviceOrder:', doc.id, {
+          buyerId: data.buyerId,
+          sellerId: data.sellerId,
+          status: data.status,
+          currentUserMatch: data.buyerId === currentUser.uid
+        });
+      });
+      
+      // Test specific query
+      const userOrdersRef = fsQuery(
+        allOrdersRef,
+        where('buyerId', '==', currentUser.uid)
+      );
+      const userOrdersSnapshot = await getDocs(userOrdersRef);
+      console.log('🔍 Orders for current user:', userOrdersSnapshot.size);
+      
+    } catch (error) {
+      console.error('❌ Direct query test failed:', error);
+    }
+  }, [currentUser]);
 
   // Setup real-time listeners for purchases
   useEffect(() => {
@@ -243,6 +305,9 @@ const MyPurchases = () => {
 
     console.log('🚀 Setting up real-time purchase listeners for user:', currentUser.uid);
     setLoading(true);
+
+    // Run direct query test
+    testDirectQuery();
 
     // Setup listeners
     const unsubscribePacks = loadPurchasedPacks();
@@ -257,7 +322,7 @@ const MyPurchases = () => {
       if (unsubscribePacks) unsubscribePacks();
       if (unsubscribeServices) unsubscribeServices();
     };
-  }, [currentUser, loadPurchasedPacks, loadPurchasedServices]);
+  }, [currentUser, loadPurchasedPacks, loadPurchasedServices, testDirectQuery]);
 
   // Check which orders can be reviewed
   useEffect(() => {
