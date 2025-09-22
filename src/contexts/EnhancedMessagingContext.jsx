@@ -314,12 +314,10 @@ export const EnhancedMessagingProvider = ({ children }) => {
           
           // Check if current user is a participant
           if (conversation.participants && conversation.participants[currentUser.uid]) {
-            // Only include service conversations that are NOT completed
-            if (conversation.serviceOrderId && !conversation.isCompleted) {
+            // Include all service conversations (both active and completed)
+            if (conversation.serviceOrderId) {
               serviceConversationsData.push(conversation);
-              console.log('✅ Added active service conversation from RTDB:', conversation.id, 'Order:', conversation.serviceOrderId);
-            } else if (conversation.serviceOrderId && conversation.isCompleted) {
-              console.log('🔒 Skipped completed service conversation:', conversation.id, 'Order:', conversation.serviceOrderId);
+              console.log('✅ Added service conversation from RTDB:', conversation.id, 'Order:', conversation.serviceOrderId, 'Completed:', conversation.isCompleted);
             }
           }
         });
@@ -378,25 +376,23 @@ export const EnhancedMessagingProvider = ({ children }) => {
           if (orderData.chatId) {
             const isCompleted = orderData.status === 'COMPLETED' || orderData.status === 'CONFIRMED' || orderData.status === 'AUTO_RELEASED';
             
-            // Only add if not completed
-            if (!isCompleted) {
-              firestoreConversations.push({
-                id: orderData.chatId,
-                serviceOrderId: orderData.id,
-                participants: {
-                  [orderData.buyerId]: true,
-                  [orderData.sellerId]: true
-                },
-                participantIds: [orderData.buyerId, orderData.sellerId],
-                lastMessage: `Conversa iniciada para o serviço: ${orderData.metadata?.serviceName || 'Serviço'}`,
-                lastMessageTime: orderData.timestamps?.createdAt?.toMillis?.() || Date.now(),
-                isCompleted: false,
-                _source: 'firestore'
-              });
-              console.log('✅ Added active Firestore conversation from buyer order:', orderData.chatId, 'Order:', orderData.id);
-            } else {
-              console.log('🔒 Skipped completed Firestore conversation from buyer order:', orderData.chatId, 'Order:', orderData.id, 'Status:', orderData.status);
-            }
+            firestoreConversations.push({
+              id: orderData.chatId,
+              serviceOrderId: orderData.id,
+              participants: {
+                [orderData.buyerId]: true,
+                [orderData.sellerId]: true
+              },
+              participantIds: [orderData.buyerId, orderData.sellerId],
+              lastMessage: `Conversa iniciada para o serviço: ${orderData.metadata?.serviceName || 'Serviço'}`,
+              lastMessageTime: orderData.timestamps?.createdAt?.toMillis?.() || Date.now(),
+              isCompleted: isCompleted,
+              serviceName: orderData.metadata?.serviceName || 'Serviço',
+              buyerId: orderData.buyerId,
+              sellerId: orderData.sellerId,
+              _source: 'firestore'
+            });
+            console.log('✅ Added Firestore conversation from buyer order:', orderData.chatId, 'Order:', orderData.id, 'Completed:', isCompleted);
           }
         });
         
@@ -406,25 +402,23 @@ export const EnhancedMessagingProvider = ({ children }) => {
           if (orderData.chatId) {
             const isCompleted = orderData.status === 'COMPLETED' || orderData.status === 'CONFIRMED' || orderData.status === 'AUTO_RELEASED';
             
-            // Only add if not completed
-            if (!isCompleted) {
-              firestoreConversations.push({
-                id: orderData.chatId,
-                serviceOrderId: orderData.id,
-                participants: {
-                  [orderData.buyerId]: true,
-                  [orderData.sellerId]: true
-                },
-                participantIds: [orderData.buyerId, orderData.sellerId],
-                lastMessage: `Conversa iniciada para o serviço: ${orderData.metadata?.serviceName || 'Serviço'}`,
-                lastMessageTime: orderData.timestamps?.createdAt?.toMillis?.() || Date.now(),
-                isCompleted: false,
-                _source: 'firestore'
-              });
-              console.log('✅ Added active Firestore conversation from seller order:', orderData.chatId, 'Order:', orderData.id);
-            } else {
-              console.log('🔒 Skipped completed Firestore conversation from seller order:', orderData.chatId, 'Order:', orderData.id, 'Status:', orderData.status);
-            }
+            firestoreConversations.push({
+              id: orderData.chatId,
+              serviceOrderId: orderData.id,
+              participants: {
+                [orderData.buyerId]: true,
+                [orderData.sellerId]: true
+              },
+              participantIds: [orderData.buyerId, orderData.sellerId],
+              lastMessage: `Conversa iniciada para o serviço: ${orderData.metadata?.serviceName || 'Serviço'}`,
+              lastMessageTime: orderData.timestamps?.createdAt?.toMillis?.() || Date.now(),
+              isCompleted: isCompleted,
+              serviceName: orderData.metadata?.serviceName || 'Serviço',
+              buyerId: orderData.buyerId,
+              sellerId: orderData.sellerId,
+              _source: 'firestore'
+            });
+            console.log('✅ Added Firestore conversation from seller order:', orderData.chatId, 'Order:', orderData.id, 'Completed:', isCompleted);
           }
         });
         
@@ -441,24 +435,21 @@ export const EnhancedMessagingProvider = ({ children }) => {
             mergedConversations.push(conv);
           });
           
-          // Add Firestore conversations that don't exist in RTDB and are not completed
+          // Add Firestore conversations that don't exist in RTDB
           firestoreConversations.forEach(conv => {
-            if (!existingIds.has(conv.id) && !conv.isCompleted) {
+            if (!existingIds.has(conv.id)) {
               mergedConversations.push(conv);
-              console.log('✅ Added new active Firestore conversation:', conv.id, 'Order:', conv.serviceOrderId);
-            } else if (conv.isCompleted) {
-              console.log('🔒 Skipped completed Firestore conversation in merge:', conv.id, 'Order:', conv.serviceOrderId);
+              console.log('✅ Added new Firestore conversation:', conv.id, 'Order:', conv.serviceOrderId, 'Completed:', conv.isCompleted);
             }
           });
           
-          // Filter out completed conversations and sort by last message time
-          const activeConversations = mergedConversations.filter(conv => !conv.isCompleted);
-          activeConversations.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+          // Sort by last message time
+          mergedConversations.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
           
-          console.log('🛠️ Final active service conversations:', activeConversations.length);
-          console.log('🛠️ Active conversation IDs:', activeConversations.map(c => `${c.id} (Order: ${c.serviceOrderId}, Source: ${c._source || 'RTDB'})`));
+          console.log('🛠️ Final service conversations:', mergedConversations.length);
+          console.log('🛠️ Conversation IDs:', mergedConversations.map(c => `${c.id} (Order: ${c.serviceOrderId}, Source: ${c._source || 'RTDB'}, Completed: ${c.isCompleted})`));
           
-          return activeConversations;
+          return mergedConversations;
         });
         
       } catch (error) {
@@ -1966,6 +1957,14 @@ export const EnhancedMessagingProvider = ({ children }) => {
         return existingConversation;
       }
 
+      // Get user data for initial message
+      const buyerUser = await getUserById(serviceOrder.buyerId);
+      const sellerUser = await getUserById(serviceOrder.sellerId);
+      
+      const buyerUsername = buyerUser?.username || buyerUser?.displayName || 'Comprador';
+      const sellerUsername = sellerUser?.username || sellerUser?.displayName || 'Vendedor';
+      const serviceName = serviceOrder.metadata?.serviceName || 'Serviço';
+      
       const conversationData = {
         id: conversationId,
         type: 'service',
@@ -1974,10 +1973,12 @@ export const EnhancedMessagingProvider = ({ children }) => {
           [serviceOrder.sellerId]: true
         },
         serviceOrderId: serviceOrder.id,
-        serviceName: serviceOrder.metadata?.serviceName || 'Serviço',
+        serviceName: serviceName,
+        buyerId: serviceOrder.buyerId,
+        sellerId: serviceOrder.sellerId,
         createdAt: Date.now(),
         lastMessageTime: Date.now(),
-        lastMessage: 'Conversa iniciada para o serviço',
+        lastMessage: `Esta é a conversa do serviço "${serviceName}", entre @${sellerUsername} e @${buyerUsername}`,
         lastSenderId: serviceOrder.sellerId,
         unreadCount: { [serviceOrder.buyerId]: 0, [serviceOrder.sellerId]: 0 },
         isCompleted: false

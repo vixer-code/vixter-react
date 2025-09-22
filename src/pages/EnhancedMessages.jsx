@@ -397,28 +397,66 @@ const EnhancedMessages = () => {
                     return null;
                   }
                   
+                  // Get seller info for avatar
+                  const sellerId = conversation.sellerId || conversation.participantIds?.find(id => id !== currentUser?.uid);
+                  const sellerUser = sellerId ? users[sellerId] : null;
+                  const sellerName = sellerUser?.displayName || sellerUser?.username || 'Vendedor';
+                  const serviceName = conversation.serviceName || 'Serviço';
+                  
                   return (
                     <div
                       key={conversation.id}
-                      className={`conversation-item ${
+                      className={`conversation-item service-conversation ${
                         selectedConversation?.id === conversation.id ? 'active' : ''
-                      }`}
+                      } ${conversation.isCompleted ? 'completed' : ''}`}
                       onClick={() => handleConversationSelect(conversation)}
                     >
                       <div className="conversation-avatar">
-                        <div className="service-avatar">🛠️</div>
+                        {(() => {
+                          // Try to get seller's profile picture
+                          const imageUrl = sellerUser?.photoURL || sellerUser?.profilePictureURL;
+                          
+                          if (imageUrl) {
+                            return (
+                              <img 
+                                src={imageUrl} 
+                                alt={sellerName} 
+                                className="user-avatar-img"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            );
+                          }
+                          
+                          return (
+                            <div className="default-avatar">
+                              {sellerName && sellerName.length > 0 ? sellerName.charAt(0).toUpperCase() : 'V'}
+                            </div>
+                          );
+                        })()}
+                        {conversation.isCompleted && (
+                          <div className="completed-badge">✓</div>
+                        )}
                       </div>
                       <div className="conversation-content">
                         <div className="conversation-header">
                           <div className="conversation-name">
-                            Serviço #{conversation.serviceOrderId || 'N/A'}
+                            {serviceName}
+                            {conversation.isCompleted && (
+                              <span className="completed-text"> (Concluído)</span>
+                            )}
                           </div>
                           <div className="conversation-time">
                             {formatLastMessageTime(conversation.lastMessageTime)}
                           </div>
                         </div>
                         <div className="conversation-preview">
-                          {getLastMessagePreview(conversation)}
+                          {conversation.isCompleted ? 
+                            'Serviço concluído - Conversa arquivada' : 
+                            getLastMessagePreview(conversation)
+                          }
                         </div>
                       </div>
                     </div>
