@@ -45,7 +45,7 @@ export const processPackSale = async (buyerId, packId, packName, vpAmount) => {
 };
 
 /**
- * Process service purchase (VC goes to pending)
+ * Process service purchase (VC goes to pending) - UPDATED to use unified API
  * @param {string} sellerId - User ID of the service provider
  * @param {string} serviceId - Service ID being purchased
  * @param {string} serviceName - Name of the service
@@ -55,23 +55,29 @@ export const processPackSale = async (buyerId, packId, packName, vpAmount) => {
  */
 export const processServicePurchase = async (sellerId, serviceId, serviceName, serviceDescription, vpAmount) => {
   try {
-    const processServicePurchaseFunc = httpsCallable(functions, 'processServicePurchase');
+    const apiFunc = httpsCallable(functions, 'api');
     
-    const result = await processServicePurchaseFunc({
-      buyerId: getCurrentUserId(), // Assumes current user is the buyer
-      sellerId,
-      vpAmount,
-      serviceId,
-      serviceName,
-      serviceDescription
+    const result = await apiFunc({
+      resource: 'serviceOrder',
+      action: 'create',
+      payload: {
+        serviceId,
+        sellerId,
+        vpAmount,
+        additionalFeatures: [], // Default empty array
+        metadata: {
+          serviceName,
+          serviceDescription
+        }
+      }
     });
 
     if (result.data.success) {
       return {
         success: true,
-        serviceOrderId: result.data.serviceOrderId,
-        vcPending: result.data.vcPending,
-        conversionRate: result.data.conversionRate
+        serviceOrderId: result.data.order?.id,
+        vcPending: result.data.order?.vcAmount,
+        conversionRate: 1.5 // VP to VC conversion rate
       };
     }
     

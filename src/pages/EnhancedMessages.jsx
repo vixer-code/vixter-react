@@ -10,8 +10,7 @@ import OnlineUsersList from '../components/messaging/OnlineUsersList';
 import { 
   getConversationDisplayName, 
   formatLastMessageTime, 
-  getLastMessagePreview,
-  debugLog 
+  getLastMessagePreview
 } from '../utils/conversation';
 import './EnhancedMessages.css';
 
@@ -37,10 +36,6 @@ const EnhancedMessages = () => {
   const location = useLocation();
   const { conversationId } = useParams();
   
-  // Debug mode toggle (can be controlled by environment variable or localStorage)
-  const [debugMode] = useState(() => {
-    return localStorage.getItem('vixter-debug') === 'true' || process.env.NODE_ENV === 'development';
-  });
   
   const [showUserSelector, setShowUserSelector] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
@@ -69,8 +64,6 @@ const EnhancedMessages = () => {
   // Handle URL parameters for conversation selection
   useEffect(() => {
     if (conversationId && conversations.length > 0) {
-      debugLog('URL parameter conversation', conversationId);
-      
       // Find conversation in regular conversations
       let targetConversation = conversations.find(conv => conv.id === conversationId);
       
@@ -83,22 +76,15 @@ const EnhancedMessages = () => {
       }
       
       if (targetConversation) {
-        debugLog('Found conversation from URL, selecting', targetConversation.id);
         setSelectedConversation(targetConversation);
         // Only show mobile chat on mobile devices
         if (window.innerWidth <= 768) {
           setShowMobileChat(true);
         }
-      } else {
-        debugLog('Conversation not found', conversationId);
       }
     }
-  }, [conversationId, conversations, serviceConversations, setSelectedConversation, setActiveTab, debugMode]);
+  }, [conversationId, conversations, serviceConversations, setSelectedConversation, setActiveTab]);
 
-  // Debug effect to track selectedConversation changes
-  useEffect(() => {
-    debugLog('selectedConversation changed', selectedConversation?.id);
-  }, [selectedConversation, debugMode]);
 
   // Handle window resize for mobile detection
   useEffect(() => {
@@ -118,11 +104,7 @@ const EnhancedMessages = () => {
 
   // Handle user selection
   const handleUserSelected = (conversation) => {
-    debugLog('User selected, conversation', conversation);
-    debugLog('Previous selectedConversation', selectedConversation?.id);
-    
     if (!conversation || !conversation.id) {
-      debugLog('Invalid conversation object received', conversation);
       showInfo('Erro: Conversa inválida', 'error');
       return;
     }
@@ -130,17 +112,10 @@ const EnhancedMessages = () => {
     setSelectedConversation(conversation);
     setShowUserSelector(false);
     setShowMobileChat(true);
-    debugLog('UI state updated, mobile chat should show', conversation.id);
   };
 
   // Handle conversation selection
   const handleConversationSelect = (conversation) => {
-    console.log('🎯 Conversation selected:', conversation?.id);
-    console.log('🎯 Desktop mode:', isDesktop);
-    console.log('🎯 Mobile mode:', isMobile);
-    console.log('🎯 Window width:', window.innerWidth);
-    
-    debugLog('Conversation selected', conversation?.id);
     setSelectedConversation(conversation);
     
     // Load user data for the other participant if not already loaded
@@ -158,12 +133,8 @@ const EnhancedMessages = () => {
     
     // Show mobile chat on mobile devices, on desktop it's always visible
     if (isMobile) {
-      console.log('📱 Mobile detected - showing mobile chat');
-      debugLog('Mobile detected - showing mobile chat');
       setShowMobileChat(true);
     } else {
-      console.log('🖥️ Desktop detected - chat container is always visible, only content changes');
-      debugLog('Desktop detected - chat container is always visible, only content changes');
       // On desktop, we don't use showMobileChat, the chat container is always visible
       // Only the ChatInterface content changes based on selectedConversation
       setShowMobileChat(false);
@@ -204,19 +175,6 @@ const EnhancedMessages = () => {
     return null;
   };
 
-  // Debug logging
-  debugLog('EnhancedMessages render', {
-    loading,
-    conversationsCount: conversations.length,
-    serviceConversationsCount: serviceConversations.length,
-    selectedConversation: selectedConversation?.id,
-    activeTab,
-    isMobile,
-    isDesktop,
-    showMobileChat,
-    hasSelectedConversation: !!selectedConversation,
-    windowWidth: window.innerWidth
-  });
 
   if (loading) {
     return (
@@ -231,7 +189,6 @@ const EnhancedMessages = () => {
 
   // Simplified guard clause - only show loading if users object is completely invalid
   if (users === null || users === undefined) {
-    console.warn('Users object is null/undefined, showing loading state');
     return (
       <div className="enhanced-messages loading">
         <div className="loading-content">
@@ -242,20 +199,6 @@ const EnhancedMessages = () => {
     );
   }
 
-  // Debug logging for search operations
-  console.log('EnhancedMessages render:', { 
-    usersKeys: Object.keys(users), 
-    conversationsCount: conversations.length,
-    usersType: typeof users,
-    isArray: Array.isArray(users),
-    loading: loading,
-    conversations: conversations.map(conv => ({
-      id: conv.id,
-      participants: conv.participants ? Object.keys(conv.participants) : 'no participants',
-      lastMessage: conv.lastMessage,
-      lastMessageTime: conv.lastMessageTime
-    }))
-  });
 
   // Check if we need to load missing user data
   const missingUserIds = [];
@@ -271,7 +214,6 @@ const EnhancedMessages = () => {
     });
 
     if (missingUserIds.length > 0) {
-      console.log('Missing user data for participants:', missingUserIds);
       // Load missing user data
       missingUserIds.forEach(userId => {
         try {
@@ -281,8 +223,6 @@ const EnhancedMessages = () => {
         }
       });
     }
-  } else {
-    console.warn('Users object is invalid, cannot check for missing user data');
   }
 
   return (
@@ -315,22 +255,6 @@ const EnhancedMessages = () => {
             <h2>Mensagens</h2>
             <div className="header-actions">
               <button
-                className="debug-button"
-                onClick={() => forceReloadConversations()}
-                title="Recarregar conversas (Debug)"
-                style={{ 
-                  fontSize: '12px', 
-                  padding: '4px 8px', 
-                  marginRight: '8px',
-                  background: '#ff6b6b',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px'
-                }}
-              >
-                🔄
-              </button>
-              <button
                 className="new-chat-button"
                 onClick={() => setShowUserSelector(true)}
                 title="Nova conversa"
@@ -362,16 +286,6 @@ const EnhancedMessages = () => {
           </div>
 
           <div className="conversations-list">
-            {/* Debug info */}
-            <div style={{ 
-              padding: '10px', 
-              fontSize: '11px', 
-              color: '#666',
-              borderBottom: '1px solid #333',
-              background: '#1a1a2e'
-            }}>
-              📊 Debug: {conversations.length} conversas | Loading: {loading ? 'Sim' : 'Não'} | User: {currentUser?.uid?.slice(0, 8)}
-            </div>
             
             {activeTab === 'messages' ? (
               conversations.length === 0 ? (
@@ -379,7 +293,7 @@ const EnhancedMessages = () => {
                   <div className="empty-icon">💬</div>
                   <p>Nenhuma conversa ainda</p>
                   <p style={{ fontSize: '12px', color: '#666' }}>
-                    Use o botão 🔄 para recarregar ou ✏️ para nova conversa
+                    Use o botão ✏️ para nova conversa
                   </p>
                   <button
                     className="start-conversation-button"
@@ -528,7 +442,6 @@ const EnhancedMessages = () => {
             height: '100%',
             flexDirection: 'column'
           } : {}}
-          data-debug={`desktop:${isDesktop}, mobile:${isMobile}, width:${window.innerWidth}`}
         >
           <ChatInterface
             conversation={selectedConversation}

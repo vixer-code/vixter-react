@@ -205,21 +205,9 @@ export const ServiceOrderProvider = ({ children }) => {
       if (result.data.success) {
         const orderData = result.data.order;
         
-        // Process the service purchase through wallet (adds VC pending to seller)
+        // The service order creation already processes the payment (debits VP from buyer and adds VC pending to seller)
+        // Calculate VC amount for notifications
         const vcAmount = Math.round(totalVpAmount / 1.5); // Convert VP to VC (1 VC = 1.5 VP)
-        const walletResult = await processServicePurchase(
-          serviceData.providerId,
-          serviceData.id,
-          serviceData.title,
-          serviceData.description,
-          totalVpAmount
-        );
-        
-        if (!walletResult.success) {
-          console.error('Failed to process service purchase through wallet');
-          showError('Erro ao processar pagamento. Tente novamente.');
-          return false;
-        }
         
         // Send service notification to messaging
         await sendServiceNotification({

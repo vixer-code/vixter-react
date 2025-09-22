@@ -1,9 +1,50 @@
 {
   "rules": {
     "conversations": {
+      ".read": "auth != null",
+      ".indexOn": ["lastMessageTime", "lastActivity"],
       "$conversationId": {
-        ".read": "auth != null",
-        ".write": "auth != null"
+        ".read": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
+        ".write": "auth != null && (root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists() || !root.child('conversations').child($conversationId).exists())",
+        "participants": {
+          "$userId": {
+            ".validate": "newData.isBoolean() && newData.val() == true"
+          }
+        },
+        "lastMessage": {
+          ".validate": "newData.isString()"
+        },
+        "lastMessageTime": {
+          ".validate": "newData.isNumber()"
+        },
+        "lastSenderId": {
+          ".validate": "newData.isString()"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "type": {
+          ".validate": "newData.isString() && (newData.val() == 'regular' || newData.val() == 'service')"
+        },
+        "serviceOrderId": {
+          ".validate": "newData.isString()"
+        },
+        "isCompleted": {
+          ".validate": "newData.isBoolean()"
+        },
+        "messageCount": {
+          ".validate": "newData.isNumber() || newData.val() == '.sv'"
+        },
+        "lastActivity": {
+          ".validate": "newData.isNumber()"
+        },
+        "messages": {
+          ".read": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
+          ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
+          "$messageId": {
+            ".validate": "newData.hasChildren(['senderId', 'type', 'content', 'timestamp']) && (newData.child('senderId').val() == auth.uid || newData.child('senderId').val() == 'system')"
+          }
+        }
       }
     },
     "messages": {

@@ -48,7 +48,6 @@ export const WalletProvider = ({ children }) => {
   const initializeWallet = httpsCallable(functions, 'initializeWallet');
   const claimDailyBonusFunc = httpsCallable(functions, 'claimDailyBonus');
   const processPackSaleFunc = httpsCallable(functions, 'processPackSale');
-  const processServicePurchaseFunc = httpsCallable(functions, 'processServicePurchase');
   const apiFunc = httpsCallable(functions, 'api');
 
   // VP packages configuration
@@ -275,33 +274,39 @@ export const WalletProvider = ({ children }) => {
     }
   }, [currentUser, processPackSaleFunc, showSuccess, showError]);
 
-  // Process service purchase (VC goes to pending)
+  // Process service purchase (VC goes to pending) - UPDATED to use unified API
   const processServicePurchase = useCallback(async (sellerId, serviceId, serviceName, serviceDescription, vpAmount) => {
     if (!currentUser) return false;
 
     try {
-      const result = await processServicePurchaseFunc({
-        buyerId: currentUser.uid,
-        sellerId,
-        vpAmount,
-        serviceId,
-        serviceName,
-        serviceDescription
+      const result = await apiFunc({
+        resource: 'serviceOrder',
+        action: 'create',
+        payload: {
+          serviceId,
+          sellerId,
+          vpAmount,
+          additionalFeatures: [], // Default empty array
+          metadata: {
+            serviceName,
+            serviceDescription
+          }
+        }
       });
 
       if (result.data.success) {
         showSuccess(
-          `Serviço adquirido! ${result.data.vpDebited} VP foram debitados. O vendedor receberá ${result.data.vcPending} VC após a confirmação.`,
+          `Serviço adquirido! ${vpAmount} VP foram debitados. O vendedor receberá VC após a confirmação.`,
           'Compra Realizada'
         );
-        return { success: true, serviceOrderId: result.data.serviceOrderId };
+        return { success: true, serviceOrderId: result.data.order?.id };
       }
       return false;
     } catch (error) {
       handleWalletError(error, 'processServicePurchase');
       return false;
     }
-  }, [currentUser, processServicePurchaseFunc, showSuccess, showError]);
+  }, [currentUser, apiFunc, showSuccess, showError]);
 
   // Create pack order (requires seller approval)
   const createPackOrder = useCallback(async (buyerId, sellerId, packId, packName, vpAmount, buyerInfo = {}) => {

@@ -30,8 +30,7 @@ import { sendMessageNotification } from '../services/notificationService';
 import { 
   createConversationObject, 
   findExistingConversation, 
-  isValidConversation,
-  debugLog 
+  isValidConversation
 } from '../utils/conversation';
 
 // Generate deterministic conversation ID from participants
@@ -214,11 +213,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
     // Add timeout to prevent infinite loading
     const loadingTimeout = setTimeout(() => {
-      console.warn('Conversations loading timeout - setting loading to false');
       setLoading(false);
     }, 15000); // 15 second timeout (increased from 10)
 
-    console.log('Setting up conversation listeners for user:', currentUser.uid);
 
     // Load regular conversations
     const conversationsRef = ref(database, 'conversations');
@@ -227,7 +224,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
       const conversationsData = [];
       
       if (snapshot.exists()) {
-        console.log('📁 Firebase conversations snapshot received, total conversations:', snapshot.size);
         
         snapshot.forEach((childSnapshot) => {
           const conversation = {
@@ -260,11 +256,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
         // Sort by last message time
         conversationsData.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
       } else {
-        console.log('📭 No conversations found in Firebase');
       }
       
-      console.log('📋 Final regular conversations loaded:', conversationsData.length);
-      console.log('📋 Conversations IDs:', conversationsData.map(c => c.id));
       setConversations(conversationsData);
       
       // Load user data for all participants
@@ -305,7 +298,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
       const serviceConversationsData = [];
       
       if (snapshot.exists()) {
-        console.log('🛠️ Loading service conversations from snapshot');
         
         snapshot.forEach((childSnapshot) => {
           const conversation = {
@@ -415,7 +407,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
   const forceReloadConversations = useCallback(async () => {
     if (!currentUser?.uid) return;
     
-    console.log('🔄 Force reloading conversations for user:', currentUser.uid);
     
     try {
       const conversationsRef = ref(database, 'conversations');
@@ -475,6 +466,49 @@ export const EnhancedMessagingProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('❌ Error force reloading conversations:', error);
+      console.log('🔧 Attempting alternative query method...');
+      
+      // Alternative approach: Use ordered query if permissions are the issue
+      try {
+        const { query, orderByChild } = await import('firebase/database');
+        const orderedQuery = query(conversationsRef, orderByChild('lastMessageTime'));
+        const orderedSnapshot = await get(orderedQuery);
+        
+        if (orderedSnapshot.exists()) {
+          console.log('✅ Alternative query succeeded');
+          const regularConversations = [];
+          const serviceConversations = [];
+          
+          orderedSnapshot.forEach((childSnapshot) => {
+            const conversation = {
+              id: childSnapshot.key,
+              ...childSnapshot.val()
+            };
+            
+            if (conversation.participants?.[currentUser.uid]) {
+              if (conversation.serviceOrderId) {
+                serviceConversations.push(conversation);
+              } else {
+                regularConversations.push(conversation);
+              }
+            }
+          });
+          
+          regularConversations.reverse(); // Since ordered by lastMessageTime, reverse for newest first
+          serviceConversations.reverse();
+          
+          setConversations(regularConversations);
+          setServiceConversations(serviceConversations);
+          
+          console.log('✅ Alternative conversations loaded:', {
+            regular: regularConversations.length,
+            service: serviceConversations.length
+          });
+        }
+      } catch (altError) {
+        console.error('❌ Alternative query also failed:', altError);
+        showError('Erro ao carregar conversas. Verifique suas permissões.');
+      }
     }
   }, [currentUser?.uid]);
 
@@ -1028,10 +1062,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
   // Create or get conversation
   const createOrGetConversation = useCallback(async (otherUserId, serviceOrderId = null) => {
-    debugLog('createOrGetConversation called', { otherUserId, serviceOrderId, currentUser: currentUser?.uid });
-    
     if (!currentUser?.uid || !otherUserId) {
-      debugLog('Missing required data', { currentUser: currentUser?.uid, otherUserId });
       return null;
     }
 
@@ -1044,14 +1075,12 @@ export const EnhancedMessagingProvider = ({ children }) => {
         `conv_${cleanUserA}_${cleanUserB}_service_${serviceOrderId}` : 
         `conv_${cleanUserA}_${cleanUserB}`;
 
-      debugLog('Deterministic conversation ID generated', conversationId);
 
       // First check if conversation already exists in local state
       const allConversations = [...conversations, ...serviceConversations];
       const localExistingConversation = allConversations.find(conv => conv.id === conversationId);
 
       if (localExistingConversation) {
-        debugLog('Found existing conversation in local state', localExistingConversation.id);
         return localExistingConversation;
       }
 
@@ -1065,28 +1094,22 @@ export const EnhancedMessagingProvider = ({ children }) => {
           id: conversationId,
           ...conversationSnapshot.val()
         };
-        debugLog('Found existing conversation in Firebase Database', existingConversation.id);
         
         // Add to local state
-        console.log('🔄 Adding existing conversation to local state:', existingConversation.id);
         if (serviceOrderId) {
           setServiceConversations(prev => {
             const exists = prev.find(c => c.id === existingConversation.id);
             if (!exists) {
-              console.log('➕ Adding to service conversations');
               return [existingConversation, ...prev];
             }
-            console.log('⚠️ Service conversation already in state');
             return prev;
           });
         } else {
           setConversations(prev => {
             const exists = prev.find(c => c.id === existingConversation.id);
             if (!exists) {
-              console.log('➕ Adding to regular conversations');
               return [existingConversation, ...prev];
             }
-            console.log('⚠️ Regular conversation already in state');
             return prev;
           });
         }
@@ -1116,7 +1139,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
         newConversation.type = 'regular';
       }
 
-      debugLog('Creating new conversation', newConversation);
 
       // Save to Firebase Realtime Database with messages structure for Centrifugo compatibility
       const newConversationRef = ref(database, `conversations/${conversationId}`);
@@ -1135,7 +1157,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
       });
 
       // Conversations are stored in RTDB only
-      debugLog('Conversation saved to RTDB', newConversation.id);
 
       // Add to local state immediately
       if (serviceOrderId) {
@@ -1144,7 +1165,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
         setConversations(prev => [newConversation, ...prev]);
       }
 
-      debugLog('Created new conversation successfully', newConversation.id);
       return newConversation;
     } catch (error) {
       console.error('Error creating conversation:', error);
