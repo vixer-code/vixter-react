@@ -467,7 +467,7 @@ const MyProducts = () => {
                         {(() => {
                           console.log('🔍 Order timestamps structure:', order.timestamps);
                           console.log('🔍 Order createdAt:', order.timestamps?.createdAt);
-                          return formatDate(order.timestamps?.createdAt);
+                          return formatDate(order.timestamps?.updatedAt);
                         })()}
                       </span>
                     </div>
