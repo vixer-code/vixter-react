@@ -67,6 +67,7 @@
   min-height: 70px;
 }
 
+
 .chat-user-info {
   display: flex;
   align-items: center;
@@ -486,10 +487,15 @@
   background-color: #f0f0f0;
 }
 
-/* Responsive Design */
+/* Responsive Design - merge with existing mobile styles */
 @media (max-width: 768px) {
   .chat-header {
-    padding: 12px 15px;
+    padding: 12px 15px 12px 65px; /* Extra left padding for back button */
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex !important;
+    background: var(--vixter-bg-secondary);
   }
   
   .messages-list {
@@ -515,7 +521,7 @@
 
 @media (max-width: 480px) {
   .chat-header {
-    padding: 10px 12px;
+    padding: 10px 12px 10px 60px; /* Extra left padding for back button */
   }
   
   .user-avatar {

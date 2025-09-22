@@ -150,7 +150,7 @@ const EnhancedMessages = () => {
     }
     
     // Show mobile chat on mobile devices, but don't hide on desktop
-    if (isMobile && !isDesktop) {
+    if (isMobile) {
       setShowMobileChat(true);
     } else {
       // On desktop, ensure chat is visible
@@ -473,13 +473,13 @@ const EnhancedMessages = () => {
         <div 
           className={`chat-container ${showMobileChat ? 'mobile-visible' : ''} ${selectedConversation ? 'has-conversation' : ''}`}
           style={{
-            // Force visibility on desktop when conversation is selected
-            display: (selectedConversation && isDesktop) ? 'flex' : undefined
+            // Force visibility when conversation is selected
+            display: selectedConversation ? 'flex' : undefined
           }}
         >
           
           {/* Mobile back button */}
-          {showMobileChat && (
+          {(showMobileChat || (isMobile && selectedConversation)) && (
             <button 
               className="mobile-back-button" 
               onClick={handleCloseMobileChat}
