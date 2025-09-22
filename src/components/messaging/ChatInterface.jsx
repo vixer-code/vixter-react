@@ -33,16 +33,6 @@ const ChatInterface = ({ conversation, onClose }) => {
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   const otherUser = getOtherParticipant(conversation);
-  
-  // Debug log to check user data
-  console.log('🔍 ChatInterface - otherUser data:', {
-    otherUser,
-    conversation: conversation?.id,
-    hasPhotoURL: !!otherUser?.photoURL,
-    hasProfilePictureURL: !!otherUser?.profilePictureURL,
-    displayName: otherUser?.displayName,
-    name: otherUser?.name
-  });
 
   // Check if user is near bottom to determine auto-scroll behavior
   const isNearBottom = () => {
@@ -196,7 +186,7 @@ const ChatInterface = ({ conversation, onClose }) => {
             <div className="user-status">
               {isServiceCompleted ? (
                 <span className="service-completed">🔒 Serviço Concluído</span>
-              ) : users[otherUser.uid]?.status === 'online' ? (
+              ) : otherUser?.status === 'online' ? (
                 <span className="status-online">🟢 Online</span>
               ) : (
                 <span className="status-offline">🔴 Offline</span>

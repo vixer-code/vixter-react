@@ -672,14 +672,14 @@ export const EnhancedMessagingProvider = ({ children }) => {
             console.log('🔔 Notification will show:', `New message from ${message.senderName || 'Someone'}`);
             
             showInfo(
-              `New message from ${message.senderName || 'Someone'}`, 
-              'New Message',
+              `${message.senderName || 'Alguém'} enviou uma mensagem`, 
+              'Nova Mensagem',
               7000,
               {
                 onClick: (data) => {
                   console.log('🔔 Notification clicked, navigating to:', data.conversationId);
                   // Navigate to messages page and select conversation
-                  window.location.href = `/messages?conversation=${data.conversationId}`;
+                  window.location.href = `/messages`;
                 },
                 data: { conversationId, messageId: message.id }
               }

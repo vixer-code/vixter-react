@@ -478,17 +478,6 @@ const EnhancedMessages = () => {
           }}
         >
           
-          {/* Mobile back button */}
-          {(showMobileChat || (isMobile && selectedConversation)) && (
-            <button 
-              className="mobile-back-button" 
-              onClick={handleCloseMobileChat}
-              title="Voltar para conversas"
-              aria-label="Voltar para lista de conversas"
-            >
-              ←
-            </button>
-          )}
           <ChatInterface
             conversation={selectedConversation}
             onClose={handleCloseMobileChat}
