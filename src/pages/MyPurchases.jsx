@@ -58,23 +58,53 @@ const MyPurchases = () => {
     }
     
     const packOrdersRef = collection(db, 'packOrders');
+    
+    console.log('🔍 Setting up pack orders query for user:', currentUser.uid);
+    
+    // Test: Try to read all pack orders to see if our document exists
+    getDocs(collection(db, 'packOrders')).then(allPacksSnapshot => {
+      console.log('🧪 All pack orders in database:', allPacksSnapshot.size);
+      allPacksSnapshot.forEach(doc => {
+        const data = doc.data();
+        console.log('🧪 Found pack order:', doc.id, {
+          buyerId: data.buyerId,
+          status: data.status,
+          isCurrentUser: data.buyerId === currentUser.uid
+        });
+      });
+    }).catch(error => {
+      console.error('🧪 Error reading all pack orders:', error);
+    });
+    
+    // Try without orderBy first to see if that's the issue
     const queryRef = fsQuery(
       packOrdersRef,
-      where('buyerId', '==', currentUser.uid),
-      orderBy('timestamps.createdAt', 'desc')
+      where('buyerId', '==', currentUser.uid)
+      // Temporarily removed orderBy to debug
+      // orderBy('timestamps.createdAt', 'desc')
     );
     
     // Use onSnapshot for real-time updates
     const unsubscribe = onSnapshot(queryRef,
       (snapshot) => {
-        console.log('Pack orders snapshot received:', snapshot.size, 'documents');
+        console.log('📦 Pack orders snapshot received:', snapshot.size, 'documents');
+        console.log('📦 Snapshot metadata:', {
+          empty: snapshot.empty,
+          size: snapshot.size,
+          hasPendingWrites: snapshot.metadata.hasPendingWrites,
+          isFromCache: snapshot.metadata.fromCache
+        });
+        
         const orders = [];
         snapshot.forEach((doc) => {
           const orderData = doc.data();
-          console.log('Processing pack order:', doc.id, {
+          console.log('🔍 Processing pack order:', doc.id, {
             buyerId: orderData.buyerId,
             status: orderData.status,
-            packId: orderData.packId
+            packId: orderData.packId,
+            currentUserMatch: orderData.buyerId === currentUser.uid,
+            timestamps: orderData.timestamps,
+            fullData: orderData
           });
           
           // Include all pack orders except cancelled and banned
@@ -84,10 +114,14 @@ const MyPurchases = () => {
               type: 'pack',
               ...orderData
             });
+            console.log('✅ Added pack order:', doc.id);
+          } else {
+            console.log('❌ Filtered out pack order:', doc.id, 'Status:', orderData?.status);
           }
         });
         
-        console.log('Final pack orders:', orders.length);
+        console.log('📦 Final pack orders:', orders.length);
+        console.log('📦 Orders array:', orders);
         setPurchasedPacks(orders);
         
         // Load pack data for purchased packs
@@ -205,7 +239,9 @@ const MyPurchases = () => {
         const orders = [];
         snapshot.forEach((doc) => {
           const orderData = doc.data();
-          if (orderData && orderData.status !== 'CANCELLED' && orderData.status !== 'BANNED') {
+          // Include service orders that should be visible to buyers
+          const validStatuses = ['PENDING_ACCEPTANCE', 'ACCEPTED', 'DELIVERED', 'CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'];
+          if (orderData && validStatuses.includes(orderData.status)) {
             orders.push({
               id: doc.id,
               type: 'service',
