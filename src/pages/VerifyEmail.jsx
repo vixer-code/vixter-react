@@ -56,20 +56,38 @@ const VerifyEmail = () => {
         if (mode === 'verifyEmail' && actionCode) {
           // Verify the action code
           try {
+            console.log('Verifying email with action code:', actionCode);
+            
+            // Check if the action code is valid
             await checkActionCode(currentUser, actionCode);
-            // If checkActionCode succeeds, apply the verification
+            console.log('Action code is valid, applying verification...');
+            
+            // Apply the verification
             await applyActionCode(currentUser, actionCode);
+            console.log('Email verification applied successfully');
             
             // Update our database with the verification status
             await updateEmailVerificationStatus(currentUser.uid, true);
             
             setStatus('success');
             setMessage('Seu email foi verificado com sucesso!');
-            console.log('Email verification successful');
+            console.log('Email verification completed successfully');
           } catch (verificationError) {
             console.error('Email verification failed:', verificationError);
-            setStatus('error');
-            setMessage('Link de verificação inválido ou expirado. Tente solicitar um novo email.');
+            console.error('Error code:', verificationError.code);
+            console.error('Error message:', verificationError.message);
+            
+            // Check if it's a specific error
+            if (verificationError.code === 'auth/invalid-action-code') {
+              setStatus('error');
+              setMessage('Link de verificação inválido. Tente solicitar um novo email.');
+            } else if (verificationError.code === 'auth/expired-action-code') {
+              setStatus('error');
+              setMessage('Link de verificação expirado. Tente solicitar um novo email.');
+            } else {
+              setStatus('error');
+              setMessage('Erro na verificação. Tente novamente ou solicite um novo email.');
+            }
           }
         } else if (currentUser && currentUser.emailVerified) {
           // If user is already verified, make sure our database is up to date

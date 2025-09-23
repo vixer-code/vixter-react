@@ -3085,10 +3085,3 @@
     padding: 2px 5px;
   }
 }
-
-/* Email Verification Status */
-.profile-verification-status {
-  margin: 8px 0;
-  display: flex;
-  justify-content: center;
-}

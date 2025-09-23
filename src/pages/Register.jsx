@@ -923,9 +923,12 @@ const Register = () => {
           <span>Verificação de Identidade</span>
         </div>
         <p className="verification-notice-text">
-          Existe uma seção restrita dentro do site que é necessária comprovação de identidade, 
-          onde os dados serão utilizados de acordo com a norma da LGPD e afins. 
-          Você pode completar essa verificação a qualquer momento em suas configurações.
+          Para acessar funcionalidades que requerem verificação de identidade, será necessário 
+          fornecer documentos pessoais que serão processados em conformidade com a Lei Geral de 
+          Proteção de Dados (LGPD - Lei nº 13.709/2018). Os dados coletados serão utilizados 
+          exclusivamente para fins de verificação de identidade e segurança da plataforma, 
+          garantindo o direito à privacidade e proteção dos dados pessoais conforme previsto 
+          na legislação vigente. A verificação pode ser realizada a qualquer momento em suas configurações.
         </p>
       </div>
 
