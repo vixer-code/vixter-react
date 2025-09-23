@@ -98,8 +98,12 @@ export const UserProvider = ({ children }) => {
             updatedAt: Timestamp.now(),
             followersCount: 0,
             followingCount: 0,
+            kyc: false,
+            kycState: 'PENDING_UPLOAD',
+            emailVerified: false,
+            emailVerifiedAt: null,
             stats: { totalPosts: 0, totalServices: 0, totalPacks: 0, totalSales: 0 },
-            searchTerms: [(currentUser.displayName || '').toLowerCase(), (currentUser.email || '').toLowerCase()].filter(Boolean)
+            searchTerms: [(currentUser.displayName || '').toLowerCase()].filter(Boolean)
           });
         }
         setLoading(false);
