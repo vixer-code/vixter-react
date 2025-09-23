@@ -353,6 +353,8 @@ const Register = () => {
         kycState: 'PENDING_UPLOAD', // KYC state: PENDING_UPLOAD, PENDING_VERIFICATION, VERIFIED
         profileComplete: true,
         accountRestrictions: isAdult ? [] : ['adult_content', 'unsupervised_transfers', 'unverified_chat'],
+        emailVerified: false,
+        emailVerifiedAt: null,
         registeredAt: Date.now(),
         updatedAt: Date.now()
       };

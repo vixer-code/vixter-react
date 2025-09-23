@@ -2,6 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, XCircle, RefreshCw, Mail } from 'lucide-react';
+import { applyActionCode, checkActionCode } from 'firebase/auth';
+import { ref, update } from 'firebase/database';
+import { doc, updateDoc } from 'firebase/firestore';
+import { database, db } from '../../config/firebase';
 import PurpleSpinner from '../components/PurpleSpinner';
 import './VerifyEmail.css';
 
@@ -12,23 +16,37 @@ const VerifyEmail = () => {
   const [status, setStatus] = useState('loading'); // loading, success, error, not-verified
   const [message, setMessage] = useState('');
 
+  // Function to update email verification status in database
+  const updateEmailVerificationStatus = async (userId, isVerified) => {
+    try {
+      console.log('[updateEmailVerificationStatus] Updating verification status for user:', userId, 'verified:', isVerified);
+      
+      // Update Firebase Realtime Database
+      const userRef = ref(database, `users/${userId}`);
+      await update(userRef, {
+        emailVerified: isVerified,
+        emailVerifiedAt: isVerified ? Date.now() : null,
+        updatedAt: Date.now()
+      });
+
+      // Update Firestore
+      const userDocRef = doc(db, 'users', userId);
+      await updateDoc(userDocRef, {
+        emailVerified: isVerified,
+        emailVerifiedAt: isVerified ? new Date() : null,
+        updatedAt: new Date()
+      });
+
+      console.log('[updateEmailVerificationStatus] Verification status updated successfully');
+    } catch (error) {
+      console.error('[updateEmailVerificationStatus] Error updating verification status:', error);
+      // Don't throw error, just log it
+    }
+  };
+
   useEffect(() => {
     const handleEmailVerification = async () => {
       try {
-        // Check if user is logged in
-        if (!currentUser) {
-          setStatus('error');
-          setMessage('Você precisa estar logado para verificar seu email.');
-          return;
-        }
-
-        // Check if email is already verified
-        if (currentUser.emailVerified) {
-          setStatus('success');
-          setMessage('Seu email já foi verificado com sucesso!');
-          return;
-        }
-
         // Check if this is a verification link
         const mode = searchParams.get('mode');
         const actionCode = searchParams.get('oobCode');
@@ -36,13 +54,34 @@ const VerifyEmail = () => {
         console.log('Verification params:', { mode, actionCode });
 
         if (mode === 'verifyEmail' && actionCode) {
-          // For now, we'll just show that verification is needed
-          // In a real implementation, you would handle the verification here
+          // Verify the action code
+          try {
+            await checkActionCode(currentUser, actionCode);
+            // If checkActionCode succeeds, apply the verification
+            await applyActionCode(currentUser, actionCode);
+            
+            // Update our database with the verification status
+            await updateEmailVerificationStatus(currentUser.uid, true);
+            
+            setStatus('success');
+            setMessage('Seu email foi verificado com sucesso!');
+            console.log('Email verification successful');
+          } catch (verificationError) {
+            console.error('Email verification failed:', verificationError);
+            setStatus('error');
+            setMessage('Link de verificação inválido ou expirado. Tente solicitar um novo email.');
+          }
+        } else if (currentUser && currentUser.emailVerified) {
+          // If user is already verified, make sure our database is up to date
+          await updateEmailVerificationStatus(currentUser.uid, true);
+          setStatus('success');
+          setMessage('Seu email já foi verificado com sucesso!');
+        } else if (currentUser) {
           setStatus('not-verified');
           setMessage('Clique no link de verificação que enviamos para seu email.');
         } else {
-          setStatus('not-verified');
-          setMessage('Clique no link de verificação que enviamos para seu email.');
+          setStatus('error');
+          setMessage('Você precisa estar logado para verificar seu email.');
         }
       } catch (error) {
         console.error('Email verification error:', error);

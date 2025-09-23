@@ -1106,3 +1106,36 @@
   color: #8A2BE2;
   font-weight: 500;
 }
+
+/* Verification Notice Styles */
+.verification-notice {
+  background: rgba(138, 43, 226, 0.1);
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 20px 0;
+}
+
+.verification-notice-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.verification-notice-header span:first-child {
+  font-size: 18px;
+}
+
+.verification-notice-header span:last-child {
+  color: #FCFCFC;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.verification-notice-text {
+  color: #b3b3cc;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}

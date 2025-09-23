@@ -15,6 +15,7 @@ import { sendPostInteractionNotification } from '../services/notificationService
 import { getDefaultImage } from '../utils/defaultImages';
 import { getProfileUrl } from '../utils/profileUrls';
 import { useEmailVerification } from '../hooks/useEmailVerification';
+import EmailVerificationStatus from '../components/EmailVerificationStatus';
 const CreateServiceModal = lazy(() => import('../components/CreateServiceModal'));
 const CreatePackModal = lazy(() => import('../components/CreatePackModal'));
 import CachedImage from '../components/CachedImage';
@@ -1491,6 +1492,11 @@ const Profile = () => {
             <p className="profile-username">
               @{profile.username || 'username'}
             </p>
+            {isOwner && (
+              <div className="profile-verification-status">
+                <EmailVerificationStatus showDetails={true} />
+              </div>
+            )}
             <p className="profile-status">
               {editing ? (
                 <textarea

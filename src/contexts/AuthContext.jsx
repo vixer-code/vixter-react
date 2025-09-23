@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
   const [usernameCache] = useState(new Map());
+  const [emailVerified, setEmailVerified] = useState(false);
 
   // Helper function to check if input is email or username
   const isEmail = useCallback((input) => {
@@ -273,11 +274,13 @@ export const AuthProvider = ({ children }) => {
         try {
           const token = await user.getIdToken();
           setToken(token);
+          setEmailVerified(user.emailVerified);
         } catch (error) {
           console.error('Error getting token on auth change:', error);
         }
       } else {
         setToken(null);
+        setEmailVerified(false);
       }
       
       setLoading(false);
@@ -289,13 +292,14 @@ export const AuthProvider = ({ children }) => {
   const value = useMemo(() => ({
     currentUser,
     token,
+    emailVerified,
     login,
     register,
     logout,
     resetPassword,
     getIdToken,
     loading
-  }), [currentUser, token, login, register, logout, resetPassword, getIdToken, loading]);
+  }), [currentUser, token, emailVerified, login, register, logout, resetPassword, getIdToken, loading]);
 
   return (
     <AuthContext.Provider value={value}>

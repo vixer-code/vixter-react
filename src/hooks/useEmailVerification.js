@@ -1,82 +1,74 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNotification } from '../contexts/NotificationContext';
-import { ref, update } from 'firebase/database';
-import { database } from '../../config/firebase';
-import { sendEmailVerificationNotification } from '../services/notificationService';
+import { ref, get } from 'firebase/database';
+import { doc, getDoc } from 'firebase/firestore';
+import { database, db } from '../../config/firebase';
 
 export const useEmailVerification = () => {
   const { currentUser } = useAuth();
-  const { showWarning, showSuccess } = useNotification();
-  const [isVerified, setIsVerified] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [emailVerifiedAt, setEmailVerifiedAt] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (currentUser) {
-      checkEmailVerification();
-    }
+    const checkEmailVerification = async () => {
+      if (!currentUser) {
+        setEmailVerified(false);
+        setEmailVerifiedAt(null);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // First check Firebase Auth status
+        const authVerified = currentUser.emailVerified;
+        
+        // Then check our database for additional info
+        let dbVerified = false;
+        let dbVerifiedAt = null;
+
+        try {
+          // Check Firebase Realtime Database
+          const userRef = ref(database, `users/${currentUser.uid}`);
+          const snapshot = await get(userRef);
+          
+          if (snapshot.exists()) {
+            const userData = snapshot.val();
+            dbVerified = userData.emailVerified || false;
+            dbVerifiedAt = userData.emailVerifiedAt || null;
+          }
+        } catch (dbError) {
+          console.warn('Error checking database verification status:', dbError);
+        }
+
+        // Use the most recent verification status
+        setEmailVerified(authVerified || dbVerified);
+        setEmailVerifiedAt(dbVerifiedAt);
+        
+        console.log('Email verification status:', {
+          authVerified,
+          dbVerified,
+          finalVerified: authVerified || dbVerified,
+          verifiedAt: dbVerifiedAt
+        });
+
+      } catch (error) {
+        console.error('Error checking email verification:', error);
+        setEmailVerified(false);
+        setEmailVerifiedAt(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkEmailVerification();
   }, [currentUser]);
 
-  const checkEmailVerification = async () => {
-    if (!currentUser) return;
-
-    setIsChecking(true);
-    try {
-      // Reload user to get latest verification status
-      await currentUser.reload();
-      
-      const emailVerified = currentUser.emailVerified;
-      setIsVerified(emailVerified);
-
-      // Update database if verified
-      if (emailVerified) {
-        await update(ref(database, `users/${currentUser.uid}`), {
-          emailVerified: true,
-          emailVerifiedAt: Date.now()
-        });
-      } else {
-        // Show warning for unverified email
-        showWarning(
-          'E-mail não verificado',
-          'Verifique sua caixa de entrada e clique no link de verificação para acessar todos os recursos.'
-        );
-        
-        // Send notification for unverified email
-        await sendEmailVerificationNotification(currentUser.uid);
-      }
-    } catch (error) {
-      console.error('Error checking email verification:', error);
-    } finally {
-      setIsChecking(false);
-    }
-  };
-
-  const sendVerificationEmail = async () => {
-    if (!currentUser) return;
-
-    try {
-      await currentUser.sendEmailVerification({
-        url: `${window.location.origin}/profile`,
-        handleCodeInApp: false
-      });
-
-      // Update database
-      await update(ref(database, `users/${currentUser.uid}`), {
-        emailVerificationSent: true,
-        emailVerificationSentAt: Date.now()
-      });
-
-      showSuccess('E-mail de verificação enviado! Verifique sua caixa de entrada.');
-    } catch (error) {
-      console.error('Error sending verification email:', error);
-      throw error;
-    }
-  };
-
   return {
-    isVerified,
-    isChecking,
-    checkEmailVerification,
-    sendVerificationEmail
+    emailVerified,
+    emailVerifiedAt,
+    loading
   };
-}; 
+};
+
+export default useEmailVerification;
