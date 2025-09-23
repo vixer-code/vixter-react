@@ -52,6 +52,11 @@ const VerifyEmail = () => {
         const actionCode = searchParams.get('oobCode');
 
         console.log('Verification params:', { mode, actionCode });
+        console.log('Current user state:', currentUser ? {
+          uid: currentUser.uid,
+          email: currentUser.email,
+          emailVerified: currentUser.emailVerified
+        } : 'null');
 
         if (mode === 'verifyEmail' && actionCode) {
           // Verify the action code
@@ -62,11 +67,20 @@ const VerifyEmail = () => {
             if (!currentUser) {
               throw new Error('Usuário não está logado. Faça login primeiro.');
             }
+
+            // Ensure user is properly authenticated
+            if (!currentUser.uid) {
+              throw new Error('Usuário não está autenticado corretamente.');
+            }
+
+            console.log('User is authenticated, proceeding with verification...');
             
             // First, check if the action code is valid
             console.log('Checking action code validity...');
             const actionCodeInfo = await checkActionCode(actionCode);
             console.log('Action code info:', actionCodeInfo);
+            console.log('Action code email:', actionCodeInfo.data.email);
+            console.log('Current user email:', currentUser.email);
             
             // Verify that the action code is for the current user's email
             if (actionCodeInfo.data.email !== currentUser.email) {
@@ -75,8 +89,17 @@ const VerifyEmail = () => {
             
             // Apply the action code to verify the email
             console.log('Applying action code...');
-            await applyActionCode(actionCode);
-            console.log('Action code applied successfully - Firebase Auth updated!');
+            console.log('About to call applyActionCode with:', actionCode);
+            
+            try {
+              await applyActionCode(actionCode);
+              console.log('Action code applied successfully - Firebase Auth updated!');
+            } catch (applyError) {
+              console.error('Error in applyActionCode:', applyError);
+              console.error('Apply error code:', applyError.code);
+              console.error('Apply error message:', applyError.message);
+              throw applyError; // Re-throw to be caught by outer catch
+            }
             
             // Update our database with the verification status
             await updateEmailVerificationStatus(currentUser.uid, true);

@@ -257,15 +257,19 @@ export const AuthProvider = ({ children }) => {
         console.log('Before reload - emailVerified:', currentUser.emailVerified);
         
         // Force reload the user to get latest data from Firebase Auth
+        console.log('First reload...');
         await currentUser.reload();
+        console.log('After first reload - emailVerified:', currentUser.emailVerified);
         
         // Wait a bit for the changes to propagate
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('Waiting for changes to propagate...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
         // Reload again to ensure we have the latest data
+        console.log('Second reload...');
         await currentUser.reload();
+        console.log('After second reload - emailVerified:', currentUser.emailVerified);
         
-        console.log('After reload - emailVerified:', currentUser.emailVerified);
         setEmailVerified(currentUser.emailVerified);
         
         return currentUser.emailVerified;
