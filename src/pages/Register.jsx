@@ -6,6 +6,7 @@ import { ref, set, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage, db } from '../../config/firebase';
 import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { sendEmailVerification } from 'firebase/auth';
 import PurpleSpinner from '../components/PurpleSpinner';
 import './Auth.css';
 
@@ -437,7 +438,7 @@ const Register = () => {
         console.log('[handleSubmit] User email:', user.email);
         console.log('[handleSubmit] User emailVerified:', user.emailVerified);
         
-        await user.sendEmailVerification({
+        await sendEmailVerification(user, {
           url: `https://vixter-react.vercel.app/verify-email`,
           handleCodeInApp: false
         });

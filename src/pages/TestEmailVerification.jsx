@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { sendEmailVerification } from 'firebase/auth';
 
 const TestEmailVerification = () => {
   const { currentUser } = useAuth();
@@ -21,7 +22,7 @@ const TestEmailVerification = () => {
       console.log('User emailVerified:', currentUser.emailVerified);
       console.log('Current domain:', window.location.origin);
       
-      const verificationResult = await currentUser.sendEmailVerification({
+      const verificationResult = await sendEmailVerification(currentUser, {
         url: `https://vixter-react.vercel.app/verify-email`,
         handleCodeInApp: false
       });
