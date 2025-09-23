@@ -819,48 +819,14 @@ const Settings = () => {
         <div className="settings-section">
           <h2>Verificação de Identidade (KYC)</h2>
           {kycState === 'VERIFIED' ? (
-            // KYC Status Display for VERIFIED
-            <div className="kyc-status-display verified">
-              <div className="status-icon">
+            // KYC Status Display for VERIFIED - Minimalist
+            <div className="kyc-verified-minimal">
+              <div className="kyc-checkmark">
                 <i className="fas fa-check-circle"></i>
               </div>
-              <div className="status-content">
-                <h3>✅ Conta Verificada - KYC Habilitado</h3>
-                <p>Sua identidade foi verificada com sucesso! Sua conta possui <strong>KYC habilitado</strong> e você tem acesso completo a todas as funcionalidades da plataforma, incluindo o Vixies.</p>
-                
-                <div className="verification-badge">
-                  <div className="badge-icon">
-                    <i className="fas fa-shield-check"></i>
-                  </div>
-                  <div className="badge-content">
-                    <span className="badge-title">KYC Ativo</span>
-                    <span className="badge-description">Verificação de identidade completa</span>
-                  </div>
-                </div>
-                
-                <div className="status-details">
-                  <div className="detail-item">
-                    <i className="fas fa-check-circle"></i>
-                    <span>Identidade verificada</span>
-                  </div>
-                  <div className="detail-item">
-                    <i className="fas fa-unlock"></i>
-                    <span>Acesso completo liberado</span>
-                  </div>
-                  <div className="detail-item">
-                    <i className="fas fa-star"></i>
-                    <span>Vixies habilitado</span>
-                  </div>
-                  <div className="detail-item">
-                    <i className="fas fa-shield-alt"></i>
-                    <span>Conta segura e confiável</span>
-                  </div>
-                </div>
-                
-                <div className="verification-info">
-                  <h4>🎉 Parabéns!</h4>
-                  <p>Sua conta está completamente verificada e você pode aproveitar todos os recursos da plataforma com total segurança e confiança.</p>
-                </div>
+              <div className="kyc-text">
+                <span className="kyc-title">KYC Ativo</span>
+                <span className="kyc-subtitle">Sua conta já está verificada</span>
               </div>
             </div>
           ) : (
