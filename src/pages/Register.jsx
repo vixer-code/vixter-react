@@ -34,14 +34,6 @@ const Register = () => {
     emailNotifications: true,
     marketingUpdates: false,
     
-    // Step 4: Verification (optional)
-    fullName: '',
-    cpf: '',
-    documents: {
-      front: null,
-      back: null,
-      selfie: null
-    }
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -50,12 +42,6 @@ const Register = () => {
   const [error, setError] = useState('');
   const [isMinor, setIsMinor] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState('Muito fraca');
-  const [cpfVerificationState, setCpfVerificationState] = useState({
-    isVerified: false,
-    isVerifying: false,
-    isValid: false,
-    message: ''
-  });
   const [previewImage, setPreviewImage] = useState(null);
 
   const { register } = useAuth();
@@ -126,122 +112,6 @@ const Register = () => {
     return { isValid: true, message: 'Senha válida' };
   };
 
-  // CPF validation function (from vanilla JS)
-  const validateCPF = (cpf) => {
-    // Remove caracteres não numéricos
-    const cleanCpf = cpf.replace(/\D/g, '');
-    
-    // Verifica se tem 11 dígitos
-    if (cleanCpf.length !== 11) {
-      return { isValid: false, message: 'CPF deve ter 11 dígitos' };
-    }
-    
-    // Verifica se todos os dígitos são iguais
-    if (/^(\d)\1{10}$/.test(cleanCpf)) {
-      return { isValid: false, message: 'CPF inválido (todos os dígitos são iguais)' };
-    }
-    
-    // Calcula o primeiro dígito verificador
-    let sum = 0;
-    for (let i = 0; i < 9; i++) {
-      sum += parseInt(cleanCpf.charAt(i)) * (10 - i);
-    }
-    let remainder = sum % 11;
-    let digit1 = remainder < 2 ? 0 : 11 - remainder;
-    
-    // Verifica o primeiro dígito
-    if (digit1 !== parseInt(cleanCpf.charAt(9))) {
-      return { isValid: false, message: 'CPF inválido (primeiro dígito verificador)' };
-    }
-    
-    // Calcula o segundo dígito verificador
-    sum = 0;
-    for (let i = 0; i < 10; i++) {
-      sum += parseInt(cleanCpf.charAt(i)) * (11 - i);
-    }
-    remainder = sum % 11;
-    let digit2 = remainder < 2 ? 0 : 11 - remainder;
-    
-    // Verifica o segundo dígito
-    if (digit2 !== parseInt(cleanCpf.charAt(10))) {
-      return { isValid: false, message: 'CPF inválido (segundo dígito verificador)' };
-    }
-    
-    return { isValid: true, message: 'CPF válido' };
-  };
-
-  // CPF verification with Serpro API
-  const verifyCPF = async () => {
-    const cpfRaw = formData.cpf.replace(/\D/g, '');
-    const name = formData.fullName.trim();
-    const birthDate = formData.birthDate;
-
-    if (!cpfRaw || !name || !birthDate || birthDate.length !== 10) {
-      setCpfVerificationState({
-        isVerified: false,
-        isVerifying: false,
-        isValid: false,
-        message: 'Preencha todos os campos obrigatórios antes de verificar.'
-      });
-      return;
-    }
-
-    // Convert DD/MM/AAAA to YYYY-MM-DD for API
-    const [day, month, year] = birthDate.split('/');
-    const formattedBirthDate = `${year}-${month}-${day}`;
-
-    // First validate CPF mathematically
-    const validation = validateCPF(formData.cpf);
-    if (!validation.isValid) {
-      setCpfVerificationState({
-        isVerified: false,
-        isVerifying: false,
-        isValid: false,
-        message: validation.message
-      });
-      return;
-    }
-
-    setCpfVerificationState(prev => ({ ...prev, isVerifying: true }));
-
-    try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'https://vixter-react-llyd.vercel.app'}/api/verify-id`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cpf: cpfRaw,
-          name: name,
-          birthDate: formattedBirthDate
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.verified) {
-        setCpfVerificationState({
-          isVerified: true,
-          isVerifying: false,
-          isValid: true,
-          message: 'CPF verificado com sucesso!'
-        });
-      } else {
-        setCpfVerificationState({
-          isVerified: false,
-          isVerifying: false,
-          isValid: false,
-          message: data.message || 'Falha na verificação do CPF'
-        });
-      }
-    } catch (error) {
-      console.error('CPF verification error:', error);
-      setCpfVerificationState({
-        isVerified: false,
-        isVerifying: false,
-        isValid: false,
-        message: 'Erro na verificação. Tente novamente.'
-      });
-    }
-  };
 
   // Calculate age
   const calculateAge = (birthDate) => {
@@ -394,15 +264,6 @@ const Register = () => {
     }
   };
 
-  const handleDocumentChange = (documentType, file) => {
-    setFormData(prev => ({
-      ...prev,
-      documents: {
-        ...prev.documents,
-        [documentType]: file
-      }
-    }));
-  };
 
   const nextStep = () => {
     // Validate step 1 data before proceeding
@@ -446,7 +307,7 @@ const Register = () => {
       setError('');
     }
 
-    if (currentStep < 4) {
+    if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -458,7 +319,7 @@ const Register = () => {
   };
 
   // Create complete user profile in Firebase (like vanilla JS)
-  const createUserProfile = async (userId, withVerification = false) => {
+  const createUserProfile = async (userId) => {
     try {
       console.log('[createUserProfile] Creating profile for user:', userId);
       
@@ -495,20 +356,11 @@ const Register = () => {
         updatedAt: Date.now()
       };
       
-      // Add verification data if provided
-      if (withVerification && cpfVerificationState.isVerified) {
-        profileData.verification = {
-          fullName: formData.fullName,
-          cpf: formData.cpf.replace(/\D/g, ''),
-          submittedAt: Date.now(),
-          verificationStatus: 'pending'
-        };
-      } else {
-        profileData.verification = {
-          verificationStatus: 'skipped',
-          skippedAt: Date.now()
-        };
-      }
+      // Set verification status as skipped since verification is now optional
+      profileData.verification = {
+        verificationStatus: 'skipped',
+        skippedAt: Date.now()
+      };
       
       // Update data in the database
       await set(userRef, profileData);
@@ -543,122 +395,6 @@ const Register = () => {
     }
   };
 
-  // Upload verification documents to R2
-  const uploadVerificationDocuments = async (userId) => {
-    try {
-      console.log('[uploadVerificationDocuments] Uploading verification documents to R2 for user:', userId);
-      
-      const documentURLs = {};
-      const uploadPromises = [];
-      
-      // Prepare uploads for all documents
-      if (formData.documents.front) {
-        const frontKey = `KYC/${userId}/doc-front-${Date.now()}.${formData.documents.front.name.split('.').pop()}`;
-        uploadPromises.push(
-          fetch('/api/media/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'kyc',
-              contentType: formData.documents.front.type,
-              originalName: formData.documents.front.name,
-              key: frontKey
-            })
-          }).then(async (response) => {
-            if (response.ok) {
-              const { data } = await response.json();
-              const uploadResponse = await fetch(data.uploadUrl, {
-                method: 'PUT',
-                body: formData.documents.front,
-                headers: { 'Content-Type': formData.documents.front.type }
-              });
-              
-              if (uploadResponse.ok) {
-                // For KYC documents, store only the key - no public URL
-                documentURLs.front = data.key;
-              }
-            }
-          })
-        );
-      }
-      
-      if (formData.documents.back) {
-        const backKey = `KYC/${userId}/doc-back-${Date.now()}.${formData.documents.back.name.split('.').pop()}`;
-        uploadPromises.push(
-          fetch('/api/media/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'kyc',
-              contentType: formData.documents.back.type,
-              originalName: formData.documents.back.name,
-              key: backKey
-            })
-          }).then(async (response) => {
-            if (response.ok) {
-              const { data } = await response.json();
-              const uploadResponse = await fetch(data.uploadUrl, {
-                method: 'PUT',
-                body: formData.documents.back,
-                headers: { 'Content-Type': formData.documents.back.type }
-              });
-              
-              if (uploadResponse.ok) {
-                // For KYC documents, store only the key - no public URL
-                documentURLs.back = data.key;
-              }
-            }
-          })
-        );
-      }
-      
-      if (formData.documents.selfie) {
-        const selfieKey = `KYC/${userId}/selfie-${Date.now()}.${formData.documents.selfie.name.split('.').pop()}`;
-        uploadPromises.push(
-          fetch('/api/media/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'kyc',
-              contentType: formData.documents.selfie.type,
-              originalName: formData.documents.selfie.name,
-              key: selfieKey
-            })
-          }).then(async (response) => {
-            if (response.ok) {
-              const { data } = await response.json();
-              const uploadResponse = await fetch(data.uploadUrl, {
-                method: 'PUT',
-                body: formData.documents.selfie,
-                headers: { 'Content-Type': formData.documents.selfie.type }
-              });
-              
-              if (uploadResponse.ok) {
-                // For KYC documents, store only the key - no public URL
-                documentURLs.selfie = data.key;
-              }
-            }
-          })
-        );
-      }
-      
-      // Wait for all uploads to complete
-      await Promise.all(uploadPromises);
-      
-      // Update user profile with document URLs
-      const userRef = ref(database, `users/${userId}/verification`);
-      await update(userRef, {
-        documents: documentURLs,
-        uploadedAt: Date.now()
-      });
-      
-      console.log('[uploadVerificationDocuments] Verification documents uploaded to R2 successfully');
-      return documentURLs;
-    } catch (error) {
-      console.error('[uploadVerificationDocuments] Error uploading verification documents to R2:', error);
-      throw error;
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -708,8 +444,7 @@ const Register = () => {
       }
       
       // Create complete user profile in Firebase Database
-      const withVerification = cpfVerificationState.isVerified;
-      await createUserProfile(user.uid, withVerification);
+      await createUserProfile(user.uid);
       
       // Also create/update Firestore user document (primary source for userProfile)
       try {
@@ -760,17 +495,11 @@ const Register = () => {
         }
       }
       
-      // Upload verification documents if provided
-      if (withVerification && formData.documents.front && age >= 18) {
-        await uploadVerificationDocuments(user.uid);
-      }
       
       // Determine success message
       let message;
       if (age < 18) {
         message = 'Conta criada com sucesso! Enviamos um email de verificação para você. Como você é menor de idade, algumas funcionalidades estarão restritas para sua segurança.';
-      } else if (withVerification) {
-        message = 'Registro realizado com sucesso! Enviamos um email de verificação para você. Seus documentos estão sendo analisados e você receberá uma notificação em breve.';
       } else {
         message = 'Registro realizado com sucesso! Enviamos um email de verificação para você. Você pode completar a verificação de identidade a qualquer momento em suas configurações para acessar todas as funcionalidades.';
       }
@@ -1089,7 +818,7 @@ const Register = () => {
   );
 
   const renderStep3 = () => (
-    <form onSubmit={(e) => { e.preventDefault(); nextStep(); }} className="auth-form">
+    <form onSubmit={handleSubmit} className="auth-form">
       <div className="form-group">
         <label>Tipo de Conta</label>
         <div className="warning-notice">
@@ -1109,24 +838,6 @@ const Register = () => {
             />
             <label htmlFor="account-type-provider">Provedor de Serviços</label>
             <p className="option-description">Quero oferecer meus serviços na plataforma</p>
-            <div className="account-type-features">
-              <div className="feature-item">
-                <i className="fas fa-check"></i>
-                <span>Criar e vender serviços</span>
-              </div>
-              <div className="feature-item">
-                <i className="fas fa-check"></i>
-                <span>Criar e vender packs</span>
-              </div>
-              <div className="feature-item">
-                <i className="fas fa-check"></i>
-                <span>Receber VC por vendas</span>
-              </div>
-              <div className="feature-item">
-                <i className="fas fa-check"></i>
-                <span>Sacar VC para BRL</span>
-              </div>
-            </div>
           </div>
           <div className="radio-option">
             <input
@@ -1138,26 +849,8 @@ const Register = () => {
               onChange={handleChange}
               required
             />
-            <label htmlFor="account-type-client">Cliente</label>
+            <label htmlFor="account-type-client">Usuário</label>
             <p className="option-description">Quero contratar serviços de outros</p>
-            <div className="account-type-features">
-              <div className="feature-item">
-                <i className="fas fa-check"></i>
-                <span>Comprar VP para pagamentos</span>
-              </div>
-              <div className="feature-item">
-                <i className="fas fa-check"></i>
-                <span>Contratar serviços</span>
-              </div>
-              <div className="feature-item">
-                <i className="fas fa-check"></i>
-                <span>Comprar packs</span>
-              </div>
-              <div className="feature-item">
-                <i className="fas fa-check"></i>
-                <span>Ganhar VBP por atividades</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -1215,188 +908,33 @@ const Register = () => {
         </div>
       </div>
 
+      <div className="verification-notice">
+        <div className="verification-notice-header">
+          <span className="notice-icon">🛡️</span>
+          <span>Verificação de Identidade</span>
+        </div>
+        <p className="verification-notice-text">
+          Existe uma seção restrita dentro do site que é necessária comprovação de identidade, 
+          onde os dados serão utilizados de acordo com a norma da LGPD e afins. 
+          Você pode completar essa verificação a qualquer momento em suas configurações.
+        </p>
+      </div>
+
       <div className="form-footer">
         <button type="button" className="btn secondary" onClick={prevStep}>Voltar</button>
         <button type="submit" className="btn primary" disabled={loading}>
-          {loading ? <PurpleSpinner text="Processando..." size="small" /> : 'Continuar'}
+          {loading ? <PurpleSpinner text="Processando..." size="small" /> : 'Criar Conta'}
         </button>
       </div>
     </form>
   );
 
-  const renderStep4 = () => (
-    <form onSubmit={handleSubmit} className="auth-form">
-      <div className="verification-container">
-        <div className="verification-header">
-          <div className="verification-icon">🛡️</div>
-          <h3 className="verification-title">Verificação de Identidade</h3>
-        </div>
-        
-        <div className="optional-badge">
-          ⏰ Opcional por enquanto
-        </div>
-        
-        <p className="verification-description">
-          Para garantir a segurança e confiabilidade da nossa plataforma, oferecemos verificação de identidade. 
-          Esta etapa não é obrigatória agora, mas é necessária para acessar todos os recursos da plataforma.
-        </p>
-        
-        <div className="verification-warning">
-          <div className="verification-warning-header">
-            <span>⚠️</span>
-            <span>Recursos Limitados</span>
-          </div>
-          <p className="verification-warning-text">
-            Sem a verificação de identidade, alguns recursos ficam limitados: transferências de VP, 
-            criação de serviços, participação em projetos e acesso a conteúdos exclusivos.
-          </p>
-        </div>
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="fullName">Nome Completo</label>
-        <div className={`input-group ${formData.fullName ? 'has-content' : ''}`}>
-          <User className="input-icon" size={20} />
-          <input
-            type="text"
-            id="fullName"
-            name="fullName"
-            value={formData.fullName}
-            onChange={handleChange}
-            placeholder="     Digite seu nome completo conforme documento"
-          />
-        </div>
-        <small>Deve corresponder exatamente ao nome no documento de identificação</small>
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="cpf">CPF</label>
-        <div className="cpf-verification-container">
-          <div className="cpf-wrapper">
-            <input
-              type="text"
-              id="cpf"
-              name="cpf"
-              className="cpf-input"
-              value={formData.cpf}
-              onChange={handleChange}
-              placeholder="     000.000.000-00"
-              maxLength="14"
-            />
-            <span id="cpf-status" className={`status-icon ${cpfVerificationState.isVerified ? 'verified' : ''}`}></span>
-          </div>
-          <button 
-            type="button" 
-            className={`btn-verify-cpf ${cpfVerificationState.isVerified ? 'verified' : ''} ${cpfVerificationState.isVerifying ? 'verifying' : ''}`}
-            onClick={verifyCPF}
-            disabled={cpfVerificationState.isVerifying || cpfVerificationState.isVerified || !formData.fullName || !formData.cpf || !formData.birthDate}
-          >
-            {cpfVerificationState.isVerifying ? (
-              <>
-                <PurpleSpinner text="Verificando..." size="small" />
-              </>
-            ) : (
-              <span className="verify-text">
-                {cpfVerificationState.isVerified ? 'CPF Verificado' : 'Verificar CPF'}
-              </span>
-            )}
-          </button>
-        </div>
-        <small>Informe apenas números, a formatação será aplicada automaticamente</small>
-        {cpfVerificationState.message && (
-          <div className={`cpf-feedback ${cpfVerificationState.isValid ? 'success' : 'error'}`}>
-            <div className="feedback-content">
-              <span className="feedback-icon">
-                {cpfVerificationState.isValid ? '✅' : '❌'}
-              </span>
-              <span className="feedback-message">{cpfVerificationState.message}</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="form-group documents-section documents-verification-section">
-        <label>Documentos de Verificação</label>
-        <p className="verification-description">
-          Envie 3 fotos conforme especificado abaixo. Certifique-se de que todas as informações estejam legíveis e que as fotos estejam bem iluminadas.
-        </p>
-        
-        <div className="example-photo">
-          <div className="example-header">
-            <div className="example-icon">📸</div>
-            <h4>Como tirar a selfie com documento</h4>
-          </div>
-          <div className="example-content">
-            <img src="/images/uploadCorreto.png" alt="Example photo" />
-          </div>
-          
-          <div className="photo-upload-item" id="doc-front-upload">
-            <input 
-              type="file" 
-              id="doc-front" 
-              accept="image/*"
-              onChange={(e) => handleDocumentChange('front', e.target.files[0])}
-            />
-            <div className="photo-upload-icon">📄</div>
-            <div className="photo-upload-title">Frente do Documento</div>
-            <div className="photo-upload-description">
-              Foto da frente do RG, CNH ou outro documento com foto que contenha seu CPF
-            </div>
-          </div>
-          
-          <div className="photo-upload-item" id="doc-back-upload">
-            <input 
-              type="file" 
-              id="doc-back" 
-              accept="image/*"
-              onChange={(e) => handleDocumentChange('back', e.target.files[0])}
-            />
-            <div className="photo-upload-icon">📄</div>
-            <div className="photo-upload-title">Verso do Documento</div>
-            <div className="photo-upload-description">
-              Foto do verso do mesmo documento usado na frente
-            </div>
-          </div>
-          
-          <div className="photo-upload-item" id="selfie-doc-upload">
-            <input 
-              type="file" 
-              id="selfie-doc" 
-              accept="image/*"
-              onChange={(e) => handleDocumentChange('selfie', e.target.files[0])}
-            />
-            <div className="photo-upload-icon">🤳</div>
-            <div className="photo-upload-title">Selfie com Documento</div>
-            <div className="photo-upload-description">
-              Foto sua segurando o documento ao lado do rosto, ambos devem estar visíveis
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="form-footer step4-footer-section">
-        <button type="button" className="btn secondary" onClick={prevStep}>Voltar</button>
-        <button type="button" className="skip-verification" onClick={() => {
-          // Skip verification and proceed with registration
-          setCpfVerificationState(prev => ({ ...prev, isVerified: false }));
-          // Call handleSubmit directly without verification
-          handleSubmit(new Event('submit'));
-        }}>
-          Pular Verificação (concluir depois)
-        </button>
-        <button type="submit" className="btn primary" disabled={loading}>
-          {loading ? <PurpleSpinner text="Processando..." size="small" /> : 'Concluir Verificação'}
-        </button>
-      </div>
-    </form>
-  );
 
   const getStepTitle = () => {
     switch (currentStep) {
       case 1: return 'Crie sua conta';
       case 2: return 'Complete seu Perfil';
       case 3: return 'Defina suas Preferências';
-      case 4: return 'Verificação de Identidade';
       default: return 'Crie sua conta';
     }
   };
@@ -1406,7 +944,6 @@ const Register = () => {
       case 1: return 'Junte-se à comunidade Vixter';
       case 2: return 'Conte-nos um pouco sobre você';
       case 3: return 'Personalize sua experiência';
-      case 4: return 'Verifique sua identidade (opcional)';
       default: return 'Junte-se à comunidade Vixter';
     }
   };
@@ -1423,7 +960,6 @@ const Register = () => {
           <div className={`step ${currentStep >= 1 ? 'active' : ''}`} data-step="1">1</div>
           <div className={`step ${currentStep >= 2 ? 'active' : ''}`} data-step="2">2</div>
           <div className={`step ${currentStep >= 3 ? 'active' : ''}`} data-step="3">3</div>
-          <div className={`step ${currentStep >= 4 ? 'active' : ''}`} data-step="4">4</div>
         </div>
 
         {error && <div className="error-message">{error}</div>}
@@ -1431,7 +967,6 @@ const Register = () => {
         {currentStep === 1 && renderStep1()}
         {currentStep === 2 && renderStep2()}
         {currentStep === 3 && renderStep3()}
-        {currentStep === 4 && renderStep4()}
 
         <div className="auth-footer">
           <p>
