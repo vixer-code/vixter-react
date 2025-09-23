@@ -73,36 +73,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check KYC status for non-KYC uploads
-    if (type !== 'kyc') {
-      try {
-        const userRef = database.ref(`users/${user.uid}`);
-        const snapshot = await userRef.once('value');
-        
-        if (snapshot.exists()) {
-          const userData = snapshot.val();
-          const kycState = userData.kycState;
-          
-          // Block uploads if KYC is not verified
-          if (kycState !== 'VERIFIED') {
-            return new Response(
-              JSON.stringify({ 
-                error: 'KYC verification required',
-                message: 'You must complete KYC verification before uploading content',
-                kycState: kycState || 'PENDING_UPLOAD'
-              }),
-              { 
-                status: 403,
-                headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request.headers.get('origin')) }
-              }
-            );
-          }
-        }
-      } catch (kycError) {
-        console.error('Error checking KYC status:', kycError);
-        // Allow upload to proceed if KYC check fails
-      }
-    }
+    // KYC verification is only required for withdrawals, not for content uploads
+    // All content types (services, packs, pack-content, profile, etc.) can be uploaded without KYC
 
     // Use custom key if provided, otherwise generate one
     const { key: customKey } = body;

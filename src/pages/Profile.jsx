@@ -2546,9 +2546,7 @@ const Profile = () => {
                 <p className="preview-description">{packToPreview.description || 'Sem descrição.'}</p>
                 <div className="preview-meta">
                   <span className="meta-item"><strong>Categoria:</strong> {packToPreview.category || 'Geral'}</span>
-                  {packToPreview.packType && (
-                    <span className="meta-item"><strong>Tipo:</strong> {packToPreview.packType}</span>
-                  )}
+                  {/* Pack type display removed - only visualization packs are allowed */}
                 </div>
                 {(() => {
                   const basePrice = typeof packToPreview.price === 'number' ? packToPreview.price : parseFloat(packToPreview.price) || 0;

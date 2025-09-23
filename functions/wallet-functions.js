@@ -375,7 +375,7 @@ async function updateServiceInternal(serviceId, payload) {
 async function createPackInternal(userId, payload) {
   const { 
     title, description, category, subcategory, packType, price, discount, currency,
-    features, tags, licenseOptions, disableWatermark, coverImage, sampleImages, sampleVideos, packContent
+    features, tags, disableWatermark, coverImage, sampleImages, sampleVideos, packContent
   } = payload;
 
   if (!title || !description || !price || price <= 0) {
@@ -391,13 +391,13 @@ async function createPackInternal(userId, payload) {
     description: description.trim(),
     category,
     subcategory: subcategory || '',
-    packType,
+    packType: packType || 'download', // Default to visualization mode
     price: Math.round(price),
     discount: Number(discount) || 0,
     currency: currency || 'VC',
     features: Array.isArray(features) ? features : [],
     tags: Array.isArray(tags) ? tags : [],
-    licenseOptions: Array.isArray(licenseOptions) ? licenseOptions : [],
+    // licenseOptions removed - only visualization packs are allowed
     disableWatermark: Boolean(disableWatermark),
     status: 'active',
     isActive: true,
@@ -1392,7 +1392,7 @@ export const createStripeConnectAccount = onCall({
             message: "Conta Stripe já configurada"
           };
         }
-      } catch (error) {
+      } catch {
         // Conta não existe ou foi removida, criar nova
       }
     }

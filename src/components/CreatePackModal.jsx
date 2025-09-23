@@ -4,6 +4,7 @@ import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { usePacksR2 as usePacks } from '../contexts/PacksContextR2';
 import useR2Media from '../hooks/useR2Media';
+import useKycStatus from '../hooks/useKycStatus';
 import SmartMediaViewer from './SmartMediaViewer';
 import './CreatePackModal.css';
 
@@ -21,10 +22,7 @@ const packCategories = [
   { value: 'outros', label: 'Outros' }
 ];
 
-const packTypeOptions = [
-  { value: 'download', label: 'Download Digital' },
-  { value: 'nao-download', label: 'Uso Licenciado' }
-];
+// Removed packTypeOptions - only visualization packs are allowed
 
 const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null }) => {
   const { currentUser } = useAuth();
@@ -32,6 +30,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   const { createPack, updatePack, getPackById } = usePacks();
   const { showSuccess, showError } = useNotification();
   const { uploadPackMedia, uploadPackContentMedia, uploading, deleteMedia, deletePackContentMedia } = useR2Media();
+  const { kycState, isKycVerified, isKycNotConfigured, getKycStatusMessage, loading: kycLoading } = useKycStatus();
   
   // Check account type
   const accountType = userProfile?.accountType || 'client';
@@ -58,12 +57,11 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     title: '',
     category: '',
     subcategory: '',
-    packType: '',
+    packType: 'download', // Fixed to visualization mode only
     description: '',
     price: '',
     discount: '',
     tags: [],
-    licenseOptions: [], // ['personal','commercial','editorial','resale'] when packType == 'nao-download'
     disableWatermark: false, // Option to disable watermark for download content
     coverImage: null, // URL when editing
     sampleImages: [], // existing URLs when editing
@@ -97,7 +95,6 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
               price: freshPackData.price != null ? String(freshPackData.price) : '',
               discount: freshPackData.discount != null ? String(freshPackData.discount) : '',
               tags: freshPackData.tags || [],
-              licenseOptions: freshPackData.licenseOptions || [],
               disableWatermark: freshPackData.disableWatermark || false,
               coverImage: freshPackData.coverImage || null,
               sampleImages: freshPackData.sampleImages || [],
@@ -116,7 +113,6 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
               price: editingPack.price != null ? String(editingPack.price) : '',
               discount: editingPack.discount != null ? String(editingPack.discount) : '',
               tags: editingPack.tags || [],
-              licenseOptions: editingPack.licenseOptions || [],
               disableWatermark: editingPack.disableWatermark || false,
               coverImage: editingPack.coverImage || null,
               sampleImages: editingPack.sampleImages || [],
@@ -137,7 +133,6 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
             price: editingPack.price != null ? String(editingPack.price) : '',
             discount: editingPack.discount != null ? String(editingPack.discount) : '',
             tags: editingPack.tags || [],
-            licenseOptions: editingPack.licenseOptions || [],
             disableWatermark: editingPack.disableWatermark || false,
             coverImage: editingPack.coverImage || null,
             sampleImages: editingPack.sampleImages || [],
@@ -175,7 +170,6 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       price: '',
       discount: '',
       tags: [],
-      licenseOptions: [],
       disableWatermark: false,
       coverImage: null,
       sampleImages: [],
@@ -538,6 +532,24 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     if (!formData.description.trim() || formData.description.trim().length < 50) {
       return showError('A descrição deve ter pelo menos 50 caracteres');
     }
+    
+    // KYC validation for +18 content
+    if (formData.category === 'conteudo-18') {
+      if (kycLoading) {
+        return showError('Aguarde a verificação do status KYC...');
+      }
+      if (!isKycVerified) {
+        if (isKycNotConfigured) {
+          showError('Para criar conteúdo +18, você precisa configurar sua verificação KYC primeiro.');
+          onClose();
+          window.location.href = '/settings';
+          return;
+        } else {
+          return showError('Para criar conteúdo +18, sua verificação KYC precisa estar aprovada. Status atual: ' + getKycStatusMessage().message);
+        }
+      }
+    }
+    
     const priceErr = getPriceError();
     if (priceErr) return showError(priceErr);
     const discountErr = getDiscountError();
@@ -805,6 +817,35 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                     <option key={c.value} value={c.value}>{c.label}</option>
                   ))}
                 </select>
+                
+                {/* KYC Status for +18 content */}
+                {formData.category === 'conteudo-18' && (
+                  <div className="kyc-status-container">
+                    {kycLoading ? (
+                      <div className="kyc-status loading">
+                        <i className="fas fa-spinner fa-spin"></i>
+                        <span>Verificando status KYC...</span>
+                      </div>
+                    ) : (
+                      <div className={`kyc-status ${getKycStatusMessage().status}`}>
+                        <i className={getKycStatusMessage().icon}></i>
+                        <span>{getKycStatusMessage().message}</span>
+                        {isKycNotConfigured && (
+                          <button 
+                            type="button" 
+                            className="btn-kyc-setup"
+                            onClick={() => {
+                              onClose();
+                              window.location.href = '/settings';
+                            }}
+                          >
+                            Configurar KYC
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {formData.category && subcategoriesMap[formData.category] && (
@@ -824,50 +865,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                 </div>
               )}
 
-              <div className="form-group">
-                <label htmlFor="pack-type">Tipo de Pack *</label>
-                <select
-                  id="pack-type"
-                  value={formData.packType}
-                  onChange={e => handleInputChange('packType', e.target.value)}
-                >
-                  <option value="">Selecione o tipo</option>
-                  {packTypeOptions.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {formData.packType === 'nao-download' && (
-                <div id="license-options" className="form-group">
-                  <label>Opções de Licença</label>
-                  <div className="license-options">
-                    {[
-                      { key: 'personal', label: 'Uso Pessoal' },
-                      { key: 'commercial', label: 'Uso Comercial' },
-                      { key: 'editorial', label: 'Uso Editorial' },
-                      { key: 'resale', label: 'Direitos de Revenda' }
-                    ].map(opt => (
-                      <label key={opt.key} className="license-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={formData.licenseOptions.includes(opt.key)}
-                          onChange={e => {
-                            const checked = e.target.checked;
-                            setFormData(prev => ({
-                              ...prev,
-                              licenseOptions: checked
-                                ? [...prev.licenseOptions, opt.key]
-                                : prev.licenseOptions.filter(x => x !== opt.key)
-                            }));
-                          }}
-                        />
-                        {opt.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Pack type and license options removed - only visualization packs are allowed */}
 
               {formData.packType === 'download' && (
                 <div className="form-group">
@@ -1384,22 +1382,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                   </div>
                 )}
 
-                {formData.packType === 'nao-download' && formData.licenseOptions.length > 0 && (
-                  <div className="preview-licenses">
-                    <h3>Informações da Licença</h3>
-                    <div className="license-tags">
-                      {formData.licenseOptions.map(opt => {
-                        const label = {
-                          personal: 'Uso Pessoal',
-                          commercial: 'Uso Comercial',
-                          editorial: 'Uso Editorial',
-                          resale: 'Direitos de Revenda'
-                        }[opt] || opt;
-                        return <span key={opt} className="license-tag">{label}</span>;
-                      })}
-                    </div>
-                  </div>
-                )}
+                {/* License information removed - only visualization packs are allowed */}
 
                 {/* Watermark Information */}
                 <div className="preview-watermark-info">
