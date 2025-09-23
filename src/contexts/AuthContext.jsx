@@ -249,6 +249,21 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Force refresh email verification status
+  const refreshEmailVerification = useCallback(async () => {
+    if (currentUser) {
+      try {
+        await currentUser.reload();
+        setEmailVerified(currentUser.emailVerified);
+        return currentUser.emailVerified;
+      } catch (error) {
+        console.error('Error refreshing email verification:', error);
+        return false;
+      }
+    }
+    return false;
+  }, [currentUser]);
+
   // Get current user token
   const getIdToken = useCallback(async () => {
     if (currentUser) {
@@ -275,6 +290,10 @@ export const AuthProvider = ({ children }) => {
           const token = await user.getIdToken();
           setToken(token);
           setEmailVerified(user.emailVerified);
+          
+          // Force refresh the user to get updated emailVerified status
+          await user.reload();
+          setEmailVerified(user.emailVerified);
         } catch (error) {
           console.error('Error getting token on auth change:', error);
         }
@@ -297,9 +316,10 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     resetPassword,
+    refreshEmailVerification,
     getIdToken,
     loading
-  }), [currentUser, token, emailVerified, login, register, logout, resetPassword, getIdToken, loading]);
+  }), [currentUser, token, emailVerified, login, register, logout, resetPassword, refreshEmailVerification, getIdToken, loading]);
 
   return (
     <AuthContext.Provider value={value}>

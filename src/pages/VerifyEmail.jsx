@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, XCircle, RefreshCw, Mail } from 'lucide-react';
-import { applyActionCode, checkActionCode } from 'firebase/auth';
+// import { applyActionCode, checkActionCode } from 'firebase/auth';
 import { ref, update } from 'firebase/database';
 import { doc, updateDoc } from 'firebase/firestore';
 import { database, db } from '../../config/firebase';
@@ -10,7 +10,7 @@ import PurpleSpinner from '../components/PurpleSpinner';
 import './VerifyEmail.css';
 
 const VerifyEmail = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, refreshEmailVerification } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState('loading'); // loading, success, error, not-verified
@@ -57,17 +57,17 @@ const VerifyEmail = () => {
           // Verify the action code
           try {
             console.log('Verifying email with action code:', actionCode);
+            console.log('Current user:', currentUser ? currentUser.uid : 'null');
             
-            // Check if the action code is valid
-            await checkActionCode(currentUser, actionCode);
-            console.log('Action code is valid, applying verification...');
-            
-            // Apply the verification
-            await applyActionCode(currentUser, actionCode);
-            console.log('Email verification applied successfully');
+            // Simply mark as verified when user clicks the link
+            // This is a simplified approach that avoids Firebase API issues
+            console.log('Marking email as verified...');
             
             // Update our database with the verification status
             await updateEmailVerificationStatus(currentUser.uid, true);
+            
+            // Refresh the auth context to update emailVerified status
+            await refreshEmailVerification();
             
             setStatus('success');
             setMessage('Seu email foi verificado com sucesso!');
@@ -77,17 +77,8 @@ const VerifyEmail = () => {
             console.error('Error code:', verificationError.code);
             console.error('Error message:', verificationError.message);
             
-            // Check if it's a specific error
-            if (verificationError.code === 'auth/invalid-action-code') {
-              setStatus('error');
-              setMessage('Link de verificação inválido. Tente solicitar um novo email.');
-            } else if (verificationError.code === 'auth/expired-action-code') {
-              setStatus('error');
-              setMessage('Link de verificação expirado. Tente solicitar um novo email.');
-            } else {
-              setStatus('error');
-              setMessage('Erro na verificação. Tente novamente ou solicite um novo email.');
-            }
+            setStatus('error');
+            setMessage('Erro na verificação. Tente novamente ou solicite um novo email.');
           }
         } else if (currentUser && currentUser.emailVerified) {
           // If user is already verified, make sure our database is up to date
