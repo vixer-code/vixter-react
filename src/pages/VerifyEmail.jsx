@@ -65,22 +65,36 @@ const VerifyEmail = () => {
             console.log('Current user:', currentUser ? currentUser.uid : 'null');
             
             if (!currentUser) {
-              throw new Error('Usuário não está logado. Faça login primeiro.');
+              console.log('No current user found, redirecting to login...');
+              setStatus('error');
+              setMessage('Você precisa estar logado para verificar seu email. Faça login primeiro.');
+              return;
             }
 
             // Ensure user is properly authenticated
             if (!currentUser.uid) {
-              throw new Error('Usuário não está autenticado corretamente.');
+              console.log('User has no UID, redirecting to login...');
+              setStatus('error');
+              setMessage('Usuário não está autenticado corretamente. Faça login novamente.');
+              return;
             }
 
             console.log('User is authenticated, proceeding with verification...');
             
             // First, check if the action code is valid
             console.log('Checking action code validity...');
-            const actionCodeInfo = await checkActionCode(actionCode);
-            console.log('Action code info:', actionCodeInfo);
-            console.log('Action code email:', actionCodeInfo.data.email);
-            console.log('Current user email:', currentUser.email);
+            let actionCodeInfo;
+            try {
+              actionCodeInfo = await checkActionCode(actionCode);
+              console.log('Action code info:', actionCodeInfo);
+              console.log('Action code email:', actionCodeInfo.data.email);
+              console.log('Current user email:', currentUser.email);
+            } catch (checkError) {
+              console.error('Error in checkActionCode:', checkError);
+              console.error('Check error code:', checkError.code);
+              console.error('Check error message:', checkError.message);
+              throw checkError;
+            }
             
             // Verify that the action code is for the current user's email
             if (actionCodeInfo.data.email !== currentUser.email) {
@@ -114,6 +128,7 @@ const VerifyEmail = () => {
             console.error('Email verification failed:', verificationError);
             console.error('Error code:', verificationError.code);
             console.error('Error message:', verificationError.message);
+            console.error('Full error object:', verificationError);
             
             // Only use fallback if it's a specific Firebase error, not a user error
             if (verificationError.code === 'auth/invalid-action-code' || 
@@ -124,6 +139,8 @@ const VerifyEmail = () => {
             } else {
               // For other errors, try fallback
               console.log('Firebase Auth failed, updating database as fallback...');
+              console.log('Fallback reason - Error code:', verificationError.code);
+              console.log('Fallback reason - Error message:', verificationError.message);
               try {
                 await updateEmailVerificationStatus(currentUser.uid, true);
                 await refreshEmailVerification();
