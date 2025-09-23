@@ -4,7 +4,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useUser } from '../contexts/UserContext';
 import { database, db } from '../../config/firebase';
 import { ref, set, get, update } from 'firebase/database';
-import { doc, setDoc, getDoc, deleteDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../config/firebase';
@@ -249,110 +249,6 @@ const Settings = () => {
     }
   };
 
-  const deleteAccount = async () => {
-    if (!window.confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
-      return;
-    }
-
-    if (!window.confirm('ATENÇÃO: Todos os seus dados serão movidos para arquivo e não poderão ser recuperados. Confirma a exclusão?')) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const userId = currentUser.uid;
-      
-      // 1. Mover dados do usuário para removedAccounts
-      const userRef = doc(db, 'users', userId);
-      const userSnap = await getDoc(userRef);
-      
-      if (userSnap.exists()) {
-        const userData = userSnap.data();
-        const removedUserRef = doc(db, 'removedAccounts', userId);
-        await setDoc(removedUserRef, {
-          ...userData,
-          removedAt: new Date(),
-          originalId: userId
-        });
-      }
-
-      // 2. Mover posts para removedAccountsPosts
-      const postsQuery = collection(db, 'posts');
-      const postsSnapshot = await getDocs(query(postsQuery, where('authorId', '==', userId)));
-      
-      for (const postDoc of postsSnapshot.docs) {
-        const postData = postDoc.data();
-        const removedPostRef = doc(db, 'removedAccountsPosts', postDoc.id);
-        await setDoc(removedPostRef, {
-          ...postData,
-          removedAt: new Date(),
-          originalId: postDoc.id,
-          originalAuthorId: userId
-        });
-      }
-
-      // 3. Mover packs para removedAccountsPacks
-      const packsQuery = collection(db, 'packs');
-      const packsSnapshot = await getDocs(query(packsQuery, where('authorId', '==', userId)));
-      
-      for (const packDoc of packsSnapshot.docs) {
-        const packData = packDoc.data();
-        const removedPackRef = doc(db, 'removedAccountsPacks', packDoc.id);
-        await setDoc(removedPackRef, {
-          ...packData,
-          removedAt: new Date(),
-          originalId: packDoc.id,
-          originalAuthorId: userId
-        });
-      }
-
-      // 4. Mover serviços para removedAccountsServices
-      const servicesQuery = collection(db, 'services');
-      const servicesSnapshot = await getDocs(query(servicesQuery, where('authorId', '==', userId)));
-      
-      for (const serviceDoc of servicesSnapshot.docs) {
-        const serviceData = serviceDoc.data();
-        const removedServiceRef = doc(db, 'removedAccountsServices', serviceDoc.id);
-        await setDoc(removedServiceRef, {
-          ...serviceData,
-          removedAt: new Date(),
-          originalId: serviceDoc.id,
-          originalAuthorId: userId
-        });
-      }
-
-      // 5. Deletar dados originais
-      await deleteDoc(userRef);
-      
-      // Deletar posts originais
-      for (const postDoc of postsSnapshot.docs) {
-        await deleteDoc(postDoc.ref);
-      }
-      
-      // Deletar packs originais
-      for (const packDoc of packsSnapshot.docs) {
-        await deleteDoc(packDoc.ref);
-      }
-      
-      // Deletar serviços originais
-      for (const serviceDoc of servicesSnapshot.docs) {
-        await deleteDoc(serviceDoc.ref);
-      }
-
-      showSuccess('Conta excluída com sucesso. Todos os dados foram arquivados.');
-      
-      // Fazer logout e redirecionar
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 2000);
-
-    } catch (error) {
-      console.error('Error deleting account:', error);
-      showError('Erro ao excluir conta. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // KYC Functions
   const handleKycChange = (field, value) => {
@@ -1161,21 +1057,6 @@ const Settings = () => {
 
 
 
-        <div className="settings-section danger-zone">
-          <h2>Zona de Perigo</h2>
-          <div className="danger-actions">
-            <button
-              onClick={deleteAccount}
-              className="delete-account-btn"
-            >
-              <i className="fas fa-trash"></i>
-              Excluir Conta
-            </button>
-            <p className="danger-warning">
-              Esta ação é irreversível e excluirá permanentemente sua conta e todos os dados associados.
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );
