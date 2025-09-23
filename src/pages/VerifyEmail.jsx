@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, XCircle, RefreshCw, Mail } from 'lucide-react';
-import { applyActionCode, checkActionCode } from 'firebase/auth';
+import { applyActionCode, checkActionCode, getAuth } from 'firebase/auth';
 import { ref, update } from 'firebase/database';
 import { doc, updateDoc } from 'firebase/firestore';
 import { database, db } from '../../config/firebase';
@@ -85,7 +85,8 @@ const VerifyEmail = () => {
             console.log('Checking action code validity...');
             let actionCodeInfo;
             try {
-              actionCodeInfo = await checkActionCode(actionCode);
+              const auth = getAuth();
+              actionCodeInfo = await checkActionCode(auth, actionCode);
               console.log('Action code info:', actionCodeInfo);
               console.log('Action code email:', actionCodeInfo.data.email);
               console.log('Current user email:', currentUser.email);
@@ -106,7 +107,8 @@ const VerifyEmail = () => {
             console.log('About to call applyActionCode with:', actionCode);
             
             try {
-              await applyActionCode(actionCode);
+              const auth = getAuth();
+              await applyActionCode(auth, actionCode);
               console.log('Action code applied successfully - Firebase Auth updated!');
             } catch (applyError) {
               console.error('Error in applyActionCode:', applyError);
