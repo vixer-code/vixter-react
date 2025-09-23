@@ -19,8 +19,6 @@ const VerifyEmail = () => {
   // Function to update email verification status in database
   const updateEmailVerificationStatus = async (userId, isVerified) => {
     try {
-      console.log('[updateEmailVerificationStatus] Updating verification status for user:', userId, 'verified:', isVerified);
-      
       // Update Firebase Realtime Database
       const userRef = ref(database, `users/${userId}`);
       await update(userRef, {
@@ -36,10 +34,7 @@ const VerifyEmail = () => {
         emailVerifiedAt: isVerified ? new Date() : null,
         updatedAt: new Date()
       });
-
-      console.log('[updateEmailVerificationStatus] Verification status updated successfully');
     } catch (error) {
-      console.error('[updateEmailVerificationStatus] Error updating verification status:', error);
       // Don't throw error, just log it
     }
   };
@@ -51,21 +46,11 @@ const VerifyEmail = () => {
         const mode = searchParams.get('mode');
         const actionCode = searchParams.get('oobCode');
 
-        console.log('Verification params:', { mode, actionCode });
-        console.log('Current user state:', currentUser ? {
-          uid: currentUser.uid,
-          email: currentUser.email,
-          emailVerified: currentUser.emailVerified
-        } : 'null');
 
         if (mode === 'verifyEmail' && actionCode) {
           // Verify the action code
           try {
-            console.log('Verifying email with action code:', actionCode);
-            console.log('Current user:', currentUser ? currentUser.uid : 'null');
-            
             if (!currentUser) {
-              console.log('No current user found, redirecting to login...');
               setStatus('error');
               setMessage('Você precisa estar logado para verificar seu email. Faça login primeiro.');
               return;
@@ -73,27 +58,17 @@ const VerifyEmail = () => {
 
             // Ensure user is properly authenticated
             if (!currentUser.uid) {
-              console.log('User has no UID, redirecting to login...');
               setStatus('error');
               setMessage('Usuário não está autenticado corretamente. Faça login novamente.');
               return;
             }
-
-            console.log('User is authenticated, proceeding with verification...');
             
             // First, check if the action code is valid
-            console.log('Checking action code validity...');
             let actionCodeInfo;
             try {
               const auth = getAuth();
               actionCodeInfo = await checkActionCode(auth, actionCode);
-              console.log('Action code info:', actionCodeInfo);
-              console.log('Action code email:', actionCodeInfo.data.email);
-              console.log('Current user email:', currentUser.email);
             } catch (checkError) {
-              console.error('Error in checkActionCode:', checkError);
-              console.error('Check error code:', checkError.code);
-              console.error('Check error message:', checkError.message);
               throw checkError;
             }
             
@@ -103,17 +78,10 @@ const VerifyEmail = () => {
             }
             
             // Apply the action code to verify the email
-            console.log('Applying action code...');
-            console.log('About to call applyActionCode with:', actionCode);
-            
             try {
               const auth = getAuth();
               await applyActionCode(auth, actionCode);
-              console.log('Action code applied successfully - Firebase Auth updated!');
             } catch (applyError) {
-              console.error('Error in applyActionCode:', applyError);
-              console.error('Apply error code:', applyError.code);
-              console.error('Apply error message:', applyError.message);
               throw applyError; // Re-throw to be caught by outer catch
             }
             
@@ -125,13 +93,7 @@ const VerifyEmail = () => {
             
             setStatus('success');
             setMessage('Seu email foi verificado com sucesso!');
-            console.log('Email verification completed successfully');
           } catch (verificationError) {
-            console.error('Email verification failed:', verificationError);
-            console.error('Error code:', verificationError.code);
-            console.error('Error message:', verificationError.message);
-            console.error('Full error object:', verificationError);
-            
             // Only use fallback if it's a specific Firebase error, not a user error
             if (verificationError.code === 'auth/invalid-action-code' || 
                 verificationError.code === 'auth/expired-action-code' ||
@@ -140,17 +102,12 @@ const VerifyEmail = () => {
               setMessage('Código de verificação inválido ou expirado. Solicite um novo email de verificação.');
             } else {
               // For other errors, try fallback
-              console.log('Firebase Auth failed, updating database as fallback...');
-              console.log('Fallback reason - Error code:', verificationError.code);
-              console.log('Fallback reason - Error message:', verificationError.message);
               try {
                 await updateEmailVerificationStatus(currentUser.uid, true);
                 await refreshEmailVerification();
                 setStatus('success');
                 setMessage('Seu email foi verificado com sucesso!');
-                console.log('Fallback verification completed successfully');
               } catch (fallbackError) {
-                console.error('Fallback verification also failed:', fallbackError);
                 setStatus('error');
                 setMessage('Erro na verificação. Tente novamente ou solicite um novo email.');
               }

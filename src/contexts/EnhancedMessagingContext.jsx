@@ -775,7 +775,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
     // If Centrifugo is not connected, still show a message but don't fail
     if (!isConnected) {
-      console.log('⚠️ Centrifugo not connected, messages will only sync via Firebase');
       return;
     }
 
@@ -813,7 +812,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
     console.log('🔔 Creating new subscription for:', channelName);
     const subscription = subscribe(channelName, {
       onMessage: (data, ctx) => {
-        console.log('Received real-time message via Centrifugo:', data);
         
         // Handle different message types
         if (data.type === 'new_message') {
@@ -1504,11 +1502,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
       });
 
       // Publish message via Centrifugo for real-time delivery
-      console.log('🔍 Centrifugo status:', {
-        centrifugoAvailable,
-        hasPublish: !!publish,
-        isConnected
-      });
       
       if (centrifugoAvailable && publish) {
         try {
@@ -1521,7 +1514,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
             conversationId: conversationId,
             timestamp: Date.now()
           });
-          console.log('✅ Message published via Centrifugo successfully');
 
           // Also publish to recipient's global user channel for notifications
           const conversation = conversations.find(c => c.id === conversationId) || 
@@ -1554,12 +1546,10 @@ export const EnhancedMessagingProvider = ({ children }) => {
             }
           }
         } catch (error) {
-          console.error('Error publishing message via Centrifugo:', error);
           // Disable Centrifugo if it fails consistently
           setCentrifugoAvailable(false);
         }
       } else {
-        console.log('Centrifugo not available - using Firebase notifications only');
         
         // Fallback: send notification directly via Firebase Database when Centrifugo is not available
         const conversation = conversations.find(c => c.id === conversationId) || 
@@ -1762,7 +1752,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
           conversationId: selectedConversation.id,
           timestamp: Date.now()
         });
-        console.log('Media message published via Centrifugo');
 
         // Also publish to recipient's global user channel for notifications
         const participantIds = Object.keys(selectedConversation.participants || {});
@@ -1787,7 +1776,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
           }
         }
       } catch (error) {
-        console.error('Error publishing media message via Centrifugo:', error);
       }
 
       // Update local conversation state

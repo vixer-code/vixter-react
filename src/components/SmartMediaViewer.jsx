@@ -44,7 +44,6 @@ const SmartMediaViewer = ({
         url = `https://${url}`;
       }
       
-      console.log('SmartMediaViewer: Processing URL:', { original: mediaData, processed: url });
       setFallbackUrl(url);
       return;
     }
@@ -54,25 +53,16 @@ const SmartMediaViewer = ({
     // Check if this is from a private bucket (no publicUrl) or public bucket (has publicUrl)
     const hasPublicUrl = mediaData.publicUrl && (mediaData.publicUrl.startsWith('http') || mediaData.publicUrl.startsWith('media.vixter.com.br'));
     
-    console.log('SmartMediaViewer: Processing R2 object:', {
-      mediaData,
-      hasPublicUrl,
-      type,
-      watermarked,
-      isOwner
-    });
     
     if (hasPublicUrl) {
       // Content from public bucket - use publicUrl directly
       // Ensure URL has protocol
       const publicUrl = mediaData.publicUrl.startsWith('http') ? mediaData.publicUrl : `https://${mediaData.publicUrl}`;
-      console.log('SmartMediaViewer: Using publicUrl directly:', publicUrl);
       setIsR2Media(false);
       setR2Key(null);
       setFallbackUrl(publicUrl);
     } else {
       // Content from private bucket - needs R2MediaViewer for signed URLs
-      console.log('SmartMediaViewer: Using R2MediaViewer for private content:', mediaData.key);
       setIsR2Media(true);
       setR2Key(mediaData.key);
       setFallbackUrl(fallbackSrc);
@@ -114,13 +104,6 @@ const SmartMediaViewer = ({
   // Check if this is a video
   const isVideoFile = isVideo(fallbackUrl);
   
-  console.log('SmartMediaViewer: Rendering media:', { 
-    src: fallbackUrl, 
-    fallbackSrc, 
-    isR2Media, 
-    r2Key,
-    isVideoFile
-  });
 
   // If it's a video, render video element
   if (isVideoFile) {

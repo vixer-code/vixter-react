@@ -49,7 +49,6 @@ export const CentrifugoProvider = ({ children }) => {
       const data = await response.json();
       return data.token;
     } catch (error) {
-      console.error('Error getting Centrifugo token:', error);
       throw error;
     }
   }, [currentUser?.uid]);
@@ -71,7 +70,6 @@ export const CentrifugoProvider = ({ children }) => {
       );
       
       const token = await Promise.race([tokenPromise, timeoutPromise]);
-      console.log('🔑 Token received, attempting WebSocket connection to:', CENTRIFUGO_WS_URL);
 
       const centrifugeInstance = new Centrifuge(CENTRIFUGO_WS_URL, {
         token: token,
@@ -83,19 +81,16 @@ export const CentrifugoProvider = ({ children }) => {
 
       // Connection event handlers
       centrifugeInstance.on('connecting', (ctx) => {
-        console.log('Centrifugo connecting:', ctx.code, ctx.reason);
         setIsConnecting(true);
       });
 
       centrifugeInstance.on('connected', (ctx) => {
-        console.log('Centrifugo connected over:', ctx.transport);
         setIsConnected(true);
         setIsConnecting(false);
         setConnectionError(null);
       });
 
       centrifugeInstance.on('disconnected', (ctx) => {
-        console.log('Centrifugo disconnected:', ctx.code, ctx.reason);
         setIsConnected(false);
         setIsConnecting(false);
         
@@ -105,14 +100,13 @@ export const CentrifugoProvider = ({ children }) => {
       });
 
       centrifugeInstance.on('error', (ctx) => {
-        console.error('Centrifugo error:', ctx);
         setConnectionError(ctx.message || 'Connection error');
         setIsConnecting(false);
         setIsConnected(false);
       });
 
       centrifugeInstance.on('token', (ctx) => {
-        console.log('Centrifugo token refreshed');
+        // Token refreshed
       });
 
       // Connect
@@ -124,13 +118,11 @@ export const CentrifugoProvider = ({ children }) => {
       // Add connection timeout - increased to 30 seconds for slow networks
       const connectionTimeout = setTimeout(() => {
         if (!isConnected && isConnecting) {
-          console.warn('Centrifugo connection timeout after 30 seconds');
           setConnectionError('Connection timeout - please check your internet connection');
           setIsConnecting(false);
           setIsConnected(false);
           // Try to reconnect after a delay
           setTimeout(() => {
-            console.log('Attempting to reconnect...');
             setConnectionError(null);
             initializeCentrifugo();
           }, 5000);
@@ -143,7 +135,6 @@ export const CentrifugoProvider = ({ children }) => {
       });
 
     } catch (error) {
-      console.error('Error initializing Centrifugo:', error);
       setConnectionError(error.message);
       setIsConnecting(false);
       setIsConnected(false);
@@ -153,7 +144,6 @@ export const CentrifugoProvider = ({ children }) => {
   // Subscribe to a channel
   const subscribe = useCallback((channel, handlers = {}) => {
     if (!centrifugeRef.current) {
-      console.warn('Centrifugo not initialized');
       return null;
     }
 
@@ -168,35 +158,30 @@ export const CentrifugoProvider = ({ children }) => {
 
     // Set up event handlers
     subscription.on('publication', (ctx) => {
-      console.log('Received message on channel', channel, ':', ctx.data);
       if (handlers.onMessage) {
         handlers.onMessage(ctx.data, ctx);
       }
     });
 
     subscription.on('subscribing', (ctx) => {
-      console.log('Subscribing to channel', channel, ':', ctx.code, ctx.reason);
       if (handlers.onSubscribing) {
         handlers.onSubscribing(ctx);
       }
     });
 
     subscription.on('subscribed', (ctx) => {
-      console.log('Subscribed to channel', channel, ':', ctx);
       if (handlers.onSubscribed) {
         handlers.onSubscribed(ctx);
       }
     });
 
     subscription.on('unsubscribed', (ctx) => {
-      console.log('Unsubscribed from channel', channel, ':', ctx.code, ctx.reason);
       if (handlers.onUnsubscribed) {
         handlers.onUnsubscribed(ctx);
       }
     });
 
     subscription.on('error', (ctx) => {
-      console.error('Subscription error for channel', channel, ':', ctx);
       if (handlers.onError) {
         handlers.onError(ctx);
       }
@@ -219,7 +204,6 @@ export const CentrifugoProvider = ({ children }) => {
       subscription.unsubscribe();
       subscriptionsRef.current.delete(channel);
       setSubscriptions(new Map(subscriptionsRef.current));
-      console.log('Unsubscribed from channel:', channel);
     }
   }, []);
 
@@ -230,15 +214,11 @@ export const CentrifugoProvider = ({ children }) => {
     });
     subscriptionsRef.current.clear();
     setSubscriptions(new Map());
-    console.log('Unsubscribed from all channels');
   }, []);
 
   // Publish message to a channel (via backend API)
   const publish = useCallback(async (channel, data) => {
     try {
-      console.log('Publishing message to channel:', channel, 'with data:', data);
-      console.log('Making request to:', 'https://vixter-react-llyd.vercel.app/api/centrifugo/publish');
-      
       const response = await fetch('https://vixter-react-llyd.vercel.app/api/centrifugo/publish', {
         method: 'POST',
         headers: {
@@ -247,42 +227,22 @@ export const CentrifugoProvider = ({ children }) => {
         body: JSON.stringify({ channel, data })
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Response error text:', errorText);
         throw new Error(`Failed to publish message: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('Message published successfully:', result);
       return result;
     } catch (error) {
-      console.error('Error publishing message:', error);
-      console.error('Error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
       throw error;
     }
   }, []);
 
   // Initialize connection when user is authenticated
   useEffect(() => {
-    console.log('🔌 CentrifugoContext: useEffect triggered');
-    console.log('🔌 Current user UID:', currentUser?.uid);
-    console.log('🔌 Centrifuge ref current:', !!centrifugeRef.current);
-    
     if (currentUser?.uid && !centrifugeRef.current) {
-      console.log('🔌 Initializing Centrifugo connection...');
       initializeCentrifugo();
-    } else if (!currentUser?.uid) {
-      console.log('🔌 No user logged in, skipping Centrifugo');
-    } else if (centrifugeRef.current) {
-      console.log('🔌 Centrifugo already initialized');
     }
   }, [currentUser?.uid, initializeCentrifugo]);
 
