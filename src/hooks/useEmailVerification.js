@@ -42,13 +42,15 @@ export const useEmailVerification = () => {
         }
 
         // Use the most recent verification status
-        setEmailVerified(authVerified || dbVerified);
+        // If either Firebase Auth or our database says it's verified, consider it verified
+        const finalVerified = authVerified || dbVerified;
+        setEmailVerified(finalVerified);
         setEmailVerifiedAt(dbVerifiedAt);
         
         console.log('Email verification status:', {
           authVerified,
           dbVerified,
-          finalVerified: authVerified || dbVerified,
+          finalVerified,
           verifiedAt: dbVerifiedAt
         });
 

@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useEmailVerification } from '../hooks/useEmailVerification';
 import { sendEmailVerification } from 'firebase/auth';
 import { Mail, CheckCircle, AlertCircle, RefreshCw, X } from 'lucide-react';
 import './EmailVerificationBanner.css';
 
 const EmailVerificationBanner = () => {
   const { currentUser } = useAuth();
+  const { emailVerified, loading } = useEmailVerification();
   const [isSending, setIsSending] = useState(false);
   const [message, setMessage] = useState('');
   const [showBanner, setShowBanner] = useState(true);
 
-  // Don't show banner if user is not logged in or email is verified
-  if (!currentUser || currentUser.emailVerified || !showBanner) {
+  // Don't show banner if user is not logged in, email is verified, or still loading
+  if (!currentUser || emailVerified || loading || !showBanner) {
     return null;
   }
 
