@@ -28,7 +28,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Wallet = lazy(() => import('./pages/Wallet'));
 const Messages = lazy(() => import('./pages/EnhancedMessages'));
 const MessagingTestPage = lazy(() => import('./pages/MessagingTestPage'));
-const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const TestEmailVerification = lazy(() => import('./pages/TestEmailVerification'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const AuthAction = lazy(() => import('./pages/AuthAction'));
@@ -87,7 +87,7 @@ function App() {
                                 <Route path="/wallet" element={<Wallet />} />
                                 <Route path="/messages" element={<Messages />} />
                                 <Route path="/messaging-test" element={<MessagingTestPage />} />
-                                <Route path="/verify-email" element={<VerifyEmail />} />
+                                <Route path="/test-email" element={<TestEmailVerification />} />
                                 <Route path="/forgot-password" element={<ForgotPassword />} />
                                 <Route path="/reset-password" element={<ResetPassword />} />
                                 <Route path="/auth-action" element={<AuthAction />} />

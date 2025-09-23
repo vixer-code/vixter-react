@@ -433,13 +433,19 @@ const Register = () => {
       
       // Send email verification immediately after registration
       try {
+        console.log('[handleSubmit] Attempting to send email verification...');
+        console.log('[handleSubmit] User email:', user.email);
+        console.log('[handleSubmit] User emailVerified:', user.emailVerified);
+        
         await user.sendEmailVerification({
-          url: `https://vixter.com.br/profile`,
+          url: `https://vixter-react.vercel.app/verify-email`,
           handleCodeInApp: false
         });
         console.log('[handleSubmit] Email verification sent successfully');
       } catch (emailError) {
         console.error('[handleSubmit] Error sending email verification:', emailError);
+        console.error('[handleSubmit] Error code:', emailError.code);
+        console.error('[handleSubmit] Error message:', emailError.message);
         // Don't fail registration if email verification fails
       }
       
