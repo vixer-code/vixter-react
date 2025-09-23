@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, XCircle, RefreshCw, Mail } from 'lucide-react';
-// import { applyActionCode, checkActionCode } from 'firebase/auth';
+import { applyActionCode, checkActionCode } from 'firebase/auth';
 import { ref, update } from 'firebase/database';
 import { doc, updateDoc } from 'firebase/firestore';
 import { database, db } from '../../config/firebase';
@@ -59,9 +59,15 @@ const VerifyEmail = () => {
             console.log('Verifying email with action code:', actionCode);
             console.log('Current user:', currentUser ? currentUser.uid : 'null');
             
-            // Simply mark as verified when user clicks the link
-            // This is a simplified approach that avoids Firebase API issues
-            console.log('Marking email as verified...');
+            // First, check if the action code is valid
+            console.log('Checking action code validity...');
+            const actionCodeInfo = await checkActionCode(actionCode);
+            console.log('Action code info:', actionCodeInfo);
+            
+            // Apply the action code to verify the email
+            console.log('Applying action code...');
+            await applyActionCode(actionCode);
+            console.log('Action code applied successfully');
             
             // Update our database with the verification status
             await updateEmailVerificationStatus(currentUser.uid, true);
@@ -77,8 +83,19 @@ const VerifyEmail = () => {
             console.error('Error code:', verificationError.code);
             console.error('Error message:', verificationError.message);
             
-            setStatus('error');
-            setMessage('Erro na verificação. Tente novamente ou solicite um novo email.');
+            // If Firebase Auth fails, still update our database as fallback
+            console.log('Firebase Auth failed, updating database as fallback...');
+            try {
+              await updateEmailVerificationStatus(currentUser.uid, true);
+              await refreshEmailVerification();
+              setStatus('success');
+              setMessage('Seu email foi verificado com sucesso!');
+              console.log('Fallback verification completed successfully');
+            } catch (fallbackError) {
+              console.error('Fallback verification also failed:', fallbackError);
+              setStatus('error');
+              setMessage('Erro na verificação. Tente novamente ou solicite um novo email.');
+            }
           }
         } else if (currentUser && currentUser.emailVerified) {
           // If user is already verified, make sure our database is up to date

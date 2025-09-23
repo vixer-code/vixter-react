@@ -253,8 +253,15 @@ export const AuthProvider = ({ children }) => {
   const refreshEmailVerification = useCallback(async () => {
     if (currentUser) {
       try {
+        console.log('Refreshing email verification status...');
+        console.log('Before reload - emailVerified:', currentUser.emailVerified);
+        
+        // Force reload the user to get latest data from Firebase Auth
         await currentUser.reload();
+        
+        console.log('After reload - emailVerified:', currentUser.emailVerified);
         setEmailVerified(currentUser.emailVerified);
+        
         return currentUser.emailVerified;
       } catch (error) {
         console.error('Error refreshing email verification:', error);
