@@ -8,7 +8,6 @@ import CachedImage from './CachedImage';
 import NotificationIcon from './NotificationIcon';
 import NotificationCenter from './NotificationCenter';
 import SearchBar from './SearchBar';
-import EmailVerificationBanner from './EmailVerificationBanner';
 import './Header.css';
 
 const Header = () => {
@@ -92,7 +91,6 @@ const Header = () => {
 
   return (
     <>
-      <EmailVerificationBanner />
       <header>
         <nav>
           <div className="header-left">

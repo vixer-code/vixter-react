@@ -108,25 +108,26 @@
 
 /* Estilos específicos para selects */
 .setting-group select {
-  background: var(--bg-secondary);
+  background: #1a0b2e; /* Preto quase roxo */
   color: #ffffff;
   cursor: pointer;
+  border-color: #4c1d95;
 }
 
 .setting-group select option {
-  background: var(--bg-secondary);
+  background: #1a0b2e; /* Preto quase roxo */
   color: #ffffff;
   padding: 8px 12px;
   border: none;
 }
 
 .setting-group select option:hover {
-  background: var(--accent-color);
+  background: #2d1b69; /* Roxo mais claro no hover */
   color: #ffffff;
 }
 
 .setting-group select option:checked {
-  background: var(--accent-color);
+  background: #4c1d95; /* Roxo escuro quando selecionado */
   color: #ffffff;
 }
 
