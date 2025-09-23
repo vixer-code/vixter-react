@@ -816,9 +816,55 @@ const Settings = () => {
         </div>
 
         {/* KYC Verification Section */}
-        {kycState !== 'VERIFIED' && (
-          <div className="settings-section">
-            <h2>Verificação de Identidade (KYC)</h2>
+        <div className="settings-section">
+          <h2>Verificação de Identidade (KYC)</h2>
+          {kycState === 'VERIFIED' ? (
+            // KYC Status Display for VERIFIED
+            <div className="kyc-status-display verified">
+              <div className="status-icon">
+                <i className="fas fa-check-circle"></i>
+              </div>
+              <div className="status-content">
+                <h3>✅ Conta Verificada - KYC Habilitado</h3>
+                <p>Sua identidade foi verificada com sucesso! Sua conta possui <strong>KYC habilitado</strong> e você tem acesso completo a todas as funcionalidades da plataforma, incluindo o Vixies.</p>
+                
+                <div className="verification-badge">
+                  <div className="badge-icon">
+                    <i className="fas fa-shield-check"></i>
+                  </div>
+                  <div className="badge-content">
+                    <span className="badge-title">KYC Ativo</span>
+                    <span className="badge-description">Verificação de identidade completa</span>
+                  </div>
+                </div>
+                
+                <div className="status-details">
+                  <div className="detail-item">
+                    <i className="fas fa-check-circle"></i>
+                    <span>Identidade verificada</span>
+                  </div>
+                  <div className="detail-item">
+                    <i className="fas fa-unlock"></i>
+                    <span>Acesso completo liberado</span>
+                  </div>
+                  <div className="detail-item">
+                    <i className="fas fa-star"></i>
+                    <span>Vixies habilitado</span>
+                  </div>
+                  <div className="detail-item">
+                    <i className="fas fa-shield-alt"></i>
+                    <span>Conta segura e confiável</span>
+                  </div>
+                </div>
+                
+                <div className="verification-info">
+                  <h4>🎉 Parabéns!</h4>
+                  <p>Sua conta está completamente verificada e você pode aproveitar todos os recursos da plataforma com total segurança e confiança.</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            // KYC Form for non-verified users
             <div className="settings-grid">
               <div className="setting-group full-width">
                 <div className="kyc-info">
@@ -895,6 +941,117 @@ const Settings = () => {
                   <p className="verification-description">
                     Envie 3 fotos conforme especificado abaixo. Certifique-se de que todas as informações estejam legíveis e que as fotos estejam bem iluminadas.
                   </p>
+                  
+                  {/* KYC Progress Indicator */}
+                  <div className="kyc-progress-indicator">
+                    <h4>Progresso da Verificação</h4>
+                    <div className="progress-items">
+                      <div className={`progress-item ${kycForm.fullName.trim() ? 'completed' : 'pending'}`}>
+                        <div className="progress-icon">
+                          {kycForm.fullName.trim() ? '✅' : '⏳'}
+                        </div>
+                        <div className="progress-content">
+                          <span className="progress-title">Nome Completo</span>
+                          <span className="progress-status">
+                            {kycForm.fullName.trim() ? 'Preenchido' : 'Pendente'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className={`progress-item ${cpfVerificationState.isVerified ? 'completed' : 'pending'}`}>
+                        <div className="progress-icon">
+                          {cpfVerificationState.isVerified ? '✅' : '⏳'}
+                        </div>
+                        <div className="progress-content">
+                          <span className="progress-title">CPF</span>
+                          <span className="progress-status">
+                            {cpfVerificationState.isVerified ? 'Verificado' : 'Pendente'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className={`progress-item ${documentUploadStates.front.uploaded ? 'completed' : 'pending'}`}>
+                        <div className="progress-icon">
+                          {documentUploadStates.front.uploaded ? '✅' : '⏳'}
+                        </div>
+                        <div className="progress-content">
+                          <span className="progress-title">Frente do Documento</span>
+                          <span className="progress-status">
+                            {documentUploadStates.front.uploaded ? 'Enviado' : 'Pendente'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className={`progress-item ${documentUploadStates.back.uploaded ? 'completed' : 'pending'}`}>
+                        <div className="progress-icon">
+                          {documentUploadStates.back.uploaded ? '✅' : '⏳'}
+                        </div>
+                        <div className="progress-content">
+                          <span className="progress-title">Verso do Documento</span>
+                          <span className="progress-status">
+                            {documentUploadStates.back.uploaded ? 'Enviado' : 'Pendente'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className={`progress-item ${documentUploadStates.selfie.uploaded ? 'completed' : 'pending'}`}>
+                        <div className="progress-icon">
+                          {documentUploadStates.selfie.uploaded ? '✅' : '⏳'}
+                        </div>
+                        <div className="progress-content">
+                          <span className="progress-title">Selfie com Documento</span>
+                          <span className="progress-status">
+                            {documentUploadStates.selfie.uploaded ? 'Enviado' : 'Pendente'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Missing Items Alert */}
+                    {(!kycForm.fullName.trim() || !cpfVerificationState.isVerified || !Object.values(documentUploadStates).every(state => state.uploaded)) && (
+                      <div className="missing-items-alert">
+                        <div className="alert-icon">
+                          <i className="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div className="alert-content">
+                          <h5>Itens Pendentes</h5>
+                          <p>Para completar a verificação, você ainda precisa:</p>
+                          <ul className="missing-items-list">
+                            {!kycForm.fullName.trim() && (
+                              <li>
+                                <i className="fas fa-user"></i>
+                                Preencher o nome completo
+                              </li>
+                            )}
+                            {!cpfVerificationState.isVerified && (
+                              <li>
+                                <i className="fas fa-id-card"></i>
+                                Verificar o CPF
+                              </li>
+                            )}
+                            {!documentUploadStates.front.uploaded && (
+                              <li>
+                                <i className="fas fa-file-image"></i>
+                                Enviar a frente do documento
+                              </li>
+                            )}
+                            {!documentUploadStates.back.uploaded && (
+                              <li>
+                                <i className="fas fa-file-image"></i>
+                                Enviar o verso do documento
+                              </li>
+                            )}
+                            {!documentUploadStates.selfie.uploaded && (
+                              <li>
+                                <i className="fas fa-camera"></i>
+                                Enviar a selfie com documento
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   
                   <div className="kyc-documents">
                     <div className={`document-upload-item ${documentUploadStates.front.uploaded ? 'uploaded' : documentUploadStates.front.uploading ? 'uploading' : documentUploadStates.front.error ? 'error' : ''}`}>
@@ -1032,37 +1189,9 @@ const Settings = () => {
                 </div>
               )}
 
-              {/* KYC Status Display for VERIFIED */}
-              {kycState === 'VERIFIED' && (
-                <div className="setting-group full-width">
-                  <div className="kyc-status-display verified">
-                    <div className="status-icon">
-                      <i className="fas fa-check-circle"></i>
-                    </div>
-                    <div className="status-content">
-                      <h3>Verificação Concluída</h3>
-                      <p>Sua identidade foi verificada com sucesso! Agora você tem acesso completo a todas as funcionalidades da plataforma.</p>
-                      <div className="status-details">
-                        <div className="detail-item">
-                          <i className="fas fa-check-circle"></i>
-                          <span>Identidade verificada</span>
-                        </div>
-                        <div className="detail-item">
-                          <i className="fas fa-unlock"></i>
-                          <span>Acesso completo liberado</span>
-                        </div>
-                        <div className="detail-item">
-                          <i className="fas fa-shield-alt"></i>
-                          <span>Conta segura</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
 
 
