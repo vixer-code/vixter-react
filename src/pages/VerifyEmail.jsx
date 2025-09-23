@@ -59,15 +59,24 @@ const VerifyEmail = () => {
             console.log('Verifying email with action code:', actionCode);
             console.log('Current user:', currentUser ? currentUser.uid : 'null');
             
+            if (!currentUser) {
+              throw new Error('Usuário não está logado. Faça login primeiro.');
+            }
+            
             // First, check if the action code is valid
             console.log('Checking action code validity...');
             const actionCodeInfo = await checkActionCode(actionCode);
             console.log('Action code info:', actionCodeInfo);
             
+            // Verify that the action code is for the current user's email
+            if (actionCodeInfo.data.email !== currentUser.email) {
+              throw new Error('Código de verificação não corresponde ao email do usuário logado.');
+            }
+            
             // Apply the action code to verify the email
             console.log('Applying action code...');
             await applyActionCode(actionCode);
-            console.log('Action code applied successfully');
+            console.log('Action code applied successfully - Firebase Auth updated!');
             
             // Update our database with the verification status
             await updateEmailVerificationStatus(currentUser.uid, true);
@@ -83,18 +92,26 @@ const VerifyEmail = () => {
             console.error('Error code:', verificationError.code);
             console.error('Error message:', verificationError.message);
             
-            // If Firebase Auth fails, still update our database as fallback
-            console.log('Firebase Auth failed, updating database as fallback...');
-            try {
-              await updateEmailVerificationStatus(currentUser.uid, true);
-              await refreshEmailVerification();
-              setStatus('success');
-              setMessage('Seu email foi verificado com sucesso!');
-              console.log('Fallback verification completed successfully');
-            } catch (fallbackError) {
-              console.error('Fallback verification also failed:', fallbackError);
+            // Only use fallback if it's a specific Firebase error, not a user error
+            if (verificationError.code === 'auth/invalid-action-code' || 
+                verificationError.code === 'auth/expired-action-code' ||
+                verificationError.code === 'auth/user-disabled') {
               setStatus('error');
-              setMessage('Erro na verificação. Tente novamente ou solicite um novo email.');
+              setMessage('Código de verificação inválido ou expirado. Solicite um novo email de verificação.');
+            } else {
+              // For other errors, try fallback
+              console.log('Firebase Auth failed, updating database as fallback...');
+              try {
+                await updateEmailVerificationStatus(currentUser.uid, true);
+                await refreshEmailVerification();
+                setStatus('success');
+                setMessage('Seu email foi verificado com sucesso!');
+                console.log('Fallback verification completed successfully');
+              } catch (fallbackError) {
+                console.error('Fallback verification also failed:', fallbackError);
+                setStatus('error');
+                setMessage('Erro na verificação. Tente novamente ou solicite um novo email.');
+              }
             }
           }
         } else if (currentUser && currentUser.emailVerified) {
