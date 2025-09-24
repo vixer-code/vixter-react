@@ -9,22 +9,12 @@ import {
   // Unified API for CRUD operations
   api,
 
-  // Stripe Connect
-  createStripeConnectAccount,
-  getStripeConnectStatus,
-  getStripeConnectDetailedStatus,
-  refreshStripeConnectStatus,
-  checkAndEnablePayouts,
-  getStripeConnectLoginLink,
+  // Manual Withdrawals (PIX)
   processVCWithdrawal,
   calculateWithdrawalFee,
-  checkStripeConnectConfig,
-  checkEnvironment,
-  sendPurchaseConfirmationEmail,
-
-  // PIX Withdrawals
   processPixPayment,
   listPendingWithdrawals,
+  sendPurchaseConfirmationEmail,
 
   // Vixtip Processing
   processVixtip,
@@ -54,22 +44,12 @@ export {
   // Unified API (substitui createPack, updatePack, deletePack, createService, updateService, deleteService, createPost, updatePost, deletePost)
   api,
 
-  // Stripe Connect
-  createStripeConnectAccount,
-  getStripeConnectStatus,
-  getStripeConnectDetailedStatus,
-  refreshStripeConnectStatus,
-  checkAndEnablePayouts,
-  getStripeConnectLoginLink,
+  // Manual Withdrawals (PIX)
   processVCWithdrawal,
   calculateWithdrawalFee,
-  checkStripeConnectConfig,
-  checkEnvironment,
-  sendPurchaseConfirmationEmail,
-
-  // PIX Withdrawals
   processPixPayment,
   listPendingWithdrawals,
+  sendPurchaseConfirmationEmail,
 
   // Vixtip Processing
   processVixtip,
