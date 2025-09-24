@@ -497,7 +497,28 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   };
 
   const nextStep = () => {
-    if (validateCurrentStep() && currentStep < steps.length - 1) setCurrentStep(s => s + 1);
+    if (!validateCurrentStep() || currentStep >= steps.length - 1) {
+      return;
+    }
+
+    // KYC validation for +18 content
+    if (formData.category === 'conteudo-18') {
+      if (kycLoading) {
+        showError('Aguarde a verificação do status KYC...');
+        return;
+      }
+      if (!isKycVerified) {
+        if (isKycNotConfigured) {
+          showError('Para criar conteúdo +18, você precisa configurar sua verificação KYC primeiro.');
+          return;
+        } else {
+          showError('Para criar conteúdo +18, sua verificação KYC precisa estar aprovada. Status atual: ' + getKycStatusMessage().message);
+          return;
+        }
+      }
+    }
+
+    setCurrentStep(s => s + 1);
   };
   const prevStep = () => {
     if (currentStep > 0) setCurrentStep(s => s - 1);

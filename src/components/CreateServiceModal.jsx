@@ -405,9 +405,28 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   };
 
   const nextStep = () => {
-    if (validateCurrentStep() && currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+    if (!validateCurrentStep() || currentStep >= steps.length - 1) {
+      return;
     }
+
+    // KYC validation for +18 content
+    if (formData.category === 'webnamoro') {
+      if (kycLoading) {
+        showError('Aguarde a verificação do status KYC...');
+        return;
+      }
+      if (!isKycVerified) {
+        if (isKycNotConfigured) {
+          showError('Para criar serviços +18, você precisa configurar sua verificação KYC primeiro.');
+          return;
+        } else {
+          showError('Para criar serviços +18, sua verificação KYC precisa estar aprovada. Status atual: ' + getKycStatusMessage().message);
+          return;
+        }
+      }
+    }
+
+    setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
