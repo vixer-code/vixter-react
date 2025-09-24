@@ -4,6 +4,7 @@ import { useUser } from '../contexts/UserContext';
 import { useServicesR2 as useServices } from '../contexts/ServicesContextR2';
 import { useNotification } from '../contexts/NotificationContext';
 import useR2Media from '../hooks/useR2Media';
+import useKycStatus from '../hooks/useKycStatus';
 import SmartMediaViewer from './SmartMediaViewer';
 import './CreateServiceModal.css';
 
@@ -13,6 +14,7 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   const { createService, updateService } = useServices();
   const { showSuccess, showError } = useNotification();
   const { uploadServiceMedia, uploading, uploadProgress } = useR2Media();
+  const { kycState, isKycVerified, isKycNotConfigured, getKycStatusMessage, loading: kycLoading } = useKycStatus();
   
   // Check account type
   const accountType = userProfile?.accountType || 'client';
@@ -61,32 +63,20 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
 
   const categories = [
     { value: 'games', label: 'Jogos' },
-    { value: 'chilling', label: 'Relaxar' },
-    { value: 'custom', label: 'Personalizado' },
-    { value: 'makeFriends', label: 'Fazer Amigos' },
-    { value: 'chat', label: 'Conversar' },
-    { value: 'movie', label: 'Filme' },
-    { value: 'likeService', label: 'Curtir Serviço' },
-    { value: 'emotionalSupport', label: 'Apoio Emocional' },
-    { value: 'addingSocials', label: 'Adicionar Redes Sociais' },
-    { value: 'languageExchange', label: 'Intercâmbio de Idiomas' },
-    { value: 'drawing', label: 'Desenho' },
-    { value: 'fortuneTelling', label: 'Leitura de Sorte' }
+    { value: 'webcompanhia', label: 'Web-companhia (Filmes, séries)' },
+    { value: 'webnamoro', label: 'Webnamoro (+18)' },
+    { value: 'vixink', label: 'Vixink (serviços artísticos)' },
+    { value: 'educacao', label: 'Educação' },
+    { value: 'esoterico', label: 'Esotérico (Tarot, Quiromancia, Baralho Cigano)' }
   ];
 
   const categoryLabels = {
     games: 'Jogos',
-    chilling: 'Relaxar',
-    custom: 'Personalizado',
-    makeFriends: 'Fazer Amigos',
-    chat: 'Conversar',
-    movie: 'Filme',
-    likeService: 'Curtir Serviço',
-    emotionalSupport: 'Apoio Emocional',
-    addingSocials: 'Adicionar Redes Sociais',
-    languageExchange: 'Intercâmbio de Idiomas',
-    drawing: 'Desenho',
-    fortuneTelling: 'Leitura de Sorte'
+    webcompanhia: 'Web-companhia (Filmes, séries)',
+    webnamoro: 'Webnamoro (+18)',
+    vixink: 'Vixink (serviços artísticos)',
+    educacao: 'Educação',
+    esoterico: 'Esotérico (Tarot, Quiromancia, Baralho Cigano)'
   };
 
   // Price suggestions based on category
@@ -97,20 +87,30 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
         { vc: 25, description: 'Jogo competitivo (30-60 min)' },
         { vc: 40, description: 'Jogo complexo (1-2 horas)' }
       ],
-      chat: [
-        { vc: 10, description: 'Conversa casual (15 min)' },
-        { vc: 20, description: 'Conversa profunda (30 min)' },
-        { vc: 35, description: 'Sessão de terapia (1 hora)' }
+      webcompanhia: [
+        { vc: 20, description: 'Filme casual (1-2 horas)' },
+        { vc: 35, description: 'Série completa (2-3 horas)' },
+        { vc: 50, description: 'Maratona (4+ horas)' }
       ],
-      emotionalSupport: [
-        { vc: 20, description: 'Apoio básico (30 min)' },
-        { vc: 35, description: 'Sessão completa (1 hora)' },
-        { vc: 50, description: 'Acompanhamento intensivo (2 horas)' }
+      webnamoro: [
+        { vc: 30, description: 'Conversa íntima (30 min)' },
+        { vc: 50, description: 'Sessão completa (1 hora)' },
+        { vc: 80, description: 'Acompanhamento intensivo (2+ horas)' }
       ],
-      drawing: [
-        { vc: 25, description: 'Desenho simples (30 min)' },
-        { vc: 40, description: 'Desenho detalhado (1 hora)' },
-        { vc: 60, description: 'Ilustração complexa (2+ horas)' }
+      vixink: [
+        { vc: 25, description: 'Arte simples (30 min)' },
+        { vc: 40, description: 'Arte detalhada (1 hora)' },
+        { vc: 60, description: 'Obra complexa (2+ horas)' }
+      ],
+      educacao: [
+        { vc: 20, description: 'Aula básica (30 min)' },
+        { vc: 35, description: 'Aula completa (1 hora)' },
+        { vc: 50, description: 'Curso intensivo (2+ horas)' }
+      ],
+      esoterico: [
+        { vc: 25, description: 'Leitura simples (30 min)' },
+        { vc: 40, description: 'Sessão completa (1 hora)' },
+        { vc: 60, description: 'Consulta detalhada (2+ horas)' }
       ],
       default: [
         { vc: 15, description: 'Serviço básico (30 min)' },
@@ -434,6 +434,23 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       return;
     }
 
+    // KYC validation for +18 content
+    if (formData.category === 'webnamoro') {
+      if (kycLoading) {
+        return showError('Aguarde a verificação do status KYC...');
+      }
+      if (!isKycVerified) {
+        if (isKycNotConfigured) {
+          showError('Para criar serviços +18, você precisa configurar sua verificação KYC primeiro.');
+          onClose();
+          window.location.href = '/settings';
+          return;
+        } else {
+          return showError('Para criar serviços +18, sua verificação KYC precisa estar aprovada. Status atual: ' + getKycStatusMessage().message);
+        }
+      }
+    }
+
     if (!formData.description.trim() || formData.description.length < 50) {
       showError('A descrição deve ter pelo menos 50 caracteres');
       return;
@@ -662,6 +679,35 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                     </option>
                   ))}
                 </select>
+                
+                {/* KYC Status for +18 content */}
+                {formData.category === 'webnamoro' && (
+                  <div className="kyc-status-container">
+                    {kycLoading ? (
+                      <div className="kyc-status loading">
+                        <i className="fas fa-spinner fa-spin"></i>
+                        <span>Verificando status KYC...</span>
+                      </div>
+                    ) : (
+                      <div className={`kyc-status ${getKycStatusMessage().status}`}>
+                        <i className={getKycStatusMessage().icon}></i>
+                        <span>{getKycStatusMessage().message}</span>
+                        {isKycNotConfigured && (
+                          <button 
+                            type="button" 
+                            className="btn-kyc-setup"
+                            onClick={() => {
+                              onClose();
+                              window.location.href = '/settings';
+                            }}
+                          >
+                            Configurar KYC
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -24,15 +24,7 @@ const STRIPE_WEBHOOK_SECRET = defineSecret('STRIPE_WEBHOOK_SECRET');
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const STRIPE_API_VERSION = '2023-10-16';
 
-// Helper function to get environment info
-const getEnvironmentInfo = () => {
-  return {
-    isProduction: IS_PRODUCTION,
-    nodeEnv: process.env.NODE_ENV,
-    stripeKeyPrefix: process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_') ? 'live' : 'test',
-    timestamp: new Date().toISOString()
-  };
-};
+
 
 // Configurações globais
 setGlobalOptions({
