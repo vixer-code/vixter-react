@@ -443,6 +443,11 @@
     height: 100%;
   }
   
+  /* Fix header overlap on mobile - adjust for actual header height */
+  .connection-status {
+    margin-top: 60px; /* Match mobile header height */
+  }
+  
   .conversations-sidebar {
     width: 100%;
     height: 100%;
@@ -481,7 +486,7 @@
   
   .sidebar-header {
     padding: 10px 15px;
-    margin-top: 0;
+    margin-top: 60px; /* Account for mobile header height */
     position: sticky;
     top: 0;
     z-index: 20;
@@ -522,18 +527,21 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 576px) {
   .enhanced-messages {
     height: 100%;
   }
   
+  /* Adjust for smaller header height on very small screens */
   .connection-status {
+    margin-top: 56px; /* Match smaller header height */
     padding: 6px 15px;
     font-size: 0.8rem;
   }
   
   .sidebar-header {
     padding: 8px 15px;
+    margin-top: 56px; /* Account for smaller header height */
     position: sticky;
     top: 0;
     z-index: 20;
