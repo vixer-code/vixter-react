@@ -160,12 +160,19 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     }
   }, [editingPack]);
 
+  // Garantir que packType seja sempre 'download' quando modal abrir
+  useEffect(() => {
+    if (isOpen && !formData.packType) {
+      handleInputChange('packType', 'download');
+    }
+  }, [isOpen, formData.packType]);
+
   const clearForm = (resetStep = true) => {
     setFormData({
       title: '',
       category: '',
       subcategory: '',
-      packType: '',
+      packType: 'download', // Fixed: sempre definir como 'download' (consistente com o estado inicial)
       description: '',
       price: '',
       discount: '',
@@ -480,7 +487,11 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         if (!formData.title.trim()) return false;
         if (!formData.category) return false;
         if (subcategoriesMap[formData.category]?.length && !formData.subcategory) return false;
-        if (!formData.packType) return false;
+        // PackType é sempre 'download' - não precisa validar ou garantir que seja válido
+        if (!formData.packType) {
+          // Corrigir automaticamente se por algum motivo estiver vazio
+          handleInputChange('packType', 'download');
+        }
         return true;
       case 1: // description
         return formData.description.trim().length >= 50;
