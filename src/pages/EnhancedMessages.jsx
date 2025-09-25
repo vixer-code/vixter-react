@@ -253,15 +253,6 @@ const EnhancedMessages = () => {
         <div className={`conversations-sidebar ${showMobileChat ? 'mobile-hidden' : ''}`}>
           <div className="sidebar-header">
             <h2>Mensagens</h2>
-            <div className="header-actions">
-              <button
-                className="new-chat-button"
-                onClick={() => setShowUserSelector(true)}
-                title="Nova conversa"
-              >
-                ✏️
-              </button>
-            </div>
           </div>
 
           <div className="sidebar-tabs">
@@ -293,13 +284,13 @@ const EnhancedMessages = () => {
                   <div className="empty-icon">💬</div>
                   <p>Nenhuma conversa ainda</p>
                   <p style={{ fontSize: '12px', color: '#666' }}>
-                    Use o botão ✏️ para nova conversa
+                    Use a aba "Online agora" para iniciar uma conversa
                   </p>
                   <button
                     className="start-conversation-button"
-                    onClick={() => setShowUserSelector(true)}
+                    onClick={() => setActiveTab('online')}
                   >
-                    Iniciar conversa
+                    Ver usuários online
                   </button>
                 </div>
               ) : (
