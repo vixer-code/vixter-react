@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import PurpleSpinner from '../components/PurpleSpinner';
 import './Auth.css';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    emailOrUsername: '',
+    email: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -30,7 +30,7 @@ const Login = () => {
     setError('');
 
     try {
-      await login(formData.emailOrUsername, formData.password);
+      await login(formData.email, formData.password);
       navigate('/');
     } catch (error) {
       console.error('Login error:', error);
@@ -43,7 +43,7 @@ const Login = () => {
   const getErrorMessage = (errorCode) => {
     switch (errorCode) {
       case 'auth/user-not-found':
-        return 'Usuário não encontrado';
+        return 'Email não encontrado';
       case 'auth/wrong-password':
         return 'Senha incorreta';
       case 'auth/too-many-requests':
@@ -69,16 +69,16 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="emailOrUsername">Email ou Username</label>
-            <div className={`input-group ${formData.emailOrUsername ? 'has-content' : ''}`}>
-              <User className="input-icon" size={20} />
+            <label htmlFor="email">Email</label>
+            <div className={`input-group ${formData.email ? 'has-content' : ''}`}>
+              <Mail className="input-icon" size={20} />
               <input
-                type="text"
-                id="emailOrUsername"
-                name="emailOrUsername"
-                value={formData.emailOrUsername}
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
-                placeholder="     seu@email.com ou username"
+                placeholder="     seu@email.com"
                 required
               />
             </div>
