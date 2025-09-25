@@ -90,7 +90,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
               title: freshPackData.title || '',
               category: freshPackData.category || '',
               subcategory: freshPackData.subcategory || '',
-              packType: freshPackData.packType || '',
+              packType: freshPackData.packType || 'download',
               description: freshPackData.description || '',
               price: freshPackData.price != null ? String(freshPackData.price) : '',
               discount: freshPackData.discount != null ? String(freshPackData.discount) : '',
@@ -108,7 +108,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
               title: editingPack.title || '',
               category: editingPack.category || '',
               subcategory: editingPack.subcategory || '',
-              packType: editingPack.packType || '',
+              packType: editingPack.packType || 'download',
               description: editingPack.description || '',
               price: editingPack.price != null ? String(editingPack.price) : '',
               discount: editingPack.discount != null ? String(editingPack.discount) : '',
@@ -128,7 +128,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
             title: editingPack.title || '',
             category: editingPack.category || '',
             subcategory: editingPack.subcategory || '',
-            packType: editingPack.packType || '',
+            packType: editingPack.packType || 'download',
             description: editingPack.description || '',
             price: editingPack.price != null ? String(editingPack.price) : '',
             discount: editingPack.discount != null ? String(editingPack.discount) : '',
@@ -165,7 +165,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       title: '',
       category: '',
       subcategory: '',
-      packType: '',
+      packType: 'download',
       description: '',
       price: '',
       discount: '',
@@ -480,7 +480,6 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         if (!formData.title.trim()) return false;
         if (!formData.category) return false;
         if (subcategoriesMap[formData.category]?.length && !formData.subcategory) return false;
-        if (!formData.packType) return false;
         return true;
       case 1: // description
         return formData.description.trim().length >= 50;
