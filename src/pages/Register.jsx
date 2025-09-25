@@ -466,6 +466,7 @@ const Register = () => {
           displayName: formData.displayName || user.displayName || '',
           username: normalizedUsername || '',
           accountType: formData.accountType || '',
+          specialAssistance: formData.specialAssistance || false,
           followersCount: 0,
           followingCount: 0,
           profilePictureURL: user.photoURL || null,

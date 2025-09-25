@@ -41,7 +41,7 @@ const Profile = () => {
   const isBoth = accountType === 'both'; // Legacy account type for management/testing
   const { userPacks: firestorePacks, loading: packsLoading, loadUserPacks, createPack, updatePack, deletePack } = usePacks();
   const { services: firestoreServices, loading: servicesLoading, loadUserServices, updateServiceStatus, deleteService } = useServices();
-  const { isVerified, isChecking } = useEmailVerification();
+  const { emailVerified: isVerified, loading: isChecking } = useEmailVerification();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const { createOrGetConversation } = useEnhancedMessaging();
   

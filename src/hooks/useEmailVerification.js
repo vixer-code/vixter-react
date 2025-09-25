@@ -64,7 +64,7 @@ export const useEmailVerification = () => {
     };
 
     checkEmailVerification();
-  }, [currentUser]);
+  }, [currentUser, currentUser?.emailVerified]);
 
   return {
     emailVerified,
