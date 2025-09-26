@@ -477,7 +477,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     if (formData.discount === '') return null;
     const v = parseInt(formData.discount, 10);
     if (isNaN(v)) return 'Desconto deve ser um número';
-    if (v < 0 || v > 100) return 'Desconto deve estar entre 0 e 100';
+    if (v < 0 || v > 75) return 'Desconto deve estar entre 0 e 75%';
     return null;
   };
 
@@ -496,7 +496,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       case 1: // description
         return formData.description.trim().length >= 50;
       case 2: // pricing
-        return !getPriceError() && !getDiscountError();
+        return !getPriceError() && !getDiscountError() && !getSellerEarningsValidationError();
       case 3: // media
         // cover is required as per create-pack.js
         return Boolean(coverImageFile || formData.coverImage);
@@ -552,6 +552,15 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     return Math.max(final, 0);
   };
 
+  // Validation for minimum seller earnings (10 VC)
+  const getSellerEarningsValidationError = () => {
+    const effectivePriceValue = effectivePrice();
+    if (effectivePriceValue < 10) {
+      return `O valor final para a vendedora deve ser pelo menos 10,00 VC. Valor atual: ${formatVC(effectivePriceValue)}`;
+    }
+    return null;
+  };
+
   const handleSubmit = async () => {
     if (!currentUser || isSubmitting) return;
 
@@ -586,6 +595,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     if (priceErr) return showError(priceErr);
     const discountErr = getDiscountError();
     if (discountErr) return showError(discountErr);
+    const sellerEarningsErr = getSellerEarningsValidationError();
+    if (sellerEarningsErr) return showError(sellerEarningsErr);
     if (!coverImageFile && !formData.coverImage) {
       return showError('Você deve carregar uma imagem de capa');
     }
@@ -974,17 +985,25 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                   id="pack-discount"
                   type="number"
                   min="0"
-                  max="100"
+                  max="75"
                   step="1"
                   value={formData.discount}
                   onChange={e => handleInputChange('discount', e.target.value)}
                   className={getDiscountError() ? 'error' : ''}
                   placeholder="0"
                 />
+                <small>Desconto opcional (0-75%)</small>
                 {getDiscountError() && (
                   <div className="validation-error">
                     <i className="fas fa-exclamation-triangle"></i>
                     {getDiscountError()}
+                  </div>
+                )}
+                
+                {getSellerEarningsValidationError() && (
+                  <div className="validation-error">
+                    <i className="fas fa-exclamation-triangle"></i>
+                    {getSellerEarningsValidationError()}
                   </div>
                 )}
               </div>
