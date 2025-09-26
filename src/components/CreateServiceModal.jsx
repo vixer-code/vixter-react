@@ -332,7 +332,7 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     if (formData.discount === '') return null;
     const v = parseInt(formData.discount, 10);
     if (isNaN(v)) return 'Desconto deve ser um número';
-    if (v < 0 || v > 100) return 'Desconto deve estar entre 0 e 100';
+    if (v < 0 || v > 75) return 'Desconto deve estar entre 0 e 75%';
     return null;
   };
 
@@ -351,6 +351,15 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     return Math.max(final, 0);
   };
 
+  // Validation for minimum seller earnings (10 VC)
+  const getSellerEarningsValidationError = () => {
+    const effectivePriceValue = effectivePrice();
+    if (effectivePriceValue < 10) {
+      return `O valor final para a vendedora deve ser pelo menos 10,00 VC. Valor atual: ${formatVC(effectivePriceValue)}`;
+    }
+    return null;
+  };
+
   // fileToDataURL removed - now using R2 upload
 
   const validateCurrentStep = () => {
@@ -360,7 +369,7 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
       case 1: // Description
         return formData.description.trim().length >= 50;
       case 2: // Pricing
-        return formData.price && parseFloat(formData.price) >= 10 && !getDiscountError();
+        return formData.price && parseFloat(formData.price) >= 10 && !getDiscountError() && !getSellerEarningsValidationError();
       case 3: // Media (optional)
         return true;
       case 4: // Preview
@@ -483,6 +492,12 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     const discountErr = getDiscountError();
     if (discountErr) {
       showError(discountErr);
+      return;
+    }
+
+    const sellerEarningsErr = getSellerEarningsValidationError();
+    if (sellerEarningsErr) {
+      showError(sellerEarningsErr);
       return;
     }
 
@@ -846,16 +861,23 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                   value={formData.discount}
                   onChange={(e) => handleInputChange('discount', e.target.value)}
                   min="0"
-                  max="100"
+                  max="75"
                   step="1"
                   placeholder="0"
                   className={getDiscountError() ? 'error' : ''}
                 />
-                <small>Desconto opcional (0-100%)</small>
+                <small>Desconto opcional (0-75%)</small>
                 {getDiscountError() && (
                   <div className="validation-error">
                     <i className="fas fa-exclamation-triangle"></i>
                     {getDiscountError()}
+                  </div>
+                )}
+                
+                {getSellerEarningsValidationError() && (
+                  <div className="validation-error">
+                    <i className="fas fa-exclamation-triangle"></i>
+                    {getSellerEarningsValidationError()}
                   </div>
                 )}
               </div>
