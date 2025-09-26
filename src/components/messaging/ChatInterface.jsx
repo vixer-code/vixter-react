@@ -31,6 +31,8 @@ const ChatInterface = ({ conversation, onClose }) => {
   const messagesContainerRef = useRef(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const otherUser = getOtherParticipant(conversation);
 
@@ -62,6 +64,45 @@ const ChatInterface = ({ conversation, onClose }) => {
       scrollToBottom();
     }
   }, [messages, shouldAutoScroll, isUserScrolling]);
+
+  // Handle mobile keyboard visibility
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768) {
+        const initialHeight = window.innerHeight;
+        const currentHeight = window.visualViewport?.height || window.innerHeight;
+        const heightDifference = initialHeight - currentHeight;
+        
+        if (heightDifference > 150) { // Keyboard is likely visible
+          setIsKeyboardVisible(true);
+          setKeyboardHeight(heightDifference);
+          // Scroll to bottom when keyboard appears
+          setTimeout(() => {
+            scrollToBottom();
+          }, 100);
+        } else {
+          setIsKeyboardVisible(false);
+          setKeyboardHeight(0);
+        }
+      }
+    };
+
+    // Listen for viewport changes (modern browsers)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+    } else {
+      // Fallback for older browsers
+      window.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      } else {
+        window.removeEventListener('resize', handleResize);
+      }
+    };
+  }, []);
 
   // Typing indicators now handled by EnhancedMessagingContext
   // All typing state and functions moved to context for better management
@@ -150,6 +191,16 @@ const ChatInterface = ({ conversation, onClose }) => {
     }
   };
 
+  // Handle textarea focus for mobile keyboard
+  const handleTextareaFocus = () => {
+    if (window.innerWidth <= 768) {
+      // Ensure the input is visible when focused
+      setTimeout(() => {
+        scrollToBottom();
+      }, 300);
+    }
+  };
+
   // Common emojis
   const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'];
 
@@ -170,7 +221,12 @@ const ChatInterface = ({ conversation, onClose }) => {
   const isServiceCompleted = conversation?.type === 'service' && conversation?.isCompleted;
 
   return (
-    <div className={`chat-interface ${isServiceCompleted ? 'completed-service' : ''}`}>
+    <div 
+      className={`chat-interface ${isServiceCompleted ? 'completed-service' : ''} ${isKeyboardVisible ? 'keyboard-visible' : ''}`}
+      style={{
+        '--keyboard-height': `${keyboardHeight}px`
+      }}
+    >
       {/* Chat Header */}
       <div className="chat-header">
         <div className="chat-user-info">
@@ -341,6 +397,7 @@ const ChatInterface = ({ conversation, onClose }) => {
             value={messageText}
             onChange={handleMessageChange}
             onKeyPress={handleKeyPress}
+            onFocus={handleTextareaFocus}
             placeholder={isServiceCompleted ? "Serviço finalizado - Conversa arquivada" : "Digite sua mensagem..."}
             className="message-input"
             rows="1"
