@@ -45,21 +45,32 @@ export const UserProvider = ({ children }) => {
 
   // Load user profile from Firestore
   useEffect(() => {
+    let unsubscribe = null;
+    
     if (currentUser && currentUser.uid) {
       // Add a small delay to ensure auth is fully ready
-      const timer = setTimeout(() => {
-        loadUserProfile();
+      const timer = setTimeout(async () => {
+        unsubscribe = await loadUserProfile();
       }, 100);
       
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        if (unsubscribe && typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
+      };
     } else {
+      // Clear user profile immediately when user logs out
       setUserProfile(null);
       setLoading(false);
     }
   }, [currentUser]);
 
   const loadUserProfile = useCallback(async () => {
-    if (!currentUser) return;
+    if (!currentUser || !currentUser.uid) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -68,6 +79,12 @@ export const UserProvider = ({ children }) => {
       
       // Set up real-time listener
       const unsubscribe = onSnapshot(userRef, async (doc) => {
+        // Check if user is still authenticated before processing
+        if (!currentUser || !currentUser.uid) {
+          setLoading(false);
+          return;
+        }
+
         if (doc.exists()) {
           const userData = doc.data();
           setUserProfile({
@@ -109,14 +126,20 @@ export const UserProvider = ({ children }) => {
         setLoading(false);
       }, (error) => {
         console.error('Error loading user profile:', error);
-        showError('Erro ao carregar perfil do usuário.', 'Erro');
+        // Only show error if user is still authenticated
+        if (currentUser && currentUser.uid) {
+          showError('Erro ao carregar perfil do usuário.', 'Erro');
+        }
         setLoading(false);
       });
       
       return unsubscribe;
     } catch (error) {
       console.error('Error setting up user profile listener:', error);
-      showError('Erro ao carregar perfil do usuário.', 'Erro');
+      // Only show error if user is still authenticated
+      if (currentUser && currentUser.uid) {
+        showError('Erro ao carregar perfil do usuário.', 'Erro');
+      }
       setLoading(false);
     }
   }, [currentUser, showError]);
