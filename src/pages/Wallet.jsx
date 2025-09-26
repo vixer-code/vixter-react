@@ -426,7 +426,7 @@ const Wallet = () => {
       });
 
       showSuccess(
-        `Saque solicitado com sucesso! ${result.data.netAmount} VC (R$ ${result.data.brlAmount}) serão enviados via PIX em até 2 dias úteis.`,
+        `Saque solicitado com sucesso! ${result.data.netAmount} VC (R$ ${result.data.brlAmount}) serão enviados via PIX em 1 a 3 dias úteis.`,
         'Saque em Processamento'
       );
 
@@ -436,7 +436,7 @@ const Wallet = () => {
     } catch (error) {
       console.error('Error processing withdrawal:', error);
       if (error.code === 'functions/failed-precondition') {
-        showError('Configure sua conta Stripe nas configurações primeiro', 'Conta Stripe Necessária');
+        showError('Configure sua chave PIX nas configurações primeiro', 'Chave PIX Necessária');
       } else {
         showError('Erro ao processar saque. Tente novamente.', 'Erro');
       }
