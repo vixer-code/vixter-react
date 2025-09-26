@@ -426,7 +426,7 @@ const Wallet = () => {
       });
 
       showSuccess(
-        `Saque solicitado com sucesso! ${result.data.netAmount} VC (R$ ${result.data.brlAmount}) serão enviados via PIX em até 2 dias úteis.`,
+        `Saque solicitado com sucesso! ${result.data.netAmount} VC (R$ ${result.data.brlAmount}) serão enviados via PIX em 1 a 3 dias úteis.`,
         'Saque em Processamento'
       );
 
@@ -436,7 +436,7 @@ const Wallet = () => {
     } catch (error) {
       console.error('Error processing withdrawal:', error);
       if (error.code === 'functions/failed-precondition') {
-        showError('Configure sua conta Stripe nas configurações primeiro', 'Conta Stripe Necessária');
+        showError('Configure sua chave PIX nas configurações primeiro', 'Chave PIX Necessária');
       } else {
         showError('Erro ao processar saque. Tente novamente.', 'Erro');
       }
@@ -1416,11 +1416,13 @@ const Wallet = () => {
                   <i className="fas fa-info-circle"></i>
                   <div>
                     <strong>Como funciona:</strong>
-                    <p>Seus VC são convertidos para BRL e transferidos para sua conta Stripe. No Stripe você pode configurar:</p>
+                    <p>Seus VC são convertidos para BRL e transferidos via PIX para sua conta. Na aba de configurações, você pode configurar as seguintes opções de chave PIX:</p>
                     <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', color: '#b0b0b0' }}>
-                      <li>Conta bancária (1-2 dias úteis)</li>
-                      <li>Outros métodos de pagamento</li>
+                      <li>CPF</li>
+                      <li>Celular</li>
+                      <li>e-mail</li>
                     </ul>
+                    <p style={{ margin: '8px 0 0 0', color: '#b0b0b0' }}>Os saques levam entre 1 a 3 dias úteis para serem processados e finalizados.</p>
                   </div>
                 </div>
               </div>
