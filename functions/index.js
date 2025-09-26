@@ -15,6 +15,7 @@ import {
   processPixPayment,
   listPendingWithdrawals,
   sendPurchaseConfirmationEmail,
+  onWithdrawalStatusChanged,
 
   // Vixtip Processing
   processVixtip,
@@ -50,6 +51,7 @@ export {
   processPixPayment,
   listPendingWithdrawals,
   sendPurchaseConfirmationEmail,
+  onWithdrawalStatusChanged,
 
   // Vixtip Processing
   processVixtip,
