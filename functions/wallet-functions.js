@@ -1554,6 +1554,7 @@ export const processPixPayment = onCall({
         type: 'WITHDRAW_VC',
         metadata: {
           ...transactionDoc.data().metadata,
+          description: `Saque de VC para PIX - Pagamento finalizado`,
           status: 'paid',
           pixDocument: pixDocument,
           processedBy: adminId,
