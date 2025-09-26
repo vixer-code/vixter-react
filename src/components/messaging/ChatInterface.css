@@ -403,6 +403,8 @@
   padding: 8px 12px;
   transition: border-color 0.2s;
   position: relative;
+  width: 100%;
+  min-width: 0;
 }
 
 .input-wrapper:focus-within {
@@ -423,6 +425,8 @@
   min-height: 20px;
   color: #FFFFFF !important;
   caret-color: #00FFCA;
+  width: 100%;
+  min-width: 0;
 }
 
 .message-input::placeholder {
@@ -582,6 +586,24 @@ input.message-input {
   
   .message-input-container {
     padding: 12px 15px;
+    /* Mobile keyboard handling */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: var(--vixter-bg-secondary);
+    border-top: 1px solid var(--vixter-border);
+    /* Ensure it stays above keyboard */
+    transform: translateY(0);
+    transition: transform 0.3s ease, bottom 0.3s ease;
+    /* Prevent input from being covered by keyboard */
+    will-change: transform, bottom;
+  }
+  
+  /* Adjust messages container to account for fixed input */
+  .messages-container {
+    padding-bottom: 100px; /* Space for fixed input */
   }
   
   .message-input {
@@ -592,10 +614,51 @@ input.message-input {
   
   .media-options {
     grid-template-columns: repeat(2, 1fr);
+    bottom: 100px; /* Position above fixed input */
   }
   
   .emoji-grid {
     grid-template-columns: repeat(6, 1fr);
+  }
+  
+  /* Handle virtual keyboard appearance */
+  @supports (height: 100dvh) {
+    .chat-interface {
+      height: 100dvh;
+    }
+    
+    .messages-container {
+      height: calc(100dvh - 150px); /* Account for header and input */
+    }
+  }
+  
+  /* iOS Safari specific fixes */
+  @supports (-webkit-touch-callout: none) {
+    .message-input-container {
+      /* iOS Safari keyboard handling */
+      position: fixed;
+      bottom: env(keyboard-inset-height, 0px);
+      transform: translateY(0);
+    }
+  }
+  
+  /* Keyboard visible state */
+  .chat-interface.keyboard-visible .message-input-container {
+    bottom: var(--keyboard-height, 0px);
+    transform: translateY(0);
+  }
+  
+  .chat-interface.keyboard-visible .messages-container {
+    padding-bottom: calc(100px + var(--keyboard-height, 0px));
+    height: calc(100vh - 150px - var(--keyboard-height, 0px));
+  }
+  
+  .chat-interface.keyboard-visible .media-options {
+    bottom: calc(100px + var(--keyboard-height, 0px));
+  }
+  
+  .chat-interface.keyboard-visible .emoji-picker {
+    bottom: calc(100px + var(--keyboard-height, 0px));
   }
 }
 
