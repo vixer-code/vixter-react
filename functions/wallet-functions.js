@@ -4,6 +4,7 @@
 /* eslint-env node */
 /* global process */
 import { onCall, HttpsError, onRequest } from "firebase-functions/v2/https";
+import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { setGlobalOptions } from "firebase-functions/v2";
 import admin from "firebase-admin";
 import { logger } from "firebase-functions";
@@ -1554,6 +1555,7 @@ export const processPixPayment = onCall({
         type: 'WITHDRAW_VC',
         metadata: {
           ...transactionDoc.data().metadata,
+          description: `Saque de VC para PIX - Pagamento finalizado`,
           status: 'paid',
           pixDocument: pixDocument,
           processedBy: adminId,
@@ -2250,4 +2252,95 @@ export const claimDailyBonus = onCall({
   }
 });
 
-logger.info('✅ Wallet functions loaded - Stripe preserved, watermarking removed, Vixtip processing added');
+/**
+ * Trigger que detecta quando um saque é marcado como "paid" e atualiza o histórico de transações
+ */
+export const onWithdrawalStatusChanged = onDocumentUpdated({
+  document: "withdrawals/{withdrawalId}",
+  region: "us-east1",
+}, async (event) => {
+  const beforeData = event.data?.before?.data();
+  const afterData = event.data?.after?.data();
+  
+  if (!beforeData || !afterData) {
+    logger.warn('❌ Dados do trigger de saque não encontrados');
+    return;
+  }
+  
+  const beforeStatus = beforeData.status;
+  const afterStatus = afterData.status;
+  const withdrawalId = event.params.withdrawalId;
+  
+  logger.info(`🔍 Trigger de saque acionado: ${withdrawalId}`);
+  logger.info(`  - Status anterior: ${beforeStatus}`);
+  logger.info(`  - Status atual: ${afterStatus}`);
+  
+  // Verificar se o status mudou para "paid"
+  if (beforeStatus !== 'paid' && afterStatus === 'paid') {
+    logger.info(`✅ Saque ${withdrawalId} foi marcado como pago! Atualizando histórico...`);
+    
+    try {
+      const userId = afterData.userId;
+      const transactionId = afterData.transactionId;
+      
+      if (!userId || !transactionId) {
+        logger.error(`❌ Dados essenciais não encontrados no saque ${withdrawalId}:`, {
+          userId,
+          transactionId
+        });
+        return;
+      }
+      
+      // Buscar a transação correspondente
+      const transactionQuery = await db.collection('transactions')
+        .where('userId', '==', userId)
+        .where('metadata.transactionId', '==', transactionId)
+        .where('type', '==', 'WITHDRAW_VC_PENDING')
+        .limit(1)
+        .get();
+      
+      if (transactionQuery.empty) {
+        logger.error(`❌ Transação não encontrada para saque ${withdrawalId}:`, {
+          userId,
+          transactionId
+        });
+        return;
+      }
+      
+      const transactionDoc = transactionQuery.docs[0];
+      const transactionData = transactionDoc.data();
+      
+      logger.info(`📄 Transação encontrada: ${transactionDoc.id}`);
+      logger.info(`  - Tipo atual: ${transactionData.type}`);
+      logger.info(`  - Descrição atual: ${transactionData.metadata?.description}`);
+      
+      // Atualizar a transação
+      await transactionDoc.ref.update({
+        type: 'WITHDRAW_VC',
+        metadata: {
+          ...transactionData.metadata,
+          description: `Saque de VC para PIX - Pagamento finalizado`,
+          status: 'paid',
+          processedAt: admin.firestore.FieldValue.serverTimestamp()
+        },
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      
+      logger.info(`✅ Histórico de transação atualizado com sucesso!`);
+      logger.info(`  - Novo tipo: WITHDRAW_VC`);
+      logger.info(`  - Nova descrição: Saque de VC para PIX - Pagamento finalizado`);
+      logger.info(`  - Usuário: ${userId}`);
+      logger.info(`  - Transaction ID: ${transactionId}`);
+      
+    } catch (error) {
+      logger.error(`💥 Erro ao atualizar histórico de transação para saque ${withdrawalId}:`, error);
+      
+      // Não re-throw o erro para evitar que o trigger falhe
+      // O histórico pode ser atualizado manualmente se necessário
+    }
+  } else {
+    logger.info(`ℹ️ Status do saque ${withdrawalId} não mudou para "paid" - ignorando trigger`);
+  }
+});
+
+logger.info('✅ Wallet functions loaded - Stripe preserved, watermarking removed, Vixtip processing added, withdrawal trigger added');
