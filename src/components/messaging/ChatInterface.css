@@ -110,6 +110,14 @@
 .chat-user-info {
   display: flex;
   align-items: center;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.chat-user-info:hover {
+  background-color: var(--vixter-hover);
+  transform: translateY(-1px);
 }
 
 .user-avatar {
@@ -148,6 +156,11 @@
   font-weight: 600;
   color: var(--vixter-text-primary);
   margin-bottom: 2px;
+  transition: color 0.2s ease;
+}
+
+.chat-user-info:hover .user-name {
+  color: var(--vixter-accent-primary);
 }
 
 .user-status {
