@@ -1272,9 +1272,9 @@ const Profile = () => {
     }
 
     return (
-      <div className="account-badges">
+      <div className="account-badges-profile">
         {badges.map((badge, index) => (
-          <span key={index} className="badge-icon" data-label={badge.label}>
+          <span key={index} className="badge-icon-profile" data-label={badge.label}>
             <img src={badge.src} alt={badge.alt} />
           </span>
         ))}
@@ -1339,7 +1339,7 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="profile-container">
+      <div className="profile-container-profile">
         <div className="loading-text">Carregando...</div>
       </div>
     );
@@ -1347,8 +1347,8 @@ const Profile = () => {
 
   if (!profile) {
     return (
-      <div className="profile-container">
-        <div className="error-message">Perfil não encontrado</div>
+      <div className="profile-container-profile">
+        <div className="error-message-profile">Perfil não encontrado</div>
       </div>
     );
   }
@@ -1393,42 +1393,42 @@ const Profile = () => {
   };
 
   return (
-    <div className="profile-container">
+    <div className="profile-container-profile">
       {/* Email Verification Banner - Only show for unverified emails */}
       {isOwner && !isVerified && !isChecking && !bannerDismissed && (
-        <div className="email-verification-banner">
-          <div className="banner-content">
-            <div className="banner-icon">📧</div>
-            <div className="banner-text">
+        <div className="email-verification-banner-profile">
+          <div className="banner-content-profile">
+            <div className="banner-icon-profile">📧</div>
+            <div className="banner-text-profile">
               <strong>E-mail não verificado</strong>
               <p>Verifique sua caixa de entrada e clique no link de verificação para acessar todos os recursos.</p>
             </div>
-            <div className="banner-actions">
-              <button className="btn-verify" onClick={() => window.location.href = '/verify-email'}>
+            <div className="banner-actions-profile">
+              <button className="btn-verify-profile" onClick={() => window.location.href = '/verify-email'}>
                 Verificar agora
               </button>
-              <button className="btn-dismiss" onClick={() => setBannerDismissed(true)}>×</button>
+              <button className="btn-dismiss-profile" onClick={() => setBannerDismissed(true)}>×</button>
             </div>
           </div>
         </div>
       )}
       
-      <div className="profile-card">
-        <div className="cover-photo">
+      <div className="profile-card-profile">
+        <div className="cover-photo-profile">
           {profile.coverPhotoURL ? (
             <CachedImage
               src={profile.coverPhotoURL}
               alt="Capa do Perfil"
-              className="cover-photo-img"
+              className="cover-photo-img-profile"
               priority={true}
               sizes="100vw"
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
-            <div className="cover-photo-placeholder" />
+            <div className="cover-photo-placeholder-profile" />
           )}
           {isOwner && (
-            <label className="cover-upload-btn">
+            <label className="cover-upload-btn-profile">
               <input
                 type="file"
                 accept="image/*"
@@ -1440,10 +1440,10 @@ const Profile = () => {
           )}
         </div>
         
-        <div className="profile-header">
-          <div className="profile-avatar">
+        <div className="profile-header-profile">
+          <div className="profile-avatar-profile">
             {isOwner ? (
-              <label className="avatar-upload-btn">
+              <label className="avatar-upload-btn-profile">
                 <input
                   type="file"
                   accept="image/*"
@@ -1474,29 +1474,29 @@ const Profile = () => {
             )}
           </div>
           
-          <div className="profile-info">
+          <div className="profile-info-profile">
             {renderAccountBadges()}
-            <h1 className="profile-name">
+            <h1 className="profile-name-profile">
               {editing ? (
                 <input
                   type="text"
                   value={formData.displayName}
                   onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                  className="edit-input"
+                  className="edit-input-profile"
                 />
               ) : (
                 profile.displayName || 'Nome do Usuário'
               )}
             </h1>
-            <p className="profile-username">
+            <p className="profile-username-profile">
               @{profile.username || 'username'}
             </p>
-            <p className="profile-status">
+            <p className="profile-status-profile">
               {editing ? (
                 <textarea
                   value={formData.bio}
                   onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                  className="edit-textarea"
+                  className="edit-textarea-profile"
                   placeholder="Mensagem de status aqui"
                 />
               ) : (
@@ -1504,7 +1504,7 @@ const Profile = () => {
               )}
             </p>
             
-            <div className="profile-meta">
+            <div className="profile-meta-profile">
               <span className="profile-location">
                 <i className="fa-solid fa-location-dot"></i>
                 {editing ? (
@@ -1512,7 +1512,7 @@ const Profile = () => {
                     type="text"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="edit-input"
+                    className="edit-input-profile"
                     placeholder="Nenhuma localização especificada"
                   />
                 ) : (
@@ -1537,34 +1537,34 @@ const Profile = () => {
               </span>
             </div>
             
-            <div className="profile-rating">
-              <div className="profile-stars">
+            <div className="profile-rating-profile">
+              <div className="profile-stars-profile">
                 {renderProfileStars(profileRating)}
               </div>
-              <span className="profile-rating-value">{profileRating.toFixed(1)}</span>
-              <span className="profile-rating-count">({profileReviewsCount} avaliações)</span>
+              <span className="profile-rating-value-profile">{profileRating.toFixed(1)}</span>
+              <span className="profile-rating-count-profile">({profileReviewsCount} avaliações)</span>
             </div>
           </div>
           
-          <div className="profile-actions">
+          <div className="profile-actions-profile">
             {isOwner ? (
               editing ? (
                 <>
-                  <button className="save-profile-btn" onClick={handleSave}>
+                  <button className="save-profile-btn-profile" onClick={handleSave}>
                     <i className="fa-solid fa-check"></i> Salvar
                   </button>
-                  <button className="cancel-profile-btn" onClick={handleCancel}>
+                  <button className="cancel-profile-btn-profile" onClick={handleCancel}>
                     <i className="fa-solid fa-times"></i> Cancelar
                   </button>
                 </>
               ) : (
-                <button className="edit-profile-btn" onClick={() => setEditing(true)}>
+                <button className="edit-profile-btn-profile" onClick={() => setEditing(true)}>
                   <i className="fa-solid fa-pen"></i> Editar Perfil
                 </button>
               )
             ) : (
               currentUser && (
-                <div className="visitor-actions">
+                <div className="visitor-actions-profile">
                   <button 
                     className={`follow-btn ${isFollowing ? 'following' : ''}`}
                     onClick={handleFollow}
@@ -1572,7 +1572,7 @@ const Profile = () => {
                     <i className={`fa-solid ${isFollowing ? 'fa-user-check' : 'fa-user-plus'}`}></i>
                     {isFollowing ? 'Seguindo' : 'Seguir'}
                   </button>
-                  <button className="message-btn" onClick={handleMessageClick}>
+                  <button className="message-btn-profile" onClick={handleMessageClick}>
                     <i className="fa-solid fa-envelope"></i> Mensagem
                   </button>
                 </div>
@@ -1581,7 +1581,7 @@ const Profile = () => {
           </div>
         </div>
         
-        <div className="profile-tabs">
+        <div className="profile-tabs-profile">
           <button 
             className={`profile-tab ${activeTab === 'perfil' ? 'active' : ''}`}
             onClick={handleTabClick}
@@ -1629,43 +1629,43 @@ const Profile = () => {
       
       {/* Tab Contents */}
       <div className={`tab-content ${activeTab === 'perfil' ? 'active' : ''}`}>
-        <div className="perfil-tab-content">
-          <div className="profile-sidebar">
-            <div className="interests-section">
-              <div className="section-header">
+        <div className="perfil-tab-content-profile">
+          <div className="profile-sidebar-profile">
+            <div className="interests-section-profile">
+              <div className="section-header-profile">
                 <i className="fa-solid fa-tags"></i> Interesses
               </div>
-              <div className="section-content">
-                <div className="interest-tags">
+              <div className="section-content-profile">
+                <div className="interest-tags-profile">
                   {profile.interests && profile.interests.length > 0 ? (
                     profile.interests.map((interest, index) => (
-                      <span key={index} className="interest-tag">{interest}</span>
+                      <span key={index} className="interest-tag-profile">{interest}</span>
                     ))
                   ) : (
-                    <span className="no-interests">Nenhum interesse adicionado</span>
+                    <span className="no-interests-profile">Nenhum interesse adicionado</span>
                   )}
                 </div>
               </div>
             </div>
             
-            <div className="friends-section">
+            <div className="friends-section-profile">
               <div className="section-header friends-header">
                 <div>
                   <i className="fa-solid fa-users"></i> Seguidores
-                  <div className="friend-count">{followers.length} Seguidores</div>
+                  <div className="friend-count-profile">{followers.length} Seguidores</div>
                 </div>
                 {followers.length > 0 && (
-                  <button className="view-all-link" onClick={() => setShowFollowersModal(true)}>
+                  <button className="view-all-link-profile" onClick={() => setShowFollowersModal(true)}>
                     Todos os seguidores
                   </button>
                 )}
               </div>
-              <div className="section-content">
+              <div className="section-content-profile">
                 {followers.length > 0 ? (
-                  <div className="friends-grid">
+                  <div className="friends-grid-profile">
                     {followers.slice(0, 6).map((follower) => (
-                      <div key={follower.id} className="friend-item">
-                        <div className="friend-avatar">
+                      <div key={follower.id} className="friend-item-profile">
+                        <div className="friend-avatar-profile">
                         <CachedImage 
                             src={follower.profilePictureURL}
                             defaultType="PROFILE_2"
@@ -1676,21 +1676,21 @@ const Profile = () => {
                             loading="lazy"
                           />
                         </div>
-                        <div className="friend-name">{follower.displayName}</div>
+                        <div className="friend-name-profile">{follower.displayName}</div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="empty-state">Nenhum seguidor ainda.</div>
+                  <div className="empty-state-profile">Nenhum seguidor ainda.</div>
                 )}
               </div>
             </div>
           </div>
           
-          <div className="profile-posts">
+          <div className="profile-posts-profile">
             {isOwner && (
-              <div className="create-post-card">
-                <div className="create-post-avatar">
+              <div className="create-post-card-profile">
+                <div className="create-post-avatar-profile">
                   <CachedImage 
                     src={userProfile?.profilePictureURL || profile?.profilePictureURL}
                     defaultType="PROFILE_3"
@@ -1699,7 +1699,7 @@ const Profile = () => {
                     showLoading={false}
                   />
                 </div>
-                <div className="create-post-body">
+                <div className="create-post-body-profile">
                   <textarea
                     value={newPostContent}
                     onChange={(e) => setNewPostContent(e.target.value)}
@@ -1707,8 +1707,8 @@ const Profile = () => {
                     maxLength={1000}
                     rows={3}
                   />
-                  <div className="create-post-actions">
-                    <label className="action-btn">
+                  <div className="create-post-actions-profile">
+                    <label className="action-btn-profile">
                       <i className="fa-solid fa-image"></i> Imagem
                       <input
                         type="file"
@@ -1718,12 +1718,12 @@ const Profile = () => {
                         style={{ display: 'none' }}
                       />
                     </label>
-                    <button onClick={handleCreatePost} className="btn primary">
+                    <button onClick={handleCreatePost} className="btn-profile primary">
                       Publicar
                     </button>
                   </div>
                   {selectedImages.length > 0 && (
-                    <div className="selected-images-preview">
+                    <div className="selected-images-preview-profile">
                       {selectedImages.map((image, index) => (
                          <img
                            key={index}
@@ -1740,7 +1740,7 @@ const Profile = () => {
               </div>
             )}
             
-            <div className="posts-container">
+            <div className="posts-container-profile">
               {posts.length > 0 ? (
                 posts.map((post) => {
                   // Determine if this is a repost and get the correct post data
@@ -1790,9 +1790,9 @@ const Profile = () => {
                   const isReposted = repostStatus[originalPostId] || false;
 
                   return (
-                    <div key={post.id} className="post-card">
+                    <div key={post.id} className="post-card-profile">
                       {isRepost && (
-                        <div className="repost-indicator">
+                        <div className="repost-indicator-profile">
                           <i className="fas fa-retweet"></i>
                           <span>
                             <strong>{reposterInfo?.name}</strong> repostou
@@ -1800,9 +1800,9 @@ const Profile = () => {
                         </div>
                       )}
 
-                      <div className="post-header">
-                        <div className="post-author">
-                          <div className="post-author-avatar">
+                      <div className="post-header-profile">
+                        <div className="post-author-profile">
+                          <div className="post-author-avatar-profile">
                             <CachedImage
                               src={displayPost.authorPhotoURL || displayPost.authorPhoto}
                               fallbackSrc="/images/default-avatar.jpg"
@@ -1811,9 +1811,9 @@ const Profile = () => {
                               showLoading={false}
                             />
                           </div>
-                          <div className="author-info">
-                            <div className="post-author-name">{displayPost.authorName}</div>
-                            <div className="post-time">
+                          <div className="author-info-profile">
+                            <div className="post-author-name-profile">{displayPost.authorName}</div>
+                            <div className="post-time-profile">
                               {displayPost.timestamp
                                 ? new Date(displayPost.timestamp).toLocaleDateString('pt-BR')
                                 : 'Agora'}
@@ -1821,23 +1821,23 @@ const Profile = () => {
                           </div>
                         </div>
                         {isOwner && !isRepost && (
-                          <button className="delete-btn" onClick={() => handleDeletePost(post.id)}>
+                          <button className="delete-btn-profile" onClick={() => handleDeletePost(post.id)}>
                             ✕
                           </button>
                         )}
                       </div>
 
-                      <div className="post-content">
+                      <div className="post-content-profile">
                         {contentText && <p>{contentText}</p>}
                         {mediaArray.length > 0 && (
-                          <div className="post-media">
+                          <div className="post-media-profile">
                             {mediaArray.map((m, idx) => (
                               <React.Fragment key={idx}>
                                 {m.type === 'image' && (
                                   <img
                                     src={m.url}
                                     alt="Post content"
-                                    className="post-image"
+                                    className="post-image-profile"
                                     onError={(e) => { e.target.style.display = 'none'; }}
                                   />
                                 )}
@@ -1845,7 +1845,7 @@ const Profile = () => {
                                   <video
                                     src={m.url}
                                     controls
-                                    className="post-video"
+                                    className="post-video-profile"
                                     onError={(e) => { e.target.style.display = 'none'; }}
                                   />
                                 )}
@@ -1853,7 +1853,7 @@ const Profile = () => {
                                   <audio
                                     src={m.url}
                                     controls
-                                    className="post-audio"
+                                    className="post-audio-profile"
                                     onError={(e) => { e.target.style.display = 'none'; }}
                                   />
                                 )}
@@ -1863,7 +1863,7 @@ const Profile = () => {
                         )}
                       </div>
 
-                      <div className="post-actions">
+                      <div className="post-actions-profile">
                         <button onClick={() => handleLike(originalPostId)} className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}>
                           <i className={`fas fa-heart ${isLiked ? 'fas' : 'far'}`}></i>
                           <span>{displayPost.likeCount || Object.keys(displayPost.likes || {}).length || 0}</span>
@@ -1883,8 +1883,8 @@ const Profile = () => {
                       </div>
 
                       {expandedComments[originalPostId] && (
-                        <div className="comments-section">
-                          <div className="comment-input">
+                        <div className="comments-section-profile">
+                          <div className="comment-input-profile">
                             <input
                               type="text"
                               placeholder="Escreva um comentário..."
@@ -1893,7 +1893,7 @@ const Profile = () => {
                               onKeyPress={(e) => e.key === 'Enter' && addComment(originalPostId)}
                             />
                             <button 
-                              className="btn small" 
+                              className="btn-profile small" 
                               onClick={() => addComment(originalPostId)}
                               disabled={!commentInputs[originalPostId]?.trim()}
                             >
@@ -1902,15 +1902,15 @@ const Profile = () => {
                           </div>
                           
                           {commentsByPost[originalPostId]?.items?.length > 0 ? (
-                            <div className="comments-list">
+                            <div className="comments-list-profile">
                               {commentsByPost[originalPostId].items.map((comment) => {
                                 const isCommentLiked = comment.likedBy && comment.likedBy.includes(currentUser?.uid);
                                 const replyKey = `${originalPostId}:${comment.id}`;
                                 
                                 return (
-                                  <div key={comment.id} className="comment-item">
-                                    <div className="comment-header">
-                                      <div className="comment-avatar">
+                                  <div key={comment.id} className="comment-item-profile">
+                                    <div className="comment-header-profile">
+                                      <div className="comment-avatar-profile">
                                         <CachedImage
                                           src={comment.authorPhotoURL}
                                           fallbackSrc="/images/default-avatar.jpg"
@@ -1919,15 +1919,15 @@ const Profile = () => {
                                           showLoading={false}
                                         />
                                       </div>
-                                      <div className="comment-info">
-                                        <div className="comment-author-name">{comment.authorName}</div>
-                                        <div className="comment-time">
+                                      <div className="comment-info-profile">
+                                        <div className="comment-author-name-profile">{comment.authorName}</div>
+                                        <div className="comment-time-profile">
                                           {new Date(comment.timestamp).toLocaleDateString('pt-BR')}
                                         </div>
                                       </div>
                                       {comment.authorId === currentUser?.uid && (
                                         <button 
-                                          className="comment-delete-btn"
+                                          className="comment-delete-btn-profile"
                                           onClick={() => handleDeleteComment(originalPostId, comment)}
                                           title="Deletar comentário"
                                         >
@@ -1935,12 +1935,12 @@ const Profile = () => {
                                         </button>
                                       )}
                                     </div>
-                                    <div className="comment-content">
+                                    <div className="comment-content-profile">
                                       <p>{comment.content}</p>
                                     </div>
-                                    <div className="comment-actions">
+                                    <div className="comment-actions-profile">
                                       <button 
-                                        className={`comment-action-btn like-btn ${isCommentLiked ? 'liked' : ''}`}
+                                        className={`comment-action-btn-profile like-btn ${isCommentLiked ? 'liked' : ''}`}
                                         onClick={() => likeComment(originalPostId, comment)}
                                         title={isCommentLiked ? 'Descurtir' : 'Curtir'}
                                       >
@@ -1948,7 +1948,7 @@ const Profile = () => {
                                         <span>{comment.likes || 0}</span>
                                       </button>
                                       <button 
-                                        className="comment-action-btn reply-btn"
+                                        className="comment-action-btn-profile reply-btn"
                                         onClick={() => toggleReplyInput(originalPostId, comment.id)}
                                         title="Responder"
                                       >
@@ -1958,8 +1958,8 @@ const Profile = () => {
                                     </div>
                                     
                                     {showReplyInputs[replyKey] && (
-                                      <div className="comment-reply">
-                                        <div className="comment-input">
+                                      <div className="comment-reply-profile">
+                                        <div className="comment-input-profile">
                                           <input
                                             type="text"
                                             placeholder="Escreva uma resposta..."
@@ -1968,7 +1968,7 @@ const Profile = () => {
                                             onKeyPress={(e) => e.key === 'Enter' && addComment(originalPostId, comment.id)}
                                           />
                                           <button 
-                                            className="btn small" 
+                                            className="btn-profile small" 
                                             onClick={() => addComment(originalPostId, comment.id)}
                                             disabled={!commentInputs[replyKey]?.trim()}
                                           >
@@ -1982,7 +1982,7 @@ const Profile = () => {
                               })}
                             </div>
                           ) : (
-                            <div className="no-comments">Nenhum comentário ainda</div>
+                            <div className="no-comments-profile">Nenhum comentário ainda</div>
                           )}
                         </div>
                       )}
@@ -1990,7 +1990,7 @@ const Profile = () => {
                   );
                 })
               ) : (
-                <div className="empty-state">Nenhuma publicação ainda.</div>
+                <div className="empty-state-profile">Nenhuma publicação ainda.</div>
               )}
             </div>
           </div>
@@ -1999,11 +1999,11 @@ const Profile = () => {
       
       {/* About Tab */}
       <div className={`tab-content ${activeTab === 'about' ? 'active' : ''}`}>
-        <div className="about-tab-content">
+        <div className="about-tab-content-profile">
           <h3>Sobre mim</h3>
           
-          <div className="about-section">
-            <div className="section-header">
+          <div className="about-section-profile">
+            <div className="section-header-profile">
               <h4>Bio</h4>
             </div>
             {editing ? (
@@ -2015,13 +2015,13 @@ const Profile = () => {
                 rows={4}
               />
             ) : (
-              <p className="bio-text">{profile.aboutMe || profile.bio || 'Nenhuma bio disponível.'}</p>
+              <p className="bio-text-profile">{profile.aboutMe || profile.bio || 'Nenhuma bio disponível.'}</p>
             )}
           </div>
           
-          <div className="profile-details">
-            <div className="detail-group">
-              <div className="section-header">
+          <div className="profile-details-profile">
+            <div className="detail-group-profile">
+              <div className="section-header-profile">
                 <h4>Idiomas</h4>
               </div>
               {editing ? (
@@ -2029,7 +2029,7 @@ const Profile = () => {
                   type="text"
                   value={formData.languages}
                   onChange={(e) => setFormData({ ...formData, languages: e.target.value })}
-                  className="edit-input"
+                  className="edit-input-profile"
                   placeholder="Ex: Português, Inglês, Espanhol"
                 />
               ) : (
@@ -2037,8 +2037,8 @@ const Profile = () => {
               )}
             </div>
             
-            <div className="detail-group">
-              <div className="section-header">
+            <div className="detail-group-profile">
+              <div className="section-header-profile">
                 <h4>Hobbies</h4>
               </div>
               {editing ? (
@@ -2046,7 +2046,7 @@ const Profile = () => {
                   type="text"
                   value={formData.hobbies}
                   onChange={(e) => setFormData({ ...formData, hobbies: e.target.value })}
-                  className="edit-input"
+                  className="edit-input-profile"
                   placeholder="Ex: Música, Esportes, Leitura"
                 />
               ) : (
@@ -2054,12 +2054,12 @@ const Profile = () => {
               )}
             </div>
 
-            <div className="detail-group">
-              <div className="section-header">
+            <div className="detail-group-profile">
+              <div className="section-header-profile">
                 <h4>Interesses</h4>
                 {editing && (
                   <button 
-                    className="add-interest-btn" 
+                    className="add-interest-btn-profile" 
                     onClick={addInterest}
                     disabled={formData.interests.length >= 5}
                   >
@@ -2068,18 +2068,18 @@ const Profile = () => {
                 )}
               </div>
               {editing ? (
-                <div className="interests-editor">
+                <div className="interests-editor-profile">
                   {formData.interests.map((interest, index) => (
-                    <div key={index} className="interest-input-group">
+                    <div key={index} className="interest-input-group-profile">
                       <input
                         type="text"
                         value={interest}
                         onChange={(e) => handleInterestChange(index, e.target.value)}
-                        className="edit-input interest-input"
+                        className="edit-input-profile interest-input-profile"
                         placeholder="Digite um interesse"
                       />
                       <button 
-                        className="remove-interest-btn"
+                        className="remove-interest-btn-profile"
                         onClick={() => removeInterest(index)}
                         type="button"
                       >
@@ -2088,17 +2088,17 @@ const Profile = () => {
                     </div>
                   ))}
                   {formData.interests.length === 0 && (
-                    <p className="empty-state">Nenhum interesse adicionado</p>
+                    <p className="empty-state-profile">Nenhum interesse adicionado</p>
                   )}
                 </div>
               ) : (
-                <div className="interests-container">
+                <div className="interests-container-profile">
                   {profile.interests && profile.interests.length > 0 ? (
                     profile.interests.map((interest, index) => (
-                      <span key={index} className="interest-tag">{interest}</span>
+                      <span key={index} className="interest-tag-profile">{interest}</span>
                     ))
                   ) : (
-                    <span className="empty-state">Nenhum interesse adicionado</span>
+                    <span className="empty-state-profile">Nenhum interesse adicionado</span>
                   )}
                 </div>
               )}
@@ -2111,9 +2111,9 @@ const Profile = () => {
       
       {/* Services Tab */}
       <div className={`tab-content ${activeTab === 'services' ? 'active' : ''}`}>
-        <div className="services-tab-content">
+        <div className="services-tab-content-profile">
 
-          <div className="services-header">
+          <div className="services-header-profile">
             <h3>
               {isProvider || isBoth ? 'Meus Serviços' : 'Serviços Disponíveis'}
             </h3>
@@ -2121,7 +2121,7 @@ const Profile = () => {
               <>
                 {(isProvider || isBoth) && (
                   <button
-                    className="btn primary"
+                    className="btn-profile primary"
                     onClick={() => {
                       setEditingService(null);
                       setShowCreateServiceModal(true);
@@ -2141,9 +2141,9 @@ const Profile = () => {
             )}
           </div>
           
-          <div className="services-grid">
+          <div className="services-grid-profile">
             {servicesLoading ? (
-              <div className="loading-state">
+              <div className="loading-state-profile">
                 <PurpleSpinner text="Carregando serviços..." size="medium" />
               </div>
             ) : firestoreServices.length > 0 ? (
@@ -2155,7 +2155,7 @@ const Profile = () => {
                   style={{ cursor: 'pointer' }}
                   title={isOwner ? 'Clique para editar este serviço' : 'Clique para ver detalhes e comprar com VP'}
                 >
-                  <div className="service-cover">
+                  <div className="service-cover-profile">
                     {console.log('Service data for cover image:', {
                       serviceId: service.id,
                       coverImageURL: service.coverImageURL,
@@ -2176,25 +2176,25 @@ const Profile = () => {
                       </div>
                     )}
                   </div>
-                  <div className="service-info">
-                    <h3 className="service-title">{service.title}</h3>
-                    <div className="service-price">
-                      <div className="price-original">VP {(service.price != null ? (service.price * 1.5).toFixed(2) : '0.00')}</div>
-                      <div className="price-discounted">
+                  <div className="service-info-profile">
+                    <h3 className="service-title-profile">{service.title}</h3>
+                    <div className="service-price-profile">
+                      <div className="price-original-profile">VP {(service.price != null ? (service.price * 1.5).toFixed(2) : '0.00')}</div>
+                      <div className="price-discounted-profile">
                         VP {(() => {
                           const basePrice = service.price || 0;
                           const discount = service.discount || 0;
                           const discountedPrice = discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
                           return (discountedPrice * 1.5).toFixed(2);
                         })()}
-                        {service.discount && <span className="service-discount">(-{service.discount}%)</span>}
+                        {service.discount && <span className="service-discount-profile">(-{service.discount}%)</span>}
                       </div>
                     </div>
-                    <p className="service-category">{service.category || 'Geral'}</p>
+                    <p className="service-category-profile">{service.category || 'Geral'}</p>
                     {service.tags && service.tags.length > 0 && (
-                      <div className="service-tags">
+                      <div className="service-tags-profile">
                         {service.tags.slice(0, 4).map((tag, index) => (
-                          <span key={index} className="service-tag">{tag}</span>
+                          <span key={index} className="service-tag-profile">{tag}</span>
                         ))}
                         {service.tags.length > 4 && (
                           <span className="service-tag-more">+{service.tags.length - 4}</span>
@@ -2203,7 +2203,7 @@ const Profile = () => {
                     )}
                   </div>
                   {isOwner && (
-                    <div className="service-actions" onClick={(e) => e.stopPropagation()}>
+                    <div className="service-actions-profile" onClick={(e) => e.stopPropagation()}>
                       {/* Animated status switch */}
                       <button 
                         className={`action-btn status-btn ${switchingServiceId === service.id ? 'switching' : ''}`}
@@ -2229,7 +2229,7 @@ const Profile = () => {
                 </div>
               ))
             ) : (
-              <div className="empty-state">
+              <div className="empty-state-profile">
                 <i className="fa-solid fa-briefcase"></i>
                 <p>Nenhum serviço cadastrado.</p>
               </div>
@@ -2240,14 +2240,14 @@ const Profile = () => {
       
       {/* Packs Tab */}
       <div className={`tab-content ${activeTab === 'packs' ? 'active' : ''}`}>
-        <div className="packs-tab-content">
-          <div className="packs-header">
+        <div className="packs-tab-content-profile">
+          <div className="packs-header-profile">
             <h3>Packs</h3>
             {isOwner && (
               <>
                 {(isProvider || isBoth) && (
                   <button
-                    className="btn primary"
+                    className="btn-profile primary"
                     onClick={() => {
                       setEditingPack(null);
                       setShowCreatePackModal(true);
@@ -2267,9 +2267,9 @@ const Profile = () => {
             )}
           </div>
           
-          <div className="packs-grid">
+          <div className="packs-grid-profile">
             {packsLoading ? (
-              <div className="loading-state">
+              <div className="loading-state-profile">
                 <PurpleSpinner text="Carregando packs..." size="medium" />
               </div>
             ) : firestorePacks.length > 0 ? (
@@ -2281,7 +2281,7 @@ const Profile = () => {
                   style={{ cursor: 'pointer' }}
                   title={isOwner ? 'Clique para editar este pack' : 'Clique para ver detalhes e comprar com VP'}
                 >
-                  <div className="pack-cover">
+                  <div className="pack-cover-profile">
                     {console.log('Pack data for cover image:', {
                       packId: pack.id,
                       coverImage: pack.coverImage,
@@ -2302,24 +2302,24 @@ const Profile = () => {
                       </div>
                     )}
                   </div>
-                  <div className="pack-info">
-                    <h3 className="pack-title">{pack.title}</h3>
-                    <div className="pack-price">
-                      <div className="price-original">VP {(pack.price != null ? (pack.price * 1.5).toFixed(2) : '0.00')}</div>
-                      <div className="price-discounted">
+                  <div className="pack-info-profile">
+                    <h3 className="pack-title-profile">{pack.title}</h3>
+                    <div className="pack-price-profile">
+                      <div className="price-original-profile">VP {(pack.price != null ? (pack.price * 1.5).toFixed(2) : '0.00')}</div>
+                      <div className="price-discounted-profile">
                         VP {(() => {
                           const basePrice = pack.price || 0;
                           const discount = pack.discount || 0;
                           const discountedPrice = discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
                           return (discountedPrice * 1.5).toFixed(2);
                         })()}
-                        {pack.discount && <span className="pack-discount">(-{pack.discount}%)</span>}
+                        {pack.discount && <span className="pack-discount-profile">(-{pack.discount}%)</span>}
                       </div>
                     </div>
                     {pack.tags && pack.tags.length > 0 && (
-                      <div className="service-tags">
+                      <div className="service-tags-profile">
                         {pack.tags.slice(0, 4).map((tag, index) => (
-                          <span key={index} className="service-tag">{tag}</span>
+                          <span key={index} className="service-tag-profile">{tag}</span>
                         ))}
                         {pack.tags.length > 4 && (
                           <span className="service-tag-more">+{pack.tags.length - 4}</span>
@@ -2328,7 +2328,7 @@ const Profile = () => {
                     )}
                   </div>
                   {isOwner && (
-                    <div className="service-actions" onClick={(e) => e.stopPropagation()}>
+                    <div className="service-actions-profile" onClick={(e) => e.stopPropagation()}>
                       {/* Animated status switch */}
                       <button 
                         className={`action-btn status-btn ${switchingPackId === pack.id ? 'switching' : ''}`}
@@ -2354,7 +2354,7 @@ const Profile = () => {
                 </div>
               ))
             ) : (
-              <div className="empty-state">
+              <div className="empty-state-profile">
                 <i className="fa-solid fa-box-open"></i>
                 <p>Nenhum pack cadastrado.</p>
               </div>
@@ -2366,8 +2366,8 @@ const Profile = () => {
       
       {/* Subscriptions Tab */}
       <div className={`tab-content ${activeTab === 'subscriptions' ? 'active' : ''}`}>
-        <div className="subscriptions-tab-content">
-          <div className="subscriptions-header">
+        <div className="subscriptions-tab-content-profile">
+          <div className="subscriptions-header-profile">
             <h3>Assinaturas</h3>
             {isOwner && (
               <button className="btn blocked" disabled title="Em breve">
@@ -2376,14 +2376,14 @@ const Profile = () => {
             )}
           </div>
           
-          <div className="subscriptions-grid">
-            <div className="subscriptions-coming-soon">
-              <span className="coming-soon-badge">Em breve</span>
-              <div className="coming-soon-icon">
+          <div className="subscriptions-grid-profile">
+            <div className="subscriptions-coming-soon-profile">
+              <span className="coming-soon-badge-profile">Em breve</span>
+              <div className="coming-soon-icon-profile">
                 <i className="fa-regular fa-clock"></i>
               </div>
-              <div className="coming-soon-title">Assinaturas em desenvolvimento</div>
-              <div className="coming-soon-subtitle">Estamos preparando algo especial para você. Volte em breve.</div>
+              <div className="coming-soon-title-profile">Assinaturas em desenvolvimento</div>
+              <div className="coming-soon-subtitle-profile">Estamos preparando algo especial para você. Volte em breve.</div>
             </div>
           </div>
         </div>
@@ -2404,21 +2404,21 @@ const Profile = () => {
 
       {/* Followers Modal */}
       {showFollowersModal && (
-        <div className="modal-overlay" onClick={() => setShowFollowersModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="modal-overlay-profile" onClick={() => setShowFollowersModal(false)}>
+          <div className="modal-content-profile" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-profile">
               <h2>Seguidores</h2>
-              <button className="modal-close" onClick={() => setShowFollowersModal(false)}>&times;</button>
+              <button className="modal-close-profile" onClick={() => setShowFollowersModal(false)}>&times;</button>
             </div>
-            <div className="modal-body">
-              <div className="modal-followers-grid">
+            <div className="modal-body-profile">
+              <div className="modal-followers-grid-profile">
                 {followers.map((follower) => (
                   <div 
                     key={follower.id} 
                     className="modal-follower-item clickable"
                     onClick={() => handleFollowerClick(follower)}
                   >
-                    <div className="modal-follower-avatar">
+                    <div className="modal-follower-avatar-profile">
                       <CachedImage 
                         src={follower.profilePictureURL}
                         defaultType="PROFILE_1"
@@ -2427,8 +2427,8 @@ const Profile = () => {
                         showLoading={false}
                       />
                     </div>
-                    <div className="modal-follower-name">{follower.displayName}</div>
-                    <div className="modal-follower-username">@{follower.username}</div>
+                    <div className="modal-follower-name-profile">{follower.displayName}</div>
+                    <div className="modal-follower-username-profile">@{follower.username}</div>
                   </div>
                 ))}
               </div>
@@ -2467,13 +2467,13 @@ const Profile = () => {
 
       {/* Service Preview Modal */}
       {showServicePreview && serviceToPreview && (
-        <div className="modal-overlay" onClick={() => setShowServicePreview(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="modal-overlay-profile" onClick={() => setShowServicePreview(false)}>
+          <div className="modal-content-profile" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-profile">
               <h2>{serviceToPreview.title || 'Serviço'}</h2>
-              <button className="modal-close" onClick={() => setShowServicePreview(false)}>&times;</button>
+              <button className="modal-close-profile" onClick={() => setShowServicePreview(false)}>&times;</button>
             </div>
-            <div className="modal-body">
+            <div className="modal-body-profile">
               <div className="preview-cover">
                 <SmartMediaViewer
                   mediaData={serviceToPreview.coverImageURL || serviceToPreview.coverImage}
@@ -2500,11 +2500,11 @@ const Profile = () => {
                   const discounted = basePrice * (1 - (discountPercent > 0 ? discountPercent / 100 : 0)) * 1.5;
                   return (
                     <div className="preview-price">
-                      <div className="price-original">VP {originalPrice.toFixed(2)}</div>
-                      <div className="price-discounted">
+                      <div className="price-original-profile">VP {originalPrice.toFixed(2)}</div>
+                      <div className="price-discounted-profile">
                         VP {discounted.toFixed(2)}
                         {discountPercent > 0 && (
-                          <span className="service-discount"> (-{discountPercent}%)</span>
+                          <span className="service-discount-profile"> (-{discountPercent}%)</span>
                         )}
                       </div>
                     </div>
@@ -2513,7 +2513,7 @@ const Profile = () => {
               </div>
             </div>
             <div className="modal-actions">
-              <button className="btn primary" onClick={() => { setShowServicePreview(false); setServicePendingPurchase(serviceToPreview); setShowServiceConfirm(true); }}>
+              <button className="btn-profile primary" onClick={() => { setShowServicePreview(false); setServicePendingPurchase(serviceToPreview); setShowServiceConfirm(true); }}>
                 <i className="fa-solid fa-shopping-cart"></i> Comprar agora
               </button>
             </div>
@@ -2523,13 +2523,13 @@ const Profile = () => {
 
       {/* Pack Preview Modal */}
       {showPackPreview && packToPreview && (
-        <div className="modal-overlay" onClick={() => setShowPackPreview(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="modal-overlay-profile" onClick={() => setShowPackPreview(false)}>
+          <div className="modal-content-profile" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-profile">
               <h2>{packToPreview.title || 'Pack'}</h2>
-              <button className="modal-close" onClick={() => setShowPackPreview(false)}>&times;</button>
+              <button className="modal-close-profile" onClick={() => setShowPackPreview(false)}>&times;</button>
             </div>
-            <div className="modal-body">
+            <div className="modal-body-profile">
               <div className="preview-cover">
                 <SmartMediaViewer
                   mediaData={packToPreview.coverImage}
@@ -2555,11 +2555,11 @@ const Profile = () => {
                   const discounted = basePrice * (1 - (discountPercent > 0 ? discountPercent / 100 : 0)) * 1.5;
                   return (
                     <div className="preview-price">
-                      <div className="price-original">VP {originalPrice.toFixed(2)}</div>
-                      <div className="price-discounted">
+                      <div className="price-original-profile">VP {originalPrice.toFixed(2)}</div>
+                      <div className="price-discounted-profile">
                         VP {discounted.toFixed(2)}
                         {discountPercent > 0 && (
-                          <span className="pack-discount"> (-{discountPercent}%)</span>
+                          <span className="pack-discount-profile"> (-{discountPercent}%)</span>
                         )}
                       </div>
                     </div>
@@ -2568,7 +2568,7 @@ const Profile = () => {
               </div>
             </div>
             <div className="modal-actions">
-              <button className="btn primary" onClick={() => { setShowPackPreview(false); setPackPendingPurchase(packToPreview); setShowPackConfirm(true); }}>
+              <button className="btn-profile primary" onClick={() => { setShowPackPreview(false); setPackPendingPurchase(packToPreview); setShowPackConfirm(true); }}>
                 <i className="fa-solid fa-shopping-cart"></i> Comprar agora
               </button>
             </div>
@@ -2604,13 +2604,13 @@ const Profile = () => {
 
       {/* Pack Purchase Confirmation Modal */}
       {showPackConfirm && packPendingPurchase && (
-        <div className="modal-overlay" onClick={() => { setShowPackConfirm(false); setConfirmPackAck(false); }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="modal-overlay-profile" onClick={() => { setShowPackConfirm(false); setConfirmPackAck(false); }}>
+          <div className="modal-content-profile" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-profile">
               <h2>Confirmar Compra</h2>
-              <button className="modal-close" onClick={() => { setShowPackConfirm(false); setConfirmPackAck(false); }}>&times;</button>
+              <button className="modal-close-profile" onClick={() => { setShowPackConfirm(false); setConfirmPackAck(false); }}>&times;</button>
             </div>
-            <div className="modal-body">
+            <div className="modal-body-profile">
               <p>Você está prestes a comprar o pack <strong>{packPendingPurchase.title || 'Pack'}</strong>.</p>
               <p><strong>Política de Reembolso:</strong> esta compra é <strong>não reembolsável</strong>. Ao continuar, você reconhece e concorda com esta política.</p>
               <label className="checkbox">
@@ -2620,7 +2620,7 @@ const Profile = () => {
             </div>
             <div className="modal-actions">
               <button className="btn secondary" onClick={() => { setShowPackConfirm(false); setConfirmPackAck(false); }}>Cancelar</button>
-              <button className="btn primary" disabled={!confirmPackAck} onClick={async () => {
+              <button className="btn-profile primary" disabled={!confirmPackAck} onClick={async () => {
                 const pk = packPendingPurchase;
                 setShowPackConfirm(false);
                 setConfirmPackAck(false);
@@ -2634,13 +2634,13 @@ const Profile = () => {
 
       {/* Service Purchase Confirmation Modal */}
       {showServiceConfirm && servicePendingPurchase && (
-        <div className="modal-overlay" onClick={() => { setShowServiceConfirm(false); setConfirmServiceAck(false); }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="modal-overlay-profile" onClick={() => { setShowServiceConfirm(false); setConfirmServiceAck(false); }}>
+          <div className="modal-content-profile" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-profile">
               <h2>Confirmar Compra</h2>
-              <button className="modal-close" onClick={() => { setShowServiceConfirm(false); setConfirmServiceAck(false); }}>&times;</button>
+              <button className="modal-close-profile" onClick={() => { setShowServiceConfirm(false); setConfirmServiceAck(false); }}>&times;</button>
             </div>
-            <div className="modal-body">
+            <div className="modal-body-profile">
               <p>Você está prestes a comprar o serviço <strong>{servicePendingPurchase.title || 'Serviço'}</strong>.</p>
               <p><strong>Política de Reembolso:</strong> esta compra é <strong>não reembolsável</strong>. Ao continuar, você reconhece e concorda com esta política.</p>
               <label className="checkbox">
@@ -2650,7 +2650,7 @@ const Profile = () => {
             </div>
             <div className="modal-actions">
               <button className="btn secondary" onClick={() => { setShowServiceConfirm(false); setConfirmServiceAck(false); }}>Cancelar</button>
-              <button className="btn primary" disabled={!confirmServiceAck} onClick={async () => {
+              <button className="btn-profile primary" disabled={!confirmServiceAck} onClick={async () => {
                 const svc = servicePendingPurchase;
                 setShowServiceConfirm(false);
                 setConfirmServiceAck(false);
@@ -2664,17 +2664,17 @@ const Profile = () => {
 
       {/* Service Sales (Owner) */}
       {showServiceSalesModal && salesService && (
-        <div className="modal-overlay" onClick={() => setShowServiceSalesModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="modal-overlay-profile" onClick={() => setShowServiceSalesModal(false)}>
+          <div className="modal-content-profile" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-profile">
               <h2>Vendas - {salesService.title}</h2>
-              <button className="modal-close" onClick={() => setShowServiceSalesModal(false)}>&times;</button>
+              <button className="modal-close-profile" onClick={() => setShowServiceSalesModal(false)}>&times;</button>
             </div>
-            <div className="modal-body">
+            <div className="modal-body-profile">
               {serviceSalesLoading ? (
-                <div className="loading-state"><PurpleSpinner text="Carregando..." size="small" /></div>
+                <div className="loading-state-profile"><PurpleSpinner text="Carregando..." size="small" /></div>
               ) : serviceSales.length === 0 ? (
-                <div className="empty-state">Nenhuma venda ainda.</div>
+                <div className="empty-state-profile">Nenhuma venda ainda.</div>
               ) : (
                 <div className="sales-list">
                   <div className="sales-summary">Total ganho: <strong>{serviceTotalVCEarned.toFixed(2)} VC</strong></div>
@@ -2702,17 +2702,17 @@ const Profile = () => {
 
       {/* Pack Sales (Owner) */}
       {showPackSalesModal && salesPack && (
-        <div className="modal-overlay" onClick={() => setShowPackSalesModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="modal-overlay-profile" onClick={() => setShowPackSalesModal(false)}>
+          <div className="modal-content-profile" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-profile">
               <h2>Vendas (Pack) - {salesPack.title}</h2>
-              <button className="modal-close" onClick={() => setShowPackSalesModal(false)}>&times;</button>
+              <button className="modal-close-profile" onClick={() => setShowPackSalesModal(false)}>&times;</button>
             </div>
-            <div className="modal-body">
+            <div className="modal-body-profile">
               {packSalesLoading ? (
-                <div className="loading-state"><PurpleSpinner text="Carregando..." size="small" /></div>
+                <div className="loading-state-profile"><PurpleSpinner text="Carregando..." size="small" /></div>
               ) : packSales.length === 0 ? (
-                <div className="empty-state">Nenhuma venda ainda.</div>
+                <div className="empty-state-profile">Nenhuma venda ainda.</div>
               ) : (
                 <div className="sales-list">
                   <div className="sales-summary">Total ganho: <strong>{packTotalVCEarned.toFixed(2)} VC</strong></div>
