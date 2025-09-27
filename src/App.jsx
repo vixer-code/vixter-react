@@ -15,6 +15,7 @@ import { ReviewProvider } from './contexts/ReviewContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import NotificationContainer from './components/NotificationContainer';
+import ProtectedRoute from './components/ProtectedRoute';
 import { preloadCommonImages } from './utils/imagePreloader';
 
 import './App.css';
@@ -98,7 +99,7 @@ function App() {
                                 <Route path="/my-purchases" element={<MyPurchases />} />
                                 <Route path="/service/:serviceId" element={<ServiceDetail />} />
                                 <Route path="/pack/:packId" element={<PackDetail />} />
-                                <Route path="/settings" element={<Settings />} />
+                                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                                 <Route path="/success" element={<Success />} />
                                 <Route path="/services" element={<div>Services Page - Coming Soon</div>} />
                                 

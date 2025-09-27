@@ -615,15 +615,7 @@ const Settings = () => {
     }
   };
 
-  if (!currentUser) {
-    return (
-      <div className="settings-container">
-        <div className="not-authenticated">
-          <h2>Faça login para acessar as configurações</h2>
-        </div>
-      </div>
-    );
-  }
+  // Removed manual authentication check - now handled by ProtectedRoute
 
   // Show loading if userProfile is not loaded yet
   if (!userContext || !userProfile) {
