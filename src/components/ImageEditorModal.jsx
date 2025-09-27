@@ -30,13 +30,6 @@ const ImageEditorModal = ({
     }
   }, [isOpen, imageType]);
 
-  // Atualizar preview quando o crop muda
-  useEffect(() => {
-    if (crop && imgRef.current) {
-      generatePreview();
-    }
-  }, [crop, generatePreview]);
-
   // Função para criar crop centralizado
   const onImageLoad = useCallback((e) => {
     const { width, height } = e.currentTarget;
@@ -133,8 +126,10 @@ const ImageEditorModal = ({
 
   // Atualizar preview quando o crop ou outras propriedades mudarem
   useEffect(() => {
-    generatePreview();
-  }, [generatePreview]);
+    if (completedCrop && imgRef.current && previewCanvasRef.current) {
+      generatePreview();
+    }
+  }, [completedCrop, scale, rotate, generatePreview]);
 
   // Função para converter canvas para blob
   const getCroppedImg = (canvas, crop) => {
