@@ -53,7 +53,7 @@ const ImageEditorModal = ({
     );
     
     setCrop(crop);
-    // Não definir completedCrop aqui para permitir interação
+    setCompletedCrop(crop); // Definir completedCrop inicial
   }, [imageType]);
 
   // Função para gerar preview da imagem cortada
@@ -70,9 +70,15 @@ const ImageEditorModal = ({
       throw new Error('No 2d context');
     }
 
-    // Verificar se a imagem está carregada
-    if (image.naturalWidth === 0 || image.naturalHeight === 0) {
-      console.warn('Image not fully loaded');
+    // Aguardar a imagem carregar completamente
+    if (!image.complete || image.naturalWidth === 0 || image.naturalHeight === 0) {
+      // Aguardar o evento load se a imagem ainda não carregou
+      if (!image.complete) {
+        image.onload = () => {
+          setTimeout(() => generatePreview(), 100);
+        };
+        return;
+      }
       return;
     }
 
@@ -130,6 +136,20 @@ const ImageEditorModal = ({
       generatePreview();
     }
   }, [crop, scale, rotate, generatePreview]);
+
+  // Atualizar preview quando a imagem carregar
+  useEffect(() => {
+    if (imgRef.current && crop) {
+      const image = imgRef.current;
+      if (image.complete) {
+        generatePreview();
+      } else {
+        image.onload = () => {
+          setTimeout(() => generatePreview(), 100);
+        };
+      }
+    }
+  }, [crop, generatePreview]);
 
   // Função para converter canvas para blob
   const getCroppedImg = (canvas, crop) => {
@@ -198,7 +218,7 @@ const ImageEditorModal = ({
       }
 
       // Verificar se a imagem está carregada
-      if (image.naturalWidth === 0 || image.naturalHeight === 0) {
+      if (!image.complete || image.naturalWidth === 0 || image.naturalHeight === 0) {
         console.error('Image not fully loaded');
         return;
       }
@@ -297,11 +317,7 @@ const ImageEditorModal = ({
             <div className="crop-container">
               <ReactCrop
                 crop={crop}
-                onChange={(c) => {
-                  setCrop(c);
-                  // Atualizar completedCrop também para sincronização
-                  setCompletedCrop(c);
-                }}
+                onChange={(c) => setCrop(c)}
                 onComplete={(c) => setCompletedCrop(c)}
                 aspect={aspect}
                 minWidth={50}
