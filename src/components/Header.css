@@ -691,56 +691,46 @@ header .vp-balance .vp-icon svg,
   background: rgba(15, 15, 26, 0.8);
   flex-shrink: 0;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.mobile-vp-balance {
-  display: flex;
-  align-items: center;
   justify-content: center;
-  background-color: #1A1A2E;
-  padding: 12px 20px;
-  border-radius: 12px;
-  color: #FCFCFC;
-  font-weight: 600;
-  border: 1px solid #2D2D44;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  align-items: center;
 }
 
-.mobile-vp-balance:hover {
-  background-color: #2D2D44;
-  border-color: #00FFCA;
-}
-
-.mobile-vp-balance .vp-icon {
-  margin-right: 10px;
-  height: 24px;
-  width: 24px;
-}
+/* Old mobile-vp-balance styles removed - now using mobile-vp-balance-integrated */
 
 .mobile-profile-info {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  cursor: pointer;
+  background: none;
+  border: none;
   transition: all 0.2s ease;
+  position: relative;
+  width: 100%;
+  max-width: 320px;
 }
 
-.mobile-profile-info:hover {
+.mobile-profile-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  cursor: pointer;
+}
+
+.mobile-profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-profile-user-info:hover {
+  background-color: rgba(0, 255, 202, 0.05);
+  border-radius: 12px;
+}
+
+.mobile-profile-user-info:active {
   background-color: rgba(0, 255, 202, 0.1);
-  border-color: #00FFCA;
-  transform: translateY(-1px);
-}
-
-.mobile-profile-info:active {
-  transform: translateY(0);
-  background-color: rgba(0, 255, 202, 0.15);
 }
 
 .mobile-profile-avatar {
@@ -790,83 +780,123 @@ header .vp-balance .vp-icon svg,
   color: #888;
 }
 
-
-.mobile-notification-section {
+/* Integrated components inside mobile-profile-info */
+.mobile-vp-balance-integrated {
   display: flex;
-  justify-content: center;
-  padding: 15px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.mobile-notification-section .notification-center {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-}
-
-.mobile-notification-section .notification-toggle {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 12px 20px;
-  color: #FCFCFC;
-  font-size: 1rem;
-  font-weight: 500;
+  align-items: center;
+  gap: 6px;
   cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
   transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 120px;
-  justify-content: center;
+  background: none;
+  border: none;
 }
 
-.mobile-notification-section .notification-toggle:hover {
-  background: rgba(0, 255, 202, 0.1);
-  border-color: #00FFCA;
-  color: #00FFCA;
+.mobile-vp-balance-integrated:hover {
+  background-color: rgba(138, 43, 226, 0.1);
+  transform: scale(1.05);
 }
 
-.mobile-notification-section .notification-toggle i {
-  color: #00FFCA;
+.mobile-vp-balance-integrated .vp-icon {
+  height: 24px !important;
+  width: 24px !important;
+  min-height: 24px !important;
+  min-width: 24px !important;
+  max-height: 24px !important;
+  max-width: 24px !important;
 }
 
-.mobile-notification-section .notification-count {
-  background: #FF2E63;
-  color: white;
+.mobile-vp-balance-integrated .vp-icon svg {
+  height: 100% !important;
+  width: 100% !important;
+  min-height: 24px !important;
+  min-width: 24px !important;
+  max-height: 24px !important;
+  max-width: 24px !important;
+}
+
+.vp-amount-mobile {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.7rem;
+  background: linear-gradient(to right, #B14AFF, #00FFCA);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.mobile-notification-integrated {
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: none;
+  border: none;
+}
+
+.mobile-notification-integrated:hover {
+  background-color: rgba(255, 202, 0, 0.1);
+  transform: scale(1.05);
+}
+
+/* Ensure notification center works inside integrated component */
+.mobile-notification-integrated .notification-center {
+  position: relative;
+}
+
+.mobile-notification-integrated .notification-toggle {
+  background: none !important;
+  border: none !important;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-left: 4px;
+  padding: 8px !important;
+  font-size: 1.1rem !important;
+  color: #00FFCA;
+  transition: all 0.2s ease;
 }
 
-.mobile-notification-section .notification-icon-container {
-  margin-right: 0;
+.mobile-notification-integrated .notification-toggle:hover {
+  background: rgba(0, 255, 202, 0.1) !important;
+  color: #B14AFF;
 }
 
-/* Mobile notification dropdown positioning */
-.mobile-notification-section .notification-dropdown {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 90vw;
-  max-width: 400px;
-  max-height: 70vh;
-  z-index: 1000;
-  background: rgba(15, 15, 26, 0.98);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+.mobile-notification-integrated .notification-count {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  background: #FF2E63 !important;
+  color: white !important;
+  border-radius: 50% !important;
+  width: 18px !important;
+  height: 18px !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: auto !important;
+  padding: 0 !important;
 }
 
-.mobile-notification-section .notification-dropdown::before {
+/* Mobile notification dropdown positioning inside integrated component */
+.mobile-notification-integrated .notification-dropdown {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 90vw !important;
+  max-width: 400px !important;
+  max-height: 70vh !important;
+  z-index: 1000 !important;
+  background: rgba(15, 15, 26, 0.98) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+.mobile-notification-integrated .notification-dropdown::before {
   content: '';
   position: fixed;
   top: 0;
@@ -877,41 +907,10 @@ header .vp-balance .vp-icon svg,
   z-index: -1;
 }
 
-.mobile-profile-section {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 15px 0;
-}
 
-.mobile-profile-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid #00FFCA;
-}
+/* Removed old mobile-notification-section styles - no longer needed */
 
-.mobile-profile-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.mobile-profile-info {
-  flex: 1;
-}
-
-.mobile-profile-name {
-  font-weight: 600;
-  color: #FCFCFC;
-  margin-bottom: 2px;
-}
-
-.mobile-profile-username {
-  font-size: 0.9rem;
-  color: #00FFCA;
-}
+/* Old duplicate mobile-profile styles removed - using the integrated version above */
 
 /* Responsive Design */
 @media (max-width: 1000px) {
@@ -1137,6 +1136,47 @@ header .vp-balance .vp-icon svg,
   .mobile-nav-links a {
     font-size: 1rem;
     padding: 18px 0;
+  }
+  
+  /* Adjust mobile profile for smaller screens */
+  .mobile-profile-info {
+    max-width: 280px;
+    padding: 8px 12px;
+  }
+  
+  .mobile-profile-avatar {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .mobile-profile-name {
+    font-size: 0.85rem;
+  }
+  
+  .mobile-profile-username {
+    font-size: 0.75rem;
+  }
+  
+  .mobile-vp-balance-integrated .vp-icon {
+    height: 20px !important;
+    width: 20px !important;
+    min-height: 20px !important;
+    min-width: 20px !important;
+    max-height: 20px !important;
+    max-width: 20px !important;
+  }
+  
+  .mobile-vp-balance-integrated .vp-icon svg {
+    height: 100% !important;
+    width: 100% !important;
+    min-height: 20px !important;
+    min-width: 20px !important;
+    max-height: 20px !important;
+    max-width: 20px !important;
+  }
+  
+  .vp-amount-mobile {
+    font-size: 0.6rem;
   }
 }
 
