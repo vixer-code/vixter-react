@@ -16,6 +16,9 @@ const ImageEditorModal = ({
   const [scale, setScale] = useState(1);
   const [rotate, setRotate] = useState(0);
   const [aspect, setAspect] = useState(imageType === 'avatar' ? 1 : 16/9);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const imgRef = useRef(null);
 
   // Reset states when modal opens
@@ -26,35 +29,64 @@ const ImageEditorModal = ({
       setScale(1);
       setRotate(0);
       setAspect(imageType === 'avatar' ? 1 : 16/9);
+      setImagePosition({ x: 0, y: 0 });
+      setIsDragging(false);
+      setDragStart({ x: 0, y: 0 });
     }
   }, [isOpen, imageType]);
 
-  // Função para criar crop centralizado
+  // Função para criar crop que ocupa toda a área
   const onImageLoad = useCallback((e) => {
     const { width, height } = e.currentTarget;
     
-    // Definir aspect ratio baseado no tipo de imagem
-    const cropAspect = imageType === 'avatar' ? 1 : 16/9;
-    
-    // Criar crop centralizado
-    const crop = centerCrop(
-      makeAspectCrop(
-        {
-          unit: '%',
-          width: 80, // Reduzido de 90% para 80% para dar mais espaço
-        },
-        cropAspect,
-        width,
-        height
-      ),
-      width,
-      height
-    );
+    // Criar crop que ocupa toda a área disponível
+    const crop = {
+      unit: 'px',
+      x: 0,
+      y: 0,
+      width: width,
+      height: height
+    };
     
     setCrop(crop);
-    setCompletedCrop(crop); // Definir completedCrop inicial
-  }, [imageType]);
+    setCompletedCrop(crop);
+  }, []);
 
+  // Funções para drag da imagem
+  const handleMouseDown = useCallback((e) => {
+    if (!crop) return;
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - imagePosition.x,
+      y: e.clientY - imagePosition.y
+    });
+    e.preventDefault();
+  }, [crop, imagePosition]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging || !crop) return;
+    
+    const newX = e.clientX - dragStart.x;
+    const newY = e.clientY - dragStart.y;
+    
+    setImagePosition({ x: newX, y: newY });
+  }, [isDragging, dragStart, crop]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // Adicionar event listeners para drag
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   // Função para converter canvas para blob
   const getCroppedImg = (canvas, crop) => {
@@ -114,7 +146,32 @@ const ImageEditorModal = ({
 
     setUploading(true);
     try {
-      const croppedImageBlob = await getCroppedImg(imgRef.current, crop, scale, rotate);
+      // Criar canvas para processar a imagem com a posição atual
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const image = imgRef.current;
+
+      if (!ctx) {
+        throw new Error('No 2d context');
+      }
+
+      // Definir tamanho do canvas baseado no crop
+      canvas.width = crop.width;
+      canvas.height = crop.height;
+
+      // Limpar canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Desenhar a imagem na posição correta
+      ctx.drawImage(
+        image,
+        -imagePosition.x,
+        -imagePosition.y,
+        image.naturalWidth,
+        image.naturalHeight
+      );
+
+      const croppedImageBlob = await getCroppedImg(canvas, crop);
       if (croppedImageBlob) {
         // Criar um novo File object com o blob
         const croppedImageFile = new File([croppedImageBlob], imageFile.name, {
@@ -160,81 +217,32 @@ const ImageEditorModal = ({
             <div className="crop-container">
               <ReactCrop
                 crop={crop}
-                onChange={(c) => setCrop(c)}
-                onComplete={(c) => setCompletedCrop(c)}
-                aspect={aspect}
+                onChange={() => {}} // Desabilitar mudanças no crop
+                onComplete={() => {}} // Desabilitar mudanças no crop
                 minWidth={50}
                 minHeight={50}
                 keepSelection={true}
                 circularCrop={imageType === 'avatar'}
+                disabled={true} // Desabilitar interação com crop
               >
                 <img
                   ref={imgRef}
                   alt="Crop me"
                   src={imageUrl}
                   style={{ 
-                    transform: `scale(${scale}) rotate(${rotate}deg)`,
+                    transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${scale}) rotate(${rotate}deg)`,
                     maxWidth: '100%',
-                    maxHeight: '400px'
+                    maxHeight: '400px',
+                    cursor: isDragging ? 'grabbing' : 'grab',
+                    userSelect: 'none'
                   }}
                   onLoad={onImageLoad}
+                  onMouseDown={handleMouseDown}
+                  draggable={false}
                 />
               </ReactCrop>
             </div>
 
-            <div className="image-controls">
-              <div className="control-group">
-                <label>Zoom:</label>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="3"
-                  step="0.1"
-                  value={scale}
-                  onChange={(e) => setScale(Number(e.target.value))}
-                  disabled={!crop}
-                />
-                <span>{Math.round(scale * 100)}%</span>
-              </div>
-
-              <div className="control-group">
-                <label>Rotacionar:</label>
-                <input
-                  type="range"
-                  min="-180"
-                  max="180"
-                  step="1"
-                  value={rotate}
-                  onChange={(e) => setRotate(Number(e.target.value))}
-                  disabled={!crop}
-                />
-                <span>{rotate}°</span>
-              </div>
-
-              <div className="control-group">
-                <label>Proporção:</label>
-                <select 
-                  value={aspect} 
-                  onChange={(e) => setAspect(Number(e.target.value))}
-                  disabled={!crop}
-                >
-                  <option value={1}>1:1 (Quadrado)</option>
-                  <option value={16/9}>16:9 (Widescreen)</option>
-                  <option value={4/3}>4:3 (Padrão)</option>
-                  <option value={3/2}>3:2 (Fotografia)</option>
-                </select>
-              </div>
-
-              <button 
-                className="reset-btn" 
-                onClick={handleReset}
-                type="button"
-                disabled={!crop}
-              >
-                <i className="fas fa-undo"></i>
-                Resetar
-              </button>
-            </div>
           </div>
 
         </div>
