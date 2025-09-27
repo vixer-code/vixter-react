@@ -558,21 +558,29 @@ export const EnhancedMessagingProvider = ({ children }) => {
       !msg.read && msg.senderId !== currentUser.uid
     );
 
-    if (unreadMessages.length === 0) return;
+    if (unreadMessages.length === 0) {
+      console.log('📖 No unread messages to mark as read');
+      return;
+    }
+
+    console.log(`📖 Marking ${unreadMessages.length} messages as read for conversation:`, selectedConversation.id);
 
     try {
       const updates = {};
       unreadMessages.forEach(msg => {
-        updates[`messages/${selectedConversation.id}/${msg.id}/read`] = true;
-        updates[`messages/${selectedConversation.id}/${msg.id}/readAt`] = Date.now();
-        updates[`messages/${selectedConversation.id}/${msg.id}/readBy`] = currentUser.uid;
+        // Use the correct path structure for conversations
+        updates[`conversations/${selectedConversation.id}/messages/${msg.id}/read`] = true;
+        updates[`conversations/${selectedConversation.id}/messages/${msg.id}/readAt`] = Date.now();
+        updates[`conversations/${selectedConversation.id}/messages/${msg.id}/readBy`] = currentUser.uid;
       });
 
       // Batch update using the correct database reference
       const rootRef = ref(database);
       await update(rootRef, updates);
+      
+      console.log('✅ Messages marked as read successfully');
     } catch (error) {
-      console.error('Error marking messages as read:', error);
+      console.error('❌ Error marking messages as read:', error);
       // Don't throw the error to prevent breaking the UI
     }
   }, [currentUser?.uid, selectedConversation?.id]);
@@ -767,10 +775,10 @@ export const EnhancedMessagingProvider = ({ children }) => {
       console.log('Image messages count:', messagesData.filter(m => m.type === 'image').length);
       setMessages(messagesData);
       
-      // Mark messages as read (disabled to avoid permission issues)
-      // if (readReceiptsEnabled) {
-      //   markMessagesAsRead(messagesData);
-      // }
+      // Mark messages as read when conversation is opened
+      if (readReceiptsEnabled) {
+        markMessagesAsRead(messagesData);
+      }
     });
 
     return () => {
@@ -832,7 +840,17 @@ export const EnhancedMessagingProvider = ({ children }) => {
           setMessages(prev => {
             const messageExists = prev.some(msg => msg.id === data.message.id);
             if (!messageExists) {
-              return [...prev, data.message];
+              const updatedMessages = [...prev, data.message];
+              
+              // Mark message as read if it's from another user and conversation is active
+              if (data.message.senderId !== currentUser.uid && 
+                  readReceiptsEnabled) {
+                setTimeout(() => {
+                  markMessagesAsRead([data.message]);
+                }, 100); // Small delay to ensure message is saved first
+              }
+              
+              return updatedMessages;
             }
             return prev;
           });
@@ -2212,6 +2230,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     sendServiceNotification,
     createServiceConversation,
     markServiceConversationCompleted,
+    markMessagesAsRead,
     getOtherParticipant,
     loadUserData,
     formatTime
