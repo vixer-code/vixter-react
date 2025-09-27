@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import './ImageEditorModal.css';
@@ -62,16 +62,26 @@ const ImageEditorModal = ({
     const scaleY = image.naturalHeight / image.height;
     const pixelRatio = window.devicePixelRatio;
 
-    canvas.width = Math.floor(completedCrop.width * scaleX * pixelRatio);
-    canvas.height = Math.floor(completedCrop.height * scaleY * pixelRatio);
+    // Definir tamanho do canvas baseado no crop
+    const cropWidth = Math.floor(completedCrop.width * scaleX * pixelRatio);
+    const cropHeight = Math.floor(completedCrop.height * scaleY * pixelRatio);
+    
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
 
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     ctx.imageSmoothingQuality = 'high';
 
+    // Limpar o canvas
+    ctx.clearRect(0, 0, cropWidth, cropHeight);
+
+    // Aplicar transformações
     ctx.save();
     ctx.translate(-completedCrop.x * scaleX, -completedCrop.y * scaleY);
     ctx.rotate((rotate * Math.PI) / 180);
     ctx.scale(scale, scale);
+    
+    // Desenhar a imagem
     ctx.drawImage(
       image,
       0,
@@ -86,13 +96,33 @@ const ImageEditorModal = ({
     ctx.restore();
   }, [completedCrop, scale, rotate]);
 
+  // Atualizar preview quando o crop ou outras propriedades mudarem
+  useEffect(() => {
+    generatePreview();
+  }, [generatePreview]);
+
   // Função para converter canvas para blob
   const getCroppedImg = (canvas, crop) => {
     return new Promise((resolve) => {
+      // Verificar se o canvas tem conteúdo
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const hasContent = imageData.data.some((pixel, index) => {
+        // Verificar se há pixels não transparentes (ignorando canal alpha)
+        return index % 4 !== 3 && pixel !== 0;
+      });
+
+      if (!hasContent) {
+        console.error('Canvas is empty or black');
+        resolve(null);
+        return;
+      }
+
       canvas.toBlob(
         (blob) => {
           if (!blob) {
-            console.error('Canvas is empty');
+            console.error('Failed to create blob from canvas');
+            resolve(null);
             return;
           }
           resolve(blob);
@@ -112,6 +142,11 @@ const ImageEditorModal = ({
     try {
       const canvas = previewCanvasRef.current;
       const croppedImageBlob = await getCroppedImg(canvas, completedCrop);
+      
+      if (!croppedImageBlob) {
+        console.error('Failed to generate cropped image');
+        return;
+      }
       
       // Criar um novo File object com o blob
       const croppedImageFile = new File([croppedImageBlob], imageFile.name, {
@@ -153,11 +188,12 @@ const ImageEditorModal = ({
             <div className="crop-container">
               <ReactCrop
                 crop={crop}
-                onChange={(_, percentCrop) => setCrop(percentCrop)}
+                onChange={(c) => setCrop(c)}
                 onComplete={(c) => setCompletedCrop(c)}
                 aspect={aspect}
                 minWidth={50}
                 minHeight={50}
+                keepSelection
               >
                 <img
                   ref={imgRef}
