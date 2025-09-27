@@ -675,24 +675,36 @@ const Profile = () => {
     const file = event.target.files[0];
     if (!file || !currentUser) return;
 
+    // Show image editor before uploading
+    setImageToEdit(file);
+    setImageEditType(type);
+    setShowImageEditor(true);
+    
+    // Clear the input so the same file can be selected again
+    event.target.value = '';
+  };
+
+  const handleImageEditorSave = async (croppedImageFile, type) => {
+    if (!croppedImageFile || !currentUser) return;
+
     try {
       console.log('Starting image upload:', { 
         type, 
-        fileName: file.name, 
-        fileSize: file.size, 
-        fileType: file.type,
+        fileName: croppedImageFile.name, 
+        fileSize: croppedImageFile.size, 
+        fileType: croppedImageFile.type,
         currentUser: currentUser?.uid 
       });
       setUploading(true);
 
       // Direct upload to Firebase Storage
-      const path = type === 'avatar' ? `profilePictures/${currentUser.uid}/${file.name}` : `coverPhotos/${currentUser.uid}/${file.name}`;
+      const path = type === 'avatar' ? `profilePictures/${currentUser.uid}/${croppedImageFile.name}` : `coverPhotos/${currentUser.uid}/${croppedImageFile.name}`;
       console.log('Uploading to Firebase Storage path:', path);
       
       const fileRef = storageRef(storage, path);
       console.log('File reference created, attempting upload...');
-      await uploadBytes(fileRef, file, {
-        contentType: file.type,
+      await uploadBytes(fileRef, croppedImageFile, {
+        contentType: croppedImageFile.type,
         cacheControl: 'public, max-age=31536000, immutable'
       });
       console.log('File uploaded successfully, getting download URL');
@@ -2749,6 +2761,22 @@ const Profile = () => {
         isOpen={showPackBuyersModal}
         onClose={() => setShowPackBuyersModal(false)}
         pack={selectedPack}
+      />
+
+      {/* Image Editor Modal */}
+      <ImageEditorModal
+        isOpen={showImageEditor}
+        onClose={() => {
+          setShowImageEditor(false);
+          setImageToEdit(null);
+        }}
+        onSave={(croppedImageFile) => {
+          handleImageEditorSave(croppedImageFile, imageEditType);
+          setShowImageEditor(false);
+          setImageToEdit(null);
+        }}
+        imageFile={imageToEdit}
+        imageType={imageEditType}
       />
     </div>
   );

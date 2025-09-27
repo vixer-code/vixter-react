@@ -688,7 +688,18 @@ const Feed = () => {
       // Keep reposter info for header
       authorId: post.userId,
       authorName: post.authorName || user?.displayName || user?.email,
-      authorPhotoURL: post.authorPhotoURL || user?.profilePictureURL || '/images/defpfp1.png',
+      authorPhotoURL: (() => {
+        const photoURL = post.authorPhotoURL || user?.profilePictureURL;
+        if (photoURL && typeof photoURL === 'string' && photoURL.trim()) {
+          try {
+            new URL(photoURL);
+            return photoURL;
+          } catch (urlError) {
+            console.warn('Invalid author photo URL in repost:', photoURL, urlError);
+          }
+        }
+        return '/images/defpfp1.png';
+      })(),
       authorUsername: post.authorUsername || user?.username,
       // Use original content for display (override the text field for profile compatibility)
       content: post.originalContent,
@@ -726,7 +737,20 @@ const Feed = () => {
         <div className="post-header">
           <div className="post-author">
             <img
-              src={displayPost.authorPhotoURL || user?.profilePictureURL || '/images/defpfp1.png'}
+              src={(() => {
+                const photoURL = displayPost.authorPhotoURL || user?.profilePictureURL;
+                // Validate URL before using it
+                if (photoURL && typeof photoURL === 'string' && photoURL.trim()) {
+                  try {
+                    // Test if URL is valid
+                    new URL(photoURL);
+                    return photoURL;
+                  } catch (urlError) {
+                    console.warn('Invalid author photo URL in feed:', photoURL, urlError);
+                  }
+                }
+                return '/images/defpfp1.png';
+              })()}
               alt={displayPost.authorName || user?.displayName || user?.email}
               className="author-avatar"
               onError={(e) => { e.target.src = '/images/defpfp1.png'; }}
