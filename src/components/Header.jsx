@@ -470,7 +470,7 @@ const Header = () => {
               }</span>
             </div>
             
-            <div className="mobile-profile-info">
+            <div className="mobile-profile-info" onClick={() => { navigate('/profile'); closeMobileMenu(); }}>
               <div className="mobile-profile-avatar">
                 {getUserAvatarUrl(userProfile) ? (
                   <CachedImage 
@@ -502,6 +502,11 @@ const Header = () => {
                   @{userProfile?.username || 'user'}
                 </div>
               </div>
+            </div>
+
+            {/* Mobile Notifications - Centralized below profile */}
+            <div className="mobile-notification-section">
+              <NotificationCenter />
             </div>
           </div>
         )}
