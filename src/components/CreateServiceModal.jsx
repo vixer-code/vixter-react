@@ -968,7 +968,6 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                             <div className="currency-row">
                               <span>Cliente paga:</span>
                               <span className="currency-value vp">
-                                <div className="currency-icon vp-icon"></div>
                                 {formatVP(convertVCtoVP(option.price))}
                               </span>
                             </div>
