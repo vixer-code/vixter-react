@@ -42,7 +42,19 @@
           ".read": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
           ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists() && (root.child('conversations').child($conversationId).child('isCompleted').val() != true)",
           "$messageId": {
-            ".validate": "newData.hasChildren(['senderId', 'type', 'content', 'timestamp']) && (newData.child('senderId').val() == auth.uid || newData.child('senderId').val() == 'system')"
+            ".validate": "newData.hasChildren(['senderId', 'type', 'content', 'timestamp']) && (newData.child('senderId').val() == auth.uid || newData.child('senderId').val() == 'system')",
+            "read": {
+              ".validate": "newData.isBoolean()",
+              ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()"
+            },
+            "readAt": {
+              ".validate": "newData.isNumber()",
+              ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()"
+            },
+            "readBy": {
+              ".validate": "newData.isString()",
+              ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()"
+            }
           }
         }
       }
@@ -50,7 +62,7 @@
     "messages": {
       "$conversationId": {
         ".read": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
-        ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists() && (root.child('conversations').child($conversationId).child('isCompleted').val() != true)",
+        ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
         "$messageId": {
           ".validate": "newData.hasChildren(['senderId', 'type', 'content', 'timestamp']) && (newData.child('senderId').val() == auth.uid || newData.child('senderId').val() == 'system')",
           "senderId": {

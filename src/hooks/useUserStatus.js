@@ -16,9 +16,16 @@ export const useUserStatus = (userId) => {
       if (snapshot.exists()) {
         const statusData = snapshot.val();
         const now = Date.now();
-        const OFFLINE_THRESHOLD = 3 * 60 * 1000; // 3 minutes
+        const OFFLINE_THRESHOLD = 2 * 60 * 1000; // 2 minutes (consistent with EnhancedMessagingContext)
         const lastChanged = statusData.last_changed;
-        const isRecentActivity = lastChanged && (now - lastChanged) < OFFLINE_THRESHOLD;
+        
+        // Handle both timestamp formats (number and server timestamp)
+        let lastChangedTime = lastChanged;
+        if (lastChanged && typeof lastChanged === 'object' && lastChanged._seconds) {
+          lastChangedTime = lastChanged._seconds * 1000; // Convert from seconds to milliseconds
+        }
+        
+        const isRecentActivity = lastChangedTime && (now - lastChangedTime) < OFFLINE_THRESHOLD;
         
         // Only consider user online if they have recent activity AND status is online
         const actualStatus = (statusData.state === 'online' && isRecentActivity) ? 'online' : 'offline';

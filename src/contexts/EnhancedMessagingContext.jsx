@@ -122,9 +122,16 @@ export const EnhancedMessagingProvider = ({ children }) => {
         if (snapshot.exists()) {
           const statusData = snapshot.val();
           const now = Date.now();
-          const OFFLINE_THRESHOLD = 3 * 60 * 1000; // 3 minutes (same as OnlineUsersList)
+          const OFFLINE_THRESHOLD = 2 * 60 * 1000; // 2 minutes (reduced from 3)
           const lastChanged = statusData.last_changed;
-          const isRecentActivity = lastChanged && (now - lastChanged) < OFFLINE_THRESHOLD;
+          
+          // Handle both timestamp formats (number and server timestamp)
+          let lastChangedTime = lastChanged;
+          if (lastChanged && typeof lastChanged === 'object' && lastChanged._seconds) {
+            lastChangedTime = lastChanged._seconds * 1000; // Convert from seconds to milliseconds
+          }
+          
+          const isRecentActivity = lastChangedTime && (now - lastChangedTime) < OFFLINE_THRESHOLD;
           
           // Only consider user online if they have recent activity AND status is online
           const actualStatus = (statusData.state === 'online' && isRecentActivity) ? 'online' : 'offline';
@@ -138,8 +145,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
             
             console.log(`👤 Status update for ${userId.slice(0, 8)}:`, {
               dbStatus: statusData.state,
-              lastChanged,
-              timeSinceChange: lastChanged ? (now - lastChanged) / 1000 : 'unknown',
+              lastChanged: lastChangedTime,
+              timeSinceChange: lastChangedTime ? (now - lastChangedTime) / 1000 : 'unknown',
               isRecentActivity,
               actualStatus
             });
@@ -149,7 +156,26 @@ export const EnhancedMessagingProvider = ({ children }) => {
               [userId]: {
                 ...prev[userId],
                 status: actualStatus,
-                lastSeen: statusData.last_changed
+                lastSeen: lastChangedTime
+              }
+            };
+          });
+        } else {
+          // If no status data exists, mark as offline
+          setUsers(prev => {
+            const currentUserData = prev[userId];
+            if (currentUserData && currentUserData.status === 'offline') {
+              return prev; // No change needed
+            }
+            
+            console.log(`👤 No status data for ${userId.slice(0, 8)}, marking as offline`);
+            
+            return {
+              ...prev,
+              [userId]: {
+                ...prev[userId],
+                status: 'offline',
+                lastSeen: null
               }
             };
           });
@@ -595,21 +621,37 @@ export const EnhancedMessagingProvider = ({ children }) => {
     console.log(`📖 Marking ${unreadMessages.length} messages as read for conversation:`, selectedConversation.id);
 
     try {
-      const updates = {};
-      unreadMessages.forEach(msg => {
-        // Use the correct path structure for conversations
-        updates[`conversations/${selectedConversation.id}/messages/${msg.id}/read`] = true;
-        updates[`conversations/${selectedConversation.id}/messages/${msg.id}/readAt`] = Date.now();
-        updates[`conversations/${selectedConversation.id}/messages/${msg.id}/readBy`] = currentUser.uid;
+      // Update messages one by one to handle permissions better
+      const updatePromises = unreadMessages.map(async (msg) => {
+        const messageRef = ref(database, `conversations/${selectedConversation.id}/messages/${msg.id}`);
+        const updates = {
+          read: true,
+          readAt: Date.now(),
+          readBy: currentUser.uid
+        };
+        
+        try {
+          await update(messageRef, updates);
+          console.log(`✅ Message ${msg.id} marked as read`);
+          return true;
+        } catch (error) {
+          console.error(`❌ Error marking message ${msg.id} as read:`, error);
+          return false;
+        }
       });
 
-      // Batch update using the correct database reference
-      const rootRef = ref(database);
-      await update(rootRef, updates);
+      const results = await Promise.all(updatePromises);
+      const successCount = results.filter(Boolean).length;
       
-      console.log('✅ Messages marked as read successfully');
+      console.log(`✅ ${successCount}/${unreadMessages.length} messages marked as read successfully`);
     } catch (error) {
       console.error('❌ Error marking messages as read:', error);
+      
+      // If it's a permission error, show a more specific message
+      if (error.code === 'PERMISSION_DENIED') {
+        console.warn('⚠️ Permission denied when marking messages as read. This might be due to conversation completion or insufficient permissions.');
+      }
+      
       // Don't throw the error to prevent breaking the UI
     }
   }, [currentUser?.uid, selectedConversation?.id]);
