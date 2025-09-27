@@ -4,7 +4,7 @@ import { useUser } from '../contexts/UserContext';
 import { database, db } from '../../config/firebase';
 import { getProfileUrl } from '../utils/profileUrls';
 import { ref, query, orderByChild, startAt, endAt, get, limitToFirst } from 'firebase/database';
-import { collection, query as firestoreQuery, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query as firestoreQuery, where, getDocs, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 import './SearchBar.css';
 
@@ -137,7 +137,29 @@ const SearchBar = () => {
         return 0;
       });
 
-      return services.slice(0, 3); // Return top 3
+      // Populate sellerUsername for services using providerId
+      const servicesWithUsernames = await Promise.all(
+        services.map(async (service) => {
+          if (service.providerId && !service.sellerUsername) {
+            try {
+              const userRef = doc(db, 'users', service.providerId);
+              const userSnap = await getDoc(userRef);
+              if (userSnap.exists()) {
+                const userData = userSnap.data();
+                service.sellerUsername = userData.username || 'usuario';
+              } else {
+                service.sellerUsername = 'usuario';
+              }
+            } catch (error) {
+              console.error('Error fetching service provider username:', error);
+              service.sellerUsername = 'usuario';
+            }
+          }
+          return service;
+        })
+      );
+
+      return servicesWithUsernames.slice(0, 3); // Return top 3
     } catch (error) {
       console.error('Error searching services:', error);
       return [];
@@ -186,7 +208,30 @@ const SearchBar = () => {
         return 0;
       });
 
-      return packs.slice(0, 3); // Return top 3
+      // Populate sellerUsername for packs using creatorId
+      const packsWithUsernames = await Promise.all(
+        packs.map(async (pack) => {
+          if ((pack.creatorId || pack.authorId) && !pack.sellerUsername) {
+            try {
+              const userId = pack.creatorId || pack.authorId;
+              const userRef = doc(db, 'users', userId);
+              const userSnap = await getDoc(userRef);
+              if (userSnap.exists()) {
+                const userData = userSnap.data();
+                pack.sellerUsername = userData.username || 'usuario';
+              } else {
+                pack.sellerUsername = 'usuario';
+              }
+            } catch (error) {
+              console.error('Error fetching pack creator username:', error);
+              pack.sellerUsername = 'usuario';
+            }
+          }
+          return pack;
+        })
+      );
+
+      return packsWithUsernames.slice(0, 3); // Return top 3
     } catch (error) {
       console.error('Error searching packs:', error);
       return [];
