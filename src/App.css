@@ -46,6 +46,23 @@ body {
   min-height: 100vh;
 }
 
+/* Auth loading styles */
+.auth-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  padding: 2rem;
+  text-align: center;
+}
+
+.auth-loading-container p {
+  margin-top: 1rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
 /* Messages page uses fixed positioning */
 .main-content.messages-page {
   padding-top: 0;
