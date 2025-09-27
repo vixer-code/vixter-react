@@ -99,7 +99,7 @@ const Home = () => {
           </div>
         </div>
         <div className="hero-image">
-          <img src="/public/images/Flor-Colorida.png" alt="Vixter experience" className="hero-img" />
+          <img src="/images/Flor-Colorida.png" alt="Vixter experience" className="hero-img" />
           <div className="glow-overlay"></div>
         </div>
       </section>
@@ -211,7 +211,7 @@ const Home = () => {
         <div className="testimonials-grid">
           <div className="testimonial-card">
             <div className="testimonial-avatar">
-              <img src="/public/images/defpfp1.png" alt="User testimonial" />
+              <img src="/images/defpfp1.png" alt="User testimonial" />
             </div>
             <div className="testimonial-content">
               <div className="testimonial-rating">
@@ -231,7 +231,7 @@ const Home = () => {
           
           <div className="testimonial-card">
             <div className="testimonial-avatar">
-              <img src="/public/images/defpfp2.png" alt="User testimonial" />
+              <img src="/images/defpfp2.png" alt="User testimonial" />
             </div>
             <div className="testimonial-content">
               <div className="testimonial-rating">
@@ -251,7 +251,7 @@ const Home = () => {
           
           <div className="testimonial-card">
             <div className="testimonial-avatar">
-              <img src="/public/images/defpfp3.png" alt="User testimonial" />
+              <img src="/images/defpfp3.png" alt="User testimonial" />
             </div>
             <div className="testimonial-content">
               <div className="testimonial-rating">
@@ -271,7 +271,7 @@ const Home = () => {
           
           <div className="testimonial-card">
             <div className="testimonial-avatar">
-              <img src="/public/images/admin.png" alt="User testimonial" />
+              <img src="/images/admin.png" alt="User testimonial" />
             </div>
             <div className="testimonial-content">
               <div className="testimonial-rating">
@@ -303,7 +303,7 @@ const Home = () => {
         </div>
         
         <div className="join-image">
-          <img src="/public/images/vixia-5vp.png" alt="Join Vixter" />
+          <img src="/images/vixia-5vp.png" alt="Join Vixter" />
           <div className="glow-overlay"></div>
         </div>
       </section>
