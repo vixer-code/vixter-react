@@ -251,26 +251,6 @@ const Home = () => {
           
           <div className="testimonial-card">
             <div className="testimonial-avatar">
-              <img src="/images/defpfp3.png" alt="User testimonial" />
-            </div>
-            <div className="testimonial-content">
-              <div className="testimonial-rating">
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-              </div>
-              <p className="testimonial-text">"As sessões de coaching me ajudaram muito a melhorar meu gameplay. Meu coach é super atencioso e me ensinou estratégias que eu nunca teria descoberto sozinho."</p>
-              <div className="testimonial-author">
-                <span className="author-name">Mariana C.</span>
-                <span className="author-date">Há 2 semanas</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="testimonial-card">
-            <div className="testimonial-avatar">
               <img src="/images/admin.png" alt="User testimonial" />
             </div>
             <div className="testimonial-content">
