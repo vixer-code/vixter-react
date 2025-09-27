@@ -1403,71 +1403,6 @@
 }
 
 /* Posts System */
-.create-post-card {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 20px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  gap: 15px;
-}
-
-.create-post-avatar img {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.create-post-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.create-post-body textarea {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: 12px;
-  color: #ffffff;
-  font-size: 1rem;
-  resize: vertical;
-  min-height: 80px;
-}
-
-.create-post-body textarea:focus {
-  outline: none;
-  border-color: #00FFCA;
-}
-
-.create-post-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.action-btn {
-  cursor: pointer;
-  color: #00FFCA;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.9rem;
-  transition: color 0.2s ease;
-}
-
-.action-btn:hover {
-  color: #ffffff;
-}
-
-.selected-images-preview {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
 
 .posts-container {
   display: flex;
@@ -2581,28 +2516,6 @@
     font-size: 0.8rem;
   }
   
-  .create-post-card {
-    padding: 15px;
-    gap: 12px;
-  }
-  
-  .create-post-avatar img {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .create-post-body textarea {
-    min-height: 60px;
-    font-size: 0.9rem;
-  }
-  
-  .create-post-actions {
-    gap: 10px;
-  }
-  
-  .action-btn {
-    font-size: 0.8rem;
-  }
   
   .post-card {
     padding: 15px;
@@ -2798,29 +2711,6 @@
     font-size: 0.75rem;
   }
   
-  .create-post-card {
-    padding: 10px;
-    gap: 10px;
-  }
-  
-  .create-post-avatar img {
-    width: 35px;
-    height: 35px;
-  }
-  
-  .create-post-body textarea {
-    min-height: 50px;
-    font-size: 0.85rem;
-    padding: 8px;
-  }
-  
-  .create-post-actions {
-    gap: 8px;
-  }
-  
-  .action-btn {
-    font-size: 0.75rem;
-  }
   
   .post-card {
     padding: 10px;
