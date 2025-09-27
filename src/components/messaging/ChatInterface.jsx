@@ -58,6 +58,22 @@ const ChatInterface = ({ conversation, onClose }) => {
     }, 150);
   };
 
+  // Prevent scrolling on the messages container when keyboard is visible
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      if (isKeyboardVisible) {
+        // Allow scrolling only within the messages container
+        messagesContainerRef.current.style.overflowY = 'auto';
+        messagesContainerRef.current.style.overflowX = 'hidden';
+        messagesContainerRef.current.style.webkitOverflowScrolling = 'touch';
+      } else {
+        // Normal scrolling behavior
+        messagesContainerRef.current.style.overflowY = 'auto';
+        messagesContainerRef.current.style.overflowX = 'hidden';
+      }
+    }
+  }, [isKeyboardVisible]);
+
   // Auto-scroll to bottom when new messages arrive (only if user hasn't scrolled up)
   useEffect(() => {
     if (shouldAutoScroll && !isUserScrolling) {
@@ -76,6 +92,13 @@ const ChatInterface = ({ conversation, onClose }) => {
         if (heightDifference > 150) { // Keyboard is likely visible
           setIsKeyboardVisible(true);
           setKeyboardHeight(heightDifference);
+          
+          // Prevent body scroll when keyboard is visible
+          document.body.style.overflow = 'hidden';
+          document.body.style.position = 'fixed';
+          document.body.style.width = '100%';
+          document.body.style.height = '100%';
+          
           // Scroll to bottom when keyboard appears
           setTimeout(() => {
             scrollToBottom();
@@ -83,6 +106,12 @@ const ChatInterface = ({ conversation, onClose }) => {
         } else {
           setIsKeyboardVisible(false);
           setKeyboardHeight(0);
+          
+          // Restore body scroll when keyboard is hidden
+          document.body.style.overflow = '';
+          document.body.style.position = '';
+          document.body.style.width = '';
+          document.body.style.height = '';
         }
       }
     };
@@ -101,6 +130,12 @@ const ChatInterface = ({ conversation, onClose }) => {
       } else {
         window.removeEventListener('resize', handleResize);
       }
+      
+      // Cleanup: restore body scroll on unmount
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
     };
   }, []);
 

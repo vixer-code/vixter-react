@@ -621,11 +621,18 @@ input.message-input {
     transition: transform 0.3s ease, bottom 0.3s ease;
     /* Prevent input from being covered by keyboard */
     will-change: transform, bottom;
+    /* Prevent touch events from propagating to parent elements */
+    touch-action: manipulation;
   }
   
   /* Adjust messages container to account for fixed input */
   .messages-container {
     padding-bottom: 100px; /* Space for fixed input */
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    /* Prevent the container from being scrollable beyond its content */
+    overscroll-behavior: contain;
   }
   
   .message-input {
@@ -647,10 +654,14 @@ input.message-input {
   @supports (height: 100dvh) {
     .chat-interface {
       height: 100dvh;
+      overflow: hidden; /* Prevent scrolling in the empty space */
     }
     
     .messages-container {
       height: calc(100dvh - 150px); /* Account for header and input */
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
     }
   }
   
@@ -662,25 +673,55 @@ input.message-input {
       bottom: env(keyboard-inset-height, 0px);
       transform: translateY(0);
     }
+    
+    .chat-interface {
+      overflow: hidden; /* Prevent body scroll when keyboard is visible */
+      position: fixed;
+      width: 100%;
+      height: 100%;
+    }
   }
   
   /* Keyboard visible state */
+  .chat-interface.keyboard-visible {
+    overflow: hidden; /* Prevent scrolling in the empty space */
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+  
   .chat-interface.keyboard-visible .message-input-container {
     bottom: var(--keyboard-height, 0px);
     transform: translateY(0);
+    position: fixed;
   }
   
   .chat-interface.keyboard-visible .messages-container {
     padding-bottom: calc(100px + var(--keyboard-height, 0px));
     height: calc(100vh - 150px - var(--keyboard-height, 0px));
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    /* Prevent the container from being scrollable beyond its content */
+    max-height: calc(100vh - 150px - var(--keyboard-height, 0px));
   }
   
   .chat-interface.keyboard-visible .media-options {
     bottom: calc(100px + var(--keyboard-height, 0px));
+    position: fixed;
   }
   
   .chat-interface.keyboard-visible .emoji-picker {
     bottom: calc(100px + var(--keyboard-height, 0px));
+    position: fixed;
+  }
+  
+  /* Prevent scrolling on the body when keyboard is visible */
+  .chat-interface.keyboard-visible body {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
   }
 }
 
