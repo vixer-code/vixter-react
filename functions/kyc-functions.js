@@ -8,7 +8,6 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-const db = admin.database();
 const firestore = admin.firestore();
 const storage = admin.storage();
 
@@ -55,11 +54,11 @@ export const updateKycStatus = functions.https.onCall(async (data, context) => {
       await kycRef.update(kycUpdates);
     }
 
-    // Update basic KYC state in Realtime Database
-    const userRef = db.ref(`users/${userId}`);
+    // Update basic KYC state in Firestore
+    const userRef = firestore.collection('users').doc(userId);
     const updates = {
       kycState: kycState,
-      updatedAt: Date.now()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
     // Update kyc field if provided
@@ -115,10 +114,10 @@ export const getKycDocument = functions.https.onCall(async (data, context) => {
 
     const kycData = kycDoc.data();
 
-    // Get user basic info from Realtime Database
-    const userRef = db.ref(`users/${userId}`);
-    const userSnapshot = await userRef.once('value');
-    const userData = userSnapshot.val();
+    // Get user basic info from Firestore
+    const userRef = firestore.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    const userData = userDoc.exists ? userDoc.data() : null;
 
     return {
       success: true,
@@ -174,9 +173,9 @@ export const listPendingKycDocuments = functions.https.onCall(async (data, conte
       const userId = doc.id;
 
       // Get user basic info
-      const userRef = db.ref(`users/${userId}`);
-      const userSnapshot = await userRef.once('value');
-      const userData = userSnapshot.val();
+      const userRef = firestore.collection('users').doc(userId);
+      const userDoc = await userRef.get();
+      const userData = userDoc.exists ? userDoc.data() : null;
 
       pendingDocuments.push({
         userId: userId,
@@ -298,11 +297,11 @@ export const onKycStatusChange = onDocumentUpdated('kyc/{userId}', async (event)
   }
 
   try {
-    // Update user document in Realtime Database
-    const userRef = db.ref(`users/${userId}`);
+    // Update user document in Firestore
+    const userRef = firestore.collection('users').doc(userId);
     const updates = {
       kycState: afterData.status,
-      updatedAt: Date.now()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
     // Set kyc field based on status

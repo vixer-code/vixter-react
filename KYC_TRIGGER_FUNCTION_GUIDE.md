@@ -8,7 +8,7 @@ A função `onKycStatusChange` foi criada para automatizar a atualização dos c
 
 ### Trigger Automático
 - **Evento**: Mudança no documento `kyc/{userId}` no Firestore
-- **Ação**: Atualiza automaticamente os campos `kyc` e `kycState` no Realtime Database
+- **Ação**: Atualiza automaticamente os campos `kyc` e `kycState` no Firestore (coleção `users`)
 - **Condição**: Só executa se o status realmente mudou
 
 ### Mapeamento de Status
@@ -44,11 +44,11 @@ Quando você alterar o status do KYC para "VERIFIED" no Firestore, a função au
   verifiedBy: 'admin-uid'
 }
 
-// Automaticamente atualiza no Realtime Database: users/{userId}
+// Automaticamente atualiza no Firestore: users/{userId}
 {
   kyc: true,           // ← Atualizado automaticamente
   kycState: 'VERIFIED', // ← Atualizado automaticamente
-  updatedAt: Date.now()
+  updatedAt: serverTimestamp()
 }
 ```
 
