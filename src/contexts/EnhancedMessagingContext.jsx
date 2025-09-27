@@ -118,11 +118,27 @@ export const EnhancedMessagingProvider = ({ children }) => {
       const unsubscribe = onValue(statusRef, (snapshot) => {
         if (snapshot.exists()) {
           const statusData = snapshot.val();
+          const now = Date.now();
+          const OFFLINE_THRESHOLD = 3 * 60 * 1000; // 3 minutes (same as OnlineUsersList)
+          const lastChanged = statusData.last_changed;
+          const isRecentActivity = lastChanged && (now - lastChanged) < OFFLINE_THRESHOLD;
+          
+          // Only consider user online if they have recent activity AND status is online
+          const actualStatus = (statusData.state === 'online' && isRecentActivity) ? 'online' : 'offline';
+          
+          console.log(`👤 Status update for ${userId.slice(0, 8)}:`, {
+            dbStatus: statusData.state,
+            lastChanged,
+            timeSinceChange: lastChanged ? (now - lastChanged) / 1000 : 'unknown',
+            isRecentActivity,
+            actualStatus
+          });
+          
           setUsers(prev => ({
             ...prev,
             [userId]: {
               ...prev[userId],
-              status: statusData.state || 'offline',
+              status: actualStatus,
               lastSeen: statusData.last_changed
             }
           }));
