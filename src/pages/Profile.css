@@ -1,7 +1,7 @@
 /* Profile.css */
 
 /* Repost indicator styling */
-.repost-indicator-profile { 
+.repost-indicator { 
   display: flex; 
   align-items: center; 
   gap: 8px; 
@@ -14,18 +14,18 @@
   color: #a8a8b3; 
 }
 
-.repost-indicator-profile i { 
+.repost-indicator i { 
   color: #8a2be2; 
   font-size: 0.9rem; 
 }
 
-.repost-indicator-profile strong { 
+.repost-indicator strong { 
   color: #8a2be2; 
   font-weight: 600; 
 }
 
 /* Post interaction styles (from Feed.css) */
-.post-header-profile {
+.post-header {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -33,24 +33,24 @@
   margin-bottom: 12px;
 }
 
-.post-author-profile {
+.post-author {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.author-info-profile {
+.author-info {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.post-time-profile {
+.post-time {
   font-size: .85rem;
   color: #f5f5f57d;
 }
 
-.delete-btn-profile {
+.delete-btn {
   background: none;
   border: none;
   color: #ff4757;
@@ -66,12 +66,12 @@
   justify-content: center;
 }
 
-.delete-btn-profile:hover {
+.delete-btn:hover {
   background: rgba(255, 71, 87, 0.1);
   color: #ff6b7a;
 }
 
-.post-actions-profile {
+.post-actions {
   display: flex;
   gap: 20px;
   margin-top: 12px;
@@ -79,7 +79,7 @@
   border-top: 1px solid #2a2a2a;
 }
 
-.action-btn-profile {
+.action-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -93,40 +93,40 @@
   font-size: 0.9rem;
 }
 
-.action-btn-profile:hover {
+.action-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: #d1d5db;
 }
 
-.action-btn-profile.like-btn.liked {
+.action-btn.like-btn.liked {
   color: #ff4757 !important;
 }
 
-.action-btn-profile.like-btn.liked i {
+.action-btn.like-btn.liked i {
   color: #ff4757 !important;
 }
 
-.action-btn-profile.share-btn.reposted {
+.action-btn.share-btn.reposted {
   color: #00ffca !important;
 }
 
-.action-btn-profile.share-btn.reposted i {
+.action-btn.share-btn.reposted i {
   color: #00ffca !important;
 }
 
-.comments-section-profile {
+.comments-section {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #2a2a2a;
 }
 
-.comment-input-profile {
+.comment-input {
   display: flex;
   gap: 8px;
   margin-bottom: 12px;
 }
 
-.comment-input-profile input {
+.comment-input input {
   flex: 1;
   padding: 10px 12px;
   background: #2a2a2a;
@@ -137,13 +137,13 @@
   min-height: 20px;
 }
 
-.comment-input-profile input:focus {
+.comment-input input:focus {
   outline: none;
   border-color: #8a2be2;
   background: #333;
 }
 
-.comment-input-profile .btn-profile.small {
+.comment-input .btn.small {
   padding: 8px 16px;
   font-size: 0.85rem;
   background: #8a2be2;
@@ -155,29 +155,29 @@
   white-space: nowrap;
 }
 
-.comment-input-profile .btn-profile.small:hover:not(:disabled) {
+.comment-input .btn.small:hover:not(:disabled) {
   background: #a855f7;
 }
 
-.comment-input-profile .btn-profile.small:disabled {
+.comment-input .btn.small:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.comments-list-profile {
+.comments-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.comment-item-profile {
+.comment-item {
   background: rgba(26, 26, 46, 0.3);
   backdrop-filter: blur(10px);
   border-radius: 8px;
   padding: 12px;
 }
 
-.comment-header-profile {
+.comment-header {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -185,7 +185,7 @@
   margin-bottom: 6px;
 }
 
-.comment-avatar-profile {
+.comment-avatar {
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -193,32 +193,32 @@
   flex-shrink: 0;
 }
 
-.comment-avatar-profile img {
+.comment-avatar img {
   width: 100%;
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
 }
 
-.comment-info-profile {
+.comment-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
   flex: 1;
 }
 
-.comment-author-name-profile {
+.comment-author-name {
   font-size: 0.9rem;
   font-weight: 600;
   color: #d1d5db;
 }
 
-.comment-time-profile {
+.comment-time {
   font-size: 0.75rem;
   color: #f5f5f57d;
 }
 
-.comment-delete-btn-profile {
+.comment-delete-btn {
   background: none;
   border: none;
   color: #ff4757;
@@ -234,19 +234,19 @@
   justify-content: center;
 }
 
-.comment-delete-btn-profile:hover {
+.comment-delete-btn:hover {
   background: rgba(255, 71, 87, 0.1);
   color: #ff6b7a;
 }
 
-.comment-content-profile p {
+.comment-content p {
   margin: 0;
   color: #d1d5db;
   font-size: 0.9rem;
   line-height: 1.4;
 }
 
-.comment-actions-profile {
+.comment-actions {
   display: flex;
   gap: 12px;
   margin-top: 8px;
@@ -254,7 +254,7 @@
   border-top: 1px solid #333;
 }
 
-.comment-action-btn-profile {
+.comment-action-btn {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -268,49 +268,49 @@
   font-size: 0.8rem;
 }
 
-.comment-action-btn-profile:hover {
+.comment-action-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: #d1d5db;
 }
 
-.comment-action-btn-profile.like-btn.liked {
+.comment-action-btn.like-btn.liked {
   color: #ff4757 !important;
 }
 
-.comment-action-btn-profile.like-btn.liked i {
+.comment-action-btn.like-btn.liked i {
   color: #ff4757 !important;
 }
 
-.comment-reply-profile {
+.comment-reply {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid #333;
 }
 
-.comment-reply-profile .comment-input-profile {
+.comment-reply .comment-input {
   background: #333;
   border-radius: 6px;
   padding: 6px;
   margin-bottom: 0;
 }
 
-.comment-reply-profile .comment-input-profile input {
+.comment-reply .comment-input input {
   background: #444;
   border: 1px solid #555;
   font-size: 0.85rem;
 }
 
-.comment-reply-profile .comment-input-profile input:focus {
+.comment-reply .comment-input input:focus {
   background: #555;
   border-color: #8a2be2;
 }
 
-.comment-reply-profile .btn-profile.small {
+.comment-reply .btn.small {
   padding: 6px 12px;
   font-size: 0.8rem;
 }
 
-.no-comments-profile {
+.no-comments {
   text-align: center;
   color: #f5f5f57d;
   font-size: 0.9rem;
@@ -318,25 +318,25 @@
   font-style: italic;
 }
 
-.post-media-profile {
+.post-media {
   margin-top: 12px;
 }
 
-.post-image-profile {
+.post-image {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
   margin-bottom: 8px;
 }
 
-.post-video-profile, .post-audio-profile {
+.post-video, .post-audio {
   max-width: 100%;
   border-radius: 8px;
   margin-bottom: 8px;
 }
 
 /* Additional styles for better comment section */
-.comments-section-profile {
+.comments-section {
   background: #1a1a1a;
   border-radius: 8px;
   padding: 16px;
@@ -344,57 +344,57 @@
   border: 1px solid #2a2a2a;
 }
 
-.comment-input-profile {
+.comment-input {
   background: #2a2a2a;
   border-radius: 6px;
   padding: 8px;
   margin-bottom: 16px;
 }
 
-.comment-input-profile input {
+.comment-input input {
   background: #333;
   border: 1px solid #444;
 }
 
-.comment-input-profile input:focus {
+.comment-input input:focus {
   background: #3a3a3a;
   border-color: #8a2be2;
 }
 
-.comments-list-profile {
+.comments-list {
   max-height: 300px;
   overflow-y: auto;
 }
 
-.comment-item-profile {
+.comment-item {
   background: rgba(26, 26, 46, 0.3);
   backdrop-filter: blur(10px);
   margin-bottom: 8px;
 }
 
-.comment-item-profile:last-child {
+.comment-item:last-child {
   margin-bottom: 0;
 }
 
 /* Scrollbar for comments */
-.comments-list-profile::-webkit-scrollbar {
+.comments-list::-webkit-scrollbar {
   width: 6px;
 }
 
-.comments-list-profile::-webkit-scrollbar-track {
+.comments-list::-webkit-scrollbar-track {
   background: #2a2a2a;
 }
 
-.comments-list-profile::-webkit-scrollbar-thumb {
+.comments-list::-webkit-scrollbar-thumb {
   background: #555;
   border-radius: 3px;
 }
 
-.comments-list-profile::-webkit-scrollbar-thumb:hover {
+.comments-list::-webkit-scrollbar-thumb:hover {
   background: #777;
 }
 
-.profile-container-profile {
+.profile-container {
   max-width: 1080px;
   margin: 0 auto;
   padding: 20px;
@@ -405,7 +405,7 @@
 }
 
 /* Account Restriction Notice */
-.account-restriction-notice-profile {
+.account-restriction-notice {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -418,23 +418,23 @@
   font-size: 0.9rem;
 }
 
-.account-restriction-notice-profile i {
+.account-restriction-notice i {
   font-size: 1.1rem;
   color: #FFC107;
 }
 
-.account-restriction-notice-profile a {
+.account-restriction-notice a {
   color: #00FFCA;
   text-decoration: none;
   font-weight: 500;
 }
 
-.account-restriction-notice-profile a:hover {
+.account-restriction-notice a:hover {
   text-decoration: underline;
 }
 
 /* Provider Dashboard */
-.provider-dashboard-profile {
+.provider-dashboard {
   background: linear-gradient(135deg, rgba(138, 43, 226, 0.1) 0%, rgba(0, 255, 202, 0.05) 100%);
   border: 1px solid rgba(138, 43, 226, 0.2);
   border-radius: 12px;
@@ -442,12 +442,12 @@
   margin-bottom: 2rem;
 }
 
-.provider-dashboard-profile .section-header-profile {
+.provider-dashboard .section-header {
   margin-bottom: 1.5rem;
   text-align: center;
 }
 
-.provider-dashboard-profile .section-header-profile h2 {
+.provider-dashboard .section-header h2 {
   color: #ffffff;
   font-size: 1.5rem;
   font-weight: 600;
@@ -458,19 +458,19 @@
   gap: 0.5rem;
 }
 
-.provider-dashboard-profile .section-header-profile i {
+.provider-dashboard .section-header i {
   color: #8A2BE2;
   font-size: 1.3rem;
 }
 
-.dashboard-stats-profile {
+.dashboard-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
-.stat-card-profile {
+.stat-card {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -481,12 +481,12 @@
   transition: all 0.3s ease;
 }
 
-.stat-card-profile:hover {
+.stat-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(138, 43, 226, 0.2);
 }
 
-.stat-icon-profile {
+.stat-icon {
   width: 48px;
   height: 48px;
   border-radius: 8px;
@@ -496,53 +496,53 @@
   font-size: 1.2rem;
 }
 
-.stat-icon-profile.vc-icon {
+.stat-icon.vc-icon {
   background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
   color: #1a1a2e;
 }
 
-.stat-icon-profile.pending-icon {
+.stat-icon.pending-icon {
   background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%);
   color: #ffffff;
 }
 
-.stat-icon-profile.orders-icon {
+.stat-icon.orders-icon {
   background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
   color: #ffffff;
 }
 
-.stat-icon-profile.services-icon {
+.stat-icon.services-icon {
   background: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%);
   color: #ffffff;
 }
 
-.stat-content-profile h3 {
+.stat-content h3 {
   color: #ffffff;
   font-size: 0.9rem;
   font-weight: 600;
   margin: 0 0 0.25rem 0;
 }
 
-.stat-value-profile {
+.stat-value {
   color: #00FFCA;
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0 0 0.25rem 0;
 }
 
-.stat-content-profile small {
+.stat-content small {
   color: #B0B0B0;
   font-size: 0.8rem;
 }
 
-.provider-actions-profile {
+.provider-actions {
   display: flex;
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
 }
 
-.provider-actions-profile .btn-profile {
+.provider-actions .btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -552,20 +552,20 @@
   transition: all 0.3s ease;
 }
 
-.provider-actions-profile .btn-profile.secondary {
+.provider-actions .btn.secondary {
   background: linear-gradient(135deg, rgba(138, 43, 226, 0.2) 0%, rgba(0, 255, 202, 0.1) 100%);
   border: 1px solid rgba(138, 43, 226, 0.3);
   color: #ffffff;
 }
 
-.provider-actions-profile .btn-profile.secondary:hover {
+.provider-actions .btn.secondary:hover {
   background: linear-gradient(135deg, rgba(138, 43, 226, 0.3) 0%, rgba(0, 255, 202, 0.2) 100%);
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(138, 43, 226, 0.3);
 }
 
 /* Client Dashboard */
-.client-dashboard-profile {
+.client-dashboard {
   background: linear-gradient(135deg, rgba(0, 255, 202, 0.1) 0%, rgba(138, 43, 226, 0.05) 100%);
   border: 1px solid rgba(0, 255, 202, 0.2);
   border-radius: 12px;
@@ -573,12 +573,12 @@
   margin-bottom: 2rem;
 }
 
-.client-dashboard-profile .section-header-profile {
+.client-dashboard .section-header {
   margin-bottom: 1.5rem;
   text-align: center;
 }
 
-.client-dashboard-profile .section-header-profile h2 {
+.client-dashboard .section-header h2 {
   color: #ffffff;
   font-size: 1.5rem;
   font-weight: 600;
@@ -589,19 +589,19 @@
   gap: 0.5rem;
 }
 
-.client-dashboard-profile .section-header-profile i {
+.client-dashboard .section-header i {
   color: #00FFCA;
   font-size: 1.3rem;
 }
 
-.client-stats-profile {
+.client-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
-.client-stats-profile .stat-card-profile {
+.client-stats .stat-card {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -612,39 +612,39 @@
   transition: all 0.3s ease;
 }
 
-.client-stats-profile .stat-card-profile:hover {
+.client-stats .stat-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 255, 202, 0.2);
 }
 
-.client-stats-profile .stat-icon-profile.vp-icon {
+.client-stats .stat-icon.vp-icon {
   background: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%);
   color: #ffffff;
 }
 
-.client-stats-profile .stat-icon-profile.vbp-icon {
+.client-stats .stat-icon.vbp-icon {
   background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
   color: #1a1a2e;
 }
 
-.client-stats-profile .stat-icon-profile.purchases-icon {
+.client-stats .stat-icon.purchases-icon {
   background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
   color: #ffffff;
 }
 
-.client-stats-profile .stat-icon-profile.favorites-icon {
+.client-stats .stat-icon.favorites-icon {
   background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%);
   color: #ffffff;
 }
 
-.client-actions-profile {
+.client-actions {
   display: flex;
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
 }
 
-.client-actions-profile .btn-profile {
+.client-actions .btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -654,30 +654,30 @@
   transition: all 0.3s ease;
 }
 
-.client-actions-profile .btn-profile.primary {
+.client-actions .btn.primary {
   background: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%);
   border: none;
   color: #ffffff;
 }
 
-.client-actions-profile .btn-profile.primary:hover {
+.client-actions .btn.primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(138, 43, 226, 0.3);
 }
 
-.client-actions-profile .btn-profile.secondary {
+.client-actions .btn.secondary {
   background: linear-gradient(135deg, rgba(0, 255, 202, 0.2) 0%, rgba(138, 43, 226, 0.1) 100%);
   border: 1px solid rgba(0, 255, 202, 0.3);
   color: #ffffff;
 }
 
-.client-actions-profile .btn-profile.secondary:hover {
+.client-actions .btn.secondary:hover {
   background: linear-gradient(135deg, rgba(0, 255, 202, 0.3) 0%, rgba(138, 43, 226, 0.2) 100%);
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 255, 202, 0.3);
 }
 
-.profile-card-profile {
+.profile-card {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
@@ -687,7 +687,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.cover-photo-profile {
+.cover-photo {
   height: 280px;
   background-image: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%);
   background-size: cover;
@@ -703,7 +703,7 @@
   padding-left: 30px;
 }
 
-.cover-photo-img-profile {
+.cover-photo-img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -713,7 +713,7 @@
   border-top-right-radius: 16px;
 }
 
-.cover-photo-placeholder-profile {
+.cover-photo-placeholder {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -723,7 +723,7 @@
   border-top-right-radius: 16px;
 }
 
-.cover-upload-btn-profile {
+.cover-upload-btn {
   position: absolute;
   top: 20px;
   right: 20px;
@@ -740,12 +740,12 @@
   transition: all 0.3s ease;
 }
 
-.cover-upload-btn-profile:hover {
+.cover-upload-btn:hover {
   background: rgba(0, 0, 0, 0.9);
   transform: scale(1.1);
 }
 
-.profile-header-profile {
+.profile-header {
   display: flex;
   align-items: flex-end;
   padding: 0 30px 25px;
@@ -759,7 +759,7 @@
   border-top: none;
 }
 
-.profile-avatar-profile {
+.profile-avatar {
   position: relative;
   width: 140px;
   height: 140px;
@@ -772,13 +772,13 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-.profile-avatar-profile img {
+.profile-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.avatar-upload-btn-profile {
+.avatar-upload-btn {
   position: absolute;
   top: 0;
   left: 0;
@@ -793,7 +793,7 @@
   z-index: 2;
 }
 
-.avatar-upload-btn-profile img {
+.avatar-upload-btn img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -801,7 +801,7 @@
   pointer-events: none;
 }
 
-.avatar-upload-btn-profile i {
+.avatar-upload-btn i {
   position: absolute;
   bottom: 10px;
   right: 10px;
@@ -814,11 +814,11 @@
 }
 
 /* Status Indicator positioning for profile avatar */
-.profile-avatar-profile {
+.profile-avatar {
   position: relative;
 }
 
-.profile-info-profile {
+.profile-info {
   flex: 1;
   padding-top: 15px;
   padding-left: 25px;
@@ -827,13 +827,13 @@
 }
 
 /* Account Badges */
-.account-badges-profile {
+.account-badges {
   display: flex;
   gap: 8px;
   margin-bottom: 15px;
 }
 
-.badge-icon-profile {
+.badge-icon {
   position: relative;
   width: 32px;
   height: 32px;
@@ -843,17 +843,17 @@
   transition: transform 0.2s ease;
 }
 
-.badge-icon-profile:hover {
+.badge-icon:hover {
   transform: scale(1.1);
 }
 
-.badge-icon-profile img {
+.badge-icon img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.badge-icon-profile::after {
+.badge-icon::after {
   content: attr(data-label);
   position: absolute;
   bottom: 100%;
@@ -871,11 +871,11 @@
   z-index: 1000;
 }
 
-.badge-icon-profile:hover::after {
+.badge-icon:hover::after {
   opacity: 1;
 }
 
-.profile-name-profile {
+.profile-name {
   font-size: 1.8rem;
   font-weight: 700;
   margin: 0 0 5px 0;
@@ -883,7 +883,7 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.profile-username-profile {
+.profile-username {
   font-size: 1rem;
   color: #00FFCA;
   margin: 0 0 10px 0;
@@ -891,7 +891,7 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.profile-status-profile {
+.profile-status {
   font-size: 0.9rem;
   color: #B8B8B8;
   margin: 0 0 12px 0;
@@ -900,7 +900,7 @@
 }
 
 /* Email Verification Banner - Much more subtle */
-.email-verification-banner-profile {
+.email-verification-banner {
   background: rgba(255, 193, 7, 0.08);
   border: 1px solid rgba(255, 193, 7, 0.2);
   border-radius: 8px;
@@ -909,25 +909,25 @@
   box-shadow: 0 1px 4px rgba(255, 193, 7, 0.1);
 }
 
-.banner-content-profile {
+.banner-content {
   display: flex;
   align-items: center;
   gap: 8px;
   max-width: 100%;
 }
 
-.banner-icon-profile {
+.banner-icon {
   font-size: 14px;
   flex-shrink: 0;
   color: #ff9800;
 }
 
-.banner-text-profile {
+.banner-text {
   flex: 1;
   min-width: 0;
 }
 
-.banner-text-profile strong {
+.banner-text strong {
   display: inline;
   color: #ff9800;
   font-size: 12px;
@@ -935,7 +935,7 @@
   margin-right: 4px;
 }
 
-.banner-text-profile p {
+.banner-text p {
   display: inline;
   margin: 0;
   color: rgba(255, 255, 255, 0.7);
@@ -943,13 +943,13 @@
   line-height: 1.2;
 }
 
-.banner-actions-profile {
+.banner-actions {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
 }
 
-.btn-profile-verify-profile {
+.btn-verify {
   background: rgba(255, 152, 0, 0.2);
   color: #ff9800;
   border: 1px solid rgba(255, 152, 0, 0.3);
@@ -961,12 +961,12 @@
   transition: all 0.2s ease;
 }
 
-.btn-profile-verify-profile:hover {
+.btn-verify:hover {
   background: rgba(255, 152, 0, 0.3);
   border-color: rgba(255, 152, 0, 0.5);
 }
 
-.btn-profile-dismiss-profile {
+.btn-dismiss {
   background: transparent;
   color: rgba(255, 255, 255, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -977,33 +977,33 @@
   transition: all 0.2s ease;
 }
 
-.btn-profile-dismiss-profile:hover {
+.btn-dismiss:hover {
   background: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.6);
 }
 
 /* Responsive banner */
 @media (max-width: 768px) {
-  .banner-content-profile {
+  .banner-content {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
   
-  .banner-actions-profile {
+  .banner-actions {
     width: 100%;
     justify-content: flex-end;
   }
 }
 
-.profile-meta-profile {
+.profile-meta {
   display: flex;
   gap: 15px;
   margin-bottom: 12px;
   flex-wrap: wrap;
 }
 
-.profile-meta-profile span {
+.profile-meta span {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1011,59 +1011,59 @@
   font-size: 0.9rem;
 }
 
-.profile-meta-profile i {
+.profile-meta i {
   color: #00FFCA;
 }
 
-.profile-rating-profile {
+.profile-rating {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.profile-stars-profile {
+.profile-stars {
   display: flex;
   gap: 2px;
 }
 
-.profile-stars-profile .star {
+.profile-stars .star {
   font-size: 16px;
   color: #FFD700;
 }
 
-.profile-stars-profile .star.filled {
+.profile-stars .star.filled {
   color: #FFD700;
 }
 
-.profile-stars-profile .star.half {
+.profile-stars .star.half {
   color: #FFD700;
   opacity: 0.7;
 }
 
-.profile-stars-profile .star.empty {
+.profile-stars .star.empty {
   color: #666;
 }
 
-.profile-rating-value-profile {
+.profile-rating-value {
   font-weight: 600;
   color: #ffffff;
 }
 
-.profile-rating-count-profile {
+.profile-rating-count {
   color: #B8B8B8;
   font-size: 0.9rem;
 }
 
-.profile-actions-profile {
+.profile-actions {
   margin-left: auto;
   padding-top: 15px;
   padding-left: 25px;
   border-left: none;
 }
 
-.edit-profile-btn-profile,
-.save-profile-btn-profile,
-.cancel-profile-btn-profile {
+.edit-profile-btn,
+.save-profile-btn,
+.cancel-profile-btn {
   background: linear-gradient(135deg, #8A2BE2, #00FFCA);
   color: #0F0F1A;
   border: none;
@@ -1083,27 +1083,27 @@
   box-shadow: 0 10px 25px rgba(138, 43, 226, 0.4);
 }
 
-.cancel-profile-btn-profile {
+.cancel-profile-btn {
   background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.2);
   margin-left: 10px;
 }
 
-.cancel-profile-btn-profile:hover {
+.cancel-profile-btn:hover {
   background: rgba(255, 255, 255, 0.2);
 }
 
 /* Visitor Actions */
-.visitor-actions-profile {
+.visitor-actions {
   display: flex;
   gap: 10px;
   position: relative;
 }
 
-.follow-btn-profile,
-.message-btn-profile,
-.visitor-menu-profile-btn-profile {
+.follow-btn,
+.message-btn,
+.visitor-menu-btn {
   background: #8A2BE2;
   color: white;
   border: none;
@@ -1119,7 +1119,7 @@
 
 .follow-btn:hover,
 .message-btn:hover,
-.visitor-menu-profile-btn-profile:hover {
+.visitor-menu-btn:hover {
   transform: translateY(-2px);
 }
 
@@ -1141,17 +1141,17 @@
   background: #333;
 }
 
-.visitor-menu-profile-btn-profile {
+.visitor-menu-btn {
   background: rgba(255, 255, 255, 0.1);
   padding: 10px 12px;
 }
 
-.visitor-menu-profile-btn-profile:hover {
+.visitor-menu-btn:hover {
   background: rgba(255, 255, 255, 0.2);
 }
 
 /* Visitor Menu */
-.visitor-menu-profile {
+.visitor-menu {
   position: absolute;
   top: 100%;
   right: 0;
@@ -1165,7 +1165,7 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
-.visitor-menu-profile button {
+.visitor-menu button {
   width: 100%;
   background: none;
   border: none;
@@ -1179,16 +1179,16 @@
   transition: background-color 0.2s ease;
 }
 
-.visitor-menu-profile button:hover {
+.visitor-menu button:hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.visitor-menu-profile button i {
+.visitor-menu button i {
   color: #00FFCA;
   width: 16px;
 }
 
-.profile-tab-profiles-profile {
+.profile-tabs {
   display: flex;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 0 30px;
@@ -1196,7 +1196,7 @@
   overflow-y: hidden; /* prevent vertical scrollbar in tabs */
 }
 
-.profile-tab-profile {
+.profile-tab {
   background: none;
   border: none;
   color: #B8B8B8;
@@ -1209,16 +1209,16 @@
   will-change: color, background-color;
 }
 
-.profile-tab-profile:hover {
+.profile-tab:hover {
   color: #ffffff;
   background: rgba(255, 255, 255, 0.05);
 }
 
-.profile-tab-profile.active {
+.profile-tab.active {
   color: #00FFCA;
 }
 
-.profile-tab-profile.active::after {
+.profile-tab.active::after {
   content: '';
   position: absolute;
   bottom: -1px;
@@ -1229,7 +1229,7 @@
   border-radius: 2px 2px 0 0;
 }
 
-.tab-content-profile {
+.tab-content {
   display: none;
   padding: 30px;
   background: rgba(255, 255, 255, 0.02);
@@ -1240,30 +1240,30 @@
   overflow: hidden; /* contain children spacing without overlapping outside */
 }
 
-.tab-content-profile.active {
+.tab-content.active {
   display: block;
 }
 
-.perfil-tab-content-profile {
+.perfil-tab-content {
   display: grid;
   grid-template-columns: 300px 1fr;
   gap: 30px;
 }
 
-.profile-sidebar-profile {
+.profile-sidebar {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.profile-posts-profile {
+.profile-posts {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.interests-section-profile,
-.friends-section-profile {
+.interests-section,
+.friends-section {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: 20px;
@@ -1271,7 +1271,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.section-header-profile {
+.section-header {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1281,21 +1281,21 @@
   font-size: 1.1rem;
 }
 
-.section-header-profile i {
+.section-header i {
   color: #00FFCA;
 }
 
-.section-content-profile {
+.section-content {
   color: #B8B8B8;
 }
 
-.interest-tag-profiles-profile {
+.interest-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.interest-tag-profile {
+.interest-tag {
   background: rgba(138, 43, 226, 0.2);
   color: #00FFCA;
   padding: 6px 12px;
@@ -1304,19 +1304,19 @@
   font-weight: 500;
 }
 
-.no-interests-profile {
+.no-interests {
   color: #B8B8B8;
   font-style: italic;
 }
 
 /* Friends/Followers Section */
-.friends-header-profile {
+.friends-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.view-all-link-profile {
+.view-all-link {
   color: #00FFCA;
   text-decoration: none;
   font-size: 0.9rem;
@@ -1324,23 +1324,23 @@
   transition: color 0.2s ease;
 }
 
-.view-all-link-profile:hover {
+.view-all-link:hover {
   color: #ffffff;
 }
 
-.friend-count-profile {
+.friend-count {
   font-size: 0.9rem;
   color: #B8B8B8;
   margin-top: 5px;
 }
 
-.friends-grid-profile {
+.friends-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 15px;
 }
 
-.friend-item-profile {
+.friend-item {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1349,11 +1349,11 @@
   transition: transform 0.2s ease;
 }
 
-.friend-item-profile:hover {
+.friend-item:hover {
   transform: translateY(-3px);
 }
 
-.friend-avatar-profile {
+.friend-avatar {
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -1364,17 +1364,17 @@
   position: relative;
 }
 
-.friend-avatar-profile:hover {
+.friend-avatar:hover {
   border-color: #8A2BE2;
 }
 
-.friend-avatar-profile img {
+.friend-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.friend-name-profile {
+.friend-name {
   font-size: 0.8rem;
   color: #ffffff;
   font-weight: 500;
@@ -1385,7 +1385,7 @@
 }
 
 /* Posts System */
-.create-post-card-profile {
+.create-post-card {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: 20px;
@@ -1395,21 +1395,21 @@
   gap: 15px;
 }
 
-.create-post-avatar-profile img {
+.create-post-avatar img {
   width: 48px;
   height: 48px;
   border-radius: 50%;
   object-fit: cover;
 }
 
-.create-post-body-profile {
+.create-post-body {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.create-post-body-profile textarea {
+.create-post-body textarea {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
@@ -1420,18 +1420,18 @@
   min-height: 80px;
 }
 
-.create-post-body-profile textarea:focus {
+.create-post-body textarea:focus {
   outline: none;
   border-color: #00FFCA;
 }
 
-.create-post-actions-profile {
+.create-post-actions {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.action-btn-profile {
+.action-btn {
   cursor: pointer;
   color: #00FFCA;
   display: flex;
@@ -1441,23 +1441,23 @@
   transition: color 0.2s ease;
 }
 
-.action-btn-profile:hover {
+.action-btn:hover {
   color: #ffffff;
 }
 
-.selected-images-preview-profile {
+.selected-images-preview {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
 }
 
-.posts-container-profile {
+.posts-container {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.post-card-profile {
+.post-card {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: 20px;
@@ -1466,11 +1466,11 @@
   transition: transform 0.2s ease;
 }
 
-.post-card-profile:hover {
+.post-card:hover {
   transform: translateY(-2px);
 }
 
-.post-header-profile {
+.post-header {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1478,7 +1478,7 @@
   position: relative;
 }
 
-.post-author-profile-avatar {
+.post-author-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -1486,35 +1486,35 @@
   flex-shrink: 0;
 }
 
-.post-author-profile-avatar img {
+.post-author-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.post-meta-profile {
+.post-meta {
   flex: 1;
   min-width: 0;
 }
 
-.post-author-profile-name {
+.post-author-name {
   font-weight: 600;
   color: #ffffff;
   margin-bottom: 2px;
 }
 
-.post-date-profile {
+.post-date {
   color: #B8B8B8;
   font-size: 12px;
 }
 
-.post-options-profile {
+.post-options {
   margin-left: auto;
   display: flex;
   align-items: center;
 }
 
-.post-options-profile-btn {
+.post-options-btn {
   background: transparent;
   border: none;
   color: #ff4757;
@@ -1528,36 +1528,36 @@
   -webkit-touch-callout: none;
 }
 
-.post-options-profile-btn:hover {
+.post-options-btn:hover {
   background: rgba(255, 71, 87, 0.1);
   opacity: 1;
   transform: scale(1.1);
 }
 
-.post-options-profile-btn i {
+.post-options-btn i {
   font-size: 14px;
 }
 
 /* Remove any unwanted click effects */
-.post-options-profile-btn:focus {
+.post-options-btn:focus {
   outline: none;
 }
 
-.post-options-profile-btn:focus-visible {
+.post-options-btn:focus-visible {
   outline: 2px solid rgba(255, 71, 87, 0.5);
   outline-offset: 2px;
 }
 
-.post-content-profile {
+.post-content {
   color: #ffffff;
   line-height: 1.6;
 }
 
-.post-image-profile-container {
+.post-image-container {
   margin-top: 15px;
 }
 
-.post-image-profile {
+.post-image {
   width: 100%;
   max-width: 400px;
   border-radius: 8px;
@@ -1565,7 +1565,7 @@
 }
 
 /* About Tab */
-.about-tab-content-profile {
+.about-tab-content {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: 25px;
@@ -1573,32 +1573,32 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.about-tab-content-profile h3 {
+.about-tab-content h3 {
   font-size: 1.5rem;
   font-weight: 600;
   color: #ffffff;
   margin-bottom: 20px;
 }
 
-.about-section-profile {
+.about-section {
   margin-bottom: 30px;
 }
 
-.about-section-profile .section-header-profile {
+.about-section .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 15px;
 }
 
-.about-section-profile .section-header-profile h4 {
+.about-section .section-header h4 {
   color: #ffffff;
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0;
 }
 
-.add-interest-btn-profile {
+.add-interest-btn {
   background: rgba(138, 43, 226, 0.8);
   color: #ffffff;
   border: none;
@@ -1613,39 +1613,39 @@
   font-size: 0.9rem;
 }
 
-.add-interest-btn-profile:hover:not(:disabled) {
+.add-interest-btn:hover:not(:disabled) {
   background: rgba(138, 43, 226, 1);
   transform: scale(1.1);
 }
 
-.add-interest-btn-profile:disabled {
+.add-interest-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.about-textarea-profile {
+.about-textarea {
   width: 100%;
   min-height: 100px;
   resize: vertical;
 }
 
-.interests-editor-profile {
+.interests-editor {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.interest-input-profile-group-profile {
+.interest-input-group {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.interest-input-profile {
+.interest-input {
   flex: 1;
 }
 
-.remove-interest-btn-profile {
+.remove-interest-btn {
   background: rgba(255, 59, 48, 0.8);
   color: #ffffff;
   border: none;
@@ -1660,16 +1660,16 @@
   font-size: 0.8rem;
 }
 
-.remove-interest-btn-profile:hover {
+.remove-interest-btn:hover {
   background: rgba(255, 59, 48, 1);
   transform: scale(1.1);
 }
 
-.interests-container-profile {
+.interests-container {
   margin-top: 10px;
 }
 
-.interest-tag-profile {
+.interest-tag {
   display: inline-block;
   background: rgba(138, 43, 226, 0.2);
   color: #8A2BE2;
@@ -1681,43 +1681,43 @@
   transition: all 0.3s ease;
 }
 
-.interest-tag-profile:hover {
+.interest-tag:hover {
   background: rgba(138, 43, 226, 0.3);
   transform: translateY(-2px);
 }
 
 
 
-.bio-text-profile {
+.bio-text {
   color: #B8B8B8;
   line-height: 1.6;
   margin-bottom: 30px;
 }
 
-.profile-details-profile {
+.profile-details {
   display: grid;
   gap: 25px;
 }
 
-.detail-group-profile h3 {
+.detail-group h3 {
   font-size: 1.2rem;
   font-weight: 600;
   color: #ffffff;
   margin-bottom: 10px;
 }
 
-.detail-group-profile p {
+.detail-group p {
   color: #B8B8B8;
   line-height: 1.5;
 }
 
-.skills-container-profile {
+.skills-container {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.skill-tag-profile {
+.skill-tag {
   background: rgba(138, 43, 226, 0.2);
   color: #00FFCA;
   padding: 6px 12px;
@@ -1727,9 +1727,9 @@
 }
 
 /* Services Tab */
-.services-tab-content-profile,
-.packs-tab-content-profile,
-.subscriptions-tab-content-profile {
+.services-tab-content,
+.packs-tab-content,
+.subscriptions-tab-content {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: 25px;
@@ -1738,9 +1738,9 @@
   overflow: visible; /* allow hover-lifted cards to remain visible */
 }
 
-.services-header-profile,
-.packs-header-profile,
-.subscriptions-header-profile {
+.services-header,
+.packs-header,
+.subscriptions-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1749,15 +1749,15 @@
 
 .services-header h3,
 .packs-header h3,
-.subscriptions-header-profile h3 {
+.subscriptions-header h3 {
   font-size: 1.5rem;
   font-weight: 600;
   color: #ffffff;
   margin: 0;
 }
 
-.packs-grid-profile,
-.subscriptions-grid-profile {
+.packs-grid,
+.subscriptions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
@@ -1767,7 +1767,7 @@
 }
 
 /* Subscriptions Coming Soon */
-.subscriptions-coming-soon-profile {
+.subscriptions-coming-soon {
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
@@ -1782,7 +1782,7 @@
   text-align: center;
 }
 
-.coming-soon-badge-profile {
+.coming-soon-badge {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: #CCCCCC;
@@ -1794,7 +1794,7 @@
   text-transform: uppercase;
 }
 
-.coming-soon-icon-profile {
+.coming-soon-icon {
   width: 64px;
   height: 64px;
   border-radius: 50%;
@@ -1805,24 +1805,24 @@
   color: #CCCCCC;
 }
 
-.coming-soon-icon-profile i {
+.coming-soon-icon i {
   font-size: 28px;
 }
 
-.coming-soon-title-profile {
+.coming-soon-title {
   font-size: 1.2rem;
   font-weight: 600;
   color: #FFFFFF;
 }
 
-.coming-soon-subtitle-profile {
+.coming-soon-subtitle {
   font-size: 0.95rem;
   color: #B8B8B8;
 }
 
-.service-card-profile,
-.pack-card-profile,
-.subscription-card-profile {
+.service-card,
+.pack-card,
+.subscription-card {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
   overflow: hidden;
@@ -1834,14 +1834,14 @@
 
 .service-card:hover,
 .pack-card:hover,
-.subscription-card-profile:hover {
+.subscription-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
-.service-cover-profile,
-.pack-cover-profile,
-.subscription-cover-profile {
+.service-cover,
+.pack-cover,
+.subscription-cover {
   height: 150px;
   overflow: hidden;
   position: relative;
@@ -1850,14 +1850,14 @@
 
 .service-cover img,
 .pack-cover img,
-.subscription-cover-profile img {
+.subscription-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.service-status-badge-profile {
+.service-status-badge {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -1871,25 +1871,25 @@
 }
 
 
-.service-status-badge-profile.draft {
+.service-status-badge.draft {
   background: rgba(255, 193, 7, 0.9);
   color: #000000;
 }
 
-.service-status-badge-profile.paused {
+.service-status-badge.paused {
   background: rgba(255, 152, 0, 0.9);
   color: #ffffff;
 }
 
-.service-info-profile,
-.pack-info-profile,
-.subscription-info-profile {
+.service-info,
+.pack-info,
+.subscription-info {
   padding: 15px;
 }
 
-.service-title-profile,
-.pack-title-profile,
-.subscription-title-profile {
+.service-title,
+.pack-title,
+.subscription-title {
   font-size: 1.1rem;
   font-weight: 600;
   color: #ffffff;
@@ -1897,9 +1897,9 @@
   line-height: 1.3;
 }
 
-.service-price-profile,
-.pack-price-profile,
-.subscription-price-profile {
+.service-price,
+.pack-price,
+.subscription-price {
   font-size: 1.2rem;
   font-weight: 700;
   color: #00FFCA;
@@ -1909,7 +1909,7 @@
   align-items: flex-start;
 }
 
-.price-original-profile {
+.price-original {
   font-size: 0.9rem;
   font-weight: 500;
   color: #888;
@@ -1917,7 +1917,7 @@
   margin-bottom: 2px;
 }
 
-.price-discounted-profile {
+.price-discounted {
   font-size: 1.2rem;
   font-weight: 700;
   color: #00FFCA;
@@ -1926,21 +1926,21 @@
   gap: 8px;
 }
 
-.service-category-profile {
+.service-category {
   font-size: 0.85rem;
   color: #B8B8B8;
   margin: 0;
   text-transform: capitalize;
 }
 
-.pack-discount-profile,
-.service-discount-profile {
+.pack-discount,
+.service-discount {
   color: #FF2E63;
   font-size: 0.9rem;
   margin-left: 8px;
 }
 
-.service-actions-profile {
+.service-actions {
   display: flex;
   gap: 8px;
   padding: 10px 15px;
@@ -1948,7 +1948,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.action-btn-profile {
+.action-btn {
   background: rgba(255, 255, 255, 0.1);
   color: #B8B8B8;
   border: none;
@@ -1963,28 +1963,28 @@
   font-size: 0.9rem;
 }
 
-.action-btn-profile:hover {
+.action-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   color: #ffffff;
   transform: scale(1.1);
 }
 
-.action-btn-profile.edit-btn:hover {
+.action-btn.edit-btn:hover {
   background: rgba(0, 255, 202, 0.2);
   color: #00FFCA;
 }
 
-.action-btn-profile.status-btn:hover {
+.action-btn.status-btn:hover {
   background: rgba(138, 43, 226, 0.2);
   color: #8A2BE2;
 }
 
-.action-btn-profile.delete-btn-profile:hover {
+.action-btn.delete-btn:hover {
   background: rgba(255, 46, 99, 0.2);
   color: #FF2E63;
 }
 
-.loading-state-profile {
+.loading-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1994,28 +1994,28 @@
   grid-column: 1 / -1;
 }
 
-.loading-state-profile i {
+.loading-state i {
   font-size: 2rem;
   margin-bottom: 15px;
   color: #00FFCA;
 }
 
-.loading-state-profile p {
+.loading-state p {
   margin: 0;
   font-size: 1rem;
 }
 
-.packs-description-profile {
+.packs-description {
   margin-bottom: 25px;
 }
 
-.packs-description-profile p {
+.packs-description p {
   color: #B8B8B8;
   font-style: italic;
 }
 
 /* Reviews Tab */
-.reviews-tab-content-profile {
+.reviews-tab-content {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: 25px;
@@ -2023,14 +2023,14 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.reviews-tab-content-profile h3 {
+.reviews-tab-content h3 {
   font-size: 1.5rem;
   font-weight: 600;
   color: #ffffff;
   margin-bottom: 25px;
 }
 
-.reviews-summary-profile {
+.reviews-summary {
   display: flex;
   align-items: center;
   gap: 30px;
@@ -2040,55 +2040,55 @@
   border-radius: 12px;
 }
 
-.rating-breakdown-profile {
+.rating-breakdown {
   display: flex;
   align-items: center;
   gap: 15px;
 }
 
-.rating-value-large-profile {
+.rating-value-large {
   font-size: 3rem;
   font-weight: 700;
   color: #00FFCA;
 }
 
-.rating-stars-large-profile {
+.rating-stars-large {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 5px;
 }
 
-.stars-display-large-profile {
+.stars-display-large {
   color: #FFD700;
   font-size: 1.5rem;
 }
 
-.reviews-count-profile {
+.reviews-count {
   color: #B8B8B8;
   font-size: 0.9rem;
 }
 
-.reviews-list-profile {
+.reviews-list {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.review-item-profile {
+.review-item {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
   padding: 20px;
 }
 
-.review-header-profile {
+.review-header {
   display: flex;
   align-items: center;
   gap: 15px;
   margin-bottom: 15px;
 }
 
-.reviewer-avatar-profile {
+.reviewer-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -2096,39 +2096,39 @@
   flex-shrink: 0;
 }
 
-.reviewer-avatar-profile img {
+.reviewer-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.review-meta-profile {
+.review-meta {
   flex: 1;
 }
 
-.reviewer-name-profile {
+.reviewer-name {
   font-weight: 600;
   color: #ffffff;
   margin-bottom: 2px;
 }
 
-.review-date-profile {
+.review-date {
   font-size: 0.8rem;
   color: #B8B8B8;
 }
 
-.review-rating-profile {
+.review-rating {
   color: #FFD700;
   font-size: 1.1rem;
 }
 
-.review-content-profile {
+.review-content {
   color: #B8B8B8;
   line-height: 1.6;
 }
 
 /* Modal Styles */
-.modal-overlay-profile {
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -2143,7 +2143,7 @@
   transition: opacity 0.3s ease;
 }
 
-.modal-content-profile {
+.modal-content {
   background: #1A1A2E;
   border-radius: 16px;
   max-width: 800px;
@@ -2154,7 +2154,7 @@
   transition: transform 0.3s ease;
 }
 
-.modal-header-profile {
+.modal-header {
   padding: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
@@ -2162,13 +2162,13 @@
   align-items: center;
 }
 
-.modal-header-profile h2 {
+.modal-header h2 {
   margin: 0;
   color: #ffffff;
   font-size: 1.5rem;
 }
 
-.modal-close-profile {
+.modal-close {
   background: none;
   border: none;
   color: #B8B8B8;
@@ -2177,23 +2177,23 @@
   transition: color 0.2s ease;
 }
 
-.modal-close-profile:hover {
+.modal-close:hover {
   color: #FF2E63;
 }
 
-.modal-body-profile {
+.modal-body {
   padding: 20px;
   max-height: 60dvh;
   overflow-y: auto;
 }
 
-.modal-followers-grid-profile {
+.modal-followers-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
 }
 
-.modal-follower-item-profile {
+.modal-follower-item {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2204,13 +2204,13 @@
   cursor: pointer;
 }
 
-.modal-follower-item-profile:hover {
+.modal-follower-item:hover {
   background: rgba(255, 255, 255, 0.15);
   transform: translateY(-3px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.modal-follower-avatar-profile {
+.modal-follower-avatar {
   width: 80px;
   height: 80px;
   border-radius: 50%;
@@ -2220,32 +2220,32 @@
   position: relative;
 }
 
-.modal-follower-avatar-profile img {
+.modal-follower-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.modal-follower-name-profile {
+.modal-follower-name {
   font-weight: 600;
   color: #ffffff;
   margin-bottom: 5px;
 }
 
-.modal-follower-username-profile {
+.modal-follower-username {
   font-size: 0.9rem;
   color: #B8B8B8;
 }
 
 /* Empty States */
-.empty-state-profile {
+.empty-state {
   text-align: center;
   color: #B8B8B8;
   padding: 40px 20px;
   font-style: italic;
 }
 
-.empty-state-profile i {
+.empty-state i {
   font-size: 3rem;
   color: #B8B8B8;
   margin-bottom: 15px;
@@ -2253,7 +2253,7 @@
 }
 
 /* Loading States */
-.loading-spinner-profile {
+.loading-spinner {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -2262,7 +2262,7 @@
   color: #00FFCA;
 }
 
-.error-message-profile {
+.error-message {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -2272,8 +2272,8 @@
 }
 
 /* Edit form styles */
-.edit-input-profile,
-.edit-textarea-profile {
+.edit-input,
+.edit-textarea {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
@@ -2285,24 +2285,24 @@
 }
 
 .edit-input:focus,
-.edit-textarea-profile:focus {
+.edit-textarea:focus {
   outline: none;
   border-color: #00FFCA;
   box-shadow: 0 0 0 2px rgba(0, 255, 202, 0.2);
 }
 
-.edit-textarea-profile {
+.edit-textarea {
   resize: vertical;
   min-height: 80px;
 }
 
 .edit-input::placeholder,
-.edit-textarea-profile::placeholder {
+.edit-textarea::placeholder {
   color: #B8B8B8;
 }
 
 /* Button Styles */
-.btn-profile {
+.btn {
   background: linear-gradient(135deg, #8A2BE2, #00FFCA);
   color: #0F0F1A;
   border: none;
@@ -2317,19 +2317,19 @@
   text-decoration: none;
 }
 
-.btn-profile:hover {
+.btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 25px rgba(138, 43, 226, 0.4);
 }
 
-.btn-profile.primary {
+.btn.primary {
   background: linear-gradient(135deg, #8A2BE2, #00FFCA);
   color: #0F0F1A;
 }
 
 /* Blocked/Disabled button variant for coming soon */
-.btn-profile.blocked,
-.btn-profile:disabled {
+.btn.blocked,
+.btn:disabled {
   background: rgba(255, 255, 255, 0.08);
   color: #B8B8B8;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -2338,52 +2338,52 @@
   transform: none;
 }
 
-.btn-profile.blocked:hover,
-.btn-profile:disabled:hover {
+.btn.blocked:hover,
+.btn:disabled:hover {
   box-shadow: none;
   transform: none;
 }
 
 /* Enhanced Responsive Design */
 @media (max-width: 900px) {
-  .perfil-tab-content-profile {
+  .perfil-tab-content {
     grid-template-columns: 1fr;
     gap: 20px;
   }
   
-  .profile-sidebar-profile {
+  .profile-sidebar {
     order: 2;
   }
   
-  .profile-posts-profile {
+  .profile-posts {
     order: 1;
   }
   
-  .modal-followers-grid-profile {
+  .modal-followers-grid {
     grid-template-columns: repeat(3, 1fr);
   }
   
-  .profile-container-profile {
+  .profile-container {
     padding: 15px;
   }
 }
 
 @media (max-width: 768px) {
-  .profile-container-profile {
+  .profile-container {
     padding: 10px;
   }
   
-  .profile-card-profile {
+  .profile-card {
     margin-bottom: 15px;
   }
   
-  .cover-photo-profile {
+  .cover-photo {
     height: 180px;
     padding-bottom: 8px;
     padding-left: 15px;
   }
   
-  .profile-header-profile {
+  .profile-header {
     flex-direction: column;
     align-items: center;
     text-align: center;
@@ -2391,14 +2391,14 @@
     margin-top: -50px;
   }
   
-  .profile-avatar-profile {
+  .profile-avatar {
     margin-right: 0;
     margin-bottom: 15px;
     width: 100px;
     height: 100px;
   }
   
-  .profile-info-profile {
+  .profile-info {
     padding-top: 0;
     padding-left: 0;
     margin-left: 0;
@@ -2406,29 +2406,29 @@
     text-align: center;
   }
   
-  .profile-name-profile {
+  .profile-name {
     font-size: clamp(1.4rem, 6vw, 1.6rem);
   }
   
-  .profile-username-profile {
+  .profile-username {
     font-size: 0.9rem;
   }
   
-  .profile-status-profile {
+  .profile-status {
     font-size: 0.85rem;
   }
   
-  .profile-meta-profile {
+  .profile-meta {
     justify-content: center;
     gap: 12px;
     flex-wrap: wrap;
   }
   
-  .profile-meta-profile span {
+  .profile-meta span {
     font-size: 0.85rem;
   }
   
-  .profile-actions-profile {
+  .profile-actions {
     margin-left: 0;
     margin-top: 15px;
     padding-left: 0;
@@ -2436,21 +2436,21 @@
     width: 100%;
   }
   
-  .visitor-actions-profile {
+  .visitor-actions {
     flex-direction: column;
     width: 100%;
     gap: 10px;
   }
   
-  .follow-btn-profile,
-  .message-btn-profile,
-  .visitor-menu-profile-btn-profile {
+  .follow-btn,
+  .message-btn,
+  .visitor-menu-btn {
     width: 100%;
     justify-content: center;
     padding: 12px 20px;
   }
   
-  .profile-tab-profiles-profile {
+  .profile-tabs {
     padding: 0 15px;
     overflow-x: visible; /* avoid long horizontal scroll */
     overflow-y: hidden;  /* avoid vertical scroll in wrapped rows */
@@ -2459,7 +2459,7 @@
     gap: 8px;
   }
   
-  .profile-tab-profile {
+  .profile-tab {
     padding: 10px 12px;
     white-space: normal; /* let text wrap if needed */
     font-size: 0.9rem;
@@ -2467,215 +2467,215 @@
     flex: 1 1 auto;      /* distribute evenly when wrapping */
   }
   
-  .tab-content-profile {
+  .tab-content {
     padding: 15px;
   }
   
-  .friends-grid-profile {
+  .friends-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
   
-  .friend-avatar-profile {
+  .friend-avatar {
     width: 50px;
     height: 50px;
   }
   
-  .friend-name-profile {
+  .friend-name {
     font-size: 0.75rem;
   }
   
-  .services-grid-profile,
-  .packs-grid-profile,
-  .subscriptions-grid-profile {
+  .services-grid,
+  .packs-grid,
+  .subscriptions-grid {
     grid-template-columns: 1fr;
     gap: 15px;
   }
   
-  .service-card-profile,
-  .pack-card-profile,
-  .subscription-card-profile {
+  .service-card,
+  .pack-card,
+  .subscription-card {
     margin-bottom: 15px;
   }
   
-  .service-cover-profile,
-  .pack-cover-profile,
-  .subscription-cover-profile {
+  .service-cover,
+  .pack-cover,
+  .subscription-cover {
     height: 120px;
   }
   
-  .service-info-profile,
-  .pack-info-profile,
-  .subscription-info-profile {
+  .service-info,
+  .pack-info,
+  .subscription-info {
     padding: 12px;
   }
   
-  .service-title-profile,
-  .pack-title-profile,
-  .subscription-title-profile {
+  .service-title,
+  .pack-title,
+  .subscription-title {
     font-size: 1rem;
   }
   
-  .service-price-profile,
-  .pack-price-profile,
-  .subscription-price-profile {
+  .service-price,
+  .pack-price,
+  .subscription-price {
     font-size: 1.1rem;
   }
   
-  .price-original-profile {
+  .price-original {
     font-size: 0.8rem;
   }
   
-  .price-discounted-profile {
+  .price-discounted {
     font-size: 1.1rem;
   }
   
-  .service-actions-profile {
+  .service-actions {
     padding: 8px 12px;
     gap: 6px;
   }
   
-  .action-btn-profile {
+  .action-btn {
     width: 100px;
     height: 36px;
     font-size: 0.8rem;
   }
   
-  .modal-followers-grid-profile {
+  .modal-followers-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 15px;
   }
   
-  .modal-content-profile {
+  .modal-content {
     width: 95%;
   }
   
-  .modal-follower-avatar-profile {
+  .modal-follower-avatar {
     width: 60px;
     height: 60px;
   }
   
-  .modal-follower-name-profile {
+  .modal-follower-name {
     font-size: 0.9rem;
   }
   
-  .modal-follower-username-profile {
+  .modal-follower-username {
     font-size: 0.8rem;
   }
   
-  .create-post-card-profile {
+  .create-post-card {
     padding: 15px;
     gap: 12px;
   }
   
-  .create-post-avatar-profile img {
+  .create-post-avatar img {
     width: 40px;
     height: 40px;
   }
   
-  .create-post-body-profile textarea {
+  .create-post-body textarea {
     min-height: 60px;
     font-size: 0.9rem;
   }
   
-  .create-post-actions-profile {
+  .create-post-actions {
     gap: 10px;
   }
   
-  .action-btn-profile {
+  .action-btn {
     font-size: 0.8rem;
   }
   
-  .post-card-profile {
+  .post-card {
     padding: 15px;
   }
   
-  .post-header-profile {
+  .post-header {
     gap: 10px;
     margin-bottom: 12px;
   }
   
-  .post-author-profile-avatar {
+  .post-author-avatar {
     width: 40px;
     height: 40px;
   }
   
-  .post-author-profile-name {
+  .post-author-name {
     font-size: 0.9rem;
   }
   
-  .post-date-profile {
+  .post-date {
     font-size: 0.75rem;
   }
   
-  .post-content-profile {
+  .post-content {
     font-size: 0.9rem;
   }
   
-  .post-image-profile {
+  .post-image {
     max-width: 100%;
   }
 }
 
 @media (max-width: 480px) {
-  .profile-container-profile {
+  .profile-container {
     padding: 5px;
   }
   
-  .profile-card-profile {
+  .profile-card {
     margin-bottom: 10px;
     border-radius: 12px;
   }
   
-  .cover-photo-profile {
+  .cover-photo {
     height: 150px;
     padding-bottom: 5px;
     padding-left: 10px;
   }
   
-  .profile-header-profile {
+  .profile-header {
     padding: 0 10px 10px;
     margin-top: -40px;
   }
   
-  .profile-avatar-profile {
+  .profile-avatar {
     width: 80px;
     height: 80px;
     margin-bottom: 10px;
   }
   
-  .profile-name-profile {
+  .profile-name {
     font-size: clamp(1.2rem, 8vw, 1.4rem);
   }
   
-  .profile-username-profile {
+  .profile-username {
     font-size: 0.85rem;
   }
   
-  .profile-status-profile {
+  .profile-status {
     font-size: 0.8rem;
   }
   
-  .profile-meta-profile {
+  .profile-meta {
     gap: 8px;
   }
   
-  .profile-meta-profile span {
+  .profile-meta span {
     font-size: 0.8rem;
   }
   
-  .profile-actions-profile {
+  .profile-actions {
     margin-top: 10px;
   }
   
-  .follow-btn-profile,
-  .message-btn-profile,
-  .visitor-menu-profile-btn-profile {
+  .follow-btn,
+  .message-btn,
+  .visitor-menu-btn {
     padding: 10px 15px;
     font-size: 0.85rem;
   }
   
-  .profile-tab-profiles-profile {
+  .profile-tabs {
     padding: 0 10px;
     overflow-x: visible;
     overflow-y: hidden;
@@ -2684,181 +2684,181 @@
     gap: 6px;
   }
   
-  .profile-tab-profile {
+  .profile-tab {
     padding: 8px 10px;
     font-size: 0.85rem;
     min-width: auto;
     flex: 1 1 auto;
   }
   
-  .tab-content-profile {
+  .tab-content {
     padding: 10px;
   }
   
-  .friends-grid-profile {
+  .friends-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
   
-  .friend-avatar-profile {
+  .friend-avatar {
     width: 45px;
     height: 45px;
   }
   
-  .friend-name-profile {
+  .friend-name {
     font-size: 0.7rem;
   }
   
-  .services-grid-profile,
-  .packs-grid-profile,
-  .subscriptions-grid-profile {
+  .services-grid,
+  .packs-grid,
+  .subscriptions-grid {
     gap: 10px;
   }
   
-  .service-cover-profile,
-  .pack-cover-profile,
-  .subscription-cover-profile {
+  .service-cover,
+  .pack-cover,
+  .subscription-cover {
     height: 100px;
   }
   
-  .service-info-profile,
-  .pack-info-profile,
-  .subscription-info-profile {
+  .service-info,
+  .pack-info,
+  .subscription-info {
     padding: 10px;
   }
   
-  .service-title-profile,
-  .pack-title-profile,
-  .subscription-title-profile {
+  .service-title,
+  .pack-title,
+  .subscription-title {
     font-size: 0.9rem;
   }
   
-  .service-price-profile,
-  .pack-price-profile,
-  .subscription-price-profile {
+  .service-price,
+  .pack-price,
+  .subscription-price {
     font-size: 1rem;
   }
   
-  .price-original-profile {
+  .price-original {
     font-size: 0.75rem;
   }
   
-  .price-discounted-profile {
+  .price-discounted {
     font-size: 1rem;
   }
   
-  .service-actions-profile {
+  .service-actions {
     padding: 6px 10px;
     gap: 4px;
   }
   
-  .action-btn-profile {
+  .action-btn {
     width: 80px;
     height: 32px;
     font-size: 0.75rem;
   }
   
-  .modal-followers-grid-profile {
+  .modal-followers-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
   
-  .modal-content-profile {
+  .modal-content {
     width: 98%;
   }
   
-  .modal-follower-avatar-profile {
+  .modal-follower-avatar {
     width: 50px;
     height: 50px;
   }
   
-  .modal-follower-name-profile {
+  .modal-follower-name {
     font-size: 0.8rem;
   }
   
-  .modal-follower-username-profile {
+  .modal-follower-username {
     font-size: 0.75rem;
   }
   
-  .create-post-card-profile {
+  .create-post-card {
     padding: 10px;
     gap: 10px;
   }
   
-  .create-post-avatar-profile img {
+  .create-post-avatar img {
     width: 35px;
     height: 35px;
   }
   
-  .create-post-body-profile textarea {
+  .create-post-body textarea {
     min-height: 50px;
     font-size: 0.85rem;
     padding: 8px;
   }
   
-  .create-post-actions-profile {
+  .create-post-actions {
     gap: 8px;
   }
   
-  .action-btn-profile {
+  .action-btn {
     font-size: 0.75rem;
   }
   
-  .post-card-profile {
+  .post-card {
     padding: 10px;
   }
   
-  .post-header-profile {
+  .post-header {
     gap: 8px;
     margin-bottom: 10px;
   }
   
-  .post-author-profile-avatar {
+  .post-author-avatar {
     width: 35px;
     height: 35px;
   }
   
-  .post-author-profile-name {
+  .post-author-name {
     font-size: 0.85rem;
   }
   
-  .post-date-profile {
+  .post-date {
     font-size: 0.7rem;
   }
   
-  .post-content-profile {
+  .post-content {
     font-size: 0.85rem;
   }
   
-  .email-verification-banner-profile {
+  .email-verification-banner {
     padding: 6px 10px;
     margin-bottom: 10px;
   }
   
-  .banner-content-profile {
+  .banner-content {
     gap: 6px;
   }
   
-  .banner-text-profile strong {
+  .banner-text strong {
     font-size: 11px;
   }
   
-  .banner-text-profile p {
+  .banner-text p {
     font-size: 10px;
   }
   
-  .btn-profile-verify-profile {
+  .btn-verify {
     padding: 3px 6px;
     font-size: 9px;
   }
   
-  .btn-profile-dismiss-profile {
+  .btn-dismiss {
     padding: 3px 5px;
     font-size: 11px;
   }
 } 
 
-.status-indicator-floating-profile {
+.status-indicator-floating {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -2870,7 +2870,7 @@
 }
 
 /* Services Grid - Ensure identical behavior to packs grid */
-.services-grid-profile {
+.services-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
@@ -2929,7 +2929,7 @@
 }
 
 /* Ensure service actions are properly contained */
-.service-actions-profile {
+.service-actions {
   padding: 12px 15px;
   display: flex;
   gap: 8px;
@@ -2941,7 +2941,7 @@
 
 /* Responsive fixes for services grid */
 @media (max-width: 768px) {
-  .services-grid-profile {
+  .services-grid {
     grid-template-columns: 1fr;
     gap: 15px;
     padding: 0 10px;
@@ -2960,14 +2960,14 @@
     padding: 12px;
   }
   
-  .service-actions-profile {
+  .service-actions {
     padding: 8px 12px;
     gap: 6px;
   }
 }
 
 @media (max-width: 480px) {
-  .services-grid-profile {
+  .services-grid {
     gap: 12px;
     padding: 0 8px;
   }
@@ -2984,7 +2984,7 @@
     padding: 10px;
   }
   
-  .service-actions-profile {
+  .service-actions {
     padding: 6px 10px;
     gap: 4px;
   }
@@ -2992,18 +2992,18 @@
 
 
 /* Pack Buyers Button */
-.action-btn-profile.buyers-btn {
+.action-btn.buyers-btn {
   background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
   color: #fff;
 }
 
-.action-btn-profile.buyers-btn:hover {
+.action-btn.buyers-btn:hover {
   background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
   transform: translateY(-1px);
 }
 
 /* Service Tags Styles */
-.service-tag-profiles-profile {
+.service-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -3012,7 +3012,7 @@
   overflow: hidden;
 }
 
-.service-tag-profile {
+.service-tag {
   background: rgba(138, 43, 226, 0.2);
   color: #8A2BE2;
   padding: 4px 8px;
@@ -3027,12 +3027,12 @@
   text-overflow: ellipsis;
 }
 
-.service-tag-profile:hover {
+.service-tag:hover {
   background: rgba(138, 43, 226, 0.3);
   transform: translateY(-1px);
 }
 
-.service-tag-profile-more {
+.service-tag-more {
   background: rgba(0, 255, 202, 0.2);
   color: #00FFCA;
   padding: 4px 8px;
@@ -3044,43 +3044,43 @@
   white-space: nowrap;
 }
 
-.service-tag-profile-more:hover {
+.service-tag-more:hover {
   background: rgba(0, 255, 202, 0.3);
   transform: translateY(-1px);
 }
 
 /* Responsive adjustments for service tags */
 @media (max-width: 768px) {
-  .service-tag-profiles-profile {
+  .service-tags {
     max-height: 40px; /* Slightly smaller on mobile */
     gap: 4px;
   }
   
-  .service-tag-profile {
+  .service-tag {
     font-size: 0.7rem;
     padding: 3px 6px;
     max-width: 80px;
   }
   
-  .service-tag-profile-more {
+  .service-tag-more {
     font-size: 0.7rem;
     padding: 3px 6px;
   }
 }
 
 @media (max-width: 480px) {
-  .service-tag-profiles-profile {
+  .service-tags {
     max-height: 36px;
     gap: 3px;
   }
   
-  .service-tag-profile {
+  .service-tag {
     font-size: 0.65rem;
     padding: 2px 5px;
     max-width: 70px;
   }
   
-  .service-tag-profile-more {
+  .service-tag-more {
     font-size: 0.65rem;
     padding: 2px 5px;
   }
