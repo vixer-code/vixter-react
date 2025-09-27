@@ -1,4 +1,4 @@
-export default function getCroppedImg(imageSrc, crop, rotation = 0) {
+export default function getCroppedImg(imageSrc, crop, rotation = 0, outputSize = null) {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.crossOrigin = 'anonymous';
@@ -13,21 +13,28 @@ export default function getCroppedImg(imageSrc, crop, rotation = 0) {
         return;
       }
 
-      // Definir tamanho do canvas baseado no crop
-      canvas.width = crop.width;
-      canvas.height = crop.height;
+      // Usar tamanho de saída se fornecido, senão usar tamanho do crop
+      const finalWidth = outputSize ? outputSize.width : crop.width;
+      const finalHeight = outputSize ? outputSize.height : crop.height;
+      
+      canvas.width = finalWidth;
+      canvas.height = finalHeight;
+
+      // Configurar qualidade de renderização
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
 
       // Aplicar rotação se necessário
       if (rotation !== 0) {
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
+        const centerX = finalWidth / 2;
+        const centerY = finalHeight / 2;
         
         ctx.translate(centerX, centerY);
         ctx.rotate((rotation * Math.PI) / 180);
         ctx.translate(-centerX, -centerY);
       }
 
-      // Desenhar a imagem na área de crop
+      // Desenhar a imagem na área de crop com redimensionamento se necessário
       ctx.drawImage(
         image,
         crop.x,
@@ -36,8 +43,8 @@ export default function getCroppedImg(imageSrc, crop, rotation = 0) {
         crop.height,
         0,
         0,
-        crop.width,
-        crop.height
+        finalWidth,
+        finalHeight
       );
 
       canvas.toBlob(

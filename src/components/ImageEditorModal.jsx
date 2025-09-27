@@ -19,6 +19,17 @@ const ImageEditorModal = ({
   // Definir aspect ratio baseado no tipo de imagem
   const aspect = imageType === 'avatar' ? 1 : 16 / 9;
 
+  // Definir tamanho de saída baseado no tipo de imagem
+  const getOutputSize = () => {
+    if (imageType === 'avatar') {
+      // Para avatar, usar 140px (tamanho do perfil principal)
+      return { width: 140, height: 140 };
+    } else {
+      // Para capa, usar proporção 16:9 com altura de 280px (como no CSS)
+      return { width: 497, height: 280 }; // 280 * 16/9 ≈ 497
+    }
+  };
+
   const onCropComplete = useCallback((_, croppedPixels) => {
     setCroppedAreaPixels(croppedPixels);
   }, []);
@@ -32,7 +43,8 @@ const ImageEditorModal = ({
     setInternalUploading(true);
     try {
       const imageUrl = URL.createObjectURL(imageFile);
-      const croppedImageBlob = await getCroppedImg(imageUrl, croppedAreaPixels);
+      const outputSize = getOutputSize();
+      const croppedImageBlob = await getCroppedImg(imageUrl, croppedAreaPixels, 0, outputSize);
       
       if (croppedImageBlob) {
         // Criar um novo File object com o blob
