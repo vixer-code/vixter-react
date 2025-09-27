@@ -1160,7 +1160,15 @@
 }
 
 /* Disabled button styles */
-.btn-primary.disabled,
+.btn-primary.disabled {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #999 !important;
+  border-color: #666 !important;
+  cursor: not-allowed !important;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
 .btn-secondary.disabled {
   background: #666 !important;
   color: #999 !important;
@@ -1170,7 +1178,13 @@
   opacity: 0.6;
 }
 
-.btn-primary.disabled:hover,
+.btn-primary.disabled:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #999 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 .btn-secondary.disabled:hover {
   background: #666 !important;
   color: #999 !important;
