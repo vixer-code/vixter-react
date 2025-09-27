@@ -741,10 +741,22 @@ export const EnhancedMessagingProvider = ({ children }) => {
       
       if (snapshot.exists()) {
         snapshot.forEach((childSnapshot) => {
-          messagesData.push({
+          const messageData = {
             id: childSnapshot.key,
             ...childSnapshot.val()
-          });
+          };
+          
+          // Debug: Log image messages
+          if (messageData.type === 'image' && messageData.mediaUrl) {
+            console.log('🖼️ Image message loaded:', {
+              id: messageData.id,
+              mediaUrl: messageData.mediaUrl,
+              content: messageData.content,
+              timestamp: messageData.timestamp
+            });
+          }
+          
+          messagesData.push(messageData);
         });
         
         // Sort messages by timestamp (oldest first)
@@ -752,6 +764,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       }
       
       console.log('Messages loaded from conversation document:', messagesData.length);
+      console.log('Image messages count:', messagesData.filter(m => m.type === 'image').length);
       setMessages(messagesData);
       
       // Mark messages as read (disabled to avoid permission issues)

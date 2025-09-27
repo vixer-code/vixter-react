@@ -46,17 +46,27 @@ const OnlineUsersList = ({ onUserSelect, currentUser }) => {
         
         const onlineUserIds = [];
 
-        // Get all users with 'online' status
+        // Get all users with 'online' status and recent activity
+        const now = Date.now();
+        const OFFLINE_THRESHOLD = 3 * 60 * 1000; // 3 minutes in milliseconds (status updates every 2 minutes)
+        
         Object.keys(statusData).forEach(userId => {
           const userStatus = statusData[userId];
+          const lastChanged = userStatus?.last_changed;
+          const isRecentActivity = lastChanged && (now - lastChanged) < OFFLINE_THRESHOLD;
+          
           console.log(`👤 User ${userId.slice(0, 8)}:`, {
             fullUID: userId,
             status: userStatus?.state,
-            rawUserStatus: userStatus,
+            lastChanged: lastChanged,
+            timeSinceLastChange: lastChanged ? (now - lastChanged) / 1000 : 'unknown',
+            isRecentActivity,
             isCurrentUser: userId === currentUser.uid
           });
           
-          if (userId !== currentUser.uid && userStatus?.state === 'online') {
+          if (userId !== currentUser.uid && 
+              userStatus?.state === 'online' && 
+              isRecentActivity) {
             onlineUserIds.push(userId);
           }
         });
