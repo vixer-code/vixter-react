@@ -2370,11 +2370,11 @@
   }
   
   .profile-sidebar {
-    order: 2;
+    order: 1;
   }
   
   .profile-posts {
-    order: 1;
+    order: 2;
   }
   
   .modal-followers-grid {
