@@ -467,6 +467,15 @@ const Register = () => {
           username: normalizedUsername || '',
           accountType: formData.accountType || '',
           specialAssistance: formData.specialAssistance || false,
+          location: formData.location || 'Vixora',
+          bio: formData.bio || '',
+          languages: formData.languages || '',
+          interests: formData.interests || [],
+          communicationPreferences: {
+            emailNotifications: formData.emailNotifications,
+            marketingUpdates: formData.marketingUpdates
+          },
+          avatarType: formData.avatarChoice || null,
           followersCount: 0,
           followingCount: 0,
           profilePictureURL: user.photoURL || null,
@@ -836,7 +845,7 @@ const Register = () => {
           <strong>Importante:</strong> O tipo de conta não poderá ser alterado após a criação. Escolha com cuidado.
         </div>
         <div className="radio-options">
-          <div className="radio-option">
+          <label className="radio-option" htmlFor="account-type-provider">
             <input
               type="radio"
               id="account-type-provider"
@@ -846,10 +855,12 @@ const Register = () => {
               onChange={handleChange}
               required
             />
-            <label htmlFor="account-type-provider">Provedor de Serviços</label>
-            <p className="option-description">Quero oferecer meus serviços na plataforma</p>
-          </div>
-          <div className="radio-option">
+            <div className="option-content">
+              <div className="option-title">Provedor de Serviços</div>
+              <p className="option-description">Quero oferecer meus serviços na plataforma</p>
+            </div>
+          </label>
+          <label className="radio-option" htmlFor="account-type-client">
             <input
               type="radio"
               id="account-type-client"
@@ -859,9 +870,11 @@ const Register = () => {
               onChange={handleChange}
               required
             />
-            <label htmlFor="account-type-client">Usuário</label>
-            <p className="option-description">Quero contratar serviços de outros</p>
-          </div>
+            <div className="option-content">
+              <div className="option-title">Usuário</div>
+              <p className="option-description">Quero contratar serviços de outros</p>
+            </div>
+          </label>
         </div>
       </div>
 

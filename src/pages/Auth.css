@@ -613,6 +613,9 @@
   transition: all 0.3s ease;
   cursor: pointer;
   background: rgba(22, 22, 42, 0.5);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .radio-option:hover {
@@ -620,15 +623,33 @@
   background: rgba(138, 43, 226, 0.1);
 }
 
-.radio-option input[type="radio"]:checked ~ label {
+.radio-option input[type="radio"] {
+  margin: 0;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.radio-option input[type="radio"]:checked + .option-content .option-title {
   color: #8A2BE2;
   font-weight: bold;
+}
+
+.option-content {
+  flex: 1;
+}
+
+.option-title {
+  color: #FCFCFC;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 4px;
+  transition: all 0.3s ease;
 }
 
 .option-description {
   color: #6C6C8B;
   font-size: 0.9em;
-  margin-top: 4px;
+  margin: 0;
   line-height: 1.3;
 }
 
