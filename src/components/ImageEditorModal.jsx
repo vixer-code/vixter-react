@@ -31,6 +31,8 @@ const ImageEditorModal = ({
   };
 
   const onCropComplete = useCallback((_, croppedPixels) => {
+    // Debug: log das coordenadas do crop
+    console.log('Crop coordinates:', croppedPixels);
     setCroppedAreaPixels(croppedPixels);
   }, []);
 
@@ -44,7 +46,23 @@ const ImageEditorModal = ({
     try {
       const imageUrl = URL.createObjectURL(imageFile);
       const outputSize = getOutputSize();
-      const croppedImageBlob = await getCroppedImg(imageUrl, croppedAreaPixels, 0, outputSize);
+      
+      // Ajustar coordenadas do crop para compensar diferenças de posicionamento
+      // Para avatar, adicionar um pequeno offset para compensar a diferença visual
+      const yOffset = imageType === 'avatar' ? 2 : 0; // Ajuste fino para avatar
+      
+      const adjustedCrop = {
+        ...croppedAreaPixels,
+        x: Math.round(croppedAreaPixels.x),
+        y: Math.round(croppedAreaPixels.y + yOffset), // Ajustar posição Y
+        width: Math.round(croppedAreaPixels.width),
+        height: Math.round(croppedAreaPixels.height)
+      };
+      
+      console.log('Original crop:', croppedAreaPixels);
+      console.log('Adjusted crop:', adjustedCrop);
+      
+      const croppedImageBlob = await getCroppedImg(imageUrl, adjustedCrop, 0, outputSize);
       
       if (croppedImageBlob) {
         // Criar um novo File object com o blob

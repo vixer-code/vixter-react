@@ -35,12 +35,13 @@ export default function getCroppedImg(imageSrc, crop, rotation = 0, outputSize =
       }
 
       // Desenhar a imagem na área de crop com redimensionamento se necessário
+      // Usar as coordenadas exatas do crop para garantir alinhamento
       ctx.drawImage(
         image,
-        crop.x,
-        crop.y,
-        crop.width,
-        crop.height,
+        Math.round(crop.x),
+        Math.round(crop.y),
+        Math.round(crop.width),
+        Math.round(crop.height),
         0,
         0,
         finalWidth,
