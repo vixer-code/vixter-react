@@ -728,6 +728,19 @@ header .vp-balance .vp-icon svg,
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobile-profile-info:hover {
+  background-color: rgba(0, 255, 202, 0.1);
+  border-color: #00FFCA;
+  transform: translateY(-1px);
+}
+
+.mobile-profile-info:active {
+  transform: translateY(0);
+  background-color: rgba(0, 255, 202, 0.15);
 }
 
 .mobile-profile-avatar {
@@ -785,8 +798,83 @@ header .vp-balance .vp-icon svg,
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.mobile-notification-section .notification-center {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.mobile-notification-section .notification-toggle {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px 20px;
+  color: #FCFCFC;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.mobile-notification-section .notification-toggle:hover {
+  background: rgba(0, 255, 202, 0.1);
+  border-color: #00FFCA;
+  color: #00FFCA;
+}
+
+.mobile-notification-section .notification-toggle i {
+  color: #00FFCA;
+}
+
+.mobile-notification-section .notification-count {
+  background: #FF2E63;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
 .mobile-notification-section .notification-icon-container {
   margin-right: 0;
+}
+
+/* Mobile notification dropdown positioning */
+.mobile-notification-section .notification-dropdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;
+  max-width: 400px;
+  max-height: 70vh;
+  z-index: 1000;
+  background: rgba(15, 15, 26, 0.98);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.mobile-notification-section .notification-dropdown::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: -1;
 }
 
 .mobile-profile-section {
