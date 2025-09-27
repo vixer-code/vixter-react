@@ -19,6 +19,17 @@ const ImageEditorModal = ({
   const imgRef = useRef(null);
   const previewCanvasRef = useRef(null);
 
+  // Reset states when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setCrop(undefined);
+      setCompletedCrop(undefined);
+      setScale(1);
+      setRotate(0);
+      setAspect(imageType === 'avatar' ? 1 : 16/9);
+    }
+  }, [isOpen, imageType]);
+
   // Função para criar crop centralizado
   const onImageLoad = useCallback((e) => {
     const { width, height } = e.currentTarget;
@@ -31,7 +42,7 @@ const ImageEditorModal = ({
       makeAspectCrop(
         {
           unit: '%',
-          width: 90,
+          width: 80, // Reduzido de 90% para 80% para dar mais espaço
         },
         cropAspect,
         width,
@@ -42,6 +53,8 @@ const ImageEditorModal = ({
     );
     
     setCrop(crop);
+    // Definir o crop inicial como completed também
+    setCompletedCrop(crop);
   }, [imageType]);
 
   // Função para gerar preview da imagem cortada
@@ -58,6 +71,12 @@ const ImageEditorModal = ({
       throw new Error('No 2d context');
     }
 
+    // Verificar se a imagem está carregada
+    if (image.naturalWidth === 0 || image.naturalHeight === 0) {
+      console.warn('Image not fully loaded');
+      return;
+    }
+
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
     const pixelRatio = window.devicePixelRatio;
@@ -65,6 +84,12 @@ const ImageEditorModal = ({
     // Definir tamanho do canvas baseado no crop
     const cropWidth = Math.floor(completedCrop.width * scaleX * pixelRatio);
     const cropHeight = Math.floor(completedCrop.height * scaleY * pixelRatio);
+    
+    // Validar dimensões mínimas
+    if (cropWidth <= 0 || cropHeight <= 0) {
+      console.warn('Invalid crop dimensions:', cropWidth, cropHeight);
+      return;
+    }
     
     canvas.width = cropWidth;
     canvas.height = cropHeight;
@@ -104,32 +129,50 @@ const ImageEditorModal = ({
   // Função para converter canvas para blob
   const getCroppedImg = (canvas, crop) => {
     return new Promise((resolve) => {
-      // Verificar se o canvas tem conteúdo
-      const ctx = canvas.getContext('2d');
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const hasContent = imageData.data.some((pixel, index) => {
-        // Verificar se há pixels não transparentes (ignorando canal alpha)
-        return index % 4 !== 3 && pixel !== 0;
-      });
-
-      if (!hasContent) {
-        console.error('Canvas is empty or black');
+      // Verificar se o canvas tem dimensões válidas
+      if (canvas.width <= 0 || canvas.height <= 0) {
+        console.error('Canvas has invalid dimensions:', canvas.width, canvas.height);
         resolve(null);
         return;
       }
 
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            console.error('Failed to create blob from canvas');
-            resolve(null);
-            return;
-          }
-          resolve(blob);
-        },
-        'image/jpeg',
-        0.9
-      );
+      // Verificar se o canvas tem conteúdo
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.error('No 2d context available');
+        resolve(null);
+        return;
+      }
+
+      try {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const hasContent = imageData.data.some((pixel, index) => {
+          // Verificar se há pixels não transparentes (ignorando canal alpha)
+          return index % 4 !== 3 && pixel !== 0;
+        });
+
+        if (!hasContent) {
+          console.error('Canvas is empty or black');
+          resolve(null);
+          return;
+        }
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              console.error('Failed to create blob from canvas');
+              resolve(null);
+              return;
+            }
+            resolve(blob);
+          },
+          'image/jpeg',
+          0.9
+        );
+      } catch (error) {
+        console.error('Error getting image data:', error);
+        resolve(null);
+      }
     });
   };
 
@@ -193,7 +236,8 @@ const ImageEditorModal = ({
                 aspect={aspect}
                 minWidth={50}
                 minHeight={50}
-                keepSelection
+                keepSelection={true}
+                circularCrop={imageType === 'avatar'}
               >
                 <img
                   ref={imgRef}
