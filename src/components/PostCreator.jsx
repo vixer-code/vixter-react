@@ -422,7 +422,18 @@ const PostCreator = ({
         <button
           onClick={handlePublish}
           disabled={isPublishing || (!postText.trim() && !mediaFile)}
-          className="btn primary"
+          className="btn primary desktop-publish-btn"
+        >
+          {isPublishing ? 'Publicando...' : 'Publicar'}
+        </button>
+      </div>
+      
+      {/* Mobile publish button - shown below image and attach service on mobile */}
+      <div className="mobile-publish-section">
+        <button
+          onClick={handlePublish}
+          disabled={isPublishing || (!postText.trim() && !mediaFile)}
+          className="btn primary mobile-publish-btn"
         >
           {isPublishing ? 'Publicando...' : 'Publicar'}
         </button>

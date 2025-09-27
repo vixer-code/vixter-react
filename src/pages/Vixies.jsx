@@ -593,12 +593,14 @@ const Vixies = () => {
           >
             Seguindo
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'myposts' ? 'active' : ''}`}
-            onClick={() => setActiveTab('myposts')}
-          >
-            Meus posts
-          </button>
+          {userProfile && userProfile.accountType !== 'client' && (
+            <button 
+              className={`tab-btn ${activeTab === 'myposts' ? 'active' : ''}`}
+              onClick={() => setActiveTab('myposts')}
+            >
+              Meus posts
+            </button>
+          )}
         </div>
 
         {/* PostCreator moved to top of feed */}

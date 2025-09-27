@@ -782,6 +782,10 @@ header .vp-balance .vp-icon svg,
     z-index: 20;
   }
   
+  .logo span {
+    display: none;
+  }
+  
   .logo-icon {
     width: 28px;
     height: 28px;
@@ -894,6 +898,10 @@ header .vp-balance .vp-icon svg,
     top: 50%;
     transform: translateY(-50%);
     z-index: 20;
+  }
+  
+  .logo span {
+    display: none;
   }
   
   .logo-icon {

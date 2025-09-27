@@ -264,6 +264,47 @@
   box-shadow: none;
 }
 
+/* Mobile publish button styles */
+.mobile-publish-section {
+  display: none;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.mobile-publish-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Hide desktop publish button on mobile */
+@media (max-width: 768px) {
+  .desktop-publish-btn {
+    display: none;
+  }
+  
+  .mobile-publish-section {
+    display: block;
+  }
+  
+  .create-post-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* Show desktop publish button on larger screens */
+@media (min-width: 769px) {
+  .mobile-publish-section {
+    display: none;
+  }
+  
+  .desktop-publish-btn {
+    display: flex;
+  }
+}
+
 /* Modal Styles */
 .modal-overlay {
   position: fixed;
