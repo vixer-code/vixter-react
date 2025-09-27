@@ -30,6 +30,13 @@ const ImageEditorModal = ({
     }
   }, [isOpen, imageType]);
 
+  // Atualizar preview quando o crop muda
+  useEffect(() => {
+    if (crop && imgRef.current) {
+      generatePreview();
+    }
+  }, [crop, generatePreview]);
+
   // Função para criar crop centralizado
   const onImageLoad = useCallback((e) => {
     const { width, height } = e.currentTarget;
@@ -53,8 +60,7 @@ const ImageEditorModal = ({
     );
     
     setCrop(crop);
-    // Definir o crop inicial como completed também
-    setCompletedCrop(crop);
+    // Não definir completedCrop aqui para permitir interação
   }, [imageType]);
 
   // Função para gerar preview da imagem cortada
@@ -102,9 +108,13 @@ const ImageEditorModal = ({
 
     // Aplicar transformações
     ctx.save();
-    ctx.translate(-completedCrop.x * scaleX, -completedCrop.y * scaleY);
+    
+    // Primeiro aplicar rotação e escala
     ctx.rotate((rotate * Math.PI) / 180);
     ctx.scale(scale, scale);
+    
+    // Depois aplicar a translação do crop
+    ctx.translate(-completedCrop.x * scaleX, -completedCrop.y * scaleY);
     
     // Desenhar a imagem
     ctx.drawImage(
@@ -178,13 +188,55 @@ const ImageEditorModal = ({
 
   // Função para salvar a imagem editada
   const handleSave = async () => {
-    if (!completedCrop || !previewCanvasRef.current) {
+    if (!crop || !imgRef.current) {
       return;
     }
 
     try {
-      const canvas = previewCanvasRef.current;
-      const croppedImageBlob = await getCroppedImg(canvas, completedCrop);
+      // Usar o crop atual em vez do completedCrop
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const image = imgRef.current;
+
+      if (!ctx) {
+        throw new Error('No 2d context');
+      }
+
+      const scaleX = image.naturalWidth / image.width;
+      const scaleY = image.naturalHeight / image.height;
+      const pixelRatio = window.devicePixelRatio;
+
+      // Definir tamanho do canvas baseado no crop
+      const cropWidth = Math.floor(crop.width * scaleX * pixelRatio);
+      const cropHeight = Math.floor(crop.height * scaleY * pixelRatio);
+      
+      canvas.width = cropWidth;
+      canvas.height = cropHeight;
+
+      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      ctx.imageSmoothingQuality = 'high';
+
+      // Aplicar transformações
+      ctx.save();
+      ctx.rotate((rotate * Math.PI) / 180);
+      ctx.scale(scale, scale);
+      ctx.translate(-crop.x * scaleX, -crop.y * scaleY);
+      
+      // Desenhar a imagem
+      ctx.drawImage(
+        image,
+        0,
+        0,
+        image.naturalWidth,
+        image.naturalHeight,
+        0,
+        0,
+        image.naturalWidth,
+        image.naturalHeight
+      );
+      ctx.restore();
+
+      const croppedImageBlob = await getCroppedImg(canvas, crop);
       
       if (!croppedImageBlob) {
         console.error('Failed to generate cropped image');
@@ -263,6 +315,7 @@ const ImageEditorModal = ({
                   step="0.1"
                   value={scale}
                   onChange={(e) => setScale(Number(e.target.value))}
+                  disabled={!crop}
                 />
                 <span>{Math.round(scale * 100)}%</span>
               </div>
@@ -276,6 +329,7 @@ const ImageEditorModal = ({
                   step="1"
                   value={rotate}
                   onChange={(e) => setRotate(Number(e.target.value))}
+                  disabled={!crop}
                 />
                 <span>{rotate}°</span>
               </div>
@@ -285,6 +339,7 @@ const ImageEditorModal = ({
                 <select 
                   value={aspect} 
                   onChange={(e) => setAspect(Number(e.target.value))}
+                  disabled={!crop}
                 >
                   <option value={1}>1:1 (Quadrado)</option>
                   <option value={16/9}>16:9 (Widescreen)</option>
@@ -297,6 +352,7 @@ const ImageEditorModal = ({
                 className="reset-btn" 
                 onClick={handleReset}
                 type="button"
+                disabled={!crop}
               >
                 <i className="fas fa-undo"></i>
                 Resetar
@@ -350,7 +406,7 @@ const ImageEditorModal = ({
           <button 
             className="btn-save" 
             onClick={handleSave}
-            disabled={uploading || !completedCrop}
+            disabled={uploading || !crop}
           >
             {uploading ? (
               <>
