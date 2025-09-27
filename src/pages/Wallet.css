@@ -1066,6 +1066,12 @@
     padding: 1.5rem;
   }
   
+  /* Remove margin from pack and service creation modals on mobile */
+  .create-service-modal .modal-content,
+  .create-pack-modal .modal-content {
+    margin: 0;
+  }
+  
   .transaction-item {
     flex-direction: column;
     text-align: center;
