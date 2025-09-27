@@ -853,7 +853,7 @@ const Feed = () => {
       <div className="vixies-container">
       <div className="vixies-header">
         <div className="vixies-title">
-          <h1>Feed</h1>
+          <h1 data-text="Feed">Feed</h1>
         </div>
       </div>
 

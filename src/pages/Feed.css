@@ -22,10 +22,60 @@
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 10px;
-  background: linear-gradient(135deg, var(--accent-color), #00ffca);
+  background: linear-gradient(135deg, #FFFFFF 20%, #8A2BE2 70%, #00FFCA 100%);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
+  position: relative;
+}
+
+.vixies-title h1::before,
+.vixies-title h1::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #FFFFFF 20%, #8A2BE2 70%, #00FFCA 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.vixies-title h1::before {
+  left: 2px;
+  text-shadow: -2px 0 #00FFCA;
+  animation: glitch-anim-1 2s infinite linear alternate-reverse;
+}
+
+.vixies-title h1::after {
+  left: -2px;
+  text-shadow: 2px 0 #8A2BE2;
+  animation: glitch-anim-2 3s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-anim-1 {
+  0%, 80%, 100% {
+    opacity: 0;
+    transform: none;
+  }
+  41%, 45% {
+    opacity: 1;
+    transform: translate(-2px, 0);
+  }
+}
+
+@keyframes glitch-anim-2 {
+  0%, 80%, 100% {
+    opacity: 0;
+    transform: none;
+  }
+  61%, 65% {
+    opacity: 1;
+    transform: translate(2px, 0);
+  }
 }
 
 

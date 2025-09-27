@@ -575,7 +575,7 @@ const Vixies = () => {
       <div className="vixies-container">
       <div className="vixies-header">
         <div className="vixies-title">
-          <h1>Vixies</h1>
+          <h1 data-text="Vixies">Vixies</h1>
         </div>
       </div>
 
