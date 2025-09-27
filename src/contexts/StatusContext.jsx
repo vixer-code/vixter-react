@@ -37,21 +37,22 @@ export const StatusProvider = ({ children }) => {
       setIsConnected(connected);
       
       if (connected) {
-        // Set up disconnect handler
+        // Set up disconnect handler first
         const userStatusRef = ref(database, `status/${uid}`);
         const isOfflineForDatabase = {
           state: 'offline',
           last_changed: serverTimestamp(),
         };
         
-        onDisconnect(userStatusRef).set(isOfflineForDatabase).then(() => {
-          // When disconnect trigger is set, set user as online
-          set(userStatusRef, {
-            state: 'online',
-            last_changed: serverTimestamp()
-          });
-          console.log('✅ User status set to: online for user:', uid);
+        // Set up the disconnect handler
+        onDisconnect(userStatusRef).set(isOfflineForDatabase);
+        
+        // Then set user as online
+        set(userStatusRef, {
+          state: 'online',
+          last_changed: serverTimestamp()
         });
+        console.log('✅ User status set to: online for user:', uid);
       }
     });
 
@@ -93,6 +94,11 @@ export const StatusProvider = ({ children }) => {
 
     // Periodic status update to keep user online
     const updateOnlineStatus = () => {
+      if (!isConnected) {
+        console.log('🔄 Skipping status update - not connected');
+        return;
+      }
+      
       const userStatusRef = ref(database, `status/${uid}`);
       set(userStatusRef, {
         state: 'online',
@@ -101,8 +107,8 @@ export const StatusProvider = ({ children }) => {
       console.log('🔄 Periodic status update - User kept online:', uid);
     };
 
-    // Update status every 2 minutes to keep user online
-    const statusUpdateInterval = setInterval(updateOnlineStatus, 2 * 60 * 1000);
+    // Update status every 90 seconds to keep user online (more frequent)
+    const statusUpdateInterval = setInterval(updateOnlineStatus, 90 * 1000);
 
     // Listen for user's own status changes
     const userStatusRef = ref(database, `status/${uid}`);
