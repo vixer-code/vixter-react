@@ -46,6 +46,19 @@ const Profile = () => {
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const { createOrGetConversation } = useEnhancedMessaging();
   
+  // Format time ago function (same as in Feed.jsx)
+  const formatTimeAgo = (timestamp) => {
+    if (!timestamp) return 'Agora';
+    const now = Date.now();
+    const diff = Math.floor((now - timestamp) / 1000);
+    if (diff < 60) return 'Agora mesmo';
+    if (diff < 3600) return `${Math.floor(diff / 60)} min atrás`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} h atrás`;
+    if (diff < 2592000) return `${Math.floor(diff / 86400)} dias atrás`;
+    if (diff < 31536000) return `${Math.floor(diff / 2592000)} meses atrás`;
+    return `${Math.floor(diff / 31536000)} anos atrás`;
+  };
+  
   const [profile, setProfile] = useState(null);
   
   // Calculate isOwner after profile is declared
@@ -1820,21 +1833,16 @@ const Profile = () => {
 
                       <div className="post-header">
                         <div className="post-author">
-                          <div className="post-author-avatar">
-                            <CachedImage
-                              src={displayPost.authorPhotoURL || displayPost.authorPhoto}
-                              fallbackSrc="/images/default-avatar.jpg"
-                              alt={displayPost.authorName}
-                              sizes="48px"
-                              showLoading={false}
-                            />
-                          </div>
+                          <img
+                            src={displayPost.authorPhotoURL || displayPost.authorPhoto || '/images/defpfp1.png'}
+                            alt={displayPost.authorName}
+                            className="author-avatar"
+                            onError={(e) => { e.target.src = '/images/defpfp1.png'; }}
+                          />
                           <div className="author-info">
-                            <div className="post-author-name">{displayPost.authorName}</div>
+                            <div className="author-name">{displayPost.authorName}</div>
                             <div className="post-time">
-                              {displayPost.timestamp
-                                ? new Date(displayPost.timestamp).toLocaleDateString('pt-BR')
-                                : 'Agora'}
+                              {formatTimeAgo(displayPost.timestamp)}
                             </div>
                           </div>
                         </div>

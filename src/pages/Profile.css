@@ -50,6 +50,20 @@
   color: #f5f5f57d;
 }
 
+/* Consistent styling with Feed */
+.author-avatar { 
+  width: 40px; 
+  height: 40px; 
+  border-radius: 50%; 
+}
+
+.author-name { 
+  font-size: 1.1rem; 
+  font-weight: 700; 
+  color: #d1d5db; 
+  text-decoration: none; 
+}
+
 .delete-btn {
   background: none;
   border: none;
