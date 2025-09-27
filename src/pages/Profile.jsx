@@ -24,6 +24,7 @@ import PurpleSpinner from '../components/PurpleSpinner';
 import DeleteServiceModal from '../components/DeleteServiceModal';
 import DeletePackModal from '../components/DeletePackModal';
 import PackBuyersModal from '../components/PackBuyersModal';
+import ImageEditorModal from '../components/ImageEditorModal';
 import './Profile.css';
 
 const Profile = () => {
@@ -73,6 +74,11 @@ const Profile = () => {
   const [editingService, setEditingService] = useState(null);
   const [showCreatePackModal, setShowCreatePackModal] = useState(false);
   const [editingPack, setEditingPack] = useState(null);
+  
+  // Image editor modal state
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [imageToEdit, setImageToEdit] = useState(null);
+  const [imageEditType, setImageEditType] = useState('avatar');
   
   // Delete confirmation modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);

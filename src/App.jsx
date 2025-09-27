@@ -86,8 +86,6 @@ function App() {
                                 <Route path="/profile/:username" element={<Profile />} />
                                 <Route path="/wallet" element={<Wallet />} />
                                 <Route path="/messages" element={<Messages />} />
-                                <Route path="/messaging-test" element={<MessagingTestPage />} />
-                                <Route path="/test-email" element={<TestEmailVerification />} />
                                 <Route path="/verify-email" element={<VerifyEmail />} />
                                 <Route path="/forgot-password" element={<ForgotPassword />} />
                                 <Route path="/reset-password" element={<ResetPassword />} />
