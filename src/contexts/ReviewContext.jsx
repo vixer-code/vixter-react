@@ -566,7 +566,10 @@ export const ReviewProvider = ({ children }) => {
 
   // Update reviewer photo in all reviews when user updates their profile picture
   const updateReviewerPhoto = useCallback(async (userId, newPhotoURL) => {
-    if (!userId || !newPhotoURL) return;
+    if (!userId || !newPhotoURL) {
+      console.warn('updateReviewerPhoto: Missing userId or newPhotoURL', { userId, newPhotoURL });
+      return;
+    }
 
     try {
       setProcessing(true);
@@ -576,12 +579,22 @@ export const ReviewProvider = ({ children }) => {
       const q = query(reviewsRef, where('reviewerId', '==', userId));
       const snapshot = await getDocs(q);
       
-      const updatePromises = snapshot.docs.map(doc => 
-        updateDoc(doc.ref, { 
-          reviewerPhotoURL: newPhotoURL,
-          updatedAt: serverTimestamp()
-        })
-      );
+      if (snapshot.empty) {
+        console.log('No reviews found for user:', userId);
+        return;
+      }
+      
+      const updatePromises = snapshot.docs.map(async (doc) => {
+        try {
+          await updateDoc(doc.ref, { 
+            reviewerPhotoURL: newPhotoURL,
+            updatedAt: serverTimestamp()
+          });
+        } catch (docError) {
+          console.error(`Failed to update review ${doc.id}:`, docError);
+          // Don't throw, continue with other updates
+        }
+      });
       
       await Promise.all(updatePromises);
       
@@ -597,6 +610,7 @@ export const ReviewProvider = ({ children }) => {
       console.log(`Updated photo for ${snapshot.docs.length} reviews`);
     } catch (error) {
       console.error('Error updating reviewer photos:', error);
+      // Don't throw the error to prevent breaking the profile update
     } finally {
       setProcessing(false);
     }

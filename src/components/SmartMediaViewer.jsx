@@ -38,13 +38,24 @@ const SmartMediaViewer = ({
       setIsR2Media(false);
       setR2Key(null);
       
-      // Ensure URL has protocol
+      // Validate and ensure URL has protocol
       let url = mediaData;
-      if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
-        url = `https://${url}`;
+      if (url && typeof url === 'string' && url.trim()) {
+        try {
+          // Test if URL is valid by trying to construct it
+          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = `https://${url}`;
+          }
+          // Validate the URL
+          new URL(url);
+          setFallbackUrl(url);
+        } catch (urlError) {
+          console.warn('Invalid URL provided to SmartMediaViewer:', mediaData, urlError);
+          setFallbackUrl(fallbackSrc);
+        }
+      } else {
+        setFallbackUrl(fallbackSrc);
       }
-      
-      setFallbackUrl(url);
       return;
     }
 
@@ -56,11 +67,19 @@ const SmartMediaViewer = ({
     
     if (hasPublicUrl) {
       // Content from public bucket - use publicUrl directly
-      // Ensure URL has protocol
-      const publicUrl = mediaData.publicUrl.startsWith('http') ? mediaData.publicUrl : `https://${mediaData.publicUrl}`;
-      setIsR2Media(false);
-      setR2Key(null);
-      setFallbackUrl(publicUrl);
+      // Ensure URL has protocol and validate it
+      try {
+        const publicUrl = mediaData.publicUrl.startsWith('http') ? mediaData.publicUrl : `https://${mediaData.publicUrl}`;
+        new URL(publicUrl); // Validate URL
+        setIsR2Media(false);
+        setR2Key(null);
+        setFallbackUrl(publicUrl);
+      } catch (urlError) {
+        console.warn('Invalid publicUrl in mediaData:', mediaData.publicUrl, urlError);
+        setIsR2Media(false);
+        setR2Key(null);
+        setFallbackUrl(fallbackSrc);
+      }
     } else {
       // Content from private bucket - needs R2MediaViewer for signed URLs
       setIsR2Media(true);
@@ -72,11 +91,19 @@ const SmartMediaViewer = ({
 
     // If mediaData is an object but no key, use publicUrl as fallback
     if (typeof mediaData === 'object' && mediaData.publicUrl) {
-      // Ensure URL has protocol
-      const publicUrl = mediaData.publicUrl.startsWith('http') ? mediaData.publicUrl : `https://${mediaData.publicUrl}`;
-      setIsR2Media(false);
-      setR2Key(null);
-      setFallbackUrl(publicUrl);
+      // Ensure URL has protocol and validate it
+      try {
+        const publicUrl = mediaData.publicUrl.startsWith('http') ? mediaData.publicUrl : `https://${mediaData.publicUrl}`;
+        new URL(publicUrl); // Validate URL
+        setIsR2Media(false);
+        setR2Key(null);
+        setFallbackUrl(publicUrl);
+      } catch (urlError) {
+        console.warn('Invalid publicUrl in mediaData object:', mediaData.publicUrl, urlError);
+        setIsR2Media(false);
+        setR2Key(null);
+        setFallbackUrl(fallbackSrc);
+      }
       return;
     }
 

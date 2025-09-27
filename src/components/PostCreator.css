@@ -282,11 +282,11 @@
 /* Hide desktop publish button on mobile */
 @media (max-width: 768px) {
   .desktop-publish-btn {
-    display: none;
+    display: none !important;
   }
   
   .mobile-publish-section {
-    display: block;
+    display: block !important;
   }
   
   .create-post-actions {
@@ -297,11 +297,11 @@
 /* Show desktop publish button on larger screens */
 @media (min-width: 769px) {
   .mobile-publish-section {
-    display: none;
+    display: none !important;
   }
   
   .desktop-publish-btn {
-    display: flex;
+    display: flex !important;
   }
 }
 

@@ -165,13 +165,15 @@ export const UserProvider = ({ children }) => {
       await updateDoc(userRef, updateData);
       
       // If profile picture was updated, update all reviews
-      if (updates.profilePictureURL) {
+      if (updates.profilePictureURL && typeof updateReviewerPhoto === 'function') {
         try {
           await updateReviewerPhoto(currentUser.uid, updates.profilePictureURL);
         } catch (reviewError) {
           console.error('Error updating reviewer photos:', reviewError);
           // Don't fail the profile update if review update fails
         }
+      } else if (updates.profilePictureURL && typeof updateReviewerPhoto !== 'function') {
+        console.warn('updateReviewerPhoto function is not available');
       }
       
       showSuccess('Perfil atualizado com sucesso!', 'Perfil Atualizado');
