@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useEnhancedMessaging } from '../../contexts/EnhancedMessagingContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import { getProfileUrl } from '../../utils/profileUrls';
 import CachedImage from '../CachedImage';
 import './ChatInterface.css';
 
@@ -20,6 +22,7 @@ const ChatInterface = ({ conversation, onClose }) => {
   
   const { currentUser } = useAuth();
   const { showError } = useNotification();
+  const navigate = useNavigate();
   
   const [messageText, setMessageText] = useState('');
   // Removed old typing state - now using context
@@ -35,6 +38,14 @@ const ChatInterface = ({ conversation, onClose }) => {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const otherUser = getOtherParticipant(conversation);
+
+  // Handle profile navigation
+  const handleProfileClick = () => {
+    if (otherUser && otherUser.id) {
+      const profileUrl = getProfileUrl(otherUser);
+      navigate(profileUrl);
+    }
+  };
 
   // Check if user is near bottom to determine auto-scroll behavior
   const isNearBottom = () => {
@@ -270,7 +281,7 @@ const ChatInterface = ({ conversation, onClose }) => {
     >
       {/* Chat Header */}
       <div className="chat-header">
-        <div className="chat-user-info">
+        <div className="chat-user-info" onClick={handleProfileClick} style={{ cursor: 'pointer' }}>
           <div className="user-avatar">
             {(otherUser.photoURL || otherUser.profilePictureURL) ? (
               <img 
