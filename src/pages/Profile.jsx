@@ -1671,18 +1671,16 @@ const Profile = () => {
           
           <div className="profile-posts">
             {isOwner && (
-              <div className="create-post-card">
-                <PostCreator
-                  mode="general_feed"
-                  onPostCreated={() => {
-                    if (currentUser?.uid) {
-                      loadPosts(currentUser.uid);
-                    }
-                  }}
-                  placeholder="O que você está pensando? O conteúdo postado aqui será publicado no Feed."
-                  showAttachment={false}
-                />
-              </div>
+              <PostCreator
+                mode="general_feed"
+                onPostCreated={() => {
+                  if (currentUser?.uid) {
+                    loadPosts(currentUser.uid);
+                  }
+                }}
+                placeholder="O que você está pensando? O conteúdo postado aqui será publicado no Feed."
+                showAttachment={false}
+              />
             )}
             
             <div className="posts-container">
