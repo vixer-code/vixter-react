@@ -11,17 +11,32 @@
   .modal-progress {
     padding: 10px 20px;
   }
+  
+  /* Remove margin from pack creation modal content on mobile */
+  .create-pack-modal .modal-content {
+    margin: 0 !important;
+  }
 }
 
 @media (max-width: 480px) {
   .modal-progress {
     padding: 8px 15px;
   }
+  
+  /* Remove margin from pack creation modal content on mobile */
+  .create-pack-modal .modal-content {
+    margin: 0 !important;
+  }
 }
 
 @media (max-width: 360px) {
   .modal-progress {
     padding: 6px 12px;
+  }
+  
+  /* Remove margin from pack creation modal content on mobile */
+  .create-pack-modal .modal-content {
+    margin: 0 !important;
   }
 }
 

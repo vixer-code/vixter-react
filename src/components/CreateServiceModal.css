@@ -1303,6 +1303,7 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+    margin: 0 !important; /* Ensure no margin on mobile */
   }
   
   .form-step {
@@ -1371,6 +1372,7 @@
   
   .create-service-modal .modal-content {
     padding: 15px;
+    margin: 0 !important; /* Ensure no margin on mobile */
   }
   
   .form-step h3 {
@@ -1576,6 +1578,7 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+    margin: 0 !important; /* Ensure no margin on mobile */
   }
   
   .form-step {
