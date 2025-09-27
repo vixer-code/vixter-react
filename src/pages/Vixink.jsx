@@ -5,7 +5,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { getProfileUrlById } from '../utils/profileUrls';
 import { database } from '../../config/firebase';
 import { ref, onValue, off, query, orderByChild, set, update, push, get } from 'firebase/database';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import PostCreator from '../components/PostCreator';
 import VixtipModal from '../components/VixtipModal';
 import VixtipSupporters from '../components/VixtipSupporters';
@@ -77,6 +77,7 @@ const Vixink = () => {
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
+  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [users, setUsers] = useState({});
   const [following, setFollowing] = useState([]);
@@ -88,6 +89,14 @@ const Vixink = () => {
   const [selectedPostForTip, setSelectedPostForTip] = useState(null);
   const [likes, setLikes] = useState({}); // New state for likes
   const [repostStatus, setRepostStatus] = useState({}); // Track repost status
+
+  // Check if user is logged in, redirect to login if not
+  useEffect(() => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+  }, [currentUser, navigate]);
 
   useEffect(() => {
     let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
@@ -510,6 +519,11 @@ const Vixink = () => {
         <PurpleSpinner text="Carregando posts..." size="large" />
       </div>
     );
+  }
+
+  // Don't render if user is not logged in
+  if (!currentUser) {
+    return null;
   }
 
   return (

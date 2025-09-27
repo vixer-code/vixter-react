@@ -869,51 +869,6 @@ const Settings = () => {
                       </div>
                     </div>
                     
-                    {/* Missing Items Alert */}
-                    {(!kycForm.fullName.trim() || !cpfVerificationState.isVerified || !Object.values(documentUploadStates).every(state => state.uploaded)) && (
-                      <div className="missing-items-alert">
-                        <div className="alert-icon">
-                          <i className="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <div className="alert-content">
-                          <h5>Itens Pendentes</h5>
-                          <p>Para completar a verificação, você ainda precisa:</p>
-                          <ul className="missing-items-list">
-                            {!kycForm.fullName.trim() && (
-                              <li>
-                                <i className="fas fa-user"></i>
-                                Preencher o nome completo
-                              </li>
-                            )}
-                            {!cpfVerificationState.isVerified && (
-                              <li>
-                                <i className="fas fa-id-card"></i>
-                                Verificar o CPF
-                              </li>
-                            )}
-                            {!documentUploadStates.front.uploaded && (
-                              <li>
-                                <i className="fas fa-file-image"></i>
-                                Enviar a frente do documento
-                              </li>
-                            )}
-                            {!documentUploadStates.back.uploaded && (
-                              <li>
-                                <i className="fas fa-file-image"></i>
-                                Enviar o verso do documento
-                              </li>
-                            )}
-                            {!documentUploadStates.selfie.uploaded && (
-                              <li>
-                                <i className="fas fa-camera"></i>
-                                Enviar a selfie com documento
-                              </li>
-                            )}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-                  </div>
                   
                   <div className="kyc-documents">
                     <div className={`document-upload-item ${documentUploadStates.front.uploaded ? 'uploaded' : documentUploadStates.front.uploading ? 'uploading' : documentUploadStates.front.error ? 'error' : ''}`}>
@@ -1020,6 +975,51 @@ const Settings = () => {
                     )}
                   </button>
                 </div>
+                    {/* Missing Items Alert */}
+                    {(!kycForm.fullName.trim() || !cpfVerificationState.isVerified || !Object.values(documentUploadStates).every(state => state.uploaded)) && (
+                      <div className="missing-items-alert">
+                        <div className="alert-icon">
+                          <i className="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div className="alert-content">
+                          <h5>Itens Pendentes</h5>
+                          <p>Para completar a verificação, você ainda precisa:</p>
+                          <ul className="missing-items-list">
+                            {!kycForm.fullName.trim() && (
+                              <li>
+                                <i className="fas fa-user"></i>
+                                Preencher o nome completo
+                              </li>
+                            )}
+                            {!cpfVerificationState.isVerified && (
+                              <li>
+                                <i className="fas fa-id-card"></i>
+                                Verificar o CPF
+                              </li>
+                            )}
+                            {!documentUploadStates.front.uploaded && (
+                              <li>
+                                <i className="fas fa-file-image"></i>
+                                Enviar a frente do documento
+                              </li>
+                            )}
+                            {!documentUploadStates.back.uploaded && (
+                              <li>
+                                <i className="fas fa-file-image"></i>
+                                Enviar o verso do documento
+                              </li>
+                            )}
+                            {!documentUploadStates.selfie.uploaded && (
+                              <li>
+                                <i className="fas fa-camera"></i>
+                                Enviar a selfie com documento
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                  </div>
               )}
 
               {/* KYC Status Display for PENDING_VERIFICATION */}

@@ -94,26 +94,29 @@ const Header = () => {
       <header>
         <nav>
           <div className="header-left">
-            <Link to="/" className="logo">
+            <Link to={currentUser ? "/feed" : "/"} className="logo">
               <img src="/images/Flor-Colorida.png" alt="Vixter logo" className="logo-icon" fetchpriority="high" />
               <span>Vixter</span>
             </Link>
             
-            {/* Mobile Search Bar - Only visible on mobile */}
-            <div className="mobile-search-bar">
-              <SearchBar />
-            </div>
+            {/* Mobile Search Bar - Only visible on mobile when logged in */}
+            {currentUser && (
+              <div className="mobile-search-bar">
+                <SearchBar />
+              </div>
+            )}
           </div>
 
           <ul className="nav-links">
             <li><Link to="/vixies" className={isActive('/vixies') ? 'active' : ''}>Vixies</Link></li>
             <li><Link to="/vixink" className={isActive('/vixink') ? 'active' : ''}>Vixink</Link></li>
-            <li><Link to="/feed" className={isActive('/feed') ? 'active' : ''}>Feed</Link></li>
             
-            {/* Search Bar */}
-            <li className="search-container-nav">
-              <SearchBar />
-            </li>
+            {/* Search Bar - Only visible when logged in */}
+            {currentUser && (
+              <li className="search-container-nav">
+                <SearchBar />
+              </li>
+            )}
             
             {!currentUser ? (
               <>
@@ -397,7 +400,7 @@ const Header = () => {
         }}
       >
         <div className="mobile-nav-header">
-          <Link to="/" className="logo" onClick={() => setTimeout(closeMobileMenu, 100)}>
+          <Link to={currentUser ? "/feed" : "/"} className="logo" onClick={() => setTimeout(closeMobileMenu, 100)}>
             <img src="/images/Flor-Colorida.png" alt="Vixter logo" className="logo-icon" />
             <span>Vixter</span>
           </Link>
@@ -412,9 +415,6 @@ const Header = () => {
           </Link></li>
           <li><Link to="/vixink" className={isActive('/vixink') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
             <i className="fas fa-link"></i>Vixink
-          </Link></li>
-          <li><Link to="/feed" className={isActive('/feed') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
-            <i className="fas fa-comments"></i>Feed
           </Link></li>
           
           

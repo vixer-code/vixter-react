@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import './Home.css';
 
 const Home = () => {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     users: 0,
     duos: 0,
@@ -10,6 +13,13 @@ const Home = () => {
     satisfaction: 0
   });
   const [activeFAQ, setActiveFAQ] = useState(null);
+
+  // Redirect logged in users to feed
+  useEffect(() => {
+    if (currentUser) {
+      navigate('/feed');
+    }
+  }, [currentUser, navigate]);
 
   // Remove header padding for home page
   useEffect(() => {
@@ -69,6 +79,11 @@ const Home = () => {
   const toggleFAQ = (index) => {
     setActiveFAQ(activeFAQ === index ? null : index);
   };
+
+  // Don't render if user is logged in (will redirect to feed)
+  if (currentUser) {
+    return null;
+  }
 
   return (
     <main className="home-container">
