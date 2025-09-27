@@ -464,31 +464,39 @@ const Header = () => {
                       fontWeight="bold">VP</text>
               </svg>
               )}
-              <div className="mobile-balance-info">
-                <div className="mobile-balance-label">
-                  {userProfile?.accountType === 'provider' ? 'VixCoins' : 'VixPoints'}
-                </div>
-                <div className="mobile-balance-amount">
-                  {userProfile?.accountType === 'provider' 
-                    ? (userProfile?.vixCoins || 0).toLocaleString('pt-BR')
-                    : (userProfile?.vixPoints || 0).toLocaleString('pt-BR')
-                  }
-                </div>
-              </div>
+              <span>{userProfile?.accountType === 'provider' 
+                ? formatCurrency(vcBalance || 0) 
+                : formatCurrency(vpBalance || 0)
+              }</span>
             </div>
             
             <div className="mobile-profile-info">
-              <img 
-                src={userProfile?.photoURL || '/images/defpfp1.png'} 
-                alt="Profile" 
-                className="mobile-profile-avatar"
-                onError={(e) => {
-                  e.target.src = '/images/defpfp1.png';
-                }}
-              />
+              <div className="mobile-profile-avatar">
+                {getUserAvatarUrl(userProfile) ? (
+                  <CachedImage 
+                    src={getUserAvatarUrl(userProfile)}
+                    defaultType="PROFILE_1"
+                    alt={formatUserDisplayName(userProfile)} 
+                    className=""
+                    showLoading={false}
+                    sizes="40px"
+                  />
+                ) : formatUserDisplayName(userProfile) !== 'Usuário' ? (
+                  <span className="profile-initials">
+                    {formatUserDisplayName(userProfile)
+                      .split(' ')
+                      .map(name => name[0])
+                      .join('')
+                      .substring(0, 2)
+                      .toUpperCase()}
+                  </span>
+                ) : (
+                  <i className="fas fa-user"></i>
+                )}
+              </div>
               <div className="mobile-profile-details">
                 <div className="mobile-profile-name">
-                  {userProfile?.displayName || 'Usuário'}
+                  {formatUserDisplayName(userProfile)}
                 </div>
                 <div className="mobile-profile-username">
                   @{userProfile?.username || 'user'}

@@ -967,6 +967,29 @@
   line-height: 1.2; 
 }
 
+/* Icon buttons for comments */
+.comment-input .btn.small.send-btn,
+.comment-input .btn.small.comment-btn {
+  padding: 8px 12px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.comment-input .btn.small.send-btn i,
+.comment-input .btn.small.comment-btn i {
+  font-size: 14px;
+}
+
+.comment-input .btn.small.send-btn:hover,
+.comment-input .btn.small.comment-btn:hover {
+  background: rgba(0, 255, 202, 0.1);
+  border-color: #00FFCA;
+  color: #00FFCA;
+}
+
 /* Comment structure styling */
 .comment-item { 
   margin-bottom: 12px; 
@@ -1098,6 +1121,25 @@
 .comment-reply .btn.small { 
   padding: 6px 12px; 
   font-size: 0.75rem; 
+}
+
+.comment-reply .btn.small.send-btn {
+  padding: 6px 10px;
+  min-width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.comment-reply .btn.small.send-btn i {
+  font-size: 12px;
+}
+
+.comment-reply .btn.small.send-btn:hover {
+  background: rgba(0, 255, 202, 0.1);
+  border-color: #00FFCA;
+  color: #00FFCA;
 }
 
 /* Repost indicator styling */

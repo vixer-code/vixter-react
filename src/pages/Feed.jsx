@@ -642,7 +642,9 @@ const Feed = () => {
               value={commentInputs[`${postId}:${comment.id}`] || ''}
               onChange={(e) => setCommentInputs(prev => ({ ...prev, [`${postId}:${comment.id}`]: e.target.value }))}
             />
-            <button className="btn small" onClick={() => addComment(postId, comment.id)}>Enviar</button>
+            <button className="btn small send-btn" onClick={() => addComment(postId, comment.id)} title="Enviar">
+              <i className="fas fa-paper-plane"></i>
+            </button>
           </div>
         )}
         {(tree.get(comment.id) || []).map(child => renderNode(child, depth + 1))}
@@ -669,7 +671,9 @@ const Feed = () => {
             value={commentInputs[postId] || ''}
             onChange={(e) => setCommentInputs(prev => ({ ...prev, [postId]: e.target.value }))}
           />
-          <button className="btn small" onClick={() => addComment(postId, null)}>Comentar</button>
+          <button className="btn small comment-btn" onClick={() => addComment(postId, null)} title="Comentar">
+            <i className="fas fa-comment"></i>
+          </button>
         </div>
       </div>
     );
