@@ -290,6 +290,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  contain: layout;
+  will-change: transform;
 }
 
 .ReactCrop__crop-selection {

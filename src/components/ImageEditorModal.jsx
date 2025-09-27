@@ -17,7 +17,6 @@ const ImageEditorModal = ({
   const [rotate, setRotate] = useState(0);
   const [aspect, setAspect] = useState(imageType === 'avatar' ? 1 : 16/9);
   const imgRef = useRef(null);
-  const previewCanvasRef = useRef(null);
 
   // Reset states when modal opens
   useEffect(() => {
@@ -56,100 +55,6 @@ const ImageEditorModal = ({
     setCompletedCrop(crop); // Definir completedCrop inicial
   }, [imageType]);
 
-  // Função para gerar preview da imagem cortada
-  const generatePreview = useCallback(() => {
-    if (!crop || !imgRef.current || !previewCanvasRef.current) {
-      return;
-    }
-
-    const image = imgRef.current;
-    const canvas = previewCanvasRef.current;
-    const ctx = canvas.getContext('2d');
-
-    if (!ctx) {
-      throw new Error('No 2d context');
-    }
-
-    // Aguardar a imagem carregar completamente
-    if (!image.complete || image.naturalWidth === 0 || image.naturalHeight === 0) {
-      // Aguardar o evento load se a imagem ainda não carregou
-      if (!image.complete) {
-        image.onload = () => {
-          setTimeout(() => generatePreview(), 100);
-        };
-        return;
-      }
-      return;
-    }
-
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-    const pixelRatio = window.devicePixelRatio;
-
-    // Definir tamanho do canvas baseado no crop atual
-    const cropWidth = Math.floor(crop.width * scaleX * pixelRatio);
-    const cropHeight = Math.floor(crop.height * scaleY * pixelRatio);
-    
-    // Validar dimensões mínimas
-    if (cropWidth <= 0 || cropHeight <= 0) {
-      console.warn('Invalid crop dimensions:', cropWidth, cropHeight);
-      return;
-    }
-    
-    canvas.width = cropWidth;
-    canvas.height = cropHeight;
-
-    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    ctx.imageSmoothingQuality = 'high';
-
-    // Limpar o canvas
-    ctx.clearRect(0, 0, cropWidth, cropHeight);
-
-    // Aplicar transformações
-    ctx.save();
-    
-    // Primeiro aplicar rotação e escala
-    ctx.rotate((rotate * Math.PI) / 180);
-    ctx.scale(scale, scale);
-    
-    // Depois aplicar a translação do crop
-    ctx.translate(-crop.x * scaleX, -crop.y * scaleY);
-    
-    // Desenhar a imagem
-    ctx.drawImage(
-      image,
-      0,
-      0,
-      image.naturalWidth,
-      image.naturalHeight,
-      0,
-      0,
-      image.naturalWidth,
-      image.naturalHeight
-    );
-    ctx.restore();
-  }, [crop, scale, rotate]);
-
-  // Atualizar preview quando o crop ou outras propriedades mudarem
-  useEffect(() => {
-    if (crop && imgRef.current && previewCanvasRef.current) {
-      generatePreview();
-    }
-  }, [crop, scale, rotate, generatePreview]);
-
-  // Atualizar preview quando a imagem carregar
-  useEffect(() => {
-    if (imgRef.current && crop) {
-      const image = imgRef.current;
-      if (image.complete) {
-        generatePreview();
-      } else {
-        image.onload = () => {
-          setTimeout(() => generatePreview(), 100);
-        };
-      }
-    }
-  }, [crop, generatePreview]);
 
   // Função para converter canvas para blob
   const getCroppedImg = (canvas, crop) => {
@@ -207,85 +112,23 @@ const ImageEditorModal = ({
       return;
     }
 
+    setUploading(true);
     try {
-      // Usar o crop atual em vez do completedCrop
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const image = imgRef.current;
-
-      if (!ctx) {
-        throw new Error('No 2d context');
+      const croppedImageBlob = await getCroppedImg(imgRef.current, crop, scale, rotate);
+      if (croppedImageBlob) {
+        // Criar um novo File object com o blob
+        const croppedImageFile = new File([croppedImageBlob], imageFile.name, {
+          type: 'image/jpeg',
+          lastModified: Date.now(),
+        });
+        
+        onSave(croppedImageFile);
+        onClose();
       }
-
-      // Verificar se a imagem está carregada
-      if (!image.complete || image.naturalWidth === 0 || image.naturalHeight === 0) {
-        console.error('Image not fully loaded');
-        return;
-      }
-
-      const scaleX = image.naturalWidth / image.width;
-      const scaleY = image.naturalHeight / image.height;
-      const pixelRatio = window.devicePixelRatio;
-
-      // Definir tamanho do canvas baseado no crop atual
-      const cropWidth = Math.floor(crop.width * scaleX * pixelRatio);
-      const cropHeight = Math.floor(crop.height * scaleY * pixelRatio);
-      
-      // Validar dimensões mínimas
-      if (cropWidth <= 0 || cropHeight <= 0) {
-        console.error('Invalid crop dimensions:', cropWidth, cropHeight);
-        return;
-      }
-      
-      canvas.width = cropWidth;
-      canvas.height = cropHeight;
-
-      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-      ctx.imageSmoothingQuality = 'high';
-
-      // Limpar o canvas
-      ctx.clearRect(0, 0, cropWidth, cropHeight);
-
-      // Aplicar transformações
-      ctx.save();
-      
-      // Primeiro aplicar rotação e escala
-      ctx.rotate((rotate * Math.PI) / 180);
-      ctx.scale(scale, scale);
-      
-      // Depois aplicar a translação do crop
-      ctx.translate(-crop.x * scaleX, -crop.y * scaleY);
-      
-      // Desenhar a imagem
-      ctx.drawImage(
-        image,
-        0,
-        0,
-        image.naturalWidth,
-        image.naturalHeight,
-        0,
-        0,
-        image.naturalWidth,
-        image.naturalHeight
-      );
-      ctx.restore();
-
-      const croppedImageBlob = await getCroppedImg(canvas, crop);
-      
-      if (!croppedImageBlob) {
-        console.error('Failed to generate cropped image');
-        return;
-      }
-      
-      // Criar um novo File object com o blob
-      const croppedImageFile = new File([croppedImageBlob], imageFile.name, {
-        type: 'image/jpeg',
-        lastModified: Date.now(),
-      });
-
-      onSave(croppedImageFile);
     } catch (error) {
       console.error('Error processing image:', error);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -394,39 +237,6 @@ const ImageEditorModal = ({
             </div>
           </div>
 
-          <div className="preview-section">
-            <h4>Pré-visualização</h4>
-            <div className={`preview-container ${imageType}`}>
-              {imageType === 'avatar' ? (
-                <div className="avatar-preview">
-                  <canvas
-                    ref={previewCanvasRef}
-                    style={{
-                      width: '100px',
-                      height: '100px',
-                      borderRadius: '50%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                </div>
-              ) : (
-                <div className="cover-preview">
-                  <canvas
-                    ref={previewCanvasRef}
-                    style={{
-                      width: '100%',
-                      height: '120px',
-                      objectFit: 'cover',
-                      borderRadius: '8px'
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-            <p className="preview-note">
-              Esta é uma pré-visualização de como sua {imageType === 'avatar' ? 'foto de perfil' : 'foto de capa'} aparecerá.
-            </p>
-          </div>
         </div>
 
         <div className="image-editor-actions">
