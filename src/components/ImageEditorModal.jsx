@@ -75,23 +75,24 @@ const ImageEditorModal = ({
         <div className="image-editor-body">
           <div className="image-editor-main">
             <div className="crop-container">
-              <Cropper
-                image={imageUrl}
-                crop={crop}
-                zoom={zoom}
-                aspect={aspect}
-                onCropChange={setCrop}
-                onZoomChange={setZoom}
-                onCropComplete={onCropComplete}
-                showGrid={true}
-                style={{
-                  containerStyle: {
-                    width: '100%',
-                    height: '400px',
-                    position: 'relative'
-                  }
-                }}
-              />
+               <Cropper
+                 image={imageUrl}
+                 crop={crop}
+                 zoom={zoom}
+                 aspect={aspect}
+                 cropShape={imageType === 'avatar' ? 'round' : 'rect'}
+                 onCropChange={setCrop}
+                 onZoomChange={setZoom}
+                 onCropComplete={onCropComplete}
+                 showGrid={imageType === 'cover'}
+                 style={{
+                   containerStyle: {
+                     width: '100%',
+                     height: '400px',
+                     position: 'relative'
+                   }
+                 }}
+               />
             </div>
           </div>
         </div>

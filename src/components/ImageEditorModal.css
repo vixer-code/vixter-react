@@ -497,16 +497,44 @@
 }
 
 .crop-container .react-easy-crop__crop-area {
-  border: 2px solid #00FFCA;
-  box-shadow: 0 0 0 9999em rgba(0, 0, 0, 0.5);
+  border: 3px solid #00FFCA;
+  box-shadow: 0 0 0 9999em rgba(0, 0, 0, 0.6);
+  transition: all 0.2s ease;
 }
 
+.crop-container .react-easy-crop__crop-area:hover {
+  border-color: #00E6B8;
+}
+
+/* Crop circular para avatar */
 .crop-container .react-easy-crop__crop-area--circular {
   border-radius: 50%;
+  border-width: 4px;
 }
 
+/* Crop retangular para capa */
 .crop-container .react-easy-crop__crop-area--rectangular {
-  border-radius: 0;
+  border-radius: 8px;
+  border-width: 3px;
+}
+
+/* Grid para crop retangular */
+.crop-container .react-easy-crop__grid {
+  border-color: rgba(0, 255, 202, 0.3);
+}
+
+/* Handles de redimensionamento */
+.crop-container .react-easy-crop__crop-area__drag-handle {
+  background: #00FFCA;
+  border: 2px solid white;
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+}
+
+.crop-container .react-easy-crop__crop-area__drag-handle:hover {
+  background: #00E6B8;
+  transform: scale(1.2);
 }
 
 /* Zoom Control Styles */
