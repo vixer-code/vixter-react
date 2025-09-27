@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useEnhancedMessaging } from '../../contexts/EnhancedMessagingContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import CachedImage from '../CachedImage';
 import './ChatInterface.css';
 
 const ChatInterface = ({ conversation, onClose }) => {
@@ -25,7 +26,6 @@ const ChatInterface = ({ conversation, onClose }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   
-  const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -108,7 +108,13 @@ const ChatInterface = ({ conversation, onClose }) => {
   // All typing state and functions moved to context for better management
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   };
 
   // Removed old typing functions - now using context
@@ -299,7 +305,16 @@ const ChatInterface = ({ conversation, onClose }) => {
                   
                   {message.type === 'image' && (
                     <div className="message-media">
-                      <img src={message.mediaUrl} alt="Imagem" />
+                      <CachedImage 
+                        src={message.mediaUrl} 
+                        alt="Imagem enviada" 
+                        className="message-image"
+                        enableCache={true}
+                        priority={false}
+                        onError={(e) => {
+                          console.warn('Failed to load message image:', message.mediaUrl, e);
+                        }}
+                      />
                       {message.content && (
                         <div className="message-caption">{message.content}</div>
                       )}
@@ -362,8 +377,6 @@ const ChatInterface = ({ conversation, onClose }) => {
               </div>
             ))
           )}
-          
-          <div ref={messagesEndRef} />
         </div>
       </div>
 

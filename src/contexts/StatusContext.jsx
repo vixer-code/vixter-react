@@ -55,6 +55,42 @@ export const StatusProvider = ({ children }) => {
       }
     });
 
+    // Handle page visibility changes and beforeunload events
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page is hidden, set user as offline
+        const userStatusRef = ref(database, `status/${uid}`);
+        set(userStatusRef, {
+          state: 'offline',
+          last_changed: serverTimestamp()
+        });
+        console.log('📱 Page hidden - User set to offline:', uid);
+      } else {
+        // Page is visible again, set user as online
+        const userStatusRef = ref(database, `status/${uid}`);
+        set(userStatusRef, {
+          state: 'online',
+          last_changed: serverTimestamp()
+        });
+        console.log('📱 Page visible - User set to online:', uid);
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      // Set user as offline when page is about to unload
+      const userStatusRef = ref(database, `status/${uid}`);
+      set(userStatusRef, {
+        state: 'offline',
+        last_changed: serverTimestamp()
+      });
+      console.log('🚪 Page unloading - User set to offline:', uid);
+    };
+
+    // Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
+
     // Listen for user's own status changes
     const userStatusRef = ref(database, `status/${uid}`);
     const unsubscribeStatus = onValue(userStatusRef, (snapshot) => {
@@ -103,6 +139,10 @@ export const StatusProvider = ({ children }) => {
     return () => {
       unsubscribeConnected();
       unsubscribeStatus();
+      // Remove event listeners
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
     };
   }, [currentUser]);
 

@@ -1008,6 +1008,10 @@
     width: 100%;
     justify-content: flex-end;
   }
+  
+  .profile-rating {
+    justify-content: center;
+  }
 }
 
 .profile-meta {
