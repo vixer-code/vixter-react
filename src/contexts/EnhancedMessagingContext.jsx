@@ -99,6 +99,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     if (!currentUser?.uid || conversations.length === 0) return;
 
     const statusUnsubscribers = [];
+    const subscribedUsers = new Set(); // Track already subscribed users
 
     // Get all unique user IDs from conversations
     const allUserIds = new Set();
@@ -112,8 +113,10 @@ export const EnhancedMessagingProvider = ({ children }) => {
       }
     });
 
-    // Subscribe to status updates for each user
+    // Subscribe to status updates for each user (only if not already subscribed)
     allUserIds.forEach(userId => {
+      if (subscribedUsers.has(userId)) return; // Skip if already subscribed
+      
       const statusRef = ref(database, `status/${userId}`);
       const unsubscribe = onValue(statusRef, (snapshot) => {
         if (snapshot.exists()) {
@@ -126,29 +129,39 @@ export const EnhancedMessagingProvider = ({ children }) => {
           // Only consider user online if they have recent activity AND status is online
           const actualStatus = (statusData.state === 'online' && isRecentActivity) ? 'online' : 'offline';
           
-          console.log(`👤 Status update for ${userId.slice(0, 8)}:`, {
-            dbStatus: statusData.state,
-            lastChanged,
-            timeSinceChange: lastChanged ? (now - lastChanged) / 1000 : 'unknown',
-            isRecentActivity,
-            actualStatus
-          });
-          
-          setUsers(prev => ({
-            ...prev,
-            [userId]: {
-              ...prev[userId],
-              status: actualStatus,
-              lastSeen: statusData.last_changed
+          // Only update if status actually changed to prevent unnecessary re-renders
+          setUsers(prev => {
+            const currentUserData = prev[userId];
+            if (currentUserData && currentUserData.status === actualStatus) {
+              return prev; // No change needed
             }
-          }));
+            
+            console.log(`👤 Status update for ${userId.slice(0, 8)}:`, {
+              dbStatus: statusData.state,
+              lastChanged,
+              timeSinceChange: lastChanged ? (now - lastChanged) / 1000 : 'unknown',
+              isRecentActivity,
+              actualStatus
+            });
+            
+            return {
+              ...prev,
+              [userId]: {
+                ...prev[userId],
+                status: actualStatus,
+                lastSeen: statusData.last_changed
+              }
+            };
+          });
         }
       });
       statusUnsubscribers.push(unsubscribe);
+      subscribedUsers.add(userId);
     });
 
     return () => {
       statusUnsubscribers.forEach(unsubscribe => unsubscribe());
+      subscribedUsers.clear();
     };
   }, [conversations, currentUser?.uid]);
   
