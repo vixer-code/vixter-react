@@ -32,7 +32,7 @@ const getUserUsername = async (userId) => {
  * @param {string} actorId - ID of the user who performed the action
  * @param {string} actorName - Name of the user who performed the action
  * @param {string} actorUsername - Username of the user who performed the action
- * @param {string} action - Type of action: 'like', 'repost', 'comment'
+ * @param {string} action - Type of action: 'like', 'comment'
  * @param {string} postId - ID of the post
  * @param {string} postContent - Content of the post (truncated)
  * @param {string} commentContent - Content of the comment (if action is comment)
@@ -86,8 +86,6 @@ export const getNotificationMessage = (action, actorName, commentContent = null)
   switch (action) {
     case 'like':
       return `${actorName} curtiu seu post`;
-    case 'repost':
-      return `${actorName} repostou seu post`;
     case 'comment':
       return `${actorName} comentou em seu post: "${commentContent || ''}"`;
     case 'message':

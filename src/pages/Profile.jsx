@@ -79,7 +79,6 @@ const Profile = () => {
   const [expandedComments, setExpandedComments] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
   const [showReplyInputs, setShowReplyInputs] = useState({});
-  const [repostStatus, setRepostStatus] = useState({});
   const [following, setFollowing] = useState([]);
   const [users, setUsers] = useState({});
   const [showCreateServiceModal, setShowCreateServiceModal] = useState(false);
@@ -365,7 +364,7 @@ const Profile = () => {
 
   const loadPosts = async (userId) => {
     try {
-      // Load user's own posts (including reposts they made)
+      // Load user's own posts
       const postsRootRef = ref(database, 'posts');
       const postsByUserQuery = query(postsRootRef, orderByChild('userId'), equalTo(userId));
       const snapshot = await get(postsByUserQuery);
@@ -895,128 +894,6 @@ const Profile = () => {
     }
   }, [currentUser?.uid, showError, showWarning, users]);
 
-  const repostPost = useCallback(async (post) => {
-    if (!currentUser) {
-      showWarning('Você precisa estar logado para repostar');
-      return;
-    }
-
-    try {
-      // Check if user already reposted this post
-      const postRepostsRef = ref(database, `generalReposts/${post.id}/${currentUser.uid}`);
-      const snap = await get(postRepostsRef).catch(() => null);
-      
-      if (snap && snap.exists()) {
-        // User already reposted - remove the repost (unrepost)
-        await remove(postRepostsRef);
-        
-        // Find and remove the repost from posts collection
-        const postsRef = ref(database, 'posts');
-        const postsSnapshot = await get(postsRef);
-        const posts = postsSnapshot.val() || {};
-        
-        let repostToDelete = null;
-        for (const [postId, postData] of Object.entries(posts)) {
-          if (postData.isRepost && 
-              postData.userId === currentUser.uid && 
-              postData.originalPostId === post.id) {
-            repostToDelete = postId;
-            break;
-          }
-        }
-        
-        if (repostToDelete) {
-          await remove(ref(database, `posts/${repostToDelete}`));
-        }
-        
-        // Update repost status in state
-        setRepostStatus(prev => ({
-          ...prev,
-          [post.id]: false
-        }));
-        
-        // Update original post repost count
-        const originalPostRef = ref(database, `posts/${post.id}`);
-        const originalPostSnap = await get(originalPostRef);
-        if (originalPostSnap.exists()) {
-          const originalData = originalPostSnap.val();
-          const newRepostCount = Math.max(0, (originalData.repostCount || 0) - 1);
-          await update(originalPostRef, { repostCount: newRepostCount });
-        }
-
-        showSuccess('Repost removido com sucesso!');
-        return;
-      }
-
-      // Create repost data - compatible with profile page
-      const repostData = {
-        // Profile-compatible fields
-        userId: currentUser.uid,
-        text: post.content || post.text || '',
-        imageUrl: post.imageUrl || (post.media?.[0]?.type === 'image' ? post.media[0].url : null),
-        createdAt: Date.now(),
-        timestamp: Date.now(),
-        
-        // Repost-specific fields
-        isRepost: true,
-        originalPostId: post.id,
-        originalAuthorId: post.userId || post.authorId,
-        originalAuthorName: post.authorName || post.userName,
-        originalAuthorPhotoURL: post.authorPhotoURL || post.userPhotoURL,
-        originalAuthorUsername: post.authorUsername || post.username,
-        originalContent: post.content || post.text || '',
-        originalMedia: post.media || (post.imageUrl ? [{ type: 'image', url: post.imageUrl }] : null),
-        originalTimestamp: post.timestamp || post.createdAt,
-        
-        // Interaction fields
-        likes: {},
-        likeCount: 0,
-        repostCount: 0
-      };
-
-      // Save repost to posts collection
-      const repostRef = ref(database, 'posts');
-      await push(repostRef, repostData);
-      
-      // Mark as reposted by this user
-      await set(postRepostsRef, Date.now());
-      
-      // Update repost status in state
-      setRepostStatus(prev => ({
-        ...prev,
-        [post.id]: true
-      }));
-      
-      // Update original post repost count
-      const originalPostRef = ref(database, `posts/${post.id}`);
-      const originalPostSnap = await get(originalPostRef);
-      if (originalPostSnap.exists()) {
-        const originalData = originalPostSnap.val();
-        const newRepostCount = (originalData.repostCount || 0) + 1;
-        await update(originalPostRef, { repostCount: newRepostCount });
-      }
-
-      // Send notification to original post author
-      const userProfile = users[currentUser.uid];
-      const actorName = userProfile?.displayName || currentUser.displayName || 'Usuário';
-      const actorUsername = userProfile?.username || '';
-      
-      await sendPostInteractionNotification(
-        post.userId || post.authorId,
-        currentUser.uid,
-        actorName,
-        actorUsername,
-        'repost',
-        post.id,
-        post.content || post.text || ''
-      );
-
-      showSuccess('Post repostado com sucesso!');
-    } catch (error) {
-      console.error('Error reposting:', error);
-      showError('Erro ao repostar conteúdo: ' + error.message);
-    }
-  }, [currentUser, showSuccess, showError, showWarning, users]);
 
   const loadComments = useCallback(async (postId) => {
     setCommentsByPost(prev => ({ ...prev, [postId]: { ...(prev[postId] || {}), loading: true } }));
@@ -1154,11 +1031,11 @@ const Profile = () => {
     }));
   }, []);
 
-  // Load users and repost status when posts change
+  // Load users when posts change
   useEffect(() => {
     if (posts.length === 0) return;
 
-    const loadUsersAndRepostStatus = async () => {
+    const loadUsers = async () => {
       // Load users data
       const usersRef = ref(database, 'users');
       const usersSnapshot = await get(usersRef);
@@ -1169,50 +1046,32 @@ const Profile = () => {
         });
       }
       setUsers(usersData);
-
-      // Load repost status for current user
-      if (currentUser?.uid) {
-        const repostStatusData = {};
-        const repostPromises = posts.map(async (post) => {
-          const originalPostId = post.isRepost ? post.originalPostId : post.id;
-          try {
-            const repostRef = ref(database, `generalReposts/${originalPostId}/${currentUser.uid}`);
-            const repostSnap = await get(repostRef);
-            repostStatusData[originalPostId] = repostSnap.exists();
-          } catch (error) {
-            repostStatusData[originalPostId] = false;
-          }
-        });
-        await Promise.all(repostPromises);
-        setRepostStatus(repostStatusData);
-      }
     };
 
-    loadUsersAndRepostStatus();
-  }, [posts, currentUser?.uid]);
+    loadUsers();
+  }, [posts]);
 
   // Load comment counts for all posts automatically
   useEffect(() => {
     if (posts.length === 0) return;
 
     const loadAllCommentCounts = async () => {
-      const commentPromises = posts.map(async (post) => {
-        const originalPostId = post.isRepost ? post.originalPostId : post.id;
-        try {
-          const commentsRef = ref(database, `comments/${originalPostId}`);
-          const snap = await get(commentsRef);
-          let items = [];
-          if (snap.exists()) {
-            const val = snap.val();
-            items = Object.entries(val).map(([id, c]) => ({ id, ...c }));
-            items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+        const commentPromises = posts.map(async (post) => {
+          try {
+            const commentsRef = ref(database, `comments/${post.id}`);
+            const snap = await get(commentsRef);
+            let items = [];
+            if (snap.exists()) {
+              const val = snap.val();
+              items = Object.entries(val).map(([id, c]) => ({ id, ...c }));
+              items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            }
+            return { postId: post.id, items };
+          } catch (error) {
+            console.error(`Error loading comments for post ${post.id}:`, error);
+            return { postId: post.id, items: [] };
           }
-          return { postId: originalPostId, items };
-        } catch (error) {
-          console.error(`Error loading comments for post ${originalPostId}:`, error);
-          return { postId: originalPostId, items: [] };
-        }
-      });
+        });
 
       const commentResults = await Promise.all(commentPromises);
       const newCommentsByPost = {};
@@ -1686,62 +1545,15 @@ const Profile = () => {
             <div className="posts-container">
               {posts.length > 0 ? (
                 posts.map((post) => {
-                  // Determine if this is a repost and get the correct post data
-                  const isRepost = post.isRepost || post._isRepost;
-                  const originalPostId = isRepost ? post.originalPostId : post.id;
-                  
-                  // For reposts, we need to get the original post data for interactions
-                  // but show the reposter's info in the header
-                  let displayPost, reposterInfo, originalPostData;
-                  
-                  if (isRepost) {
-                    // This is a repost - we need to fetch the original post data
-                    reposterInfo = {
-                      id: post.userId || post.authorId,
-                      name: post.authorName || post.userName,
-                      username: post.authorUsername || post.username,
-                      photo: post.authorPhotoURL || post.userPhotoURL
-                    };
-                    
-                    // For now, use the repost data as display post
-                    // In a real implementation, you'd fetch the original post
-                    displayPost = {
-                      id: originalPostId,
-                      content: post.originalContent || post.content,
-                      media: post.originalMedia || post.media,
-                      likes: post.likes || {},
-                      likeCount: post.likeCount || 0,
-                      repostCount: post.repostCount || 0,
-                      authorId: post.originalAuthorId || post.authorId,
-                      authorName: post.originalAuthorName || post.authorName,
-                      authorUsername: post.originalAuthorUsername || post.authorUsername,
-                      authorPhotoURL: post.originalAuthorPhotoURL || post.authorPhotoURL,
-                      timestamp: post.originalTimestamp || post.timestamp
-                    };
-                  } else {
-                    // This is a regular post
-                    displayPost = post;
-                    reposterInfo = null;
-                  }
-
                   // Get media array for display
-                  const mediaArray = displayPost.media || (displayPost.imageUrl ? [{ type: 'image', url: displayPost.imageUrl }] : []);
-                  const contentText = displayPost.content || displayPost.text || '';
+                  const mediaArray = post.media || (post.imageUrl ? [{ type: 'image', url: post.imageUrl }] : []);
+                  const contentText = post.content || post.text || '';
 
                   // Check if current user liked this post
-                  const isLiked = displayPost.likes && displayPost.likes[currentUser?.uid];
-                  const isReposted = repostStatus[originalPostId] || false;
+                  const isLiked = post.likes && post.likes[currentUser?.uid];
 
                   return (
                     <div key={post.id} className="post-card">
-                      {isRepost && (
-                        <div className="repost-indicator">
-                          <i className="fas fa-retweet"></i>
-                          <span>
-                            <strong>{reposterInfo?.name}</strong> repostou
-                          </span>
-                        </div>
-                      )}
 
                       <div className="post-header">
                         <div className="post-author">
@@ -1758,7 +1570,7 @@ const Profile = () => {
                             </div>
                           </div>
                         </div>
-                        {isOwner && !isRepost && (
+                        {isOwner && (
                           <button className="delete-btn" onClick={() => handleDeletePost(post.id)}>
                             ✕
                           </button>
@@ -1802,48 +1614,40 @@ const Profile = () => {
                       </div>
 
                       <div className="post-actions">
-                        <button onClick={() => handleLike(originalPostId)} className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}>
+                        <button onClick={() => handleLike(post.id)} className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}>
                           <i className={`fas fa-heart ${isLiked ? 'fas' : 'far'}`}></i>
-                          <span>{displayPost.likeCount || Object.keys(displayPost.likes || {}).length || 0}</span>
+                          <span>{post.likeCount || Object.keys(post.likes || {}).length || 0}</span>
                         </button>
-                        <button 
-                          className={`action-btn share-btn ${isReposted ? 'reposted' : ''}`} 
-                          onClick={() => repostPost(displayPost)}
-                          title={isReposted ? 'Remover repost' : 'Repostar'}
-                        >
-                          <i className="fas fa-retweet"></i>
-                          <span>{displayPost.repostCount || 0}</span>
-                        </button>
-                        <button className="action-btn comment-toggle" onClick={() => toggleComments(originalPostId)}>
+                        <button className="action-btn comment-toggle" onClick={() => toggleComments(post.id)}>
                           <i className="fas fa-comment"></i>
-                          <span>{commentsByPost[originalPostId]?.items?.length || 0}</span>
+                          <span>{commentsByPost[post.id]?.items?.length || 0}</span>
                         </button>
                       </div>
 
-                      {expandedComments[originalPostId] && (
+                      {expandedComments[post.id] && (
                         <div className="comments-section">
                           <div className="comment-input">
                             <input
                               type="text"
                               placeholder="Escreva um comentário..."
-                              value={commentInputs[originalPostId] || ''}
-                              onChange={(e) => setCommentInputs(prev => ({ ...prev, [originalPostId]: e.target.value }))}
-                              onKeyPress={(e) => e.key === 'Enter' && addComment(originalPostId)}
+                              value={commentInputs[post.id] || ''}
+                              onChange={(e) => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))}
+                              onKeyPress={(e) => e.key === 'Enter' && addComment(post.id)}
                             />
                             <button 
                               className="btn small" 
-                              onClick={() => addComment(originalPostId)}
-                              disabled={!commentInputs[originalPostId]?.trim()}
+                              onClick={() => addComment(post.id)}
+                              disabled={!commentInputs[post.id]?.trim()}
                             >
                               Comentar
                             </button>
                           </div>
                           
-                          {commentsByPost[originalPostId]?.items?.length > 0 ? (
+                          {commentsByPost[post.id]?.items?.length > 0 ? (
                             <div className="comments-list">
-                              {commentsByPost[originalPostId].items.map((comment) => {
+                              {commentsByPost[post.id].items.map((comment) => {
                                 const isCommentLiked = comment.likedBy && comment.likedBy.includes(currentUser?.uid);
-                                const replyKey = `${originalPostId}:${comment.id}`;
+                                const replyKey = `${post.id}:${comment.id}`;
                                 
                                 return (
                                   <div key={comment.id} className="comment-item">
@@ -1866,7 +1670,7 @@ const Profile = () => {
                                       {comment.authorId === currentUser?.uid && (
                                         <button 
                                           className="comment-delete-btn"
-                                          onClick={() => handleDeleteComment(originalPostId, comment)}
+                                          onClick={() => handleDeleteComment(post.id, comment)}
                                           title="Deletar comentário"
                                         >
                                           ✕
@@ -1879,7 +1683,7 @@ const Profile = () => {
                                     <div className="comment-actions">
                                       <button 
                                         className={`comment-action-btn like-btn ${isCommentLiked ? 'liked' : ''}`}
-                                        onClick={() => likeComment(originalPostId, comment)}
+                                        onClick={() => likeComment(post.id, comment)}
                                         title={isCommentLiked ? 'Descurtir' : 'Curtir'}
                                       >
                                         <i className={`fas fa-heart ${isCommentLiked ? 'fas' : 'far'}`}></i>
@@ -1887,7 +1691,7 @@ const Profile = () => {
                                       </button>
                                       <button 
                                         className="comment-action-btn reply-btn"
-                                        onClick={() => toggleReplyInput(originalPostId, comment.id)}
+                                        onClick={() => toggleReplyInput(post.id, comment.id)}
                                         title="Responder"
                                       >
                                         <i className="fas fa-reply"></i>
@@ -1903,11 +1707,11 @@ const Profile = () => {
                                             placeholder="Escreva uma resposta..."
                                             value={commentInputs[replyKey] || ''}
                                             onChange={(e) => setCommentInputs(prev => ({ ...prev, [replyKey]: e.target.value }))}
-                                            onKeyPress={(e) => e.key === 'Enter' && addComment(originalPostId, comment.id)}
+                                            onKeyPress={(e) => e.key === 'Enter' && addComment(post.id, comment.id)}
                                           />
                                           <button 
                                             className="btn small" 
-                                            onClick={() => addComment(originalPostId, comment.id)}
+                                            onClick={() => addComment(post.id, comment.id)}
                                             disabled={!commentInputs[replyKey]?.trim()}
                                           >
                                             Responder
