@@ -58,7 +58,7 @@ const ImageEditorModal = ({
 
   // Função para gerar preview da imagem cortada
   const generatePreview = useCallback(() => {
-    if (!completedCrop || !imgRef.current || !previewCanvasRef.current) {
+    if (!crop || !imgRef.current || !previewCanvasRef.current) {
       return;
     }
 
@@ -80,9 +80,9 @@ const ImageEditorModal = ({
     const scaleY = image.naturalHeight / image.height;
     const pixelRatio = window.devicePixelRatio;
 
-    // Definir tamanho do canvas baseado no crop
-    const cropWidth = Math.floor(completedCrop.width * scaleX * pixelRatio);
-    const cropHeight = Math.floor(completedCrop.height * scaleY * pixelRatio);
+    // Definir tamanho do canvas baseado no crop atual
+    const cropWidth = Math.floor(crop.width * scaleX * pixelRatio);
+    const cropHeight = Math.floor(crop.height * scaleY * pixelRatio);
     
     // Validar dimensões mínimas
     if (cropWidth <= 0 || cropHeight <= 0) {
@@ -107,7 +107,7 @@ const ImageEditorModal = ({
     ctx.scale(scale, scale);
     
     // Depois aplicar a translação do crop
-    ctx.translate(-completedCrop.x * scaleX, -completedCrop.y * scaleY);
+    ctx.translate(-crop.x * scaleX, -crop.y * scaleY);
     
     // Desenhar a imagem
     ctx.drawImage(
@@ -122,14 +122,14 @@ const ImageEditorModal = ({
       image.naturalHeight
     );
     ctx.restore();
-  }, [completedCrop, scale, rotate]);
+  }, [crop, scale, rotate]);
 
   // Atualizar preview quando o crop ou outras propriedades mudarem
   useEffect(() => {
-    if (completedCrop && imgRef.current && previewCanvasRef.current) {
+    if (crop && imgRef.current && previewCanvasRef.current) {
       generatePreview();
     }
-  }, [completedCrop, scale, rotate, generatePreview]);
+  }, [crop, scale, rotate, generatePreview]);
 
   // Função para converter canvas para blob
   const getCroppedImg = (canvas, crop) => {
@@ -197,13 +197,25 @@ const ImageEditorModal = ({
         throw new Error('No 2d context');
       }
 
+      // Verificar se a imagem está carregada
+      if (image.naturalWidth === 0 || image.naturalHeight === 0) {
+        console.error('Image not fully loaded');
+        return;
+      }
+
       const scaleX = image.naturalWidth / image.width;
       const scaleY = image.naturalHeight / image.height;
       const pixelRatio = window.devicePixelRatio;
 
-      // Definir tamanho do canvas baseado no crop
+      // Definir tamanho do canvas baseado no crop atual
       const cropWidth = Math.floor(crop.width * scaleX * pixelRatio);
       const cropHeight = Math.floor(crop.height * scaleY * pixelRatio);
+      
+      // Validar dimensões mínimas
+      if (cropWidth <= 0 || cropHeight <= 0) {
+        console.error('Invalid crop dimensions:', cropWidth, cropHeight);
+        return;
+      }
       
       canvas.width = cropWidth;
       canvas.height = cropHeight;
@@ -211,10 +223,17 @@ const ImageEditorModal = ({
       ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
       ctx.imageSmoothingQuality = 'high';
 
+      // Limpar o canvas
+      ctx.clearRect(0, 0, cropWidth, cropHeight);
+
       // Aplicar transformações
       ctx.save();
+      
+      // Primeiro aplicar rotação e escala
       ctx.rotate((rotate * Math.PI) / 180);
       ctx.scale(scale, scale);
+      
+      // Depois aplicar a translação do crop
       ctx.translate(-crop.x * scaleX, -crop.y * scaleY);
       
       // Desenhar a imagem
@@ -278,7 +297,11 @@ const ImageEditorModal = ({
             <div className="crop-container">
               <ReactCrop
                 crop={crop}
-                onChange={(c) => setCrop(c)}
+                onChange={(c) => {
+                  setCrop(c);
+                  // Atualizar completedCrop também para sincronização
+                  setCompletedCrop(c);
+                }}
                 onComplete={(c) => setCompletedCrop(c)}
                 aspect={aspect}
                 minWidth={50}
