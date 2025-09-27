@@ -409,6 +409,95 @@ const Header = () => {
           </button>
         </div>
 
+        {currentUser && (
+          <div className="mobile-nav-header-content">
+            <div className="mobile-vp-balance" onClick={() => { handleVpBalanceClick(); closeMobileMenu(); }}>
+              {userProfile?.accountType === 'provider' ? (
+                <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="mobile-hexGradient-vc" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#0A1F0A" />
+                      <stop offset="100%" stopColor="#1A2E1A" />
+                    </linearGradient>
+                    <linearGradient id="mobile-textGradient-vc" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#00C853" />
+                      <stop offset="100%" stopColor="#4CAF50" />
+                    </linearGradient>
+                  </defs>
+                  
+                  <path d="M64 8 L108 32 L108 96 L64 120 L20 96 L20 32 Z" 
+                        fill="url(#mobile-hexGradient-vc)" 
+                        stroke="#00C853" 
+                        strokeWidth="1.5" />
+                  
+                  <text x="64" y="72" 
+                        fontFamily="'Press Start 2P', monospace" 
+                        fontSize="16" 
+                        fill="url(#mobile-textGradient-vc)"
+                        textAnchor="middle"
+                        fontWeight="bold">VC</text>
+                </svg>
+              ) : (
+                <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                {/* Simplified VP icon for mobile */}
+                <defs>
+                  <linearGradient id="mobile-hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#1A1A2E" />
+                    <stop offset="100%" stopColor="#16213E" />
+                  </linearGradient>
+                  <linearGradient id="mobile-textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#8A2BE2" />
+                    <stop offset="100%" stopColor="#00FFCA" />
+                  </linearGradient>
+                </defs>
+                
+                <path d="M64 8 L108 32 L108 96 L64 120 L20 96 L20 32 Z" 
+                      fill="url(#mobile-hexGradient)" 
+                      stroke="#8A2BE2" 
+                      strokeWidth="1.5" />
+                
+                <text x="64" y="72" 
+                      fontFamily="'Press Start 2P', monospace" 
+                      fontSize="16" 
+                      fill="url(#mobile-textGradient)"
+                      textAnchor="middle"
+                      fontWeight="bold">VP</text>
+              </svg>
+              )}
+              <div className="mobile-balance-info">
+                <div className="mobile-balance-label">
+                  {userProfile?.accountType === 'provider' ? 'VixCoins' : 'VixPoints'}
+                </div>
+                <div className="mobile-balance-amount">
+                  {userProfile?.accountType === 'provider' 
+                    ? (userProfile?.vixCoins || 0).toLocaleString('pt-BR')
+                    : (userProfile?.vixPoints || 0).toLocaleString('pt-BR')
+                  }
+                </div>
+              </div>
+            </div>
+            
+            <div className="mobile-profile-info">
+              <img 
+                src={userProfile?.photoURL || '/images/defpfp1.png'} 
+                alt="Profile" 
+                className="mobile-profile-avatar"
+                onError={(e) => {
+                  e.target.src = '/images/defpfp1.png';
+                }}
+              />
+              <div className="mobile-profile-details">
+                <div className="mobile-profile-name">
+                  {userProfile?.displayName || 'Usuário'}
+                </div>
+                <div className="mobile-profile-username">
+                  @{userProfile?.username || 'user'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <ul className="mobile-nav-links">
           <li><Link to="/vixies" className={isActive('/vixies') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
             <i className="fas fa-users"></i>Vixies
@@ -474,106 +563,6 @@ const Header = () => {
           )}
         </ul>
 
-        {currentUser && (
-          <div className="mobile-nav-footer">
-            <div className="mobile-vp-balance" onClick={() => { handleVpBalanceClick(); closeMobileMenu(); }}>
-              {userProfile?.accountType === 'provider' ? (
-                <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="mobile-hexGradient-vc" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#0A1F0A" />
-                      <stop offset="100%" stopColor="#1A2E1A" />
-                    </linearGradient>
-                    <linearGradient id="mobile-textGradient-vc" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#00C853" />
-                      <stop offset="100%" stopColor="#4CAF50" />
-                    </linearGradient>
-                  </defs>
-                  
-                  <path d="M64 8 L108 32 L108 96 L64 120 L20 96 L20 32 Z" 
-                        fill="url(#mobile-hexGradient-vc)" 
-                        stroke="#00C853" 
-                        strokeWidth="1.5" />
-                  
-                  <text x="64" y="72" 
-                        fontFamily="'Press Start 2P', monospace" 
-                        fontSize="16" 
-                        fill="url(#mobile-textGradient-vc)"
-                        textAnchor="middle"
-                        fontWeight="bold">VC</text>
-                </svg>
-              ) : (
-                <svg className="vp-icon" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-                {/* Simplified VP icon for mobile */}
-                <defs>
-                  <linearGradient id="mobile-hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#0F0F1A" />
-                    <stop offset="100%" stopColor="#1A1A2E" />
-                  </linearGradient>
-                  <linearGradient id="mobile-textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#00FFCA" />
-                    <stop offset="100%" stopColor="#00D4AA" />
-                  </linearGradient>
-                </defs>
-                
-                <path d="M64 8 L108 32 L108 96 L64 120 L20 96 L20 32 Z" 
-                      fill="url(#mobile-hexGradient)" 
-                      stroke="#8A2BE2" 
-                      strokeWidth="1.5" />
-                
-                <text x="64" y="72" 
-                      fontFamily="'Press Start 2P', monospace" 
-                      fontSize="16" 
-                      fill="url(#mobile-textGradient)"
-                      textAnchor="middle"
-                      fontWeight="bold">VP</text>
-              </svg>
-              )}
-              <span>{userProfile?.accountType === 'provider' 
-                ? formatCurrency(vcBalance || 0) 
-                : formatCurrency(vpBalance || 0)
-              }</span>
-            </div>
-            
-            <div className="mobile-notification-section">
-              <NotificationCenter />
-            </div>
-            
-            <div className="mobile-profile-section">
-              <div className="mobile-profile-avatar">
-                {getUserAvatarUrl(userProfile) ? (
-                  <CachedImage 
-                    src={getUserAvatarUrl(userProfile)}
-                    defaultType="PROFILE_1"
-                    alt={formatUserDisplayName(userProfile)} 
-                    className=""
-                    showLoading={false}
-                    sizes="36px"
-                  />
-                ) : formatUserDisplayName(userProfile) !== 'Usuário' ? (
-                  <span className="profile-initials">
-                    {formatUserDisplayName(userProfile)
-                      .split(' ')
-                      .map(name => name[0])
-                      .join('')
-                      .substring(0, 2)
-                      .toUpperCase()}
-                  </span>
-                ) : (
-                  <i className="fas fa-user"></i>
-                )}
-              </div>
-              <div className="mobile-profile-info">
-                <div className="mobile-profile-name">
-                  {formatUserDisplayName(userProfile)}
-                </div>
-                <div className="mobile-profile-username">
-                  @{userProfile?.username || 'user'}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
