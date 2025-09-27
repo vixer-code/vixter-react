@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import './NotificationCenter.css';
 
 const NotificationCenter = () => {
-  const { notifications, loading, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, loading, unreadCount, readCount, markAsRead, markAllAsRead, deleteNotification, deleteAllRead } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { currentUser } = useAuth();
@@ -100,7 +100,7 @@ const NotificationCenter = () => {
       navigate('/settings');
     } else if (notification.type === 'service_purchase' || notification.type === 'pack_purchase') {
       // Navigate to seller's products page
-      navigate('/my-products');
+      navigate('/my-services');
     } else if (notification.type === 'service_accepted' || notification.type === 'pack_accepted') {
       // Navigate to buyer's purchases page
       navigate('/my-purchases');
@@ -134,14 +134,26 @@ const NotificationCenter = () => {
         <div className="notification-dropdown">
           <div className="notification-header">
             <h3>Notificações</h3>
-            {unreadCount > 0 && (
-              <button 
-                className="mark-all-read"
-                onClick={markAllAsRead}
-              >
-                Marcar todas como lidas
-              </button>
-            )}
+            <div className="notification-actions">
+              {unreadCount > 0 && (
+                <button 
+                  className="mark-all-read"
+                  onClick={markAllAsRead}
+                  title="Marcar todas como lidas"
+                >
+                  <i className="fas fa-check-double"></i>
+                </button>
+              )}
+              {readCount > 0 && (
+                <button 
+                  className="delete-read"
+                  onClick={deleteAllRead}
+                  title="Remover notificações lidas"
+                >
+                  <i className="fas fa-trash"></i>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="notification-list">
@@ -156,56 +168,70 @@ const NotificationCenter = () => {
                   key={notification.id}
                   className={`notification-item ${!notification.read ? 'unread' : ''}`}
                   data-type={notification.type}
-                  onClick={() => handleNotificationClick(notification)}
                 >
-                  <div className="notification-icon">
-                    <i 
-                      className={getActionIcon(notification.action)}
-                      style={{ color: getActionColor(notification.action) }}
-                    ></i>
-                  </div>
-                  <div className="notification-content">
-                    <p className="notification-message">
-                      {notification.type === 'email_verification' 
-                        ? 'Verifique seu e-mail para completar o cadastro'
-                        : getNotificationMessage(
-                            notification.action, 
-                            notification.actorName || notification.senderName,
-                            notification.commentContent
-                          )
-                      }
-                    </p>
-                    <div className="notification-meta">
-                      <span className="notification-time">
-                        {formatTimestamp(notification.timestamp)}
-                      </span>
-                      {notification.postContent && (
-                        <span className="notification-post">
-                          "{notification.postContent}"
+                  <div 
+                    className="notification-content-wrapper"
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className="notification-icon">
+                      <i 
+                        className={getActionIcon(notification.action)}
+                        style={{ color: getActionColor(notification.action) }}
+                      ></i>
+                    </div>
+                    <div className="notification-content">
+                      <p className="notification-message">
+                        {notification.type === 'email_verification' 
+                          ? 'Verifique seu e-mail para completar o cadastro'
+                          : getNotificationMessage(
+                              notification.action, 
+                              notification.actorName || notification.senderName,
+                              notification.commentContent
+                            )
+                        }
+                      </p>
+                      <div className="notification-meta">
+                        <span className="notification-time">
+                          {formatTimestamp(notification.timestamp)}
                         </span>
-                      )}
-                      {notification.messageContent && (
-                        <span className="notification-message-preview">
-                          "{notification.messageContent}"
-                        </span>
-                      )}
-                      {notification.serviceName && (
-                        <span className="notification-product">
-                          "{notification.serviceName}"
-                        </span>
-                      )}
-                      {notification.packName && (
-                        <span className="notification-product">
-                          "{notification.packName}"
-                        </span>
-                      )}
-                      {notification.amount && (
-                        <span className="notification-amount">
-                          {notification.amount} VP
-                        </span>
-                      )}
+                        {notification.postContent && (
+                          <span className="notification-post">
+                            "{notification.postContent}"
+                          </span>
+                        )}
+                        {notification.messageContent && (
+                          <span className="notification-message-preview">
+                            "{notification.messageContent}"
+                          </span>
+                        )}
+                        {notification.serviceName && (
+                          <span className="notification-product">
+                            "{notification.serviceName}"
+                          </span>
+                        )}
+                        {notification.packName && (
+                          <span className="notification-product">
+                            "{notification.packName}"
+                          </span>
+                        )}
+                        {notification.amount && (
+                          <span className="notification-amount">
+                            {notification.amount} VP
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <button 
+                    className="delete-notification"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteNotification(notification.id);
+                    }}
+                    title="Remover notificação"
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
                 </div>
               ))
             )}

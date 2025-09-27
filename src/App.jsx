@@ -27,8 +27,6 @@ const Feed = lazy(() => import('./pages/Feed'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Wallet = lazy(() => import('./pages/Wallet'));
 const Messages = lazy(() => import('./pages/EnhancedMessages'));
-const MessagingTestPage = lazy(() => import('./pages/MessagingTestPage'));
-const TestEmailVerification = lazy(() => import('./pages/TestEmailVerification'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
@@ -42,6 +40,7 @@ const MyPurchases = lazy(() => import('./pages/MyPurchases'));
 const ServiceDetail = lazy(() => import('./pages/ServiceDetail'));
 const PackDetail = lazy(() => import('./pages/PackDetail'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Success = lazy(() => import('./pages/Success'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -102,6 +101,7 @@ function App() {
                                 <Route path="/service/:serviceId" element={<ServiceDetail />} />
                                 <Route path="/pack/:packId" element={<PackDetail />} />
                                 <Route path="/settings" element={<Settings />} />
+                                <Route path="/success" element={<Success />} />
                                 <Route path="/services" element={<div>Services Page - Coming Soon</div>} />
                                 
                                 {/* Catch-all route - must be last */}

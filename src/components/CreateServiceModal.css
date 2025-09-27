@@ -1287,27 +1287,35 @@
     font-size: 1.3rem;
   }
   
+  /* Hide progress steps on mobile, keep only progress bar */
   .progress-steps {
-    flex-direction: column;
-    gap: 5px;
+    display: none;
   }
   
-  .progress-step {
-    text-align: left;
-    padding: 6px 10px;
+  .modal-progress {
+    padding: 10px 20px;
   }
   
   .create-service-modal .modal-content {
     padding: 15px;
     overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
   
   .form-step {
     width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
   
   .form-group {
     width: 100%;
+    flex-shrink: 0;
   }
   
   .form-group input,
@@ -1339,6 +1347,15 @@
   
   .modal-header h2 {
     font-size: 1.2rem;
+  }
+  
+  /* Ensure progress steps are hidden on small mobile too */
+  .progress-steps {
+    display: none;
+  }
+  
+  .modal-progress {
+    padding: 8px 15px;
   }
   
   .header-actions {
@@ -1555,14 +1572,36 @@
   
   .create-service-modal .modal-content {
     padding: 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  
+  .form-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
   
   .form-step h3 {
     font-size: 1.1rem;
     margin-bottom: 12px;
+    flex-shrink: 0;
   }
   
   .form-group {
     margin-bottom: 12px;
+    flex-shrink: 0;
+  }
+  
+  /* Ensure progress steps are hidden on very small screens too */
+  .progress-steps {
+    display: none;
+  }
+  
+  .modal-progress {
+    padding: 6px 12px;
   }
 } 

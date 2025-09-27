@@ -1,5 +1,30 @@
 import { ref, push, set } from 'firebase/database';
-import { database } from '../../config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { database, db } from '../../config/firebase';
+
+/**
+ * Get user's username from Firestore
+ * @param {string} userId - User ID
+ * @returns {Promise<string>} Username or fallback name
+ */
+const getUserUsername = async (userId) => {
+  if (!userId) return 'Usuário';
+  
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      return userData.username || userData.displayName || userData.name || 'Usuário';
+    }
+    
+    return 'Usuário';
+  } catch (error) {
+    console.error('Error getting user username:', error);
+    return 'Usuário';
+  }
+};
 
 /**
  * Send notification to post author when there's a positive interaction
@@ -164,13 +189,16 @@ export const sendServicePurchaseNotification = async (
     // Don't send notification to self
     if (sellerId === buyerId) return;
 
+    // Get buyer's username from Firestore
+    const buyerUsername = await getUserUsername(buyerId);
+
     const notificationData = {
       type: 'service_purchase',
       action: 'service_purchased',
       serviceId,
       serviceName: serviceName ? serviceName.substring(0, 50) + (serviceName.length > 50 ? '...' : '') : '',
       buyerId,
-      buyerName,
+      buyerName: buyerUsername,
       amount,
       timestamp: Date.now(),
       read: false
@@ -206,13 +234,16 @@ export const sendPackPurchaseNotification = async (
     // Don't send notification to self
     if (sellerId === buyerId) return;
 
+    // Get buyer's username from Firestore
+    const buyerUsername = await getUserUsername(buyerId);
+
     const notificationData = {
       type: 'pack_purchase',
       action: 'pack_purchased',
       packId,
       packName: packName ? packName.substring(0, 50) + (packName.length > 50 ? '...' : '') : '',
       buyerId,
-      buyerName,
+      buyerName: buyerUsername,
       amount,
       timestamp: Date.now(),
       read: false
@@ -248,13 +279,16 @@ export const sendServiceAcceptedNotification = async (
     // Don't send notification to self
     if (buyerId === sellerId) return;
 
+    // Get seller's username from Firestore
+    const sellerUsername = await getUserUsername(sellerId);
+
     const notificationData = {
       type: 'service_accepted',
       action: 'service_accepted',
       serviceId,
       serviceName: serviceName ? serviceName.substring(0, 50) + (serviceName.length > 50 ? '...' : '') : '',
       sellerId,
-      sellerName,
+      sellerName: sellerUsername,
       orderId,
       timestamp: Date.now(),
       read: false
@@ -290,13 +324,16 @@ export const sendPackAcceptedNotification = async (
     // Don't send notification to self
     if (buyerId === sellerId) return;
 
+    // Get seller's username from Firestore
+    const sellerUsername = await getUserUsername(sellerId);
+
     const notificationData = {
       type: 'pack_accepted',
       action: 'pack_accepted',
       packId,
       packName: packName ? packName.substring(0, 50) + (packName.length > 50 ? '...' : '') : '',
       sellerId,
-      sellerName,
+      sellerName: sellerUsername,
       orderId,
       timestamp: Date.now(),
       read: false

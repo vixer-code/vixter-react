@@ -58,6 +58,11 @@
   background: #222;
 }
 
+.notification-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .notification-header h3 {
   margin: 0;
   color: #d1d5db;
@@ -65,20 +70,35 @@
   font-weight: 600;
 }
 
-.mark-all-read {
+.mark-all-read,
+.delete-read {
   background: none;
   border: none;
   color: #8a2be2;
   font-size: 0.8rem;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 6px;
   border-radius: 4px;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
 }
 
 .mark-all-read:hover {
   background: rgba(138, 43, 226, 0.1);
   color: #a855f7;
+}
+
+.delete-read {
+  color: #ff4757;
+}
+
+.delete-read:hover {
+  background: rgba(255, 71, 87, 0.1);
+  color: #ff6b7a;
 }
 
 .notification-list {
@@ -91,12 +111,48 @@
   align-items: flex-start;
   padding: 12px 16px;
   border-bottom: 1px solid #2a2a2a;
-  cursor: pointer;
   transition: background 0.2s ease;
+  position: relative;
+}
+
+.notification-content-wrapper {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  cursor: pointer;
 }
 
 .notification-item:hover {
   background: rgba(255, 255, 255, 0.05);
+}
+
+.delete-notification {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0;
+}
+
+.notification-item:hover .delete-notification {
+  opacity: 1;
+}
+
+.delete-notification:hover {
+  background: rgba(255, 71, 87, 0.1);
+  color: #ff4757;
 }
 
 .notification-item.unread {
@@ -275,7 +331,30 @@
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .notification-dropdown {
-    width: 300px;
-    right: -50px;
+    width: calc(100vw - 20px);
+    max-width: 350px;
+    right: -10px;
+    top: auto;
+    bottom: 100%;
+    margin-bottom: 8px;
+    max-height: 60vh;
+  }
+  
+  .notification-list {
+    max-height: calc(60vh - 60px);
+  }
+  
+  .notification-toggle {
+    padding: 10px;
+  }
+  
+  .notification-item {
+    padding: 14px 16px;
+  }
+  
+  .delete-notification {
+    opacity: 1;
+    top: 12px;
+    right: 12px;
   }
 }

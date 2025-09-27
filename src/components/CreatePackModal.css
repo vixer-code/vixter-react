@@ -1,6 +1,30 @@
 /* Reuse identical visual layout and components from CreateServiceModal */
 @import './CreateServiceModal.css';
 
+/* Additional mobile-specific overrides for pack creation */
+@media (max-width: 768px) {
+  /* Ensure progress steps are hidden on mobile for pack creation too */
+  .progress-steps {
+    display: none !important;
+  }
+  
+  .modal-progress {
+    padding: 10px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-progress {
+    padding: 8px 15px;
+  }
+}
+
+@media (max-width: 360px) {
+  .modal-progress {
+    padding: 6px 12px;
+  }
+}
+
 /* KYC Status Styles */
 .kyc-status-container {
   margin-top: 10px;

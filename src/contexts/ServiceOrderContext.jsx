@@ -244,9 +244,9 @@ export const ServiceOrderProvider = ({ children }) => {
           7000,
           {
             onClick: () => {
-              window.location.href = '/my-products';
+              window.location.href = '/my-services';
             },
-            data: { action: 'view_my_products' }
+            data: { action: 'view_my_services' }
           }
         );
         return { success: true, orderId: orderData.id };
