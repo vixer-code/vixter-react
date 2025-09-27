@@ -25,7 +25,6 @@ const Feed = () => {
   const [expandedComments, setExpandedComments] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
   const [showReplyInputs, setShowReplyInputs] = useState({});
-  const [repostStatus, setRepostStatus] = useState({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
 
@@ -99,9 +98,8 @@ const Feed = () => {
 
     const loadAllCommentCounts = async () => {
       const commentPromises = posts.map(async (post) => {
-        const originalPostId = post.isRepost ? post.originalPostId : post.id;
         try {
-          const commentsRef = ref(database, `comments/${originalPostId}`);
+          const commentsRef = ref(database, `comments/${post.id}`);
           const snap = await get(commentsRef);
           let items = [];
           if (snap.exists()) {
@@ -109,10 +107,10 @@ const Feed = () => {
             items = Object.entries(val).map(([id, c]) => ({ id, ...c }));
             items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
           }
-          return { postId: originalPostId, items };
+          return { postId: post.id, items };
         } catch (error) {
-          console.error(`Error loading comments for post ${originalPostId}:`, error);
-          return { postId: originalPostId, items: [] };
+          console.error(`Error loading comments for post ${post.id}:`, error);
+          return { postId: post.id, items: [] };
         }
       });
 
@@ -295,128 +293,6 @@ const Feed = () => {
     setPostToDelete(null);
   }, []);
 
-  const repostPost = useCallback(async (post) => {
-    if (!currentUser) {
-      showWarning('Você precisa estar logado para repostar');
-      return;
-    }
-
-    try {
-      // Check if user already reposted this post
-      const postRepostsRef = ref(database, `generalReposts/${post.id}/${currentUser.uid}`);
-      const snap = await get(postRepostsRef).catch(() => null);
-      
-      if (snap && snap.exists()) {
-        // User already reposted - remove the repost (unrepost)
-        await remove(postRepostsRef);
-        
-        // Find and remove the repost from posts collection
-        const postsRef = ref(database, 'posts');
-        const postsSnapshot = await get(postsRef);
-        const posts = postsSnapshot.val() || {};
-        
-        let repostToDelete = null;
-        for (const [postId, postData] of Object.entries(posts)) {
-          if (postData.isRepost && 
-              postData.userId === currentUser.uid && 
-              postData.originalPostId === post.id) {
-            repostToDelete = postId;
-            break;
-          }
-        }
-        
-        if (repostToDelete) {
-          await remove(ref(database, `posts/${repostToDelete}`));
-        }
-        
-        // Update repost status in state
-        setRepostStatus(prev => ({
-          ...prev,
-          [post.id]: false
-        }));
-        
-        // Update original post repost count
-        const originalPostRef = ref(database, `posts/${post.id}`);
-        const originalPostSnap = await get(originalPostRef);
-        if (originalPostSnap.exists()) {
-          const originalData = originalPostSnap.val();
-          const newRepostCount = Math.max(0, (originalData.repostCount || 0) - 1);
-          await update(originalPostRef, { repostCount: newRepostCount });
-        }
-
-        showSuccess('Repost removido com sucesso!');
-        return;
-      }
-
-      // Create repost data - compatible with profile page
-      const repostData = {
-        // Profile-compatible fields
-        userId: currentUser.uid,
-        text: post.content || post.text || '', // Use original content for profile compatibility
-        imageUrl: post.imageUrl || (post.media?.[0]?.type === 'image' ? post.media[0].url : null),
-        createdAt: Date.now(),
-        timestamp: Date.now(),
-        
-        // Repost-specific fields
-        isRepost: true,
-        originalPostId: post.id,
-        originalAuthorId: post.userId || post.authorId,
-        originalAuthorName: post.authorName || post.userName,
-        originalAuthorPhotoURL: post.authorPhotoURL || post.userPhotoURL,
-        originalAuthorUsername: post.authorUsername || post.username,
-        originalContent: post.content || post.text || '',
-        originalMedia: post.media || (post.imageUrl ? [{ type: 'image', url: post.imageUrl }] : null),
-        originalTimestamp: post.timestamp || post.createdAt,
-        
-        // Interaction fields
-        likes: {},
-        likeCount: 0,
-        repostCount: 0
-      };
-
-      // Save repost to posts collection
-      const repostRef = ref(database, 'posts');
-      await push(repostRef, repostData);
-      
-      // Mark as reposted by this user
-      await set(postRepostsRef, Date.now());
-      
-      // Update repost status in state
-      setRepostStatus(prev => ({
-        ...prev,
-        [post.id]: true
-      }));
-      
-      // Update original post repost count
-      const originalPostRef = ref(database, `posts/${post.id}`);
-      const originalPostSnap = await get(originalPostRef);
-      if (originalPostSnap.exists()) {
-        const originalData = originalPostSnap.val();
-        const newRepostCount = (originalData.repostCount || 0) + 1;
-        await update(originalPostRef, { repostCount: newRepostCount });
-      }
-
-      // Send notification to original post author
-      const userProfile = users[currentUser.uid];
-      const actorName = userProfile?.displayName || currentUser.displayName || 'Usuário';
-      const actorUsername = userProfile?.username || '';
-      
-      await sendPostInteractionNotification(
-        post.userId || post.authorId,
-        currentUser.uid,
-        actorName,
-        actorUsername,
-        'repost',
-        post.id,
-        post.content || post.text || ''
-      );
-
-      showSuccess('Post repostado com sucesso!');
-    } catch (error) {
-      console.error('Error reposting:', error);
-      showError('Erro ao repostar conteúdo: ' + error.message);
-    }
-  }, [currentUser, showSuccess, showError, showInfo, showWarning]);
 
   const loadComments = useCallback(async (postId) => {
     setCommentsByPost(prev => ({ ...prev, [postId]: { ...(prev[postId] || {}), loading: true } }));
@@ -452,40 +328,7 @@ const Feed = () => {
     }));
   }, []);
 
-  const checkRepostStatus = useCallback(async (postId) => {
-    if (!currentUser?.uid) return false;
-    
-    try {
-      const repostRef = ref(database, `generalReposts/${postId}/${currentUser.uid}`);
-      const snapshot = await get(repostRef);
-      return snapshot.exists();
-    } catch (error) {
-      console.error('Error checking repost status:', error);
-      return false;
-    }
-  }, [currentUser?.uid]);
 
-  // Load repost status for all posts
-  useEffect(() => {
-    if (!currentUser?.uid || posts.length === 0) return;
-
-    const loadRepostStatus = async () => {
-      const statusPromises = posts.map(async (post) => {
-        const originalPostId = post.isRepost ? post.originalPostId : post.id;
-        const isReposted = await checkRepostStatus(originalPostId);
-        return { postId: originalPostId, isReposted };
-      });
-
-      const results = await Promise.all(statusPromises);
-      const newRepostStatus = {};
-      results.forEach(({ postId, isReposted }) => {
-        newRepostStatus[postId] = isReposted;
-      });
-      setRepostStatus(newRepostStatus);
-    };
-
-    loadRepostStatus();
-  }, [posts, currentUser?.uid, checkRepostStatus]);
 
   const updateInput = useCallback((key, text) => {
     setCommentInputs(prev => ({ ...prev, [key]: text }));
@@ -683,66 +526,19 @@ const Feed = () => {
     const user = users[post.userId || post.authorId];
     if (!user && !post.authorName) return null;
 
-    const isRepost = post.isRepost;
-    const originalPostId = isRepost ? post.originalPostId : post.id;
-    
-    // For reposts, show as post from reposter but with original content
-    const displayPost = isRepost ? {
-      ...post,
-      // Keep reposter info for header
-      authorId: post.userId,
-      authorName: post.authorName || user?.displayName || user?.email,
-      authorPhotoURL: (() => {
-        const photoURL = post.authorPhotoURL || user?.profilePictureURL;
-        if (photoURL && typeof photoURL === 'string' && photoURL.trim()) {
-          try {
-            new URL(photoURL);
-            return photoURL;
-          } catch (urlError) {
-            console.warn('Invalid author photo URL in repost:', photoURL, urlError);
-          }
-        }
-        return '/images/defpfp1.png';
-      })(),
-      authorUsername: post.authorUsername || user?.username,
-      // Use original content for display (override the text field for profile compatibility)
-      content: post.originalContent,
-      text: post.originalContent,
-      media: post.originalMedia,
-      imageUrl: post.originalMedia?.[0]?.url,
-      // Use original timestamp for content
-      originalTimestamp: post.originalTimestamp,
-      // Use original post data for interactions
-      likes: post.likes,
-      likeCount: post.likeCount,
-      repostCount: post.repostCount
-    } : post;
-
-    const isLiked = displayPost.likes && displayPost.likes[currentUser?.uid];
-    const isReposted = repostStatus[originalPostId] || false;
-    const isFollowing = following.includes(displayPost.userId || displayPost.authorId);
+    const isLiked = post.likes && post.likes[currentUser?.uid];
+    const isFollowing = following.includes(post.userId || post.authorId);
     const isOwnPost = (post.userId || post.authorId) === currentUser?.uid;
-    const contentText = displayPost.content || displayPost.text || '';
-    const mediaArray = Array.isArray(displayPost.media) ? displayPost.media : (displayPost.imageUrl ? [{ type: 'image', url: displayPost.imageUrl }] : []);
+    const contentText = post.content || post.text || '';
+    const mediaArray = Array.isArray(post.media) ? post.media : (post.imageUrl ? [{ type: 'image', url: post.imageUrl }] : []);
 
     return (
       <div key={post.id} className="post-card">
-        {isRepost && (
-          <div className="repost-indicator">
-            <i className="fas fa-retweet"></i>
-            <span>
-              <Link to={isOwnPost ? '/profile' : getProfileUrlById(post.userId || post.authorId, post.authorUsername)}>
-                {post.authorName || user?.displayName || user?.email}
-              </Link> repostou
-            </span>
-          </div>
-        )}
-
         <div className="post-header">
           <div className="post-author">
             <img
               src={(() => {
-                const photoURL = displayPost.authorPhotoURL || user?.profilePictureURL;
+                const photoURL = post.authorPhotoURL || user?.profilePictureURL;
                 // Validate URL before using it
                 if (photoURL && typeof photoURL === 'string' && photoURL.trim()) {
                   try {
@@ -755,20 +551,20 @@ const Feed = () => {
                 }
                 return '/images/defpfp1.png';
               })()}
-              alt={displayPost.authorName || user?.displayName || user?.email}
+              alt={post.authorName || user?.displayName || user?.email}
               className="author-avatar"
               onError={(e) => { e.target.src = '/images/defpfp1.png'; }}
             />
             <div className="author-info">
-              <Link to={isOwnPost ? '/profile' : getProfileUrlById(displayPost.userId || displayPost.authorId, displayPost.authorUsername)} className="author-name">
-                {displayPost.authorName || user?.displayName || user?.email}
+              <Link to={isOwnPost ? '/profile' : getProfileUrlById(post.userId || post.authorId, post.authorUsername)} className="author-name">
+                {post.authorName || user?.displayName || user?.email}
               </Link>
-              <span className="post-time">{formatTimeAgo(isRepost ? post.timestamp : displayPost.timestamp)}</span>
+              <span className="post-time">{formatTimeAgo(post.timestamp)}</span>
             </div>
           </div>
           <div className="post-actions">
             {!isOwnPost && (
-              <button className={`follow-btn ${isFollowing ? 'following' : ''}`} onClick={() => handleFollow(displayPost.userId || displayPost.authorId)}>
+              <button className={`follow-btn ${isFollowing ? 'following' : ''}`} onClick={() => handleFollow(post.userId || post.authorId)}>
                 {isFollowing ? 'Seguindo' : 'Seguir'}
               </button>
             )}
@@ -817,25 +613,17 @@ const Feed = () => {
         </div>
 
         <div className="post-actions">
-          <button onClick={() => handleLike(originalPostId)} className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}>
+          <button onClick={() => handleLike(post.id)} className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}>
             <i className={`fas fa-heart ${isLiked ? 'fas' : 'far'}`}></i>
-            <span>{displayPost.likeCount || Object.keys(displayPost.likes || {}).length || 0}</span>
+            <span>{post.likeCount || Object.keys(post.likes || {}).length || 0}</span>
           </button>
-          <button 
-            className={`action-btn share-btn ${isReposted ? 'reposted' : ''}`} 
-            onClick={() => repostPost(displayPost)}
-            title={isReposted ? 'Remover repost' : 'Repostar'}
-          >
-            <i className="fas fa-retweet"></i>
-            <span>{displayPost.repostCount || 0}</span>
-          </button>
-          <button className="action-btn comment-toggle" onClick={() => toggleComments(originalPostId)}>
+          <button className="action-btn comment-toggle" onClick={() => toggleComments(post.id)}>
             <i className="fas fa-comment"></i>
-            <span>{commentsByPost[originalPostId]?.items?.length || 0}</span>
+            <span>{commentsByPost[post.id]?.items?.length || 0}</span>
           </button>
         </div>
 
-        {expandedComments[originalPostId] && renderComments(originalPostId)}
+        {expandedComments[post.id] && renderComments(post.id)}
       </div>
     );
   };

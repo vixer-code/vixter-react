@@ -226,21 +226,6 @@
         "likedBy": {
           ".validate": "newData.hasChildren() || newData.val() == null"
         },
-        "repostCount": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
-        },
-        "isRepost": {
-          ".validate": "newData.isBoolean()"
-        },
-        "originalPostId": {
-          ".validate": "newData.isString()"
-        },
-        "originalAuthorId": {
-          ".validate": "newData.isString()"
-        },
-        "originalAuthorName": {
-          ".validate": "newData.isString()"
-        }
       }
     },
     "vixies_posts": {
@@ -288,21 +273,6 @@
         "likedBy": {
           ".validate": "newData.hasChildren() || newData.val() == null"
         },
-        "repostCount": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
-        },
-        "isRepost": {
-          ".validate": "newData.isBoolean()"
-        },
-        "originalPostId": {
-          ".validate": "newData.isString()"
-        },
-        "originalAuthorId": {
-          ".validate": "newData.isString()"
-        },
-        "originalAuthorName": {
-          ".validate": "newData.isString()"
-        }
       }
     },
     "packOrders": {
@@ -339,18 +309,6 @@
     },
     "posts": {
       ".indexOn": ["userId", "timestamp"],
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
-    "vixiesReposts": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
-    "vixinkReposts": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
-    "userReposts": {
       ".read": "auth != null",
       ".write": "auth != null"
     },
@@ -435,17 +393,6 @@
       }
     },
     "vixies_likes": {
-      ".read": "auth != null",
-      ".write": "auth != null",
-      "$postId": {
-        ".read": "auth != null",
-        ".write": "auth != null",
-        "$userId": {
-          ".validate": "newData.isNumber() && newData.val() <= now + 600000"
-        }
-      }
-    },
-    "generalReposts": {
       ".read": "auth != null",
       ".write": "auth != null",
       "$postId": {

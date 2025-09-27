@@ -28,8 +28,6 @@ const NotificationCenter = () => {
     switch (action) {
       case 'like':
         return 'fas fa-heart';
-      case 'repost':
-        return 'fas fa-retweet';
       case 'comment':
         return 'fas fa-comment';
       case 'message':
@@ -53,8 +51,6 @@ const NotificationCenter = () => {
     switch (action) {
       case 'like':
         return '#ff4757';
-      case 'repost':
-        return '#00ffca';
       case 'comment':
         return '#3742fa';
       case 'message':
