@@ -1734,7 +1734,7 @@ const Profile = () => {
                   <textarea
                     value={newPostContent}
                     onChange={(e) => setNewPostContent(e.target.value)}
-                    placeholder="O que você está pensando?"
+                    placeholder="O que você está pensando? O conteúdo postado aqui será publicado no Feed."
                     maxLength={1000}
                     rows={3}
                   />
