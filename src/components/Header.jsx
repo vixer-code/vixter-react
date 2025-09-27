@@ -17,6 +17,7 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileNotificationOpen, setMobileNotificationOpen] = useState(false);
 
   // No need for loadUserData anymore, UserContext handles it
   // useEffect(() => {
@@ -28,6 +29,7 @@ const Header = () => {
   // Close mobile menu when route changes
   useEffect(() => {
     setMobileMenuOpen(false);
+    setMobileNotificationOpen(false);
   }, [location.pathname]);
 
   // Debug mobile menu state
@@ -83,6 +85,20 @@ const Header = () => {
       e.stopPropagation();
     }
     setMobileMenuOpen(false);
+  };
+
+  const toggleMobileNotification = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMobileNotificationOpen(!mobileNotificationOpen);
+    // Close mobile menu if open
+    if (mobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
+  };
+
+  const closeMobileNotification = () => {
+    setMobileNotificationOpen(false);
   };
 
   const isActive = (path) => {
@@ -379,13 +395,26 @@ const Header = () => {
             )}
           </ul>
 
-          {/* Mobile Menu Button */}
-          <button 
-            className={`mobile-menu-btn ${mobileMenuOpen ? 'menu-open' : ''}`} 
-            onClick={toggleMobileMenu}
-          >
-            <i className="fas fa-bars"></i>
-          </button>
+          {/* Mobile Header Actions */}
+          <div className="mobile-header-actions">
+            {/* Mobile Notification Button */}
+            {currentUser && (
+              <button 
+                className="mobile-notification-btn"
+                onClick={toggleMobileNotification}
+              >
+                <i className="fas fa-bell"></i>
+              </button>
+            )}
+            
+            {/* Mobile Menu Button */}
+            <button 
+              className={`mobile-menu-btn ${mobileMenuOpen ? 'menu-open' : ''}`} 
+              onClick={toggleMobileMenu}
+            >
+              <i className="fas fa-bars"></i>
+            </button>
+          </div>
         </nav>
       </header>
 
@@ -447,7 +476,7 @@ const Header = () => {
                 </div>
               </div>
               
-              {/* Action buttons - VP Balance and Notification */}
+              {/* Action buttons - VP Balance */}
               <div className="mobile-profile-actions">
                 {/* VP Balance - clickable by SVG */}
                 <div className="mobile-vp-balance-integrated" onClick={(e) => { e.stopPropagation(); handleVpBalanceClick(); closeMobileMenu(); }}>
@@ -507,11 +536,6 @@ const Header = () => {
                     ? formatCurrency(vcBalance || 0) 
                     : formatCurrency(vpBalance || 0)
                   }</span>
-                </div>
-                
-                {/* Notification Center - clickable by bell icon */}
-                <div className="mobile-notification-integrated" onClick={(e) => e.stopPropagation()}>
-                  <NotificationCenter />
                 </div>
               </div>
             </div>
@@ -584,6 +608,23 @@ const Header = () => {
         </ul>
 
       </div>
+
+      {/* Mobile Notification Overlay */}
+      {mobileNotificationOpen && currentUser && (
+        <div className="mobile-notification-overlay" onClick={closeMobileNotification}>
+          <div className="mobile-notification-content" onClick={(e) => e.stopPropagation()}>
+            <div className="mobile-notification-header">
+              <h3>Notificações</h3>
+              <button className="mobile-notification-close" onClick={closeMobileNotification}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="mobile-notification-body">
+              <NotificationCenter />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
