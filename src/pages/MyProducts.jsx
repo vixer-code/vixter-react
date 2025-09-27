@@ -322,7 +322,7 @@ const MyProducts = () => {
   if (serviceLoading || packLoading || serviceBuyerLoading || packBuyerLoading) {
     return (
       <div className="my-services-container">
-        <PurpleSpinner text="Carregando produtos..." size="large" />
+        <PurpleSpinner text="Carregando vendas..." size="large" />
       </div>
     );
   }
@@ -351,7 +351,7 @@ const MyProducts = () => {
   return (
     <div className="my-services-container">
       <div className="my-services-header">
-        <h1>Meus Produtos</h1>
+        <h1>Minhas Vendas</h1>
         <p>Gerencie seus pedidos de serviços e packs</p>
       </div>
 

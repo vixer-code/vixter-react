@@ -361,7 +361,7 @@ const Header = () => {
                     </Link>
                     {userProfile?.accountType === 'provider' && (
                       <Link to="/my-services">
-                        <i className="fas fa-box-open"></i> Meus Produtos
+                        <i className="fas fa-box-open"></i> Minhas Vendas
                       </Link>
                     )}
                     {(userProfile?.accountType === 'client' || userProfile?.accountType === 'both') && (
@@ -548,7 +548,7 @@ const Header = () => {
               </Link></li>
               {userProfile?.accountType === 'provider' && (
                 <li><Link to="/my-services" onClick={() => setTimeout(closeMobileMenu, 100)}>
-                  <i className="fas fa-box-open"></i>Meus Produtos
+                  <i className="fas fa-box-open"></i>Minhas Vendas
                 </Link></li>
               )}
               {(userProfile?.accountType === 'client' || userProfile?.accountType === 'both') && (
