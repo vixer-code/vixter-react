@@ -89,30 +89,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Stats Counter */}
-      <section className="stats-section">
-        <div className="stat-counter">
-          <div className="stat-icon"><i className="fas fa-users"></i></div>
-          <div className="stat-number">{stats.users.toLocaleString()}</div>
-          <div className="stat-label">Usuários Ativos</div>
-        </div>
-        <div className="stat-counter">
-          <div className="stat-icon"><i className="fas fa-gamepad"></i></div>
-          <div className="stat-number">{stats.duos.toLocaleString()}</div>
-          <div className="stat-label">Duo Partners</div>
-        </div>
-        <div className="stat-counter">
-          <div className="stat-icon"><i className="fas fa-heart"></i></div>
-          <div className="stat-number">{stats.companions.toLocaleString()}</div>
-          <div className="stat-label">Companhias Virtuais</div>
-        </div>
-        <div className="stat-counter">
-          <div className="stat-icon"><i className="fas fa-star"></i></div>
-          <div className="stat-number">{stats.satisfaction}%</div>
-          <div className="stat-label">Satisfação</div>
-        </div>
-      </section>
-
       {/* Services Section */}
       <section className="services-section">
         <div className="section-header">
