@@ -17,7 +17,6 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileNotificationOpen, setMobileNotificationOpen] = useState(false);
 
   // No need for loadUserData anymore, UserContext handles it
   // useEffect(() => {
@@ -29,7 +28,6 @@ const Header = () => {
   // Close mobile menu when route changes
   useEffect(() => {
     setMobileMenuOpen(false);
-    setMobileNotificationOpen(false);
   }, [location.pathname]);
 
   // Debug mobile menu state
@@ -87,19 +85,6 @@ const Header = () => {
     setMobileMenuOpen(false);
   };
 
-  const toggleMobileNotification = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setMobileNotificationOpen(!mobileNotificationOpen);
-    // Close mobile menu if open
-    if (mobileMenuOpen) {
-      setMobileMenuOpen(false);
-    }
-  };
-
-  const closeMobileNotification = () => {
-    setMobileNotificationOpen(false);
-  };
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -397,16 +382,6 @@ const Header = () => {
 
           {/* Mobile Header Actions */}
           <div className="mobile-header-actions">
-            {/* Mobile Notification Button */}
-            {currentUser && (
-              <button 
-                className="mobile-notification-btn"
-                onClick={toggleMobileNotification}
-              >
-                <i className="fas fa-bell"></i>
-              </button>
-            )}
-            
             {/* Mobile Menu Button */}
             <button 
               className={`mobile-menu-btn ${mobileMenuOpen ? 'menu-open' : ''}`} 
@@ -609,22 +584,6 @@ const Header = () => {
 
       </div>
 
-      {/* Mobile Notification Overlay */}
-      {mobileNotificationOpen && currentUser && (
-        <div className="mobile-notification-overlay" onClick={closeMobileNotification}>
-          <div className="mobile-notification-content" onClick={(e) => e.stopPropagation()}>
-            <div className="mobile-notification-header">
-              <h3>Notificações</h3>
-              <button className="mobile-notification-close" onClick={closeMobileNotification}>
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <div className="mobile-notification-body">
-              <NotificationCenter />
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };
