@@ -698,11 +698,10 @@ header .vp-balance .vp-icon svg,
 .mobile-nav-header-content {
   position: relative;
   padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(15, 15, 26, 0.8);
   flex-shrink: 0;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
 }
 
