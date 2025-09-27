@@ -25,6 +25,7 @@ import DeleteServiceModal from '../components/DeleteServiceModal';
 import DeletePackModal from '../components/DeletePackModal';
 import PackBuyersModal from '../components/PackBuyersModal';
 import ImageEditorModal from '../components/ImageEditorModal';
+import PostCreator from '../components/PostCreator';
 import './Profile.css';
 
 const Profile = () => {
@@ -71,8 +72,6 @@ const Profile = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [posts, setPosts] = useState([]);
-  const [newPostContent, setNewPostContent] = useState('');
-  const [selectedImages, setSelectedImages] = useState([]);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   
   // Post interaction states
@@ -820,55 +819,7 @@ const Profile = () => {
     setEditing(false);
   };
 
-  const handleCreatePost = async () => {
-    if (!currentUser) return;
-    const text = newPostContent.trim();
-    if (!text && selectedImages.length === 0) return;
-
-    try {
-      // Upload selected images to Storage and collect URLs
-      const imageUrls = [];
-      if (selectedImages.length > 0) {
-        const uploads = selectedImages.map(async (file) => {
-          const path = `posts/${currentUser.uid}/${Date.now()}_${file.name}`;
-          const fileRef = storageRef(storage, path);
-          await uploadBytes(fileRef, file);
-          return getDownloadURL(fileRef);
-        });
-        const resolved = await Promise.all(uploads);
-        imageUrls.push(...resolved);
-      }
-
-      // Extract hashtags similar to vanilla feed implementation
-      const hashtags = (text.match(/#(\w+)/g) || []).map(t => t.replace('#', ''));
-
-      const newPost = {
-        userId: currentUser.uid,
-        content: text,
-        images: imageUrls,
-        createdAt: Date.now(),
-        authorName: profile?.displayName || currentUser.displayName || 'Você',
-        authorPhoto: profile?.profilePictureURL || currentUser.photoURL || null,
-        authorUsername: profile?.username || '',
-        hashtags
-      };
-
-      const postsRootRef = ref(database, 'posts');
-      await push(postsRootRef, newPost);
-
-      // Reset UI and reload user's posts
-      setNewPostContent('');
-      setSelectedImages([]);
-      await loadPosts(currentUser.uid);
-    } catch (error) {
-      console.error('Error creating post:', error);
-    }
-  };
-
-  const handleImageSelect = (event) => {
-    const files = Array.from(event.target.files);
-    setSelectedImages(prev => [...prev, ...files]);
-  };
+  // Post creation now uses shared PostCreator component (same as /feed)
 
   const handleInterestChange = (index, value) => {
     const newInterests = [...formData.interests];
@@ -1721,53 +1672,16 @@ const Profile = () => {
           <div className="profile-posts">
             {isOwner && (
               <div className="create-post-card">
-                <div className="create-post-avatar">
-                  <CachedImage 
-                    src={userProfile?.profilePictureURL || profile?.profilePictureURL}
-                    defaultType="PROFILE_3"
-                    alt="Avatar"
-                    className="create-post-avatar-img"
-                    showLoading={false}
-                  />
-                </div>
-                <div className="create-post-body">
-                  <textarea
-                    value={newPostContent}
-                    onChange={(e) => setNewPostContent(e.target.value)}
-                    placeholder="O que você está pensando? O conteúdo postado aqui será publicado no Feed."
-                    maxLength={1000}
-                    rows={3}
-                  />
-                  <div className="create-post-actions">
-                    <label className="action-btn">
-                      <i className="fa-solid fa-image"></i> Imagem
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageSelect}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
-                    <button onClick={handleCreatePost} className="btn primary">
-                      Publicar
-                    </button>
-                  </div>
-                  {selectedImages.length > 0 && (
-                    <div className="selected-images-preview">
-                      {selectedImages.map((image, index) => (
-                         <img
-                           key={index}
-                           src={URL.createObjectURL(image)}
-                           alt="Preview"
-                           width={64}
-                           height={64}
-                           style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px' }}
-                         />
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <PostCreator
+                  mode="general_feed"
+                  onPostCreated={() => {
+                    if (currentUser?.uid) {
+                      loadPosts(currentUser.uid);
+                    }
+                  }}
+                  placeholder="O que você está pensando? O conteúdo postado aqui será publicado no Feed."
+                  showAttachment={false}
+                />
               </div>
             )}
             
