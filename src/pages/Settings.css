@@ -318,7 +318,7 @@
 
 .not-authenticated h2 {
   font-size: 1.5rem;
-  color: var(--text-primary);
+  color:#00ffca;
   margin: 0;
 }
 

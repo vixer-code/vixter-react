@@ -28,6 +28,7 @@ import {
   getKycDocument,
   listPendingKycDocuments,
   generateKycDownloadUrl,
+  onKycStatusChange,
 } from './kyc-functions.js';
 
 import {
@@ -62,6 +63,7 @@ export {
   getKycDocument,
   listPendingKycDocuments,
   generateKycDownloadUrl,
+  onKycStatusChange,
 
   // Email Functions
   sendServiceStatusEmail,

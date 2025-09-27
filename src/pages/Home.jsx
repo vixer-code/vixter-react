@@ -127,7 +127,7 @@ const Home = () => {
             </div>
             <h3>Duo Gaming</h3>
             <p>Encontre parceiros para jogar seus games favoritos. Melhore seu gameplay com players experientes ou divirta-se com companhias descontraídas.</p>
-            <Link to="/services?type=duo" className="btn-service">Encontrar Duo</Link>
+            <Link to="/vixink" className="btn-service">Encontrar Duo</Link>
           </div>
           
           <div className="service-card featured">
@@ -144,20 +144,11 @@ const Home = () => {
             <div className="service-icon">
               <i className="fas fa-graduation-cap"></i>
             </div>
-            <h3>Coaching de Games</h3>
-            <p>Aprenda com os melhores jogadores. Aulas personalizadas para melhorar suas habilidades em seus jogos favoritos com coaches experientes.</p>
-            <Link to="/services?type=coaching" className="btn-service">Encontrar Coach</Link>
+            <h3>Serviços Educacionais</h3>
+            <p>Aprenda com quem gosta de ensinar. Aulas personalizadas, conteúdo interativo e ajuda naquele projeto que você quer tirar do papel.</p>
+            <Link to="/vixink" className="btn-service">Encontrar Aulas</Link>
           </div>
-          
-          <div className="service-card">
-            <div className="service-icon">
-              <i className="fas fa-microphone"></i>
-            </div>
-            <h3>Chat de Voz</h3>
-            <p>Converse sobre seus assuntos favoritos, desabafe ou apenas tenha uma companhia para conversar enquanto joga ou relaxa.</p>
-            <Link to="/services?type=voice" className="btn-service">Iniciar Chat</Link>
           </div>
-        </div>
       </section>
 
       {/* How It Works Section */}
@@ -214,134 +205,8 @@ const Home = () => {
             <div className="step-number">4</div>
             <div className="step-icon"><i className="fas fa-handshake"></i></div>
             <h3>Contrate e divirta-se</h3>
-            <p>Escolha o tempo e o serviço desejado, faça o pagamento com VP e aproveite a experiência.</p>
+            <p>Escolha o serviço desejado, faça o pagamento com VP e aproveite a experiência.</p>
           </div>
-        </div>
-      </section>
-
-      {/* Featured Vixies Section */}
-      <section className="featured-vixies-section">
-        <div className="section-header">
-          <h2>Vixies em Destaque</h2>
-          <p>Conheça algumas de nossas companhias virtuais mais populares</p>
-        </div>
-        
-        <div className="vixies-slider">
-          <div className="vixie-profile">
-            <div className="vixie-image">
-              <div className="status-badge online">Online</div>
-              <img src="/images/defpfp1.png" alt="Vixie profile" />
-            </div>
-            <div className="vixie-info">
-              <h3>Amanda, 24</h3>
-              <div className="vixie-tags">
-                <span className="vixie-tag">League of Legends</span>
-                <span className="vixie-tag">Valorant</span>
-                <span className="vixie-tag">CSGO</span>
-              </div>
-              <div className="vixie-rating">
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star-half-alt"></i>
-                <span>(254)</span>
-              </div>
-              <div className="vixie-price">
-                <span className="vp-amount">250 VP</span>
-                <span className="time-unit">/ hora</span>
-              </div>
-              <Link to="/vixie-profile?id=1" className="btn-view-profile">Ver Perfil</Link>
-            </div>
-          </div>
-          
-          <div className="vixie-profile">
-            <div className="vixie-image">
-              <div className="status-badge busy">Em sessão</div>
-              <img src="/images/defpfp2.png" alt="Vixie profile" />
-            </div>
-            <div className="vixie-info">
-              <h3>Julia, 22</h3>
-              <div className="vixie-tags">
-                <span className="vixie-tag">Fortnite</span>
-                <span className="vixie-tag">Overwatch</span>
-                <span className="vixie-tag">Minecraft</span>
-              </div>
-              <div className="vixie-rating">
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <span>(187)</span>
-              </div>
-              <div className="vixie-price">
-                <span className="vp-amount">300 VP</span>
-                <span className="time-unit">/ hora</span>
-              </div>
-              <Link to="/vixie-profile?id=2" className="btn-view-profile">Ver Perfil</Link>
-            </div>
-          </div>
-          
-          <div className="vixie-profile">
-            <div className="vixie-image">
-              <div className="status-badge online">Online</div>
-              <img src="/images/defpfp3.png" alt="Vixie profile" />
-            </div>
-            <div className="vixie-info">
-              <h3>Larissa, 26</h3>
-              <div className="vixie-tags">
-                <span className="vixie-tag">PUBG</span>
-                <span className="vixie-tag">Apex Legends</span>
-                <span className="vixie-tag">COD</span>
-              </div>
-              <div className="vixie-rating">
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="far fa-star"></i>
-                <span>(139)</span>
-              </div>
-              <div className="vixie-price">
-                <span className="vp-amount">275 VP</span>
-                <span className="time-unit">/ hora</span>
-              </div>
-              <Link to="/vixie-profile?id=3" className="btn-view-profile">Ver Perfil</Link>
-            </div>
-          </div>
-          
-          <div className="vixie-profile">
-            <div className="vixie-image">
-              <div className="status-badge offline">Offline</div>
-              <img src="/images/admin.png" alt="Vixie profile" />
-            </div>
-            <div className="vixie-info">
-              <h3>Camila, 23</h3>
-              <div className="vixie-tags">
-                <span className="vixie-tag">Valorant</span>
-                <span className="vixie-tag">League of Legends</span>
-                <span className="vixie-tag">TFT</span>
-              </div>
-              <div className="vixie-rating">
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <i className="fas fa-star"></i>
-                <span>(320)</span>
-              </div>
-              <div className="vixie-price">
-                <span className="vp-amount">325 VP</span>
-                <span className="time-unit">/ hora</span>
-              </div>
-              <Link to="/vixie-profile?id=4" className="btn-view-profile">Ver Perfil</Link>
-            </div>
-          </div>
-        </div>
-        
-        <div className="view-all-container">
-          <Link to="/vixies" className="btn-view-all">Ver Todas as Vixies</Link>
         </div>
       </section>
 
@@ -439,7 +304,7 @@ const Home = () => {
       <section className="join-section">
         <div className="join-content">
           <h2>Pronto para Começar?</h2>
-          <p>Registre-se agora e ganhe <span className="highlight">500 VP</span> de bônus para experimentar nossos serviços!</p>
+          <p>Registre-se agora e ganhe <span className="highlight">5 VP</span> de bônus para experimentar nossos serviços!</p>
           <div className="join-cta">
             <Link to="/register" className="btn-primary-large">Criar Conta Grátis</Link>
             <Link to="/vixies" className="btn-secondary-large">Explorar Vixies</Link>
@@ -447,7 +312,7 @@ const Home = () => {
         </div>
         
         <div className="join-image">
-          <img src="/images/homeImage2.png" alt="Join Vixter" />
+          <img src="/images/vixia-5vp.png" alt="Join Vixter" />
           <div className="glow-overlay"></div>
         </div>
       </section>
@@ -466,7 +331,7 @@ const Home = () => {
               <span className="faq-toggle"><i className="fas fa-chevron-down"></i></span>
             </div>
             <div className="faq-answer">
-              <p>A Vixter é uma plataforma que conecta pessoas a gamers e companhias virtuais. Aqui você pode encontrar parceiros para jogar seus games favoritos, conversar, receber coaching ou simplesmente ter uma companhia virtual para passar o tempo.</p>
+              <p>A Vixter é uma plataforma que conecta pessoas a gamers e companhias virtuais. Aqui você pode encontrar parceiros para jogar seus games favoritos, conversar, receber aulas ou simplesmente ter uma companhia virtual para passar o tempo.</p>
             </div>
           </div>
           
@@ -476,7 +341,7 @@ const Home = () => {
               <span className="faq-toggle"><i className="fas fa-chevron-down"></i></span>
             </div>
             <div className="faq-answer">
-              <p>Vixter Points (VP) são a moeda virtual da plataforma. Você pode adquirir VP através de compras com métodos de pagamento como PIX, cartão de crédito ou PayPal. Os VP são utilizados para contratar serviços na plataforma, como sessões com duo partners, companhias virtuais ou coaching.</p>
+              <p>Vixter Points (VP) são a moeda virtual da plataforma. Você pode adquirir VP através de compras com cartão de crédito, e em breve com PIX. Os VP são utilizados para contratar serviços na plataforma, como sessões com duo partners, companhias virtuais ou coaching.</p>
             </div>
           </div>
           
@@ -496,17 +361,17 @@ const Home = () => {
               <span className="faq-toggle"><i className="fas fa-chevron-down"></i></span>
             </div>
             <div className="faq-answer">
-              <p>Sim! Qualquer pessoa maior de 18 anos pode se candidatar para ser um prestador de serviços na Vixter. Basta criar sua conta, completar seu perfil com informações detalhadas e enviar uma solicitação. Nossa equipe analisará seu perfil e entrará em contato com mais informações.</p>
+              <p>Sim! Qualquer pessoa maior de 18 anos pode se candidatar para ser um prestador de serviços na Vixter. Basta criar sua conta, completar seu perfil com informações detalhadas e enviar uma solicitação de verificação (KYC). Nossa equipe analisará seu perfil e entrará em contato com mais informações.</p>
             </div>
           </div>
           
           <div className={`faq-item ${activeFAQ === 4 ? 'active' : ''}`} onClick={() => toggleFAQ(4)}>
             <div className="faq-question">
-              <h3>Quais jogos são suportados na plataforma?</h3>
+              <h3>Existem reembolsos na plataforma?</h3>
               <span className="faq-toggle"><i className="fas fa-chevron-down"></i></span>
             </div>
             <div className="faq-answer">
-              <p>Suportamos uma ampla variedade de jogos, incluindo League of Legends, Valorant, CS:GO, Fortnite, PUBG, Apex Legends, Overwatch, COD, Minecraft e muitos outros. Se você não encontrar seu jogo favorito, entre em contato conosco e tentaremos adicioná-lo à plataforma.</p>
+              <p>Sim. Entretanto, por tratarmos de pessoas reais que fornecem serviços e packs, a aquisição não é reembolsável. O reembolso somente é aplicado em casos de serviço defeituoso ou caso a criadora de conteúdo não aceite sua solicitação. O reembolso é feito diretamente na carteira virtual do usuário em VP.</p>
             </div>
           </div>
         </div>
