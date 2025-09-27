@@ -33,7 +33,7 @@ const SmartMediaViewer = ({
       return;
     }
 
-    // If mediaData is a string, it's a regular URL
+    // If mediaData is a string, it's a regular URL or Data URL
     if (typeof mediaData === 'string') {
       setIsR2Media(false);
       setR2Key(null);
@@ -42,6 +42,12 @@ const SmartMediaViewer = ({
       let url = mediaData;
       if (url && typeof url === 'string' && url.trim()) {
         try {
+          // Handle Data URLs (base64 encoded images from FileReader)
+          if (url.startsWith('data:')) {
+            setFallbackUrl(url);
+            return;
+          }
+          
           // Test if URL is valid by trying to construct it
           if (!url.startsWith('http://') && !url.startsWith('https://')) {
             url = `https://${url}`;

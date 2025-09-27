@@ -1041,9 +1041,12 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                   <label htmlFor="cover-image" className="upload-placeholder">
                     {coverImagePreview ? (
                       <div className="cover-image-container">
-                        {console.log('Rendering cover preview:', coverImagePreview)}
-                        <img 
-                          src={coverImagePreview}
+                        <SmartMediaViewer
+                          mediaData={coverImagePreview}
+                          type="pack"
+                          watermarked={false}
+                          isOwner={true}
+                          fallbackSrc="/images/default-pack.jpg"
                           alt="Cover preview"
                           className="image-preview"
                         />
@@ -1254,7 +1257,14 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                 <div className="preview-header">
                   {coverImagePreview && (
                     <div className="preview-cover-image">
-                      <img src={coverImagePreview} alt={formData.title} />
+                      <SmartMediaViewer
+                        mediaData={coverImagePreview}
+                        type="pack"
+                        watermarked={false}
+                        isOwner={true}
+                        fallbackSrc="/images/default-pack.jpg"
+                        alt={formData.title}
+                      />
                     </div>
                   )}
                   <div className="preview-service-info">
