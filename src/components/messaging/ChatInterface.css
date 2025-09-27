@@ -592,8 +592,7 @@ input.message-input {
 @media (max-width: 768px) {
   .chat-header {
     padding: 12px 15px; /* Normal padding without back button */
-    position: sticky;
-    top: 80px; /* Keep below main header on mobile too */
+    position: initial;
     z-index: 20;
     display: flex !important;
     background: var(--vixter-bg-secondary);

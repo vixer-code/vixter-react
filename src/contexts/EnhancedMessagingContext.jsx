@@ -1733,28 +1733,60 @@ export const EnhancedMessagingProvider = ({ children }) => {
         read: false
       };
 
-      const messagesRef = ref(database, `messages/${selectedConversation.id}`);
-      const newMessageRef = await push(messagesRef, messageData);
-
-      const newMessage = {
-        id: newMessageRef.key,
+      // Use the same path structure as text messages for consistency
+      const messageId = `msg_${Date.now()}_${currentUser.uid}`;
+      const messageRef = ref(database, `conversations/${selectedConversation.id}/messages/${messageId}`);
+      
+      // Add the messageId to the messageData
+      const completeMessageData = {
+        id: messageId,
         ...messageData
       };
+      
+      // Save the message
+      await set(messageRef, completeMessageData);
+
+      const newMessage = completeMessageData;
 
       // Update conversation last message
       const lastMessageText = caption || `${type === MESSAGE_TYPES.IMAGE ? '📷 Foto' : 
                                        type === MESSAGE_TYPES.VIDEO ? '🎥 Vídeo' : 
                                        type === MESSAGE_TYPES.AUDIO ? '🎵 Áudio' : '📎 Arquivo'}`;
       
-      // Update conversation last message
+      // Update conversation metadata (same as text messages)
       const conversationRef = ref(database, `conversations/${selectedConversation.id}`);
       const conversationUpdates = {
         lastMessage: lastMessageText,
         lastMessageTime: Date.now(),
-        lastSenderId: currentUser.uid
+        lastSenderId: currentUser.uid,
+        messageCount: serverTimestamp(), // Increment message count
+        lastActivity: Date.now(),
+        // Ensure participants are preserved
+        [`participants/${currentUser.uid}`]: true
       };
 
       await update(conversationRef, conversationUpdates);
+      
+      console.log('💾 Media message saved and conversation metadata updated:', selectedConversation.id, conversationUpdates);
+
+      // Update local conversation state immediately for UI consistency
+      setConversations(prevConversations => {
+        const updatedConversations = prevConversations.map(conv => {
+          if (conv.id === selectedConversation.id) {
+            return {
+              ...conv,
+              lastMessage: lastMessageText,
+              lastMessageTime: Date.now(),
+              lastSenderId: currentUser.uid
+            };
+          }
+          return conv;
+        });
+        
+        // Re-sort by lastMessageTime
+        updatedConversations.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+        return updatedConversations;
+      });
 
       // Publish message via Centrifugo
       try {
