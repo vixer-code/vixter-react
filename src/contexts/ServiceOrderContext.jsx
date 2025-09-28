@@ -50,6 +50,12 @@ export const ServiceOrderProvider = ({ children }) => {
     sendServiceNotification = messagingContext?.sendServiceNotification || (() => Promise.resolve());
     createServiceConversation = messagingContext?.createServiceConversation || (() => Promise.resolve(null));
     markServiceConversationCompleted = messagingContext?.markServiceConversationCompleted || (() => Promise.resolve());
+    
+    console.log('🔍 Messaging context functions loaded:', {
+      sendServiceNotification: typeof sendServiceNotification,
+      createServiceConversation: typeof createServiceConversation,
+      markServiceConversationCompleted: typeof markServiceConversationCompleted
+    });
   } catch (error) {
     console.warn('Messaging context not available, using fallback functions:', error);
     sendServiceNotification = () => Promise.resolve();
@@ -298,11 +304,21 @@ export const ServiceOrderProvider = ({ children }) => {
             metadata: order.metadata
           });
           
-          const conversation = await createServiceConversation(order);
-          console.log('✅ Service conversation result:', conversation);
-          
-          if (!conversation) {
-            console.error('❌ Failed to create service conversation');
+          try {
+            console.log('🔍 Calling createServiceConversation with order:', order);
+            console.log('🔍 createServiceConversation function type:', typeof createServiceConversation);
+            
+            const conversation = await createServiceConversation(order);
+            console.log('✅ Service conversation result:', conversation);
+            
+            if (!conversation) {
+              console.error('❌ Failed to create service conversation - function returned null');
+            } else {
+              console.log('✅ Service conversation created successfully:', conversation.id);
+            }
+          } catch (conversationError) {
+            console.error('❌ Error creating service conversation:', conversationError);
+            console.error('❌ Error details:', conversationError.message, conversationError.stack);
           }
 
           // Send email notification to buyer
@@ -344,7 +360,7 @@ export const ServiceOrderProvider = ({ children }) => {
     } finally {
       setProcessing(false);
     }
-  }, [currentUser, apiFunc, serviceOrders, sendServiceNotification, showSuccess, showError]);
+  }, [currentUser, apiFunc, serviceOrders, sendServiceNotification, createServiceConversation, showSuccess, showError]);
 
   // Helper function to load user data for email notifications
   const loadUserDataForEmail = useCallback(async (userId) => {

@@ -2103,7 +2103,24 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
   // Create service conversation when order is accepted
   const createServiceConversation = useCallback(async (serviceOrder) => {
-    if (!currentUser?.uid) return null;
+    if (!currentUser?.uid) {
+      console.error('❌ No current user - cannot create service conversation');
+      return null;
+    }
+
+    if (!serviceOrder) {
+      console.error('❌ No service order provided - cannot create service conversation');
+      return null;
+    }
+
+    if (!serviceOrder.buyerId || !serviceOrder.sellerId || !serviceOrder.id) {
+      console.error('❌ Invalid service order data - missing required fields:', {
+        buyerId: serviceOrder.buyerId,
+        sellerId: serviceOrder.sellerId,
+        id: serviceOrder.id
+      });
+      return null;
+    }
 
     try {
       console.log('Creating service conversation for order:', serviceOrder);
@@ -2132,12 +2149,18 @@ export const EnhancedMessagingProvider = ({ children }) => {
       }
 
       // Get user data for initial message
+      console.log('🔍 Loading user data for conversation...');
       const buyerUser = await getUserById(serviceOrder.buyerId);
       const sellerUser = await getUserById(serviceOrder.sellerId);
+      
+      console.log('🔍 Buyer user data:', buyerUser);
+      console.log('🔍 Seller user data:', sellerUser);
       
       const buyerUsername = buyerUser?.username || buyerUser?.displayName || 'Comprador';
       const sellerUsername = sellerUser?.username || sellerUser?.displayName || 'Vendedor';
       const serviceName = serviceOrder.metadata?.serviceName || 'Serviço';
+      
+      console.log('🔍 Usernames:', { buyerUsername, sellerUsername, serviceName });
       
       const conversationData = {
         id: conversationId,
@@ -2170,15 +2193,26 @@ export const EnhancedMessagingProvider = ({ children }) => {
         lastActivity: Date.now()
       });
       
-      await set(conversationRef, {
-        ...conversationData,
-        // Initialize messages structure for Centrifugo compatibility
-        messages: {},
-        messageCount: 0,
-        lastActivity: Date.now()
-      });
+      // Validate database connection
+      if (!database) {
+        console.error('❌ Database not initialized - cannot save conversation');
+        return null;
+      }
       
-      console.log('✅ Service conversation saved to RTDB successfully:', conversationId);
+      try {
+        await set(conversationRef, {
+          ...conversationData,
+          // Initialize messages structure for Centrifugo compatibility
+          messages: {},
+          messageCount: 0,
+          lastActivity: Date.now()
+        });
+        
+        console.log('✅ Service conversation saved to RTDB successfully:', conversationId);
+      } catch (saveError) {
+        console.error('❌ Error saving conversation to RTDB:', saveError);
+        throw saveError;
+      }
       
       // Verify it was saved by reading it back
       setTimeout(async () => {
@@ -2206,7 +2240,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       console.error('Error creating service conversation:', error);
       return null;
     }
-  }, [currentUser]);
+  }, [currentUser, getUserById, serviceConversations]);
 
   // Mark service conversation as completed
   const markServiceConversationCompleted = useCallback(async (serviceOrderId) => {
