@@ -89,7 +89,7 @@ const PackBuyersModal = ({ isOpen, onClose, pack }) => {
       const sellerSnapshot = await get(sellerRef);
       if (sellerSnapshot.exists()) {
         const currentVC = sellerSnapshot.val().vc || 0;
-        const vcToRemove = Math.floor(vpAmount * 0.67); // Convert VP back to VC (1.5 VP = 1 VC)
+        const vcToRemove = Math.floor(vpAmount * 0.67); // Convert VP back to VC (1 VP = 0.67 VC)
         await update(sellerRef, {
           vc: Math.max(0, currentVC - vcToRemove)
         });

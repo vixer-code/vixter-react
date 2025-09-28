@@ -301,8 +301,8 @@ const MyProducts = () => {
   };
 
   const formatCurrency = (amount) => {
-    // Convert VP to VC for display (1 VC = 1.5 VP)
-    const vcAmount = Math.round(amount / 1.5);
+    // Convert VP to VC for display (1 VP = 0.67 VC)
+    const vcAmount = Math.ceil(amount * 0.67);
     return `${vcAmount} VC`;
   };
 

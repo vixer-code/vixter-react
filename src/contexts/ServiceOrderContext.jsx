@@ -185,7 +185,7 @@ export const ServiceOrderProvider = ({ children }) => {
         const price = feature.price || feature.vpAmount || 0;
         return total + (isNaN(price) ? 0 : price);
       }, 0);
-      const totalVpAmount = Math.round((discountedPrice + featuresTotal) * 1.5); // Convert VC to VP
+      const totalVpAmount = Math.round((discountedPrice + featuresTotal) / 0.67); // Convert VC to VP (1 VC = 0.67 VP)
 
       const result = await apiFunc({
         resource: 'serviceOrder',
@@ -210,7 +210,7 @@ export const ServiceOrderProvider = ({ children }) => {
         
         // The service order creation already processes the payment (debits VP from buyer and adds VC pending to seller)
         // Calculate VC amount for notifications
-        const vcAmount = Math.round(totalVpAmount / 1.5); // Convert VP to VC (1 VC = 1.5 VP)
+        const vcAmount = Math.ceil(totalVpAmount * 0.67); // Convert VP to VC (1 VP = 0.67 VC, rounded up)
         
         // Send service notification to messaging
         await sendServiceNotification({

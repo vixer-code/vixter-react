@@ -537,8 +537,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
 
   // fileToDataURL removed - now using R2 upload
 
-  // Currency helpers (same logic as Service: VC -> VP @ 1.5x)
-  const convertVCtoVP = (vcAmount) => vcAmount * 1.5;
+  // Currency helpers (same logic as Service: VC -> VP @ 1/0.67x)
+  const convertVCtoVP = (vcAmount) => Math.round(vcAmount / 0.67);
   const formatCurrency = (amount, decimals = 2) => {
     return parseFloat(amount || 0).toFixed(decimals).replace('.', ',');
   };
