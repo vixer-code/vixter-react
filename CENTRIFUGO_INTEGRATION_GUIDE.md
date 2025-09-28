@@ -1,4 +1,4 @@
-# Centrifugo Integration Guide for Vixter React
+trigger pipeline# Centrifugo Integration Guide for Vixter React
 
 This guide explains how to use Centrifugo as your messaging websocket solution in the vixter-react project.
 
