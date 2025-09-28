@@ -404,8 +404,8 @@ export const WalletProvider = ({ children }) => {
         return false;
       }
 
-      // Calcular valor em VC que o autor receberá (1 VP = 0.67 VC, arredondado para cima)
-      const vcAmount = Math.ceil(amount * 0.67);
+      // Calcular valor em VC que o autor receberá (1 VC = 1.5 VP, arredondado para cima)
+      const vcAmount = Math.ceil(amount / 1.5);
 
       // Chamar função para processar a gorjeta (tudo no servidor)
       try {
@@ -523,7 +523,7 @@ export const WalletProvider = ({ children }) => {
   const getWalletSummary = useCallback(() => {
     if (!wallet) return null;
     
-    const totalValue = vpBalance + (vcBalance / 0.67) + (vcPendingBalance / 0.67) + vbpBalance;
+    const totalValue = vpBalance + (vcBalance * 1.5) + (vcPendingBalance * 1.5) + vbpBalance;
     
     return {
       totalValue,

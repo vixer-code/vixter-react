@@ -7,7 +7,7 @@ O sistema de gorjetas foi implementado com as seguintes funcionalidades:
 1. **Envio de Gorjetas**: Clients podem enviar gorjetas para qualquer usuário
 2. **Processamento Imediato**: Gorjetas são processadas imediatamente via Cloud Function
 3. **Cron Job**: Processamento em lote a cada 24 horas para gorjetas pendentes
-4. **Conversão Automática**: 1 VP = 0.67 VC (arredondado para cima, conforme especificado)
+4. **Conversão Automática**: 1 VC = 1.5 VP (arredondado para cima, conforme especificado)
 
 ## 🔧 Cloud Functions Criadas
 

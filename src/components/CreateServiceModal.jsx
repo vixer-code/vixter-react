@@ -336,8 +336,8 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
     return null;
   };
 
-  // Currency helpers (same logic as Service: VC -> VP @ 1/0.67x)
-  const convertVCtoVP = (vcAmount) => Math.round(vcAmount / 0.67);
+  // Currency helpers (same logic as Service: VC -> VP @ 1.5x)
+  const convertVCtoVP = (vcAmount) => vcAmount * 1.5;
   const formatCurrency = (amount, decimals = 2) => {
     return parseFloat(amount || 0).toFixed(decimals).replace('.', ',');
   };

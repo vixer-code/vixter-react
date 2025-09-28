@@ -666,7 +666,7 @@ async function createServiceOrderInternal(buyerId, payload) {
 
   const buyerWallet = buyerWalletSnap.data();
   const vpNeeded = vpAmount;
-  const vcAmount = Math.ceil(vpAmount * 0.67); // Convert VP to VC (1 VP = 0.67 VC, rounded up)
+  const vcAmount = Math.ceil(vpAmount / 1.5); // Convert VP to VC (1 VC = 1.5 VP, rounded up)
 
   // Check if buyer has enough VP
   if (buyerWallet.vp < vpNeeded) {
@@ -1049,8 +1049,8 @@ async function createPackOrderInternal(buyerId, payload) {
     throw new HttpsError("failed-precondition", "Saldo VP insuficiente");
   }
 
-  // Calculate VC amount (1 VP = 0.67 VC, rounded up)
-  const vcAmount = Math.ceil(vpAmount * 0.67);
+  // Calculate VC amount (1 VC = 1.5 VP, rounded up)
+  const vcAmount = Math.ceil(vpAmount / 1.5);
 
   // Create pack order
   const orderRef = db.collection('packOrders').doc();
