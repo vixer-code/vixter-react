@@ -495,7 +495,7 @@
   color: #ffffff;
 }
 
-.stat-icon.services-icon {
+.stat-iconicon {
   background: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%);
   color: #ffffff;
 }
@@ -1650,7 +1650,7 @@
 }
 
 /* Services Tab */
-.services-tab-content,
+tab-content,
 .packs-tab-content,
 .subscriptions-tab-content {
   background: rgba(255, 255, 255, 0.05);
@@ -1668,6 +1668,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
+  flex-direction: column;
 }
 
 .services-header h3,
