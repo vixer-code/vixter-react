@@ -45,8 +45,6 @@ const Wallet = () => {
 
   // Modal states
   const [showBuyVPModal, setShowBuyVPModal] = useState(false);
-  const [showSendModal, setShowSendModal] = useState(false);
-  const [showRedeemModal, setShowRedeemModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('credit-card');
@@ -57,13 +55,6 @@ const Wallet = () => {
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [feeLoading, setFeeLoading] = useState(false);
 
-  // Form states
-  const [sendForm, setSendForm] = useState({
-    username: '',
-    amount: '',
-    message: ''
-  });
-  const [redeemCode, setRedeemCode] = useState('');
 
   const TRANSACTIONS_PER_PAGE = 10;
 
@@ -216,45 +207,7 @@ const Wallet = () => {
     }
   };
 
-  const handleSendVP = async () => {
-    if (!sendForm.username || !sendForm.amount) {
-      showError('Por favor, preencha todos os campos obrigatórios.', 'Erro de Validação');
-      return;
-    }
 
-    const amount = parseInt(sendForm.amount);
-    if (amount <= 0 || amount > vpBalance) {
-      showError('Quantidade inválida ou saldo insuficiente.', 'Erro de Validação');
-      return;
-    }
-
-    try {
-      // TODO: Implementar transferência de VP entre usuários
-      showWarning('🚧 Transferência de VP entre usuários será implementada em breve!', 'Funcionalidade em Desenvolvimento');
-      setSendForm({ username: '', amount: '', message: '' });
-      setShowSendModal(false);
-    } catch (error) {
-      console.error('Error sending VP:', error);
-      showError('Erro ao enviar VP. Tente novamente.', 'Erro');
-    }
-  };
-
-  const handleRedeemCode = async () => {
-    if (!redeemCode || redeemCode.length < 19) {
-      showError('Por favor, insira um código válido.', 'Código Inválido');
-      return;
-    }
-
-    try {
-      // TODO: Implementar validação e resgate de códigos
-      showWarning('🚧 Sistema de códigos de resgate será implementado em breve!', 'Funcionalidade em Desenvolvimento');
-      setRedeemCode('');
-      setShowRedeemModal(false);
-    } catch (error) {
-      console.error('Error redeeming code:', error);
-      showError('Erro ao resgatar código. Tente novamente.', 'Erro');
-    }
-  };
 
   const getTransactionAmountDisplay = (transaction) => {
     if (!transaction.amounts) return { amount: 0, currency: 'VP' };
@@ -914,19 +867,6 @@ const Wallet = () => {
         {/* VP Actions - Only for clients and both */}
         {(isClient || isBoth) && (
           <>
-            <button 
-              className={`btn-secondary ${isClient && !isBoth ? 'disabled' : ''}`}
-              onClick={() => !isClient || isBoth ? setShowSendModal(true) : null}
-              disabled={isClient && !isBoth}
-            >
-              <i className="fas fa-paper-plane"></i> Enviar VP
-            </button>
-            <button 
-              className="btn-secondary"
-              onClick={() => setShowRedeemModal(true)}
-            >
-              <i className="fas fa-gift"></i> Resgatar Código
-            </button>
           </>
         )}
 
@@ -1169,124 +1109,7 @@ const Wallet = () => {
         </div>
       )}
 
-      {/* Send VP Modal */}
-      {showSendModal && (
-        <div className="modal-overlay" onClick={() => setShowSendModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Enviar Vixter Points</h3>
-              <button 
-                className="modal-close"
-                onClick={() => setShowSendModal(false)}
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="input-group">
-                <label>Nome de Usuário do Destinatário</label>
-                <input
-                  type="text"
-                  value={sendForm.username}
-                  onChange={(e) => setSendForm({...sendForm, username: e.target.value})}
-                  placeholder="Username"
-                />
-              </div>
-              <div className="input-group">
-                <label>Quantidade de VP</label>
-                <input
-                  type="number"
-                  value={sendForm.amount}
-                  onChange={(e) => setSendForm({...sendForm, amount: e.target.value})}
-                  placeholder="0"
-                  min="1"
-                  max={vpBalance}
-                />
-                <small>Saldo disponível: {formatCurrency(vpBalance, 'VP')}</small>
-              </div>
-              <div className="input-group">
-                <label>Mensagem (Opcional)</label>
-                <textarea
-                  value={sendForm.message}
-                  onChange={(e) => setSendForm({...sendForm, message: e.target.value})}
-                  placeholder="Adicione uma mensagem para o destinatário..."
-                />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button 
-                className="btn-secondary"
-                onClick={() => setShowSendModal(false)}
-              >
-                Cancelar
-              </button>
-              <button 
-                className={`btn-primary ${isClient && !isBoth ? 'disabled' : ''}`}
-                onClick={!isClient || isBoth ? handleSendVP : null}
-                disabled={isClient && !isBoth}
-              >
-                Enviar VP
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Redeem Code Modal */}
-      {showRedeemModal && (
-        <div className="modal-overlay" onClick={() => setShowRedeemModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Resgatar Código</h3>
-              <button 
-                className="modal-close"
-                onClick={() => setShowRedeemModal(false)}
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="input-group">
-                <label>Digite o Código de Resgate</label>
-                <input
-                  type="text"
-                  value={redeemCode}
-                  onChange={(e) => {
-                    let value = e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-                    let formattedValue = '';
-
-                    for (let i = 0; i < value.length; i++) {
-                      if (i > 0 && i % 4 === 0) {
-                        formattedValue += '-';
-                      }
-                      formattedValue += value[i];
-                    }
-
-                    setRedeemCode(formattedValue.substring(0, 19));
-                  }}
-                  placeholder="XXXX-XXXX-XXXX-XXXX"
-                  maxLength="19"
-                />
-                <small>Códigos podem resgatar VP ou VBP, dependendo do tipo de código.</small>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button 
-                className="btn-secondary"
-                onClick={() => setShowRedeemModal(false)}
-              >
-                Cancelar
-              </button>
-              <button 
-                className="btn-primary"
-                onClick={handleRedeemCode}
-              >
-                Resgatar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Buy VP Modal */}
       {showBuyVPModal && (
