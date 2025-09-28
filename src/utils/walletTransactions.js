@@ -77,7 +77,7 @@ export const processServicePurchase = async (sellerId, serviceId, serviceName, s
         success: true,
         serviceOrderId: result.data.order?.id,
         vcPending: result.data.order?.vcAmount,
-        conversionRate: 1.5 // VP to VC conversion rate
+        conversionRate: 1.5 // VP to VC conversion rate (1 VC = 1.5 VP)
       };
     }
     
@@ -96,10 +96,10 @@ export const processServicePurchase = async (sellerId, serviceId, serviceName, s
 /**
  * Calculate VC amount from VP amount using conversion rate
  * @param {number} vpAmount - VP amount
- * @returns {number} VC amount (rounded down)
+ * @returns {number} VC amount (rounded up)
  */
 export const calculateVCFromVP = (vpAmount) => {
-  return Math.floor(vpAmount / 1.5);
+  return Math.ceil(vpAmount / 1.5);
 };
 
 /**

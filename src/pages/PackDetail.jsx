@@ -315,7 +315,7 @@ const PackDetail = () => {
     const basePrice = pack.price || 0;
     const discount = pack.discount || 0;
     const discountedPrice = discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
-    return Math.round(discountedPrice * 1.5); // Convert VC to VP
+    return Math.round(discountedPrice * 1.5); // Convert VC to VP (1 VC = 1.5 VP)
   };
 
   const handlePurchase = async () => {
@@ -666,12 +666,12 @@ const PackDetail = () => {
               <div className="price-breakdown">
                 <div className="price-item">
                   <span>Preço base</span>
-                  <span>{formatVP(pack.price * 1.5)}</span>
+                  <span>{formatVP(Math.round(pack.price * 1.5))}</span>
                 </div>
                 {pack.discount && pack.discount > 0 && (
                   <div className="price-item discount-item">
                     <span>Desconto ({pack.discount}%)</span>
-                    <span>-{formatVP((pack.price * 1.5) - calculateVpTotal())}</span>
+                    <span>-{formatVP(Math.round(pack.price * 1.5) - calculateVpTotal())}</span>
                   </div>
                 )}
                 <div className="price-total">
@@ -733,12 +733,12 @@ const PackDetail = () => {
               <div className="price-breakdown">
                 <div className="price-item">
                   <span>Preço base</span>
-                  <span>{formatVP(pack.price * 1.5)}</span>
+                  <span>{formatVP(Math.round(pack.price * 1.5))}</span>
                 </div>
                 {pack.discount && pack.discount > 0 && (
                   <div className="price-item discount-item">
                     <span>Desconto ({pack.discount}%)</span>
-                    <span>-{formatVP((pack.price * 1.5) - calculateVpTotal())}</span>
+                    <span>-{formatVP(Math.round(pack.price * 1.5) - calculateVpTotal())}</span>
                   </div>
                 )}
                 <div className="price-total">

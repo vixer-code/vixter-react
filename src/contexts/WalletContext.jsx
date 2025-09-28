@@ -404,8 +404,8 @@ export const WalletProvider = ({ children }) => {
         return false;
       }
 
-      // Calcular valor em VC que o autor receberá (1 VP = 0.5 VC)
-      const vcAmount = Math.round(amount * 0.5);
+      // Calcular valor em VC que o autor receberá (1 VC = 1.5 VP, arredondado para cima)
+      const vcAmount = Math.ceil(amount / 1.5);
 
       // Chamar função para processar a gorjeta (tudo no servidor)
       try {

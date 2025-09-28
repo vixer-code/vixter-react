@@ -252,7 +252,7 @@ const ServiceDetail = () => {
 
   const calculateVpTotal = () => {
     const vcTotal = calculateTotal();
-    return Math.round(vcTotal * 1.5); // Convert VC to VP
+    return Math.round(vcTotal * 1.5); // Convert VC to VP (1 VC = 1.5 VP)
   };
 
   const handlePurchase = async () => {
@@ -407,12 +407,12 @@ const ServiceDetail = () => {
             <div className="service-price">
               {service.discount && service.discount > 0 ? (
                 <>
-                  <span className="price-original">{formatVP(service.price * 1.5)}</span>
+                  <span className="price-original">{formatVP(Math.round(service.price * 1.5))}</span>
                   <span className="price-amount">{formatVP(calculateVpTotal())}</span>
                   <span className="discount-badge">-{service.discount}%</span>
                 </>
               ) : (
-                <span className="price-amount">{formatVP(service.price * 1.5)}</span>
+                <span className="price-amount">{formatVP(Math.round(service.price * 1.5))}</span>
               )}
               {service.status && service.status !== 'active' && (
                 <div className="service-status-badge paused">
@@ -546,12 +546,12 @@ const ServiceDetail = () => {
               <div className="price-breakdown">
                 <div className="price-item">
                   <span>Preço base</span>
-                  <span>{formatVP(service.price * 1.5)}</span>
+                  <span>{formatVP(Math.round(service.price * 1.5))}</span>
                 </div>
                 {service.discount && service.discount > 0 && (
                   <div className="price-item discount-item">
                     <span>Desconto ({service.discount}%)</span>
-                    <span>-{formatVP((service.price * 1.5) - calculateVpTotal())}</span>
+                    <span>-{formatVP(Math.round(service.price * 1.5) - calculateVpTotal())}</span>
                   </div>
                 )}
                 {selectedFeatures.map((feature, index) => (
@@ -619,12 +619,12 @@ const ServiceDetail = () => {
               <div className="price-breakdown">
                 <div className="price-item">
                   <span>Preço base</span>
-                  <span>{formatVP(service.price * 1.5)}</span>
+                  <span>{formatVP(Math.round(service.price * 1.5))}</span>
                 </div>
                 {service.discount && service.discount > 0 && (
                   <div className="price-item discount-item">
                     <span>Desconto ({service.discount}%)</span>
-                    <span>-{formatVP((service.price * 1.5) - calculateVpTotal())}</span>
+                    <span>-{formatVP(Math.round(service.price * 1.5) - calculateVpTotal())}</span>
                   </div>
                 )}
                 {selectedFeatures.map((feature, index) => (
