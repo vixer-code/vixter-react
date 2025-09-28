@@ -46,7 +46,6 @@ const Wallet = () => {
   // Modal states
   const [showBuyVPModal, setShowBuyVPModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
-  const [showRedeemModal, setShowRedeemModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('credit-card');
@@ -63,7 +62,6 @@ const Wallet = () => {
     amount: '',
     message: ''
   });
-  const [redeemCode, setRedeemCode] = useState('');
 
   const TRANSACTIONS_PER_PAGE = 10;
 
@@ -239,22 +237,6 @@ const Wallet = () => {
     }
   };
 
-  const handleRedeemCode = async () => {
-    if (!redeemCode || redeemCode.length < 19) {
-      showError('Por favor, insira um código válido.', 'Código Inválido');
-      return;
-    }
-
-    try {
-      // TODO: Implementar validação e resgate de códigos
-      showWarning('🚧 Sistema de códigos de resgate será implementado em breve!', 'Funcionalidade em Desenvolvimento');
-      setRedeemCode('');
-      setShowRedeemModal(false);
-    } catch (error) {
-      console.error('Error redeeming code:', error);
-      showError('Erro ao resgatar código. Tente novamente.', 'Erro');
-    }
-  };
 
   const getTransactionAmountDisplay = (transaction) => {
     if (!transaction.amounts) return { amount: 0, currency: 'VP' };
@@ -921,12 +903,6 @@ const Wallet = () => {
             >
               <i className="fas fa-paper-plane"></i> Enviar VP
             </button>
-            <button 
-              className="btn-secondary"
-              onClick={() => setShowRedeemModal(true)}
-            >
-              <i className="fas fa-gift"></i> Resgatar Código
-            </button>
           </>
         )}
 
@@ -1232,61 +1208,6 @@ const Wallet = () => {
         </div>
       )}
 
-      {/* Redeem Code Modal */}
-      {showRedeemModal && (
-        <div className="modal-overlay" onClick={() => setShowRedeemModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Resgatar Código</h3>
-              <button 
-                className="modal-close"
-                onClick={() => setShowRedeemModal(false)}
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="input-group">
-                <label>Digite o Código de Resgate</label>
-                <input
-                  type="text"
-                  value={redeemCode}
-                  onChange={(e) => {
-                    let value = e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-                    let formattedValue = '';
-
-                    for (let i = 0; i < value.length; i++) {
-                      if (i > 0 && i % 4 === 0) {
-                        formattedValue += '-';
-                      }
-                      formattedValue += value[i];
-                    }
-
-                    setRedeemCode(formattedValue.substring(0, 19));
-                  }}
-                  placeholder="XXXX-XXXX-XXXX-XXXX"
-                  maxLength="19"
-                />
-                <small>Códigos podem resgatar VP ou VBP, dependendo do tipo de código.</small>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button 
-                className="btn-secondary"
-                onClick={() => setShowRedeemModal(false)}
-              >
-                Cancelar
-              </button>
-              <button 
-                className="btn-primary"
-                onClick={handleRedeemCode}
-              >
-                Resgatar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Buy VP Modal */}
       {showBuyVPModal && (
