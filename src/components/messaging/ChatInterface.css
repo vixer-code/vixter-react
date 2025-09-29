@@ -531,7 +531,7 @@ input.message-input {
   border-radius: 12px;
   padding: 12px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   box-shadow: var(--vixter-shadow);
   margin-bottom: 8px;

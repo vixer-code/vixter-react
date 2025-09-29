@@ -6,7 +6,7 @@ import { useNotification } from '../../contexts/NotificationContext';
 import { useUserStatus } from '../../hooks/useUserStatus';
 import { getProfileUrl } from '../../utils/profileUrls';
 import CachedImage from '../CachedImage';
-import AudioRecorder from '../AudioRecorder';
+import SendButtonWithAudio from '../SendButtonWithAudio';
 import './ChatInterface.css';
 
 const ChatInterface = ({ conversation, onClose }) => {
@@ -30,7 +30,6 @@ const ChatInterface = ({ conversation, onClose }) => {
   // Removed old typing state - now using context
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
-  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
@@ -199,7 +198,13 @@ const ChatInterface = ({ conversation, onClose }) => {
 
     const fileType = file.type.startsWith('image/') ? 'image' : 
                     file.type.startsWith('video/') ? 'video' : 
-                    file.type.startsWith('audio/') ? 'audio' : 'file';
+                    file.type.startsWith('audio/') ? 'audio' : null;
+
+    // Only allow image, video, and audio files
+    if (!fileType) {
+      showError('Tipo de arquivo não suportado. Apenas imagens, vídeos e áudios são permitidos.');
+      return;
+    }
 
     try {
       await sendMediaMessage(file, fileType);
@@ -221,24 +226,14 @@ const ChatInterface = ({ conversation, onClose }) => {
     textareaRef.current?.focus();
   };
 
-  // Handle audio recording
-  const handleAudioRecorded = async (audioFile) => {
+  // Handle audio recording from integrated button
+  const handleSendAudio = async (audioFile) => {
     try {
       await sendMediaMessage(audioFile, 'audio');
-      setShowAudioRecorder(false);
     } catch (error) {
       console.error('Error sending audio:', error);
       showError('Erro ao enviar áudio');
     }
-  };
-
-  const handleAudioCancel = () => {
-    setShowAudioRecorder(false);
-  };
-
-  const handleAudioButtonClick = () => {
-    setShowAudioRecorder(true);
-    setShowMediaOptions(false);
   };
 
   // Handle message input change with typing indicators
@@ -415,24 +410,6 @@ const ChatInterface = ({ conversation, onClose }) => {
                     </div>
                   )}
                   
-                  {message.type === 'file' && (
-                    <div className="message-file">
-                      <div className="file-icon">📎</div>
-                      <div className="file-info">
-                        <div className="file-name">{message.mediaInfo?.name || 'Arquivo'}</div>
-                        <div className="file-size">
-                          {message.mediaInfo?.size ? 
-                            `${(message.mediaInfo.size / 1024).toFixed(1)} KB` : 
-                            'Tamanho desconhecido'
-                          }
-                        </div>
-                      </div>
-                      <a href={message.mediaUrl} download className="download-button">
-                        ⬇️
-                      </a>
-                    </div>
-                  )}
-                  
                   <div className="message-meta">
                     <span className="message-time">
                       {formatTime(message.timestamp)}
@@ -486,13 +463,14 @@ const ChatInterface = ({ conversation, onClose }) => {
             rows="1"
             disabled={sending || isServiceCompleted}
           />
-          <button
-            type="submit"
-            className="send-button"
-            disabled={!messageText.trim() || sending || isServiceCompleted}
-          >
-            {sending ? '⏳' : '➤'}
-          </button>
+          <SendButtonWithAudio
+            onSendMessage={handleSendMessage}
+            onSendAudio={handleSendAudio}
+            messageText={messageText}
+            sending={sending}
+            disabled={isServiceCompleted}
+            isServiceCompleted={isServiceCompleted}
+          />
         </div>
       </form>
 
@@ -513,15 +491,9 @@ const ChatInterface = ({ conversation, onClose }) => {
           </button>
           <button
             className="media-option"
-            onClick={handleAudioButtonClick}
-          >
-            🎵 Áudio
-          </button>
-          <button
-            className="media-option"
             onClick={() => fileInputRef.current?.click()}
           >
-            📄 Arquivo
+            🎵 Áudio
           </button>
         </div>
       )}
@@ -547,18 +519,10 @@ const ChatInterface = ({ conversation, onClose }) => {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+          accept="image/*,video/*,audio/*"
           onChange={handleFileUpload}
           style={{ display: 'none' }}
         />
-
-        {/* Audio Recorder */}
-        {showAudioRecorder && !isServiceCompleted && (
-          <AudioRecorder
-            onAudioRecorded={handleAudioRecorded}
-            onCancel={handleAudioCancel}
-          />
-        )}
       </div>
 
       {/* Completed Service Notice */}

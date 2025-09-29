@@ -1,0 +1,197 @@
+/* Send Button with Audio Styles */
+.send-button-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.send-button {
+  background: var(--vixter-gradient);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  margin-left: 8px;
+  box-shadow: 0 2px 10px rgba(0, 255, 202, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.send-button:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(0, 255, 202, 0.5);
+}
+
+.send-button:disabled {
+  background: var(--vixter-bg-primary);
+  border: 1px solid var(--vixter-border);
+  color: var(--vixter-text-secondary);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Recording state */
+.send-button.recording {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+  box-shadow: 0 2px 10px rgba(255, 107, 107, 0.4);
+  animation: pulse-recording 1.5s infinite;
+}
+
+.send-button.recording:hover:not(:disabled) {
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.6);
+}
+
+@keyframes pulse-recording {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 10px rgba(255, 107, 107, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.6);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 10px rgba(255, 107, 107, 0.4);
+  }
+}
+
+/* Preview state */
+.send-button.preview {
+  background: linear-gradient(135deg, #4ecdc4, #44a08d);
+  box-shadow: 0 2px 10px rgba(78, 205, 196, 0.4);
+}
+
+.send-button.preview:hover:not(:disabled) {
+  box-shadow: 0 4px 15px rgba(78, 205, 196, 0.6);
+}
+
+/* Audio Preview Overlay */
+.audio-preview-overlay {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background: var(--vixter-bg-secondary);
+  border: 1px solid var(--vixter-border);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: var(--vixter-shadow);
+  margin-bottom: 8px;
+  z-index: 1000;
+  min-width: 250px;
+}
+
+.audio-preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.audio-preview-content audio {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.audio-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.cancel-audio-btn {
+  background: var(--vixter-bg-tertiary);
+  color: var(--vixter-text-secondary);
+  border: 1px solid var(--vixter-border);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-audio-btn:hover {
+  background: #ff6b6b;
+  color: white;
+  border-color: #ff6b6b;
+}
+
+.send-audio-btn {
+  background: linear-gradient(135deg, var(--vixter-accent-primary), #00d4aa);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 255, 202, 0.3);
+}
+
+.send-audio-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 255, 202, 0.4);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .send-button {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .audio-preview-overlay {
+    min-width: 200px;
+    padding: 12px;
+  }
+  
+  .audio-preview-content audio {
+    height: 35px;
+  }
+  
+  .cancel-audio-btn,
+  .send-audio-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}
+
+/* Animation for button state changes */
+.send-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.send-button:active {
+  transform: scale(0.95);
+}
+
+/* Focus styles for accessibility */
+.send-button:focus {
+  outline: 2px solid var(--vixter-accent-primary);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .send-button {
+    border: 2px solid currentColor;
+  }
+  
+  .send-button.recording {
+    border-color: #ff6b6b;
+  }
+  
+  .send-button.preview {
+    border-color: #4ecdc4;
+  }
+}
