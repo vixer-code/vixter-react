@@ -35,8 +35,6 @@ const Wallet = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [filters, setFilters] = useState({
-    currency: 'all',
-    type: 'all',
     period: '7days'
   });
   const [providerHistory, setProviderHistory] = useState([]); // full list
@@ -909,33 +907,6 @@ const Wallet = () => {
           {/* Only show filters for non-providers or when not in provider history */}
           {!(isProvider || isBoth) && (
             <div className="transactions-filters">
-              <div className="filter-group">
-                <label htmlFor="filter-currency">Moeda</label>
-                <select 
-                  id="filter-currency"
-                  value={filters.currency}
-                  onChange={(e) => setFilters({...filters, currency: e.target.value})}
-                >
-                  <option value="all">Todas</option>
-                  <option value="vp">VP</option>
-                  <option value="vc">VC</option>
-                  <option value="vbp">VBP</option>
-                </select>
-              </div>
-              <div className="filter-group">
-                <label htmlFor="filter-type">Tipo</label>
-                <select 
-                  id="filter-type"
-                  value={filters.type}
-                  onChange={(e) => setFilters({...filters, type: e.target.value})}
-                >
-                  <option value="all">Todas Transações</option>
-                  <option value="incoming">Recebidas</option>
-                  <option value="outgoing">Enviadas</option>
-                  <option value="purchase">Compras</option>
-                  <option value="earned">Ganhos</option>
-                </select>
-              </div>
               <div className="filter-group">
                 <label htmlFor="filter-period">Período</label>
                 <select 
