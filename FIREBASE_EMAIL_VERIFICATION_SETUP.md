@@ -1,4 +1,4 @@
-# Configuração de Verificação de Email no Firebase
+a# Configuração de Verificação de Email no Firebase
 
 ## Status Atual
 ✅ **Implementação no código concluída** - O envio de emails de verificação está implementado e funcionando no código.
