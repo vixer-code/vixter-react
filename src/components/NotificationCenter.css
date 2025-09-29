@@ -335,9 +335,10 @@
     max-width: 350px;
     right: -10px;
     top: auto;
-    bottom: 100%;
-    margin-bottom: 8px;
+    bottom: calc(100% + 8px);
+    margin-bottom: 0;
     max-height: 60vh;
+    z-index: 1001;
   }
   
   .notification-list {
@@ -437,6 +438,51 @@
     min-width: 14px;
     height: 14px;
     padding: 1px 4px;
+  }
+  
+  /* Ensure dropdown appears correctly on small screens */
+  .mobile-notification-container .notification-dropdown {
+    width: calc(100vw - 16px);
+    max-width: 320px;
+    right: -8px;
+    top: auto;
+    bottom: calc(100% + 8px);
+    margin-bottom: 0;
+    max-height: 50vh;
+    z-index: 1002;
+    position: absolute;
+  }
+  
+  /* Alternative positioning for very small screens */
+  @media (max-width: 480px) {
+    .mobile-notification-container .notification-dropdown {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: calc(100vw - 32px);
+      max-width: 300px;
+      right: auto;
+      bottom: auto;
+      margin-bottom: 0;
+      max-height: 60vh;
+      z-index: 1003;
+    }
+    
+    .mobile-notification-container .notification-dropdown::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: -1;
+    }
+  }
+  
+  .mobile-notification-container .notification-list {
+    max-height: calc(50vh - 60px);
   }
 }
 

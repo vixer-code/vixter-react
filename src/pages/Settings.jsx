@@ -641,66 +641,88 @@ const Settings = () => {
         {/* PIX Configuration Section */}
         <div className="settings-section">
           <h2>Configuração PIX</h2>
-          <div className="settings-grid">
-            <div className="setting-group">
-              <label htmlFor="pixType">Tipo da Chave PIX</label>
-              <select
-                id="pixType"
-                value={pixForm.pixType}
-                onChange={(e) => handlePixChange('pixType', e.target.value)}
-              >
-                <option value="">Selecione o tipo</option>
-                <option value="cpf">CPF</option>
-                <option value="phone">Celular</option>
-                <option value="email">Email</option>
-              </select>
-              <small>Escolha o tipo de chave PIX que deseja usar</small>
+          {accountType === 'client' ? (
+            <div className="settings-grid">
+              <div className="setting-group full-width">
+                <div className="pix-restriction-notice">
+                  <div className="restriction-icon">
+                    <i className="fas fa-info-circle"></i>
+                  </div>
+                  <div className="restriction-content">
+                    <h3>PIX não disponível para clientes</h3>
+                    <p>
+                      A configuração PIX está disponível apenas para usuários do tipo <strong>Provider</strong> ou <strong>Both</strong>, 
+                      pois apenas estes tipos de usuário podem receber pagamentos através da plataforma.
+                    </p>
+                    <p>
+                      Se você deseja configurar PIX para receber pagamentos, altere seu tipo de conta para Provider nas configurações de perfil.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
+          ) : (
+            <div className="settings-grid">
+              <div className="setting-group">
+                <label htmlFor="pixType">Tipo da Chave PIX</label>
+                <select
+                  id="pixType"
+                  value={pixForm.pixType}
+                  onChange={(e) => handlePixChange('pixType', e.target.value)}
+                >
+                  <option value="">Selecione o tipo</option>
+                  <option value="cpf">CPF</option>
+                  <option value="phone">Celular</option>
+                  <option value="email">Email</option>
+                </select>
+                <small>Escolha o tipo de chave PIX que deseja usar</small>
+              </div>
 
-            <div className="setting-group">
-              <label htmlFor="pixDetail">Chave PIX</label>
-              <input
-                type="text"
-                id="pixDetail"
-                value={pixForm.pixDetail}
-                onChange={(e) => handlePixChange('pixDetail', e.target.value)}
-                placeholder={
-                  pixForm.pixType === 'cpf' ? '000.000.000-00' :
-                  pixForm.pixType === 'phone' ? '(11) 99999-9999' :
-                  pixForm.pixType === 'email' ? 'seu@email.com' :
-                  'Digite sua chave PIX'
-                }
-                disabled={!pixForm.pixType}
-              />
-              <small>
-                {pixForm.pixType === 'cpf' && 'Digite apenas os números do CPF (11 dígitos)'}
-                {pixForm.pixType === 'phone' && 'Digite no formato (11) 99999-9999'}
-                {pixForm.pixType === 'email' && 'Digite seu email válido'}
-                {!pixForm.pixType && 'Primeiro selecione o tipo da chave PIX'}
-              </small>
-            </div>
+              <div className="setting-group">
+                <label htmlFor="pixDetail">Chave PIX</label>
+                <input
+                  type="text"
+                  id="pixDetail"
+                  value={pixForm.pixDetail}
+                  onChange={(e) => handlePixChange('pixDetail', e.target.value)}
+                  placeholder={
+                    pixForm.pixType === 'cpf' ? '000.000.000-00' :
+                    pixForm.pixType === 'phone' ? '(11) 99999-9999' :
+                    pixForm.pixType === 'email' ? 'seu@email.com' :
+                    'Digite sua chave PIX'
+                  }
+                  disabled={!pixForm.pixType}
+                />
+                <small>
+                  {pixForm.pixType === 'cpf' && 'Digite apenas os números do CPF (11 dígitos)'}
+                  {pixForm.pixType === 'phone' && 'Digite no formato (11) 99999-9999'}
+                  {pixForm.pixType === 'email' && 'Digite seu email válido'}
+                  {!pixForm.pixType && 'Primeiro selecione o tipo da chave PIX'}
+                </small>
+              </div>
 
-            <div className="setting-group full-width">
-              <button
-                onClick={savePixSettings}
-                disabled={pixLoading || !pixForm.pixType || !pixForm.pixDetail}
-                className="btn-primary"
-              >
-                {pixLoading ? (
-                  <>
-                    <PurpleSpinner text="Salvando..." size="small" />
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-save"></i> Salvar Configuração PIX
-                  </>
-                )}
-              </button>
-              <small>
-                Configure sua chave PIX para receber pagamentos. Esta informação será usada para processar seus saques de VC.
-              </small>
+              <div className="setting-group full-width">
+                <button
+                  onClick={savePixSettings}
+                  disabled={pixLoading || !pixForm.pixType || !pixForm.pixDetail}
+                  className="btn-primary"
+                >
+                  {pixLoading ? (
+                    <>
+                      <PurpleSpinner text="Salvando..." size="small" />
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-save"></i> Salvar Configuração PIX
+                    </>
+                  )}
+                </button>
+                <small>
+                  Configure sua chave PIX para receber pagamentos. Esta informação será usada para processar seus saques de VC.
+                </small>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* KYC Verification Section */}
