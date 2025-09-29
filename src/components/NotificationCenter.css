@@ -464,7 +464,7 @@
       position: fixed;
       top: 60%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, 10%);
       width: calc(100vw - 32px);
       max-width: 300px;
       right: auto;
