@@ -107,7 +107,16 @@ export const StatusProvider = ({ children }) => {
     const unsubscribeStatus = onValue(userStatusRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
+        console.log('📊 StatusContext - User status changed:', {
+          uid: uid.slice(0, 8),
+          state: data.state,
+          last_changed: data.last_changed,
+          timestamp: new Date().toISOString()
+        });
         setUserStatus(data.state || 'offline');
+      } else {
+        console.log('📊 StatusContext - No status data found for user:', uid.slice(0, 8));
+        setUserStatus('offline');
       }
     });
 
@@ -134,11 +143,20 @@ export const StatusProvider = ({ children }) => {
     const setInitialOnlineStatus = async () => {
       try {
         console.log('🌐 Setting initial online status for user:', uid);
-        await set(ref(database, `status/${uid}`), {
+        const userStatusRef = ref(database, `status/${uid}`);
+        await set(userStatusRef, {
           state: 'online',
           last_changed: serverTimestamp()
         });
         console.log('✅ Initial status set successfully');
+        
+        // Also set up disconnect handler here to ensure it's always configured
+        const isOfflineForDatabase = {
+          state: 'offline',
+          last_changed: serverTimestamp(),
+        };
+        onDisconnect(userStatusRef).set(isOfflineForDatabase);
+        console.log('🔧 Disconnect handler configured');
       } catch (error) {
         console.error('❌ Error setting initial status:', error);
       }
@@ -148,6 +166,18 @@ export const StatusProvider = ({ children }) => {
     setInitialOnlineStatus();
 
     return () => {
+      // Force offline status before cleanup
+      if (currentUser?.uid) {
+        const userStatusRef = ref(database, `status/${currentUser.uid}`);
+        set(userStatusRef, {
+          state: 'offline',
+          last_changed: serverTimestamp()
+        }).catch(error => {
+          console.error('❌ Error setting offline status during cleanup:', error);
+        });
+        console.log('🧹 Cleanup - User set to offline:', currentUser.uid);
+      }
+      
       unsubscribeConnected();
       unsubscribeStatus();
       // Remove event listeners
@@ -248,6 +278,31 @@ export const StatusProvider = ({ children }) => {
     }
   }, []);
 
+  // Debug function to check current status
+  const debugStatus = useCallback(async () => {
+    if (!currentUser?.uid) {
+      console.log('🔍 Debug: No current user');
+      return;
+    }
+    
+    try {
+      const userStatusRef = ref(database, `status/${currentUser.uid}`);
+      const snapshot = await get(userStatusRef);
+      const data = snapshot.val();
+      
+      console.log('🔍 Debug Status Check:', {
+        uid: currentUser.uid.slice(0, 8),
+        localStatus: userStatus,
+        dbStatus: data?.state || 'not found',
+        lastChanged: data?.last_changed || 'not found',
+        isConnected,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('🔍 Debug error:', error);
+    }
+  }, [currentUser, userStatus, isConnected]);
+
   const value = useMemo(() => ({
     userStatus,
     selectedStatus,
@@ -257,12 +312,13 @@ export const StatusProvider = ({ children }) => {
     updateUserStatus,
     getUserSelectedStatus,
     getCurrentStatus,
+    debugStatus,
     // Status options (simplified)
     statusOptions: [
       { value: 'online', label: 'Online', color: '#22c55e', emoji: '🟢' },
       { value: 'offline', label: 'Offline', color: '#ef4444', emoji: '🔴' }
     ]
-  }), [userStatus, selectedStatus, isConnected, lastActivity, currentPage, updateUserStatus, getUserSelectedStatus, getCurrentStatus]);
+  }), [userStatus, selectedStatus, isConnected, lastActivity, currentPage, updateUserStatus, getUserSelectedStatus, getCurrentStatus, debugStatus]);
 
   return (
     <StatusContext.Provider value={value}>

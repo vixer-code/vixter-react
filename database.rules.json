@@ -225,7 +225,7 @@
         },
         "likedBy": {
           ".validate": "newData.hasChildren() || newData.val() == null"
-        },
+        }
       }
     },
     "vixies_posts": {
@@ -272,7 +272,7 @@
         },
         "likedBy": {
           ".validate": "newData.hasChildren() || newData.val() == null"
-        },
+        }
       }
     },
     "packOrders": {
