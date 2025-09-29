@@ -121,20 +121,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
       const unsubscribe = onValue(statusRef, (snapshot) => {
         if (snapshot.exists()) {
           const statusData = snapshot.val();
-          const now = Date.now();
-          const OFFLINE_THRESHOLD = 2 * 60 * 1000; // 2 minutes (reduced from 3)
-          const lastChanged = statusData.last_changed;
-          
-          // Handle both timestamp formats (number and server timestamp)
-          let lastChangedTime = lastChanged;
-          if (lastChanged && typeof lastChanged === 'object' && lastChanged._seconds) {
-            lastChangedTime = lastChanged._seconds * 1000; // Convert from seconds to milliseconds
-          }
-          
-          const isRecentActivity = lastChangedTime && (now - lastChangedTime) < OFFLINE_THRESHOLD;
-          
-          // Only consider user online if they have recent activity AND status is online
-          const actualStatus = (statusData.state === 'online' && isRecentActivity) ? 'online' : 'offline';
+          // Simply use the state from RTDB without complex threshold logic
+          const actualStatus = statusData.state || 'offline';
           
           // Only update if status actually changed to prevent unnecessary re-renders
           setUsers(prev => {

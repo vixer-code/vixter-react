@@ -463,7 +463,7 @@ const Wallet = () => {
       {/* Account Type Header */}
       <div className="account-type-header">
         <h2>
-          {isProvider && 'Carteira de Provedor'}
+          {isProvider && 'Carteira de Vendedor'}
           {isClient && 'Carteira de Cliente'}
           {isBoth && 'Carteira Completa (Legacy)'}
         </h2>
