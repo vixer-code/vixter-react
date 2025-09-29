@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEnhancedMessaging } from '../../contexts/EnhancedMessagingContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useUserStatus } from '../../hooks/useUserStatus';
 import { getProfileUrl } from '../../utils/profileUrls';
 import CachedImage from '../CachedImage';
 import './ChatInterface.css';
@@ -38,6 +39,7 @@ const ChatInterface = ({ conversation, onClose }) => {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const otherUser = getOtherParticipant(conversation);
+  const otherUserStatus = useUserStatus(otherUser?.id);
 
   // Handle profile navigation
   const handleProfileClick = () => {
@@ -309,7 +311,7 @@ const ChatInterface = ({ conversation, onClose }) => {
             <div className="user-status">
               {isServiceCompleted ? (
                 <span className="service-completed">🔒 Serviço Concluído</span>
-              ) : otherUser?.status === 'online' ? (
+              ) : otherUserStatus === 'online' ? (
                 <span className="status-online">🟢 Online</span>
               ) : (
                 <span className="status-offline">🔴 Offline</span>
@@ -323,8 +325,8 @@ const ChatInterface = ({ conversation, onClose }) => {
           </div>
         </div>
         <div className="chat-actions">
-          <button className="action-button close-button" onClick={onClose} title="Fechar conversa">
-            ×
+          <button className="action-button close-button back-button" onClick={onClose} title="Voltar">
+            ←
           </button>
         </div>
       </div>

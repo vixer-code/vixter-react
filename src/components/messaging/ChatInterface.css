@@ -198,15 +198,15 @@
 }
 
 .action-button.close-button {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
-  color: #ff6b6b;
-  background: rgba(255, 107, 107, 0.1);
+  color: var(--vixter-accent-primary);
+  background: rgba(0, 255, 202, 0.1);
 }
 
 .action-button.close-button:hover {
-  background: rgba(255, 107, 107, 0.2);
-  color: #ff5252;
+  background: rgba(0, 255, 202, 0.2);
+  color: var(--vixter-accent-primary);
   transform: scale(1.1);
 }
 

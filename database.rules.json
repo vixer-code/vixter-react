@@ -42,7 +42,7 @@
           ".read": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
           ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
           "$messageId": {
-            ".validate": "newData.hasChildren(['senderId', 'type', 'content', 'timestamp']) && (newData.child('senderId').val() == auth.uid || newData.child('senderId').val() == 'system')",
+            ".validate": "(newData.hasChildren(['senderId', 'type', 'content', 'timestamp']) && (newData.child('senderId').val() == auth.uid || newData.child('senderId').val() == 'system')) || (newData.hasChildren(['read', 'readAt', 'readBy']) && newData.child('read').isBoolean() && newData.child('readAt').isNumber() && newData.child('readBy').isString())",
             "read": {
               ".validate": "newData.isBoolean()",
               ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()"
