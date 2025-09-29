@@ -185,6 +185,9 @@
   color: #fff;
   text-decoration: none;
   transition: all 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .search-result-card:hover {
@@ -219,6 +222,7 @@
 .search-result-info {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .search-result-name {
@@ -314,12 +318,16 @@
   .search-result-card {
     padding: 12px;
     border-radius: 8px;
+    gap: 12px;
+    flex-direction: row;
+    align-items: flex-start;
   }
   
   .search-result-avatar,
   .search-result-icon {
     width: 45px;
     height: 45px;
+    flex-shrink: 0;
   }
   
   .search-result-icon {
@@ -327,21 +335,38 @@
     border-radius: 8px;
   }
   
+  .search-result-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  
   .search-result-name {
     font-size: 14px;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .search-result-username {
     font-size: 12px;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .search-result-bio {
     font-size: 12px;
     -webkit-line-clamp: 1;
+    margin-bottom: 6px;
+    line-height: 1.3;
   }
   
   .search-result-price {
     font-size: 12px;
+    font-weight: 600;
   }
   
   .search-section {
@@ -407,32 +432,53 @@
   
   .search-result-card {
     padding: 10px;
+    gap: 10px;
+    align-items: flex-start;
   }
   
   .search-result-avatar,
   .search-result-icon {
     width: 40px;
     height: 40px;
+    flex-shrink: 0;
   }
   
   .search-result-icon {
     font-size: 16px;
   }
   
+  .search-result-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  
   .search-result-name {
     font-size: 13px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .search-result-username {
     font-size: 11px;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .search-result-bio {
     font-size: 11px;
+    -webkit-line-clamp: 1;
+    margin-bottom: 4px;
+    line-height: 1.2;
   }
   
   .search-result-price {
     font-size: 11px;
+    font-weight: 600;
   }
   
   .search-kyc-required {
@@ -483,32 +529,53 @@
   
   .search-result-card {
     padding: 8px;
+    gap: 8px;
+    align-items: flex-start;
   }
   
   .search-result-avatar,
   .search-result-icon {
     width: 35px;
     height: 35px;
+    flex-shrink: 0;
   }
   
   .search-result-icon {
     font-size: 14px;
   }
   
+  .search-result-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  
   .search-result-name {
     font-size: 12px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .search-result-username {
     font-size: 10px;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .search-result-bio {
     font-size: 10px;
+    -webkit-line-clamp: 1;
+    margin-bottom: 3px;
+    line-height: 1.2;
   }
   
   .search-result-price {
     font-size: 10px;
+    font-weight: 600;
   }
 }
 
@@ -564,4 +631,101 @@
 .kyc-link i {
   font-size: 1rem;
   margin: 0;
+}
+
+@media (max-width: 320px) {
+  .search-results-container {
+    padding: 2px;
+  }
+  
+  .search-results-header h1 {
+    font-size: 1.1rem;
+  }
+  
+  .search-input {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  
+  .search-button {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  
+  .tab-btn {
+    padding: 4px 6px;
+    font-size: 8px;
+  }
+  
+  .search-result-card {
+    padding: 6px;
+    gap: 6px;
+    align-items: flex-start;
+  }
+  
+  .search-result-avatar,
+  .search-result-icon {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+  }
+  
+  .search-result-icon {
+    font-size: 12px;
+  }
+  
+  .search-result-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  
+  .search-result-name {
+    font-size: 11px;
+    margin-bottom: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .search-result-username {
+    font-size: 9px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .search-result-bio {
+    font-size: 9px;
+    -webkit-line-clamp: 1;
+    margin-bottom: 2px;
+    line-height: 1.1;
+  }
+  
+  .search-result-price {
+    font-size: 9px;
+    font-weight: 600;
+  }
+  
+  .search-kyc-required {
+    padding: 20px 8px;
+  }
+  
+  .search-kyc-required i {
+    font-size: 2rem;
+  }
+  
+  .search-kyc-required h3 {
+    font-size: 1rem;
+  }
+  
+  .search-kyc-required p {
+    font-size: 0.8rem;
+  }
+  
+  .kyc-link {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
 }
