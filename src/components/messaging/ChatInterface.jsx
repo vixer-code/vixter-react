@@ -6,6 +6,7 @@ import { useNotification } from '../../contexts/NotificationContext';
 import { useUserStatus } from '../../hooks/useUserStatus';
 import { getProfileUrl } from '../../utils/profileUrls';
 import CachedImage from '../CachedImage';
+import AudioRecorder from '../AudioRecorder';
 import './ChatInterface.css';
 
 const ChatInterface = ({ conversation, onClose }) => {
@@ -29,6 +30,7 @@ const ChatInterface = ({ conversation, onClose }) => {
   // Removed old typing state - now using context
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
@@ -217,6 +219,26 @@ const ChatInterface = ({ conversation, onClose }) => {
     setMessageText(prev => prev + emoji);
     setShowEmojiPicker(false);
     textareaRef.current?.focus();
+  };
+
+  // Handle audio recording
+  const handleAudioRecorded = async (audioFile) => {
+    try {
+      await sendMediaMessage(audioFile, 'audio');
+      setShowAudioRecorder(false);
+    } catch (error) {
+      console.error('Error sending audio:', error);
+      showError('Erro ao enviar áudio');
+    }
+  };
+
+  const handleAudioCancel = () => {
+    setShowAudioRecorder(false);
+  };
+
+  const handleAudioButtonClick = () => {
+    setShowAudioRecorder(true);
+    setShowMediaOptions(false);
   };
 
   // Handle message input change with typing indicators
@@ -491,7 +513,7 @@ const ChatInterface = ({ conversation, onClose }) => {
           </button>
           <button
             className="media-option"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={handleAudioButtonClick}
           >
             🎵 Áudio
           </button>
@@ -529,6 +551,14 @@ const ChatInterface = ({ conversation, onClose }) => {
           onChange={handleFileUpload}
           style={{ display: 'none' }}
         />
+
+        {/* Audio Recorder */}
+        {showAudioRecorder && !isServiceCompleted && (
+          <AudioRecorder
+            onAudioRecorded={handleAudioRecorded}
+            onCancel={handleAudioCancel}
+          />
+        )}
       </div>
 
       {/* Completed Service Notice */}

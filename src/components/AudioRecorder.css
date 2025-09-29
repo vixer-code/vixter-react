@@ -1,406 +1,202 @@
-.audio-recorder-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.audio-recorder-modal {
-  background: var(--bg-primary);
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  width: 90vw;
-  max-width: 400px;
-  overflow: hidden;
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.audio-recorder-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* Audio Recorder Styles */
+.audio-recorder {
+  background: var(--vixter-bg-secondary);
+  border: 1px solid var(--vixter-border);
+  border-radius: 12px;
   padding: 20px;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  margin: 10px 0;
+  box-shadow: var(--vixter-shadow);
 }
 
-.audio-recorder-header h3 {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.close-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.close-button:hover {
-  background: var(--danger-color);
-  color: white;
-}
-
-.audio-recorder-body {
-  padding: 30px 20px;
-  text-align: center;
-}
-
-.error-message {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  color: var(--danger-color);
-  font-size: 14px;
-  padding: 16px;
-  background: rgba(220, 53, 69, 0.1);
-  border-radius: 8px;
-  margin-bottom: 20px;
-}
-
-.recording-visualizer {
+.recording-controls {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 20px;
+  gap: 15px;
 }
 
-.microphone-icon {
+.start-recording-btn {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+}
+
+.start-recording-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+}
+
+.recording-active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+}
+
+.stop-recording-btn {
+  background: linear-gradient(135deg, #ff4757, #ff3742);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+}
+
+.stop-recording-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
+}
+
+.recording-timer {
+  text-align: center;
+}
+
+.recording-indicator {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  font-size: 32px;
-  transition: all 0.3s ease;
-  margin-bottom: 20px;
+  gap: 10px;
+  color: var(--vixter-text-primary);
+  font-weight: 600;
 }
 
-.microphone-icon.recording {
-  background: var(--danger-color);
-  color: white;
-  animation: pulse 2s infinite;
+.pulse {
+  width: 12px;
+  height: 12px;
+  background: #ff4757;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
 }
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+    transform: scale(1);
+    opacity: 1;
   }
-  70% {
-    box-shadow: 0 0 0 20px rgba(220, 53, 69, 0);
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
-.sound-waves {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  height: 30px;
-}
-
-.wave {
-  width: 4px;
-  height: 20px;
-  background: var(--accent-color);
-  border-radius: 2px;
-  animation: wave 1.5s infinite ease-in-out;
-}
-
-.wave:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.wave:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-@keyframes wave {
-  0%, 40%, 100% {
-    transform: scaleY(0.4);
-  }
-  20% {
-    transform: scaleY(1);
-  }
-}
-
-.recording-timer {
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 20px;
-  font-variant-numeric: tabular-nums;
-}
-
-.max-time-warning {
-  font-size: 12px;
-  color: var(--warning-color);
-  font-weight: normal;
-}
-
-.playback-section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px;
-  background: var(--bg-secondary);
+.audio-recorder-preview {
+  background: var(--vixter-bg-secondary);
+  border: 1px solid var(--vixter-border);
   border-radius: 12px;
-  margin-bottom: 20px;
+  padding: 20px;
+  margin: 10px 0;
+  box-shadow: var(--vixter-shadow);
 }
 
-.playback-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
+.audio-preview {
+  margin-bottom: 15px;
 }
 
-.playback-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
+.audio-preview audio {
+  width: 100%;
   height: 40px;
-  border: none;
-  border-radius: 50%;
-  background: var(--accent-color);
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 16px;
+  border-radius: 8px;
 }
 
-.playback-button:hover {
-  background: var(--accent-hover);
-  transform: scale(1.05);
-}
-
-.playback-info {
-  display: flex;
-  flex-direction: column;
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-
-.delete-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  background: var(--danger-color);
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.recording-info {
+  text-align: center;
+  margin-top: 10px;
+  color: var(--vixter-text-secondary);
   font-size: 14px;
 }
 
-.delete-button:hover {
-  background: #c82333;
-  transform: scale(1.05);
-}
-
-.audio-recorder-footer {
-  padding: 20px;
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-}
-
-.recording-controls,
-.send-controls {
+.audio-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   justify-content: center;
 }
 
-.record-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
+.audio-recorder-error {
+  background: var(--vixter-bg-secondary);
+  border: 1px solid #ff6b6b;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 10px 0;
+  text-align: center;
+  color: var(--vixter-text-primary);
+}
+
+.audio-recorder-error p {
+  margin: 0 0 15px 0;
+  color: #ff6b6b;
+}
+
+.cancel-btn {
+  background: var(--vixter-bg-tertiary);
+  color: var(--vixter-text-secondary);
+  border: 1px solid var(--vixter-border);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: var(--vixter-hover);
+  color: var(--vixter-text-primary);
+}
+
+.send-btn {
+  background: linear-gradient(135deg, var(--vixter-accent-primary), #00d4aa);
+  color: white;
   border: none;
+  padding: 10px 20px;
   border-radius: 8px;
-  background: var(--danger-color);
-  color: white;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 16px;
-  font-weight: 500;
+  box-shadow: 0 2px 10px rgba(0, 255, 202, 0.3);
 }
 
-.record-button:hover:not(:disabled) {
-  background: #c82333;
+.send-btn:hover {
   transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 255, 202, 0.4);
 }
 
-.record-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.stop-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  background: var(--warning-color);
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.stop-button:hover {
-  background: #e0a800;
-  transform: translateY(-1px);
-}
-
-.cancel-button {
-  padding: 12px 24px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--bg-primary);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.cancel-button:hover {
-  background: var(--bg-hover);
-  border-color: var(--text-secondary);
-}
-
-.record-again-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  border: 1px solid var(--accent-color);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--accent-color);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.record-again-button:hover {
-  background: var(--accent-color);
-  color: white;
-  transform: translateY(-1px);
-}
-
-.send-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  background: var(--success-color);
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.send-button:hover {
-  background: #218838;
-  transform: translateY(-1px);
-}
-
-/* Responsive Design */
-@media (max-width: 480px) {
-  .audio-recorder-modal {
-    width: 95vw;
-    margin: 0 10px;
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .audio-recorder,
+  .audio-recorder-preview,
+  .audio-recorder-error {
+    padding: 15px;
+    margin: 8px 0;
   }
-
-  .audio-recorder-header {
-    padding: 16px;
+  
+  .start-recording-btn,
+  .stop-recording-btn {
+    padding: 12px 25px;
+    font-size: 14px;
   }
-
-  .audio-recorder-header h3 {
-    font-size: 16px;
-  }
-
-  .audio-recorder-body {
-    padding: 24px 16px;
-  }
-
-  .microphone-icon {
-    width: 70px;
-    height: 70px;
-    font-size: 28px;
-  }
-
-  .recording-timer {
-    font-size: 20px;
-  }
-
-  .recording-controls,
-  .send-controls {
+  
+  .audio-actions {
     flex-direction: column;
   }
-
-  .record-button,
-  .stop-button,
-  .cancel-button,
-  .record-again-button,
-  .send-button {
+  
+  .cancel-btn,
+  .send-btn {
     width: 100%;
-    justify-content: center;
-  }
-
-  .audio-recorder-footer {
-    padding: 16px;
+    padding: 12px;
   }
 }
