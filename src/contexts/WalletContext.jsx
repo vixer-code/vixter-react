@@ -149,6 +149,7 @@ export const WalletProvider = ({ children }) => {
     if (!currentUser) return;
 
     try {
+      console.log('🔍 Loading transactions for user:', currentUser.uid);
       const transactionsRef = collection(db, 'transactions');
       const q = query(
         transactionsRef,
@@ -158,9 +159,23 @@ export const WalletProvider = ({ children }) => {
       );
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
+        console.log('📊 Transaction snapshot received:', {
+          size: snapshot.size,
+          empty: snapshot.empty,
+          hasPendingWrites: snapshot.metadata.hasPendingWrites
+        });
+        
         const transactionsList = [];
         snapshot.forEach((doc) => {
           const data = doc.data();
+          console.log('📄 Transaction document:', {
+            id: doc.id,
+            userId: data.userId,
+            type: data.type,
+            createdAt: data.createdAt,
+            amounts: data.amounts
+          });
+          
           const transaction = {
             id: doc.id,
             ...data,
@@ -168,7 +183,12 @@ export const WalletProvider = ({ children }) => {
           };
           transactionsList.push(transaction);
         });
+        
+        console.log('✅ Total transactions loaded:', transactionsList.length);
         setTransactions(transactionsList);
+      }, (error) => {
+        console.error('❌ Transaction listener error:', error);
+        showError('Erro ao carregar transações.', 'Erro');
       });
       
       return unsubscribe;
@@ -465,6 +485,18 @@ export const WalletProvider = ({ children }) => {
 
   // Filter transactions
   const filterTransactions = useCallback((filters) => {
+    console.log('🔍 Filtering transactions:', {
+      totalTransactions: transactions.length,
+      filters,
+      transactions: transactions.map(t => ({
+        id: t.id,
+        type: t.type,
+        userId: t.userId,
+        timestamp: t.timestamp,
+        amounts: t.amounts
+      }))
+    });
+    
     const filtered = transactions.filter(transaction => {
       let matches = true;
 
@@ -516,6 +548,17 @@ export const WalletProvider = ({ children }) => {
       }
 
       return matches;
+    });
+    
+    console.log('✅ Filtered result:', {
+      filteredCount: filtered.length,
+      filtered: filtered.map(t => ({
+        id: t.id,
+        type: t.type,
+        userId: t.userId,
+        timestamp: t.timestamp,
+        amounts: t.amounts
+      }))
     });
     
     return filtered;

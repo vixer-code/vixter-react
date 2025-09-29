@@ -194,7 +194,30 @@ const Wallet = () => {
 
 
   const applyFilters = () => {
+    console.log('🔍 Applying filters:', {
+      filters,
+      totalTransactions: transactions.length,
+      transactions: transactions.map(t => ({
+        id: t.id,
+        type: t.type,
+        userId: t.userId,
+        timestamp: t.timestamp,
+        amounts: t.amounts
+      }))
+    });
+    
     const filtered = filterTransactions(filters);
+    console.log('✅ Filtered transactions:', {
+      filteredCount: filtered.length,
+      filtered: filtered.map(t => ({
+        id: t.id,
+        type: t.type,
+        userId: t.userId,
+        timestamp: t.timestamp,
+        amounts: t.amounts
+      }))
+    });
+    
     setFilteredTransactions(filtered);
   };
 
