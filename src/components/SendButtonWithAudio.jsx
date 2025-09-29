@@ -154,7 +154,7 @@ const SendButtonWithAudio = ({
     if (showPreview) return '📤';
     if (isRecording) return '⏹️';
     if (messageText.trim()) return '➤';
-    return <img src="/images/mic.png" alt="Gravar áudio" style={{ width: '16px', height: '16px' }} />;
+    return <img src="/images/mic.png" alt="Gravar áudio" style={{ width: '20px', height: '20px' }} />;
   };
 
   const getButtonTitle = () => {

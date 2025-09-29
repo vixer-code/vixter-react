@@ -447,7 +447,7 @@ const ChatInterface = ({ conversation, onClose }) => {
             title="Anexar arquivo"
             disabled={isServiceCompleted}
           >
-            📎
+            <img src="/images/clip.png" alt="Anexar arquivo" style={{ width: '16px', height: '16px' }} />
           </button>
           <button
             type="button"
@@ -456,7 +456,7 @@ const ChatInterface = ({ conversation, onClose }) => {
             title="Emojis"
             disabled={isServiceCompleted}
           >
-            😀
+            <img src="/images/smiling-face.png" alt="Emojis" style={{ width: '16px', height: '16px' }} />
           </button>
         </div>
         
