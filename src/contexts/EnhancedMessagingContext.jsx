@@ -133,9 +133,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
             
             console.log(`👤 Status update for ${userId.slice(0, 8)}:`, {
               dbStatus: statusData.state,
-              lastChanged: lastChangedTime,
-              timeSinceChange: lastChangedTime ? (now - lastChangedTime) / 1000 : 'unknown',
-              isRecentActivity,
               actualStatus
             });
             
@@ -144,7 +141,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
               [userId]: {
                 ...prev[userId],
                 status: actualStatus,
-                lastSeen: lastChangedTime
+                lastSeen: statusData.last_changed
               }
             };
           });
