@@ -382,6 +382,13 @@ const Header = () => {
 
           {/* Mobile Header Actions */}
           <div className="mobile-header-actions">
+            {/* Mobile Notification Icon */}
+            {currentUser && (
+              <div className="mobile-notification-container">
+                <NotificationCenter />
+              </div>
+            )}
+            
             {/* Mobile Menu Button */}
             <button 
               className={`mobile-menu-btn ${mobileMenuOpen ? 'menu-open' : ''}`} 

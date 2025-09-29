@@ -359,6 +359,87 @@
   }
 }
 
+/* Mobile notification container styles */
+.mobile-notification-container .notification-center {
+  position: relative;
+  display: inline-block;
+}
+
+.mobile-notification-container .notification-toggle {
+  background: rgba(15, 15, 26, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px;
+  color: #FCFCFC;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.mobile-notification-container .notification-toggle:hover {
+  background: rgba(0, 255, 202, 0.1);
+  border-color: #00FFCA;
+  color: #00FFCA;
+  transform: scale(1.05);
+}
+
+.mobile-notification-container .notification-toggle:active {
+  transform: scale(0.95);
+}
+
+.mobile-notification-container .notification-count {
+  background: linear-gradient(135deg, #FF2E63, #FF6B9D);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #0F0F1A;
+  box-shadow: 0 0 8px rgba(255, 46, 99, 0.6);
+  animation: pulse-badge 2s infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Smaller mobile screens */
+@media (max-width: 576px) {
+  .mobile-notification-container .notification-toggle {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 1rem;
+    padding: 6px;
+  }
+  
+  .mobile-notification-container .notification-count {
+    font-size: 0.6rem;
+    min-width: 14px;
+    height: 14px;
+    padding: 1px 4px;
+  }
+}
+
 /* Override for mobile nav header content */
 .mobile-nav-header-content .notification-center {
   position: relative;

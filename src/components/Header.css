@@ -124,6 +124,12 @@ nav {
   z-index: 150;
 }
 
+/* Mobile notification container */
+.mobile-notification-container {
+  display: flex;
+  align-items: center;
+}
+
 /* Mobile menu button */
 .mobile-menu-btn {
   display: none;
@@ -915,6 +921,10 @@ header .vp-balance .vp-icon svg,
     display: flex !important;
   }
 
+  .mobile-notification-container {
+    display: flex !important;
+  }
+
   .mobile-menu-btn {
     display: flex !important;
     font-size: 1.2rem;
@@ -1033,6 +1043,10 @@ header .vp-balance .vp-icon svg,
   .mobile-header-actions {
     right: 10px;
     top: 10px;
+  }
+
+  .mobile-notification-container {
+    display: flex !important;
   }
 
   .mobile-menu-btn {
