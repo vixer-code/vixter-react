@@ -652,6 +652,149 @@
   transform: translateY(-2px);
 }
 
+/* Enhanced Modal Responsiveness */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 8px;
+    align-items: flex-start;
+    padding-top: 20px;
+  }
+  
+  .modal-content {
+    margin: 0;
+    padding: 20px;
+    width: calc(100% - 16px);
+    max-height: calc(100vh - 40px);
+    border-radius: 8px;
+  }
+  
+  .modal-content h3 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+  }
+  
+  .modal-actions button {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.95rem;
+    border-radius: 6px;
+  }
+  
+  /* Purchase confirmation specific */
+  .purchase-confirmation {
+    margin-bottom: 15px;
+  }
+  
+  .pack-summary {
+    margin-bottom: 15px;
+    padding-bottom: 12px;
+  }
+  
+  .pack-summary h4 {
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+  }
+  
+  .pack-summary p {
+    font-size: 0.9rem;
+  }
+  
+  .price-breakdown {
+    gap: 8px;
+  }
+  
+  .price-item {
+    padding: 6px 0;
+    font-size: 0.9rem;
+  }
+  
+  .price-total {
+    font-size: 1rem;
+    padding: 10px 0;
+  }
+  
+  .purchase-terms {
+    margin-top: 12px;
+    padding: 10px;
+  }
+  
+  .purchase-terms p {
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 4px;
+    padding-top: 10px;
+  }
+  
+  .modal-content {
+    padding: 15px;
+    width: calc(100% - 8px);
+    max-height: calc(100vh - 20px);
+  }
+  
+  .modal-content h3 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+  
+  .modal-actions button {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+  
+  .pack-summary h4 {
+    font-size: 1rem;
+  }
+  
+  .price-breakdown {
+    font-size: 0.85rem;
+  }
+  
+  .purchase-terms p {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .modal-overlay {
+    padding: 2px;
+    padding-top: 5px;
+  }
+  
+  .modal-content {
+    padding: 12px;
+    width: calc(100% - 4px);
+    max-height: calc(100vh - 10px);
+  }
+  
+  .modal-content h3 {
+    font-size: 1rem;
+  }
+  
+  .modal-actions button {
+    padding: 8px;
+    font-size: 0.85rem;
+  }
+  
+  .pack-summary h4 {
+    font-size: 0.95rem;
+  }
+  
+  .price-breakdown {
+    font-size: 0.8rem;
+  }
+}
+
 /* Mobile Responsiveness - Improved */
 @media (max-width: 1024px) {
   .pack-detail-content {
@@ -667,34 +810,65 @@
 
 @media (max-width: 768px) {
   .pack-detail-container {
-    padding: 10px;
+    padding: 8px;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
+  .pack-detail-content {
+    gap: 15px;
   }
   
   .pack-main {
-    padding: 15px;
+    padding: 12px;
+    margin: 0;
+    border-radius: 8px;
   }
   
   .pack-header {
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
     align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+  }
+  
+  .pack-title-section {
+    width: 100%;
   }
   
   .pack-title-section h1 {
-    font-size: 1.6rem;
+    font-size: 1.4rem;
     line-height: 1.3;
+    word-wrap: break-word;
+    hyphens: auto;
   }
   
   .pack-meta {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 6px;
+    width: 100%;
   }
   
   .pack-categories {
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
+  }
+  
+  .pack-category {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+  
+  .pack-subcategory {
+    font-size: 9px;
+    padding: 3px 6px;
+  }
+  
+  .pack-rating {
+    font-size: 0.9rem;
   }
   
   .pack-price {
@@ -703,190 +877,52 @@
   }
   
   .price-amount {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
   }
   
   .image-gallery {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 8px;
+    margin: 0 -12px;
   }
   
   .pack-image {
-    height: 180px;
+    height: 150px;
+    border-radius: 6px;
   }
   
   .pack-description {
-    padding: 15px 0;
+    padding: 12px 0;
   }
   
   .pack-description h3 {
-    font-size: 1.2rem;
-    margin-bottom: 10px;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
   }
   
   .pack-description p {
-    font-size: 0.95rem;
-    line-height: 1.5;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    word-wrap: break-word;
   }
   
   .pack-showcase {
-    padding: 15px 0;
+    padding: 12px 0;
   }
   
   .pack-showcase h3 {
-    font-size: 1.2rem;
-    margin-bottom: 10px;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
   }
   
   .showcase-description {
-    font-size: 0.9rem;
-    margin-bottom: 15px;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
   }
   
   .showcase-section h4 {
-    font-size: 1.1rem;
-    margin-bottom: 10px;
-  }
-  
-  .showcase-grid {
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
-  }
-  
-  .showcase-media {
-    height: 120px;
-  }
-  
-  .r2-media-viewer.showcase-media {
-    height: 120px;
-  }
-  
-  .video-overlay {
-    width: 40px;
-    height: 40px;
-    font-size: 16px;
-  }
-  
-  .pack-provider {
-    padding: 15px 0;
-  }
-  
-  .pack-provider h3 {
-    font-size: 1.2rem;
-    margin-bottom: 15px;
-  }
-  
-  .provider-info {
-    flex-direction: column;
-    text-align: center;
-    gap: 15px;
-  }
-  
-  .provider-avatar {
-    width: 80px;
-    height: 80px;
-  }
-  
-  .provider-details h4 {
-    font-size: 1.1rem;
-  }
-  
-  .provider-details p {
-    font-size: 0.9rem;
-  }
-  
-  .provider-stats {
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  
-  .provider-stats span {
-    font-size: 0.9rem;
-  }
-  
-  /* Purchase card mobile improvements */
-  .purchase-card {
-    padding: 20px;
-    margin-bottom: 20px;
-  }
-  
-  .purchase-summary h3 {
-    font-size: 1.3rem;
-    margin-bottom: 15px;
-  }
-  
-  .price-breakdown {
-    gap: 10px;
-  }
-  
-  .price-item {
-    padding: 8px 0;
-    font-size: 0.95rem;
-  }
-  
-  .price-total {
-    font-size: 1.1rem;
-    padding: 12px 0;
-  }
-  
-  .btn-purchase {
-    width: 100%;
-    padding: 15px;
     font-size: 1rem;
-  }
-  
-  .btn-login {
-    width: 100%;
-    padding: 15px;
-    font-size: 1rem;
-  }
-  
-  .modal-content {
-    margin: 10px;
-    padding: 20px;
-    width: calc(100% - 20px);
-    max-height: 90vh;
-  }
-  
-  .modal-actions {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .modal-actions button {
-    width: 100%;
-    padding: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .pack-detail-container {
-    padding: 8px;
-  }
-  
-  .pack-main {
-    padding: 12px;
-  }
-  
-  .pack-title-section h1 {
-    font-size: 1.4rem;
-  }
-  
-  .price-amount {
-    font-size: 1.6rem;
-  }
-  
-  .pack-image {
-    height: 160px;
-  }
-  
-  .pack-showcase {
-    padding: 12px 0;
-  }
-  
-  .pack-showcase h3 {
-    font-size: 1.1rem;
+    margin-bottom: 8px;
   }
   
   .showcase-grid {
@@ -896,6 +932,7 @@
   
   .showcase-media {
     height: 100px;
+    border-radius: 4px;
   }
   
   .r2-media-viewer.showcase-media {
@@ -903,41 +940,247 @@
   }
   
   .video-overlay {
-    width: 35px;
-    height: 35px;
-    font-size: 14px;
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
   }
   
+  .pack-provider {
+    padding: 12px 0;
+  }
+  
+  .pack-provider h3 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+  
+  .provider-info {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+  
+  .provider-avatar {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .provider-details {
+    width: 100%;
+  }
+  
+  .provider-details h4 {
+    font-size: 1rem;
+    margin-bottom: 4px;
+  }
+  
+  .provider-details p {
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+  }
+  
+  .provider-stats {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .provider-stats span {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    background: #2a2a2a;
+    border-radius: 12px;
+  }
+  
+  /* Purchase card mobile improvements */
   .purchase-card {
     padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
   }
   
   .purchase-summary h3 {
     font-size: 1.2rem;
+    margin-bottom: 12px;
+  }
+  
+  .price-breakdown {
+    gap: 8px;
+  }
+  
+  .price-item {
+    padding: 6px 0;
+    font-size: 0.9rem;
+  }
+  
+  .price-total {
+    font-size: 1rem;
+    padding: 10px 0;
+  }
+  
+  .btn-purchase {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.95rem;
+    border-radius: 6px;
+  }
+  
+  .btn-login {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.95rem;
+    border-radius: 6px;
+  }
+  
+  .modal-content {
+    margin: 8px;
+    padding: 15px;
+    width: calc(100% - 16px);
+    max-height: 85vh;
+    border-radius: 8px;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .modal-actions button {
+    width: 100%;
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .pack-detail-container {
+    padding: 4px;
+  }
+  
+  .pack-main {
+    padding: 8px;
+  }
+  
+  .pack-title-section h1 {
+    font-size: 1.2rem;
+  }
+  
+  .price-amount {
+    font-size: 1.3rem;
+  }
+  
+  .pack-image {
+    height: 120px;
+  }
+  
+  .pack-showcase {
+    padding: 10px 0;
+  }
+  
+  .pack-showcase h3 {
+    font-size: 1rem;
+  }
+  
+  .showcase-grid {
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 6px;
+  }
+  
+  .showcase-media {
+    height: 80px;
+  }
+  
+  .r2-media-viewer.showcase-media {
+    height: 80px;
+  }
+  
+  .video-overlay {
+    width: 25px;
+    height: 25px;
+    font-size: 10px;
+  }
+  
+  .purchase-card {
+    padding: 12px;
+  }
+  
+  .purchase-summary h3 {
+    font-size: 1.1rem;
   }
   
   .btn-purchase,
   .btn-login {
-    padding: 12px;
-    font-size: 0.95rem;
+    padding: 10px;
+    font-size: 0.9rem;
   }
   
   .modal-content {
-    margin: 5px;
-    padding: 15px;
-    width: calc(100% - 10px);
+    margin: 4px;
+    padding: 12px;
+    width: calc(100% - 8px);
   }
   
   .modal-content h3 {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
   }
   
   .pack-summary h4 {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
   
   .price-breakdown {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .pack-detail-container {
+    padding: 2px;
+  }
+  
+  .pack-main {
+    padding: 6px;
+  }
+  
+  .pack-title-section h1 {
+    font-size: 1.1rem;
+  }
+  
+  .price-amount {
+    font-size: 1.2rem;
+  }
+  
+  .pack-image {
+    height: 100px;
+  }
+  
+  .showcase-grid {
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+    gap: 4px;
+  }
+  
+  .showcase-media {
+    height: 70px;
+  }
+  
+  .r2-media-viewer.showcase-media {
+    height: 70px;
+  }
+  
+  .video-overlay {
+    width: 20px;
+    height: 20px;
+    font-size: 8px;
+  }
+  
+  .purchase-card {
+    padding: 10px;
+  }
+  
+  .btn-purchase,
+  .btn-login {
+    padding: 8px;
+    font-size: 0.85rem;
   }
 }
 
