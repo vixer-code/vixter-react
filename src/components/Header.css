@@ -554,7 +554,7 @@ header .vp-balance .vp-icon svg,
   background: rgba(15, 15, 26, 0.98);
   backdrop-filter: blur(20px);
   z-index: 200;
-  transform: translateX(-100%);
+  transform: translateX(100%);
   transition: all 0.3s ease;
   visibility: hidden;
   opacity: 0;
