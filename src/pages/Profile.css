@@ -1650,7 +1650,7 @@
 }
 
 /* Services Tab */
-tab-content,
+.services-tab-content,
 .packs-tab-content,
 .subscriptions-tab-content {
   background: rgba(255, 255, 255, 0.05);
@@ -1680,6 +1680,7 @@ tab-content,
   margin: 0;
 }
 
+.services-grid,
 .packs-grid,
 .subscriptions-grid {
   display: grid;
