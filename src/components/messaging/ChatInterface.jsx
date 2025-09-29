@@ -342,9 +342,9 @@ const ChatInterface = ({ conversation, onClose }) => {
           </div>
         </div>
         <div className="chat-actions">
-          <button className="action-button close-button back-button" onClick={onClose} title="Voltar">
-            ←
-          </button>
+        <button className="action-button close-button back-button" onClick={onClose} title="Voltar">
+          ⵦ
+        </button>
         </div>
       </div>
 
@@ -399,11 +399,29 @@ const ChatInterface = ({ conversation, onClose }) => {
                   )}
                   
                   {message.type === 'audio' && (
-                    <div className="message-media">
-                      <audio controls>
-                        <source src={message.mediaUrl} type="audio/mpeg" />
-                        Seu navegador não suporta áudio.
-                      </audio>
+                    <div className="message-audio">
+                      <div className="audio-player-container">
+                        <audio controls preload="metadata">
+                          <source src={message.mediaUrl} type="audio/webm" />
+                          <source src={message.mediaUrl} type="audio/mpeg" />
+                          <source src={message.mediaUrl} type="audio/wav" />
+                          <source src={message.mediaUrl} type="audio/mp3" />
+                          Seu navegador não suporta o elemento de áudio.
+                        </audio>
+                        <div className="audio-info">
+                          <div className="audio-icon">🎵</div>
+                          <div className="audio-details">
+                            <div className="audio-name">
+                              {message.mediaInfo?.name || 'Áudio'}
+                            </div>
+                            {message.mediaInfo?.size && (
+                              <div className="audio-size">
+                                {(message.mediaInfo.size / 1024).toFixed(1)} KB
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                       {message.content && (
                         <div className="message-caption">{message.content}</div>
                       )}
