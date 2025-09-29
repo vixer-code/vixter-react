@@ -962,25 +962,20 @@ async function confirmServiceDeliveryInternal(buyerId, orderId) {
     });
   }
 
-  // Create completion transaction
-  const completionTransactionRef = db.collection('transactions').doc();
-  batch.set(completionTransactionRef, {
-    id: completionTransactionRef.id,
-    userId: order.sellerId,
-    type: 'SERVICE_SALE_COMPLETED',
-    amounts: {
-      vc: order.vcAmount
-    },
-    metadata: {
-      description: `Venda de serviço concluída: ${order.metadata.serviceName || 'Serviço'}`,
-      orderId: orderId,
-      serviceId: order.serviceId,
-      buyerId: order.buyerId,
-      vpAmount: order.vpAmount
-    },
-    status: 'COMPLETED',
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    timestamp: admin.firestore.FieldValue.serverTimestamp()
+  // Update seller pending transaction to completed (similar to PIX system)
+  const sellerTransactionsRef = db.collection('transactions').where('metadata.orderId', '==', orderId).where('userId', '==', order.sellerId);
+  const sellerTransactionsSnap = await sellerTransactionsRef.get();
+  
+  sellerTransactionsSnap.docs.forEach(doc => {
+    batch.update(doc.ref, {
+      status: 'COMPLETED',
+      type: 'SERVICE_SALE_COMPLETED',
+      metadata: {
+        ...doc.data().metadata,
+        description: `Venda de serviço concluída: ${order.metadata.serviceName || 'Serviço'}`
+      },
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
   });
 
   await batch.commit();
@@ -1069,26 +1064,21 @@ async function autoCompleteDeliveredServicesInternal() {
             });
           }
           
-          // Create completion transaction
-          const completionTransactionRef = db.collection('transactions').doc();
-          batch.set(completionTransactionRef, {
-            id: completionTransactionRef.id,
-            userId: serviceData.sellerId,
-            type: 'SERVICE_SALE_AUTO_COMPLETED',
-            amounts: {
-              vc: serviceData.vcAmount
-            },
-            metadata: {
-              description: `Serviço auto-concluído após 24h: ${serviceData.metadata?.serviceName || 'Serviço'}`,
-              orderId: serviceId,
-              serviceId: serviceData.serviceId,
-              buyerId: serviceData.buyerId,
-              vpAmount: serviceData.vpAmount,
-              autoCompleted: true
-            },
-            status: 'COMPLETED',
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            timestamp: admin.firestore.FieldValue.serverTimestamp()
+          // Update seller pending transaction to auto-completed (similar to PIX system)
+          const sellerTransactionsRef = db.collection('transactions').where('metadata.orderId', '==', serviceId).where('userId', '==', serviceData.sellerId);
+          const sellerTransactionsSnap = await sellerTransactionsRef.get();
+          
+          sellerTransactionsSnap.docs.forEach(doc => {
+            batch.update(doc.ref, {
+              status: 'COMPLETED',
+              type: 'SERVICE_SALE_AUTO_COMPLETED',
+              metadata: {
+                ...doc.data().metadata,
+                description: `Serviço auto-concluído após 24h: ${serviceData.metadata?.serviceName || 'Serviço'}`,
+                autoCompleted: true
+              },
+              updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
           });
           
           processedCount++;
@@ -1328,36 +1318,20 @@ async function acceptPackOrderInternal(sellerId, orderId) {
     });
   }
 
-  // Update seller pending transaction to completed
+  // Update seller pending transaction to completed (similar to PIX system)
   const sellerTransactionsRef = db.collection('transactions').where('metadata.orderId', '==', orderId).where('userId', '==', sellerId);
   const sellerTransactionsSnap = await sellerTransactionsRef.get();
   
   sellerTransactionsSnap.docs.forEach(doc => {
     batch.update(doc.ref, {
       status: 'COMPLETED',
-      type: 'PACK_SALE_COMPLETED'
+      type: 'PACK_SALE_COMPLETED',
+      metadata: {
+        ...doc.data().metadata,
+        description: `Venda de pack concluída: ${order.metadata.packName || 'Pack'}`
+      },
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
-  });
-
-  // Create completion transaction
-  const completionTransactionRef = db.collection('transactions').doc();
-  batch.set(completionTransactionRef, {
-    id: completionTransactionRef.id,
-    userId: order.sellerId,
-    type: 'PACK_SALE_COMPLETED',
-    amounts: {
-      vc: order.vcAmount
-    },
-    metadata: {
-      description: `Venda de pack concluída: ${order.metadata.packName || 'Pack'}`,
-      orderId: orderId,
-      packId: order.packId,
-      buyerId: order.buyerId,
-      vpAmount: order.vpAmount
-    },
-    status: 'COMPLETED',
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    timestamp: admin.firestore.FieldValue.serverTimestamp()
   });
 
   await batch.commit();

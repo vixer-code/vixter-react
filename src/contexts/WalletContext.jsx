@@ -485,7 +485,7 @@ export const WalletProvider = ({ children }) => {
         } else if (transaction.type === 'BONUS') {
           transactionType = 'earned';
         } else if (transaction.type === 'BUY_VP') {
-          transactionType = 'purchase';
+          transactionType = 'incoming'; // Treat BUY_VP as incoming since it's adding money to account
         }
         
         matches = matches && (transactionType === filters.type);

@@ -181,7 +181,7 @@ const NotificationCenter = () => {
                           ? 'Verifique seu e-mail para completar o cadastro'
                           : getNotificationMessage(
                               notification.action, 
-                              notification.actorName || notification.senderName,
+                              notification.actorName || notification.senderName || notification.buyerName || notification.sellerName,
                               notification.commentContent
                             )
                         }

@@ -1,4 +1,4 @@
-import { ref, push, set } from 'firebase/database';
+import { ref, push, set, get as rtdbGet } from 'firebase/database';
 import { doc, getDoc } from 'firebase/firestore';
 import { database, db } from '../../config/firebase';
 
@@ -8,17 +8,40 @@ import { database, db } from '../../config/firebase';
  * @returns {Promise<string>} Username or fallback name
  */
 const getUserUsername = async (userId) => {
-  if (!userId) return 'Usuário';
+  if (!userId) {
+    console.warn('getUserUsername: userId is null or undefined');
+    return 'Usuário';
+  }
   
   try {
+    // Try Firestore first
     const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
     
     if (userSnap.exists()) {
       const userData = userSnap.data();
-      return userData.username || userData.displayName || userData.name || 'Usuário';
+      const username = userData.username || userData.displayName || userData.name || 'Usuário';
+      console.log(`getUserUsername: Found user ${userId} in Firestore with username: ${username}`);
+      return username;
     }
     
+    // Fallback to Realtime Database
+    if (database) {
+      try {
+        const rtdbUserRef = ref(database, `users/${userId}`);
+        const rtdbSnap = await rtdbGet(rtdbUserRef);
+        if (rtdbSnap.exists()) {
+          const rtdbUserData = rtdbSnap.val();
+          const username = rtdbUserData.username || rtdbUserData.displayName || rtdbUserData.name || 'Usuário';
+          console.log(`getUserUsername: Found user ${userId} in RTDB with username: ${username}`);
+          return username;
+        }
+      } catch (rtdbError) {
+        console.warn('Error accessing Realtime Database:', rtdbError);
+      }
+    }
+    
+    console.warn(`getUserUsername: User ${userId} not found in Firestore or RTDB`);
     return 'Usuário';
   } catch (error) {
     console.error('Error getting user username:', error);
@@ -187,8 +210,11 @@ export const sendServicePurchaseNotification = async (
     // Don't send notification to self
     if (sellerId === buyerId) return;
 
+    console.log(`sendServicePurchaseNotification: sellerId=${sellerId}, buyerId=${buyerId}, buyerName=${buyerName}`);
+
     // Get buyer's username from Firestore
     const buyerUsername = await getUserUsername(buyerId);
+    console.log(`sendServicePurchaseNotification: Retrieved buyerUsername=${buyerUsername}`);
 
     const notificationData = {
       type: 'service_purchase',
@@ -201,6 +227,8 @@ export const sendServicePurchaseNotification = async (
       timestamp: Date.now(),
       read: false
     };
+
+    console.log('sendServicePurchaseNotification: notificationData=', notificationData);
 
     const notificationsRef = ref(database, `notifications/${sellerId}`);
     await push(notificationsRef, notificationData);
@@ -232,8 +260,11 @@ export const sendPackPurchaseNotification = async (
     // Don't send notification to self
     if (sellerId === buyerId) return;
 
+    console.log(`sendPackPurchaseNotification: sellerId=${sellerId}, buyerId=${buyerId}, buyerName=${buyerName}`);
+
     // Get buyer's username from Firestore
     const buyerUsername = await getUserUsername(buyerId);
+    console.log(`sendPackPurchaseNotification: Retrieved buyerUsername=${buyerUsername}`);
 
     const notificationData = {
       type: 'pack_purchase',
@@ -246,6 +277,8 @@ export const sendPackPurchaseNotification = async (
       timestamp: Date.now(),
       read: false
     };
+
+    console.log('sendPackPurchaseNotification: notificationData=', notificationData);
 
     const notificationsRef = ref(database, `notifications/${sellerId}`);
     await push(notificationsRef, notificationData);

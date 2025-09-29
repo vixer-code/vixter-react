@@ -212,7 +212,20 @@ const Wallet = () => {
   const getTransactionAmountDisplay = (transaction) => {
     if (!transaction.amounts) return { amount: 0, currency: 'VP' };
 
-    // Get the first currency and amount from transaction.amounts
+    // For BUY_VP transactions, prioritize VP amount but also include VBP
+    if (transaction.type === 'BUY_VP') {
+      const vpAmount = transaction.amounts.vp || 0;
+      const vbpAmount = transaction.amounts.vbp || 0;
+      
+      return {
+        amount: Math.abs(vpAmount),
+        currency: 'VP',
+        isPositive: vpAmount >= 0,
+        vbpAmount: vbpAmount // Include VBP amount for display
+      };
+    }
+
+    // Get the first currency and amount from transaction.amounts for other transactions
     const entries = Object.entries(transaction.amounts);
     if (entries.length === 0) return { amount: 0, currency: 'VP' };
 
@@ -231,14 +244,14 @@ const Wallet = () => {
     // Get the primary amount from transaction.amounts
     const amount = transaction.amounts ? Object.values(transaction.amounts)[0] : 0;
 
-    if (amount > 0 && !['BONUS', 'BUY_VP'].includes(transaction.type)) {
+    if (amount > 0 && transaction.type !== 'BONUS') {
       typeClass = 'incoming';
     } else if (amount < 0) {
       typeClass = 'outgoing';
     } else if (transaction.type === 'BONUS') {
       typeClass = 'earned';
     } else if (transaction.type === 'BUY_VP') {
-      typeClass = 'purchase';
+      typeClass = 'incoming'; // Treat BUY_VP as incoming (green) since it's adding money to account
     } else {
       typeClass = 'purchase';
     }
@@ -263,14 +276,14 @@ const Wallet = () => {
 
     // Determine transaction type
     let typeClass = '';
-    if (isPositive && !['BONUS', 'BUY_VP'].includes(transaction.type)) {
+    if (isPositive && transaction.type !== 'BONUS') {
       typeClass = 'incoming';
     } else if (!isPositive) {
       typeClass = 'outgoing';
     } else if (transaction.type === 'BONUS') {
       typeClass = 'earned';
     } else if (transaction.type === 'BUY_VP') {
-      typeClass = 'purchase';
+      typeClass = 'incoming'; // Treat BUY_VP as incoming (green) since it's adding money to account
     } else {
       typeClass = 'purchase';
     }
@@ -961,8 +974,15 @@ const Wallet = () => {
                       style={{ color: getTransactionColor(transaction) }}
                     >
                       {(() => {
-                        const { amount, currency, isPositive } = getTransactionAmountDisplay(transaction);
-                        return `${isPositive ? '+' : '-'}${formatCurrency(amount)} ${currency}`;
+                        const { amount, currency, isPositive, vbpAmount } = getTransactionAmountDisplay(transaction);
+                        let displayText = `${isPositive ? '+' : '-'}${formatCurrency(amount)} ${currency}`;
+                        
+                        // Add VBP amount if available (for BUY_VP transactions)
+                        if (vbpAmount && vbpAmount > 0) {
+                          displayText += ` +${formatCurrency(vbpAmount)} VBP`;
+                        }
+                        
+                        return displayText;
                       })()}
                     </span>
                   </div>
