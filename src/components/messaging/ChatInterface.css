@@ -319,7 +319,7 @@
 
 /* Audio styles - usando apenas estilos básicos */
 .message-media audio {
-  width: 100%;
+  width: revert;
   max-width: 300px;
   height: 40px;
   border-radius: 8px;

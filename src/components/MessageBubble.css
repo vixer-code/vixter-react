@@ -121,11 +121,6 @@
   border-radius: 12px;
 }
 
-.message-audio {
-  width: 250px;
-  height: 40px;
-}
-
 .audio-player {
   display: flex;
   flex-direction: column;
@@ -318,10 +313,6 @@
     max-width: 250px;
   }
   
-  .message-audio {
-    width: 200px;
-  }
-  
   .file-preview {
     min-width: 200px;
   }
@@ -343,9 +334,5 @@
   .message-image,
   .message-video {
     max-width: 200px;
-  }
-  
-  .message-audio {
-    width: 180px;
   }
 }
