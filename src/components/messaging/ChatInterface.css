@@ -352,6 +352,32 @@
   border-radius: 50%;
 }
 
+/* Esconder controles de volume */
+.message-audio audio::-webkit-media-controls-volume-slider {
+  display: none !important;
+}
+
+.message-audio audio::-webkit-media-controls-mute-button {
+  display: none !important;
+}
+
+.message-audio audio::-webkit-media-controls-volume-control-container {
+  display: none !important;
+}
+
+/* Para Firefox */
+.message-audio audio::-moz-media-controls-volume-slider {
+  display: none !important;
+}
+
+.message-audio audio::-moz-media-controls-mute-button {
+  display: none !important;
+}
+
+.message-audio audio::-moz-media-controls-volume-control-container {
+  display: none !important;
+}
+
 .audio-info {
   display: flex;
   align-items: center;

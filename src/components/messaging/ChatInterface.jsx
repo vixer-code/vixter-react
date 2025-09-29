@@ -401,7 +401,13 @@ const ChatInterface = ({ conversation, onClose }) => {
                   {message.type === 'audio' && (
                     <div className="message-audio">
                       <div className="audio-player-container">
-                        <audio controls preload="metadata">
+                        <audio 
+                          controls 
+                          preload="metadata"
+                          onLoadedMetadata={(e) => {
+                            e.target.volume = 1.0; // Volume padrão em 100%
+                          }}
+                        >
                           <source src={message.mediaUrl} type="audio/webm" />
                           <source src={message.mediaUrl} type="audio/mpeg" />
                           <source src={message.mediaUrl} type="audio/wav" />
