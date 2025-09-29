@@ -445,7 +445,7 @@
 .input-actions {
   display: flex;
   gap: 4px;
-  padding-bottom: 15px;
+  padding-bottom: 10px;
 }
 
 .input-wrapper {
