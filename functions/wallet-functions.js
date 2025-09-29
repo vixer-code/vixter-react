@@ -1005,6 +1005,125 @@ async function updateServiceOrderInternal(orderId, updates) {
   return { success: true };
 }
 
+// Auto-complete delivered services after 24 hours
+async function autoCompleteDeliveredServicesInternal() {
+  try {
+    logger.info('🔍 Checking for services delivered more than 24 hours ago...');
+    
+    // Calculate timestamp for 24 hours ago
+    const twentyFourHoursAgo = new Date();
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+    
+    // Query for services with status DELIVERED and updatedAt older than 24 hours
+    const deliveredServicesQuery = db.collection('serviceOrders')
+      .where('status', '==', 'DELIVERED')
+      .where('timestamps.updatedAt', '<', admin.firestore.Timestamp.fromDate(twentyFourHoursAgo));
+    
+    const deliveredServicesSnapshot = await deliveredServicesQuery.get();
+    
+    if (deliveredServicesSnapshot.empty) {
+      logger.info('✅ No services found that need auto-completion');
+      return { success: true, processedCount: 0 };
+    }
+    
+    logger.info(`📦 Found ${deliveredServicesSnapshot.size} services to auto-complete`);
+    
+    let processedCount = 0;
+    const errors = [];
+    
+    // Process each service in batches to avoid timeout
+    const batchSize = 10;
+    const services = deliveredServicesSnapshot.docs;
+    
+    for (let i = 0; i < services.length; i += batchSize) {
+      const batch = db.batch();
+      const currentBatch = services.slice(i, i + batchSize);
+      
+      for (const serviceDoc of currentBatch) {
+        try {
+          const serviceData = serviceDoc.data();
+          const serviceId = serviceDoc.id;
+          
+          logger.info(`🔄 Auto-completing service: ${serviceId}`);
+          
+          // Update service status to AUTO_RELEASED
+          batch.update(serviceDoc.ref, {
+            status: 'AUTO_RELEASED',
+            paymentStatus: 'COMPLETED',
+            timestamps: {
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              autoCompletedAt: admin.firestore.FieldValue.serverTimestamp()
+            }
+          });
+          
+          // Get seller wallet and move VC from pending to available
+          const sellerWalletRef = db.collection('wallets').doc(serviceData.sellerId);
+          const sellerWalletSnap = await sellerWalletRef.get();
+          
+          if (sellerWalletSnap.exists) {
+            // Move VC from Pending to Available
+            batch.update(sellerWalletRef, {
+              vcPending: admin.firestore.FieldValue.increment(-serviceData.vcAmount),
+              vc: admin.firestore.FieldValue.increment(serviceData.vcAmount),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+          }
+          
+          // Create completion transaction
+          const completionTransactionRef = db.collection('transactions').doc();
+          batch.set(completionTransactionRef, {
+            id: completionTransactionRef.id,
+            userId: serviceData.sellerId,
+            type: 'SERVICE_SALE_AUTO_COMPLETED',
+            amounts: {
+              vc: serviceData.vcAmount
+            },
+            metadata: {
+              description: `Serviço auto-concluído após 24h: ${serviceData.metadata?.serviceName || 'Serviço'}`,
+              orderId: serviceId,
+              serviceId: serviceData.serviceId,
+              buyerId: serviceData.buyerId,
+              vpAmount: serviceData.vpAmount,
+              autoCompleted: true
+            },
+            status: 'COMPLETED',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            timestamp: admin.firestore.FieldValue.serverTimestamp()
+          });
+          
+          processedCount++;
+          
+        } catch (error) {
+          logger.error(`❌ Error processing service ${serviceDoc.id}:`, error);
+          errors.push({ serviceId: serviceDoc.id, error: error.message });
+        }
+      }
+      
+      // Commit the batch
+      try {
+        await batch.commit();
+        logger.info(`✅ Batch ${Math.floor(i/batchSize) + 1} committed successfully`);
+      } catch (error) {
+        logger.error(`❌ Error committing batch ${Math.floor(i/batchSize) + 1}:`, error);
+        errors.push({ batch: Math.floor(i/batchSize) + 1, error: error.message });
+      }
+    }
+    
+    logger.info(`✅ Auto-completion process finished. Processed: ${processedCount}, Errors: ${errors.length}`);
+    
+    return {
+      success: true,
+      processedCount,
+      errorCount: errors.length,
+      errors: errors.length > 0 ? errors : undefined
+    };
+    
+  } catch (error) {
+    logger.error('❌ Error in auto-complete delivered services:', error);
+    throw new HttpsError("internal", "Erro interno ao processar auto-conclusão de serviços");
+  }
+}
+
 // === PACK ORDER FUNCTIONS ===
 
 // Create pack order
@@ -2343,4 +2462,38 @@ export const onWithdrawalStatusChanged = onDocumentUpdated({
   }
 });
 
-logger.info('✅ Wallet functions loaded - Stripe preserved, watermarking removed, Vixtip processing added, withdrawal trigger added');
+/**
+ * Scheduled function to auto-complete delivered services (Cron Job)
+ * This function runs automatically every 2 hours to check for services that need auto-completion
+ */
+export const scheduledAutoCompleteServices = onRequest({
+  memory: "256MiB",
+  timeoutSeconds: 300,
+}, async (request, response) => {
+  try {
+    logger.info('⏰ Scheduled auto-completion of delivered services triggered (every 2 hours)...');
+    
+    const result = await autoCompleteDeliveredServicesInternal();
+    
+    logger.info(`✅ Scheduled auto-completion completed. Processed: ${result.processedCount}, Errors: ${result.errorCount || 0}`);
+    
+    response.status(200).json({
+      success: true,
+      message: `Scheduled auto-completion completed. Processed ${result.processedCount} services.`,
+      processedCount: result.processedCount,
+      errorCount: result.errorCount || 0,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    logger.error('❌ Error in scheduled auto-completion:', error);
+    
+    response.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'Erro interno ao processar auto-conclusão de serviços'
+    });
+  }
+});
+
+logger.info('✅ Wallet functions loaded - Stripe preserved, watermarking removed, Vixtip processing added, withdrawal trigger added, auto-completion functions added');

@@ -33,10 +33,11 @@ const ServicePackReviewModal = ({
   };
 
   const handleClose = () => {
-    onClose();
-    // Reset form
+    // Reset form first
     setRating(0);
     setComment('');
+    // Then close modal
+    onClose();
   };
 
   const renderStars = (currentRating, onStarClick) => {

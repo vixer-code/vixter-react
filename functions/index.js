@@ -20,6 +20,9 @@ import {
   // Vixtip Processing
   processVixtip,
   processPendingVixtips,
+
+  // Auto-completion of delivered services
+  scheduledAutoCompleteServices,
 } from './wallet-functions.js';
 
 import {
@@ -57,6 +60,9 @@ export {
   // Vixtip Processing
   processVixtip,
   processPendingVixtips,
+
+  // Auto-completion of delivered services
+  scheduledAutoCompleteServices,
 
   // KYC Management
   updateKycStatus,

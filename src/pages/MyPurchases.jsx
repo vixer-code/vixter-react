@@ -41,6 +41,7 @@ const MyPurchases = () => {
   const [canReviewMap, setCanReviewMap] = useState({});
   const [checkingPermissions, setCheckingPermissions] = useState(false);
   const [openingModal, setOpeningModal] = useState(false);
+  const [lastClickTime, setLastClickTime] = useState(0);
 
   // Redirect if not a client
   useEffect(() => {
@@ -308,16 +309,21 @@ const MyPurchases = () => {
       
       const canReviewPromises = allPurchases.map(async (purchase) => {
         if (purchase.status === 'CONFIRMED' || purchase.status === 'COMPLETED' || purchase.status === 'AUTO_RELEASED') {
-          // Check if the service/pack still exists
-          const itemExists = await checkItemExists(purchase);
-          if (!itemExists) {
-            console.log(`Item ${purchase.id} no longer exists, cannot review`);
+          try {
+            // Check if the service/pack still exists
+            const itemExists = await checkItemExists(purchase);
+            if (!itemExists) {
+              console.log(`Item ${purchase.id} no longer exists, cannot review`);
+              return { orderId: purchase.id, canReview: false };
+            }
+            
+            const canReview = await canReviewOrder(purchase.id, purchase.type);
+            console.log(`Purchase ${purchase.id} can review:`, canReview);
+            return { orderId: purchase.id, canReview };
+          } catch (error) {
+            console.error(`Error checking review permission for ${purchase.id}:`, error);
             return { orderId: purchase.id, canReview: false };
           }
-          
-          const canReview = await canReviewOrder(purchase.id, purchase.type);
-          console.log(`Purchase ${purchase.id} can review:`, canReview);
-          return { orderId: purchase.id, canReview };
         }
         return { orderId: purchase.id, canReview: false };
       });
@@ -484,10 +490,25 @@ const MyPurchases = () => {
   };
 
   const handleOpenServicePackReview = async (order) => {
+    const currentTime = Date.now();
+    
+    // Debounce: prevent clicks within 500ms of each other
+    if (currentTime - lastClickTime < 500) {
+      console.log('Click debounced, ignoring');
+      return;
+    }
+    
     console.log('Opening review modal for order:', order);
     console.log('Current canReviewMap:', canReviewMap);
     console.log('Can review this order:', canReviewMap[order.id]);
     
+    // Prevent multiple clicks
+    if (openingModal || showServicePackReviewModal) {
+      console.log('Modal already opening or open, ignoring click');
+      return;
+    }
+    
+    setLastClickTime(currentTime);
     setOpeningModal(true);
     
     try {
@@ -503,9 +524,7 @@ const MyPurchases = () => {
       
       console.log('Pre-loaded order data:', orderData);
       
-      // Small delay to show loading state
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      // Set the modal data immediately without artificial delay
       setReviewingOrder(orderData);
       setShowServicePackReviewModal(true);
     } catch (error) {
@@ -519,6 +538,8 @@ const MyPurchases = () => {
   const handleCloseServicePackReview = () => {
     setShowServicePackReviewModal(false);
     setReviewingOrder(null);
+    setOpeningModal(false);
+    setLastClickTime(0);
   };
 
   const getFilteredPurchases = () => {
@@ -831,7 +852,7 @@ const MyPurchases = () => {
                               <button 
                                 className="btn-review-service"
                                 onClick={() => handleOpenServicePackReview(purchase)}
-                                disabled={checkingPermissions || openingModal}
+                                disabled={checkingPermissions || openingModal || showServicePackReviewModal}
                               >
                                 <i className={`fas ${openingModal ? 'fa-spinner fa-spin' : 'fa-star'}`}></i>
                                 {checkingPermissions ? 'Verificando...' : openingModal ? 'Abrindo...' : 'Avaliar Serviço'}
@@ -867,7 +888,7 @@ const MyPurchases = () => {
                           <button 
                             className="btn-review-service"
                             onClick={() => handleOpenServicePackReview(purchase)}
-                            disabled={checkingPermissions || openingModal}
+                            disabled={checkingPermissions || openingModal || showServicePackReviewModal}
                           >
                             <i className={`fas ${openingModal ? 'fa-spinner fa-spin' : 'fa-star'}`}></i>
                             {checkingPermissions ? 'Verificando...' : openingModal ? 'Abrindo...' : 'Avaliar Pack'}

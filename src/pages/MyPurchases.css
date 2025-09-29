@@ -427,10 +427,15 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   gap: 6px;
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .btn-review-service:hover {
@@ -444,12 +449,18 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+  pointer-events: none;
 }
 
 .btn-review-service:disabled:hover {
-  background: linear-gradient(135deg, #8A2BE2, #00FFCA);
+  background: linear-gradient(45deg, #8A2BE2, #00FFCA);
   transform: none;
   box-shadow: none;
+}
+
+.btn-review-service:active {
+  transform: translateY(0);
+  transition: transform 0.1s ease;
 }
 
 /* Modal Loading Overlay */
