@@ -1558,15 +1558,15 @@ const Profile = () => {
                       <div className="post-header">
                         <div className="post-author">
                           <img
-                            src={displayPost.authorPhotoURL || displayPost.authorPhoto || '/images/defpfp1.png'}
-                            alt={displayPost.authorName}
+                            src={post.authorPhotoURL || post.authorPhoto || '/images/defpfp1.png'}
+                            alt={post.authorName}
                             className="author-avatar"
                             onError={(e) => { e.target.src = '/images/defpfp1.png'; }}
                           />
                           <div className="author-info">
-                            <div className="author-name">{displayPost.authorName}</div>
+                            <div className="author-name">{post.authorName}</div>
                             <div className="post-time">
-                              {formatTimeAgo(displayPost.timestamp)}
+                              {formatTimeAgo(post.timestamp)}
                             </div>
                           </div>
                         </div>
