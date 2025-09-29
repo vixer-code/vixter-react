@@ -25,6 +25,7 @@ export const StatusProvider = ({ children }) => {
     if (!currentUser || !currentUser.uid) {
       setUserStatus('offline');
       setSelectedStatus('online');
+      setIsConnected(false);
       return;
     }
 
@@ -53,6 +54,14 @@ export const StatusProvider = ({ children }) => {
           last_changed: serverTimestamp()
         });
         console.log('✅ User status set to: online for user:', uid);
+      } else {
+        // If disconnected, set user as offline immediately
+        const userStatusRef = ref(database, `status/${uid}`);
+        set(userStatusRef, {
+          state: 'offline',
+          last_changed: serverTimestamp()
+        });
+        console.log('📴 User disconnected - set to offline:', uid);
       }
     });
 

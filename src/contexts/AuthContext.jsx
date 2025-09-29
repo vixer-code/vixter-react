@@ -127,13 +127,30 @@ export const AuthProvider = ({ children }) => {
   // Logout function
   const logout = useCallback(async () => {
     try {
+      // Update user status to offline before logout
+      if (currentUser?.uid) {
+        try {
+          const { ref, set, serverTimestamp } = await import('firebase/database');
+          const { database } = await import('../../config/firebase');
+          const userStatusRef = ref(database, `status/${currentUser.uid}`);
+          await set(userStatusRef, {
+            state: 'offline',
+            last_changed: serverTimestamp()
+          });
+          console.log('✅ User status set to offline before logout:', currentUser.uid);
+        } catch (statusError) {
+          console.error('❌ Error setting offline status during logout:', statusError);
+          // Don't throw here, continue with logout even if status update fails
+        }
+      }
+      
       await signOut(auth);
       setToken(null);
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
     }
-  }, []);
+  }, [currentUser]);
 
   // Reset password function with better error handling
   const resetPassword = useCallback(async (email) => {
