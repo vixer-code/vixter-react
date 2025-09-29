@@ -547,66 +547,242 @@
   
   .service-sidebar {
     position: static;
+    order: -1; /* Move sidebar to top on mobile */
   }
 }
 
 @media (max-width: 768px) {
   .service-detail-container {
-    padding: 15px;
+    padding: 10px;
   }
   
   .service-main {
-    padding: 20px;
+    padding: 15px;
   }
   
   .service-header {
     flex-direction: column;
-    gap: 20px;
+    gap: 15px;
+    align-items: flex-start;
   }
   
   .service-title-section h1 {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
+    line-height: 1.3;
+  }
+  
+  .service-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
   
   .service-price {
     text-align: left;
+    width: 100%;
   }
   
   .price-amount {
-    font-size: 2rem;
+    font-size: 1.8rem;
   }
   
   .image-gallery {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .service-image {
+    height: 180px;
+  }
+  
+  .service-description {
+    padding: 15px 0;
+  }
+  
+  .service-description h3 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
+  
+  .service-description p {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  
+  .service-features {
+    padding: 15px 0;
+  }
+  
+  .service-features h3 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
   }
   
   .feature-item {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
+    padding: 15px;
+  }
+  
+  .feature-info h4 {
+    font-size: 1rem;
+  }
+  
+  .feature-info p {
+    font-size: 0.9rem;
   }
   
   .feature-price {
     margin-right: 0;
     margin-bottom: 8px;
+    font-size: 1rem;
+  }
+  
+  .service-provider {
+    padding: 15px 0;
+  }
+  
+  .service-provider h3 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
   }
   
   .provider-info {
     flex-direction: column;
     text-align: center;
+    gap: 15px;
+  }
+  
+  .provider-avatar {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .provider-details h4 {
+    font-size: 1.1rem;
+  }
+  
+  .provider-details p {
+    font-size: 0.9rem;
   }
   
   .provider-stats {
     justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .provider-stats span {
+    font-size: 0.9rem;
+  }
+  
+  /* Purchase card mobile improvements */
+  .purchase-card {
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .purchase-summary h3 {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+  }
+  
+  .price-breakdown {
+    gap: 10px;
+  }
+  
+  .price-item {
+    padding: 8px 0;
+    font-size: 0.95rem;
+  }
+  
+  .price-total {
+    font-size: 1.1rem;
+    padding: 12px 0;
+  }
+  
+  .btn-purchase {
+    width: 100%;
+    padding: 15px;
+    font-size: 1rem;
+  }
+  
+  .btn-login {
+    width: 100%;
+    padding: 15px;
+    font-size: 1rem;
   }
   
   .modal-content {
-    margin: 20px;
+    margin: 10px;
     padding: 20px;
+    width: calc(100% - 20px);
+    max-height: 90vh;
   }
   
   .modal-actions {
     flex-direction: column;
+    gap: 10px;
+  }
+  
+  .modal-actions button {
+    width: 100%;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .service-detail-container {
+    padding: 8px;
+  }
+  
+  .service-main {
+    padding: 12px;
+  }
+  
+  .service-title-section h1 {
+    font-size: 1.4rem;
+  }
+  
+  .price-amount {
+    font-size: 1.6rem;
+  }
+  
+  .service-image {
+    height: 160px;
+  }
+  
+  .purchase-card {
+    padding: 15px;
+  }
+  
+  .purchase-summary h3 {
+    font-size: 1.2rem;
+  }
+  
+  .btn-purchase,
+  .btn-login {
+    padding: 12px;
+    font-size: 0.95rem;
+  }
+  
+  .modal-content {
+    margin: 5px;
+    padding: 15px;
+    width: calc(100% - 10px);
+  }
+  
+  .modal-content h3 {
+    font-size: 1.3rem;
+  }
+  
+  .service-summary h4 {
+    font-size: 1.1rem;
+  }
+  
+  .price-breakdown {
+    font-size: 0.9rem;
   }
 }
 
