@@ -1073,8 +1073,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
             // Send Firebase notification for persistence (since this only fires once)
             sendMessageNotification(
-              message.senderId, // recipientId (who should receive the notification)
-              currentUser.uid,  // senderId (who sent the message)
+              currentUser.uid,  // recipientId (who should receive the notification)
+              message.senderId, // senderId (who sent the message)
               message.senderName || 'Alguém',
               conversationId,
               message.content
