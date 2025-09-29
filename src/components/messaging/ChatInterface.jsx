@@ -399,35 +399,20 @@ const ChatInterface = ({ conversation, onClose }) => {
                   )}
                   
                   {message.type === 'audio' && (
-                    <div className="message-audio">
-                      <div className="audio-player-container">
-                        <audio 
-                          controls 
-                          preload="metadata"
-                          onLoadedMetadata={(e) => {
-                            e.target.volume = 1.0; // Volume padrão em 100%
-                          }}
-                        >
-                          <source src={message.mediaUrl} type="audio/webm" />
-                          <source src={message.mediaUrl} type="audio/mpeg" />
-                          <source src={message.mediaUrl} type="audio/wav" />
-                          <source src={message.mediaUrl} type="audio/mp3" />
-                          Seu navegador não suporta o elemento de áudio.
-                        </audio>
-                        <div className="audio-info">
-                          <div className="audio-icon">🎵</div>
-                          <div className="audio-details">
-                            <div className="audio-name">
-                              {message.mediaInfo?.name || 'Áudio'}
-                            </div>
-                            {message.mediaInfo?.size && (
-                              <div className="audio-size">
-                                {(message.mediaInfo.size / 1024).toFixed(1)} KB
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                    <div className="message-media">
+                      <audio 
+                        controls 
+                        preload="metadata"
+                        onLoadedMetadata={(e) => {
+                          e.target.volume = 1.0; // Volume padrão em 100%
+                        }}
+                      >
+                        <source src={message.mediaUrl} type="audio/webm" />
+                        <source src={message.mediaUrl} type="audio/mpeg" />
+                        <source src={message.mediaUrl} type="audio/wav" />
+                        <source src={message.mediaUrl} type="audio/mp3" />
+                        Seu navegador não suporta o elemento de áudio.
+                      </audio>
                       {message.content && (
                         <div className="message-caption">{message.content}</div>
                       )}

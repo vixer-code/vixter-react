@@ -317,97 +317,39 @@
   transform: scale(1.02);
 }
 
-/* Audio Message Styles */
-.message-audio {
-  margin: 8px 0;
-  background: var(--vixter-bg-secondary);
-  border: 1px solid var(--vixter-border);
-  border-radius: 12px;
-  padding: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.audio-player-container {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.message-audio audio {
+/* Audio styles - usando apenas estilos básicos */
+.message-media audio {
   width: 100%;
+  max-width: 300px;
   height: 40px;
   border-radius: 8px;
-  background: var(--vixter-bg-primary);
   outline: none;
 }
 
-.message-audio audio::-webkit-media-controls-panel {
-  background-color: var(--vixter-bg-primary);
-  border-radius: 8px;
-}
-
-.message-audio audio::-webkit-media-controls-play-button,
-.message-audio audio::-webkit-media-controls-pause-button {
-  background-color: var(--vixter-accent-primary);
-  border-radius: 50%;
-}
-
 /* Esconder controles de volume */
-.message-audio audio::-webkit-media-controls-volume-slider {
+.message-media audio::-webkit-media-controls-volume-slider {
   display: none !important;
 }
 
-.message-audio audio::-webkit-media-controls-mute-button {
+.message-media audio::-webkit-media-controls-mute-button {
   display: none !important;
 }
 
-.message-audio audio::-webkit-media-controls-volume-control-container {
+.message-media audio::-webkit-media-controls-volume-control-container {
   display: none !important;
 }
 
 /* Para Firefox */
-.message-audio audio::-moz-media-controls-volume-slider {
+.message-media audio::-moz-media-controls-volume-slider {
   display: none !important;
 }
 
-.message-audio audio::-moz-media-controls-mute-button {
+.message-media audio::-moz-media-controls-mute-button {
   display: none !important;
 }
 
-.message-audio audio::-moz-media-controls-volume-control-container {
+.message-media audio::-moz-media-controls-volume-control-container {
   display: none !important;
-}
-
-.audio-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-}
-
-.audio-icon {
-  font-size: 20px;
-  color: var(--vixter-accent-primary);
-}
-
-.audio-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.audio-name {
-  font-weight: 600;
-  color: var(--vixter-text-primary);
-  font-size: 14px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.audio-size {
-  font-size: 12px;
-  color: var(--vixter-text-secondary);
-  margin-top: 2px;
 }
 
 .message-caption {
@@ -1025,32 +967,4 @@ input.message-input {
   color: var(--vixter-accent-primary);
   margin-left: 4px;
   opacity: 0.8;
-}
-
-/* Audio message mobile styles */
-@media (max-width: 768px) {
-  .message-audio {
-    padding: 10px;
-  }
-  
-  .message-audio audio {
-    height: 35px;
-  }
-  
-  .audio-info {
-    gap: 8px;
-    padding: 6px 0;
-  }
-  
-  .audio-icon {
-    font-size: 18px;
-  }
-  
-  .audio-name {
-    font-size: 13px;
-  }
-  
-  .audio-size {
-    font-size: 11px;
-  }
 }
