@@ -35,7 +35,7 @@ const Wallet = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [filters, setFilters] = useState({
-    period: '7days'
+    period: 'all'
   });
   const [providerHistory, setProviderHistory] = useState([]); // full list
   const [providerHistoryLoading, setProviderHistoryLoading] = useState(false);

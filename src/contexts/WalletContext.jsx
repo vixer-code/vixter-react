@@ -161,11 +161,12 @@ export const WalletProvider = ({ children }) => {
         const transactionsList = [];
         snapshot.forEach((doc) => {
           const data = doc.data();
-          transactionsList.push({
+          const transaction = {
             id: doc.id,
             ...data,
             timestamp: data.createdAt ? data.createdAt.toMillis() : Date.now()
-          });
+          };
+          transactionsList.push(transaction);
         });
         setTransactions(transactionsList);
       });
@@ -464,7 +465,7 @@ export const WalletProvider = ({ children }) => {
 
   // Filter transactions
   const filterTransactions = useCallback((filters) => {
-    return transactions.filter(transaction => {
+    const filtered = transactions.filter(transaction => {
       let matches = true;
 
       // Filter by currency
@@ -516,6 +517,8 @@ export const WalletProvider = ({ children }) => {
 
       return matches;
     });
+    
+    return filtered;
   }, [transactions]);
 
 
