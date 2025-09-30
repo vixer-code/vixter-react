@@ -53,6 +53,14 @@ const PostCreator = ({
       await loadUserAttachments();
     }
     setShowAttachmentModal(true);
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const modal = document.querySelector('.modal-overlay');
+      if (modal) {
+        modal.setAttribute('tabindex', '-1');
+        modal.focus();
+      }
+    }, 50);
   };
 
   const loadUserAttachments = async () => {

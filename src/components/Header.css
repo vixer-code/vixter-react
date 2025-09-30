@@ -819,32 +819,34 @@ header .vp-balance .vp-icon svg,
 }
 
 .mobile-vp-balance-integrated .vp-icon {
-  height: 24px !important;
-  width: 24px !important;
-  min-height: 24px !important;
-  min-width: 24px !important;
-  max-height: 24px !important;
-  max-width: 24px !important;
+  height: 32px !important;
+  width: 32px !important;
+  min-height: 32px !important;
+  min-width: 32px !important;
+  max-height: 32px !important;
+  max-width: 32px !important;
 }
 
 .mobile-vp-balance-integrated .vp-icon svg {
   height: 100% !important;
   width: 100% !important;
-  min-height: 24px !important;
-  min-width: 24px !important;
-  max-height: 24px !important;
-  max-width: 24px !important;
+  min-height: 32px !important;
+  min-width: 32px !important;
+  max-height: 32px !important;
+  max-width: 32px !important;
 }
 
 .vp-amount-mobile {
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.7rem;
+  font-size: 1.1rem;
+  font-weight: 700;
   background: linear-gradient(to right, #B14AFF, #00FFCA);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   white-space: nowrap;
-  line-height: 1;
+  line-height: 1.1;
+  margin-left: 8px;
 }
 
 

@@ -1233,6 +1233,19 @@ const Profile = () => {
     }
   };
 
+  // [1] Novo estado para modal de visualização de imagem
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [modalImageUrl, setModalImageUrl] = useState('');
+  const [modalImageAlt, setModalImageAlt] = useState('');
+
+  // [2] Função para abrir modal de visualização
+  const handleOpenImageModal = (url, alt) => {
+    setModalImageUrl(url);
+    setModalImageAlt(alt);
+    setShowImageModal(true);
+  };
+  const handleCloseImageModal = () => setShowImageModal(false);
+
   return (
     <div className="profile-container">
       {/* Email Verification Banner - Only show for unverified emails */}
@@ -1263,20 +1276,21 @@ const Profile = () => {
               className="cover-photo-img"
               priority={true}
               sizes="100vw"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: !isOwner ? 'pointer' : undefined }}
+              onClick={!isOwner ? () => handleOpenImageModal(profile.coverPhotoURL, 'Capa do Perfil') : undefined}
             />
           ) : (
             <div className="cover-photo-placeholder" />
           )}
           {isOwner && (
-            <label className="cover-upload-btn">
+            <label className="cover-upload-btn" style={{cursor: 'pointer'}}>
               <input
                 type="file"
                 accept="image/*"
                 onChange={(e) => handleImageUpload(e, 'cover')}
                 style={{ display: 'none' }}
               />
-              <i className="fas fa-camera"></i>
+              <i className="fas fa-ellipsis-v"></i>
             </label>
           )}
         </div>
@@ -1300,7 +1314,6 @@ const Profile = () => {
                   sizes={avatarSizes}
                   showLoading={true}
                 />
-                <i className="fas fa-camera"></i>
               </label>
             ) : (
               <CachedImage 
@@ -1311,6 +1324,8 @@ const Profile = () => {
                 priority={false}
                 sizes={avatarSizes}
                 showLoading={true}
+                style={{ cursor: 'pointer' }}
+                onClick={() => handleOpenImageModal(profile.profilePictureURL, 'Avatar de Perfil')}
               />
             )}
           </div>
@@ -2502,6 +2517,18 @@ const Profile = () => {
         imageFile={imageToEdit}
         imageType={imageEditType}
       />
+
+      {/* [3] Modal de visualização de imagem */}
+      {showImageModal && (
+        <div className="modal-overlay" onClick={handleCloseImageModal} tabIndex={-1}>
+          <div className="modal-content" style={{ maxWidth: '90vw', maxHeight: '90vh', background: 'transparent', boxShadow: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => e.stopPropagation()}>
+            <img src={modalImageUrl} alt={modalImageAlt} style={{ maxWidth: '90vw', maxHeight: '80vh', borderRadius: 16, background: '#222' }} />
+            <button className="modal-close" onClick={handleCloseImageModal} style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(0,0,0,0.7)', color: '#fff', border: 'none', borderRadius: '50%', fontSize: 24, cursor: 'pointer', zIndex: 10 }}>
+              ×
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

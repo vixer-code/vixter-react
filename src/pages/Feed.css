@@ -753,9 +753,10 @@
   }
 
   .post-header {
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important;
+    justify-content: space-between !important;
   }
 
 
