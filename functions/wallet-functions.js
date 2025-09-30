@@ -2279,10 +2279,12 @@ export const claimDailyBonus = onCall({
       throw new HttpsError("already-exists", "Bônus diário já foi reivindicado hoje");
     }
     
+    // Gerar valor aleatório de bônus diário entre 50 e 70
+    const dailyBonus = Math.floor(Math.random() * (70 - 50 + 1)) + 50;
+
     // Get or create wallet
     const walletRef = db.collection('wallets').doc(userId);
     const walletDoc = await walletRef.get();
-    
     let walletData;
     if (!walletDoc.exists) {
       // Create wallet if it doesn't exist
@@ -2290,7 +2292,7 @@ export const claimDailyBonus = onCall({
         uid: userId,
         vp: 0,
         vc: 0,
-        vbp: 10, // Daily bonus amount
+        vbp: dailyBonus, // Daily bonus amount
         vcPending: 0,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -2300,37 +2302,39 @@ export const claimDailyBonus = onCall({
       // Update existing wallet
       walletData = walletDoc.data();
       await walletRef.update({
-        vbp: admin.firestore.FieldValue.increment(10),
+        vbp: admin.firestore.FieldValue.increment(dailyBonus),
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
     }
-    
+
     // Update user's last claim date
     await userRef.update({
       lastDailyBonusClaim: admin.firestore.FieldValue.serverTimestamp()
     });
-    
-    // Create transaction record
+
+    // Create transaction record (padronizado)
     const transactionRef = db.collection('transactions').doc();
     await transactionRef.set({
       id: transactionRef.id,
       userId: userId,
       type: 'DAILY_BONUS',
-      amount: 10,
-      currency: 'VBP',
-      description: 'Bônus diário VBP',
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      amounts: {
+        vbp: dailyBonus
+      },
       metadata: {
+        description: 'Bônus diário VBP',
         bonusType: 'daily',
         claimDate: today.toISOString()
-      }
+      },
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp: admin.firestore.FieldValue.serverTimestamp()
     });
-    
-    logger.info(`✅ Daily bonus claimed by user ${userId}: 10 VBP`);
-    
+
+    logger.info(`✅ Daily bonus claimed by user ${userId}: ${dailyBonus} VBP`);
+
     return {
       success: true,
-      bonusAmount: 10,
+      bonusAmount: dailyBonus,
       message: 'Bônus diário reivindicado com sucesso!'
     };
     
