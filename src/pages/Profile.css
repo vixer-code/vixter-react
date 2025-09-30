@@ -1851,6 +1851,13 @@
   gap: 8px;
 }
 
+.price-single {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #00FFCA;
+  margin: 0;
+}
+
 .service-category {
   font-size: 0.85rem;
   color: #B8B8B8;
@@ -2455,6 +2462,10 @@
     font-size: 1.1rem;
   }
   
+  .price-single {
+    font-size: 1.1rem;
+  }
+  
   .service-actions {
     padding: 8px 12px;
     gap: 6px;
@@ -2647,6 +2658,10 @@
   }
   
   .price-discounted {
+    font-size: 1rem;
+  }
+  
+  .price-single {
     font-size: 1rem;
   }
   

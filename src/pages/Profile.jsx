@@ -2040,16 +2040,31 @@ const Profile = () => {
                   <div className="pack-info">
                     <h3 className="pack-title">{pack.title}</h3>
                     <div className="pack-price">
-                      <div className="price-original">VP {(pack.price != null ? Math.round(pack.price * 1.5).toFixed(2) : '0.00')}</div>
-                      <div className="price-discounted">
-                        VP {(() => {
-                          const basePrice = pack.price || 0;
-                          const discount = pack.discount || 0;
-                          const discountedPrice = discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
-                          return Math.round(discountedPrice * 1.5).toFixed(2);
-                        })()}
-                        {pack.discount && <span className="pack-discount">(-{pack.discount}%)</span>}
-                      </div>
+                      {(() => {
+                        const basePrice = pack.price || 0;
+                        const discount = pack.discount || 0;
+                        const originalPrice = Math.round(basePrice * 1.5);
+                        const discountedPrice = discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
+                        const finalPrice = Math.round(discountedPrice * 1.5);
+                        
+                        // Only show original price if there's a discount
+                        if (discount > 0) {
+                          return (
+                            <>
+                              <div className="price-original">VP {originalPrice}</div>
+                              <div className="price-discounted">
+                                VP {finalPrice}
+                                <span className="pack-discount">(-{discount}%)</span>
+                              </div>
+                            </>
+                          );
+                        } else {
+                          // No discount, show only final price
+                          return (
+                            <div className="price-single">VP {finalPrice}</div>
+                          );
+                        }
+                      })()}
                     </div>
                     {pack.tags && pack.tags.length > 0 && (
                       <div className="service-tags">
@@ -2288,17 +2303,26 @@ const Profile = () => {
                   const discountPercent = typeof packToPreview.discount === 'number' ? packToPreview.discount : parseFloat(packToPreview.discount) || 0;
                   const originalPrice = Math.round(basePrice * 1.5);
                   const discounted = Math.round(basePrice * (1 - (discountPercent > 0 ? discountPercent / 100 : 0)) * 1.5);
-                  return (
-                    <div className="preview-price">
-                      <div className="price-original">VP {originalPrice.toFixed(2)}</div>
-                      <div className="price-discounted">
-                        VP {discounted.toFixed(2)}
-                        {discountPercent > 0 && (
+                  
+                  // Only show original price if there's a discount
+                  if (discountPercent > 0) {
+                    return (
+                      <div className="preview-price">
+                        <div className="price-original">VP {originalPrice}</div>
+                        <div className="price-discounted">
+                          VP {discounted}
                           <span className="pack-discount"> (-{discountPercent}%)</span>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  );
+                    );
+                  } else {
+                    // No discount, show only final price
+                    return (
+                      <div className="preview-price">
+                        <div className="price-single">VP {discounted}</div>
+                      </div>
+                    );
+                  }
                 })()}
               </div>
             </div>
