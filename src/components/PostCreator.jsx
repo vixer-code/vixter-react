@@ -19,6 +19,9 @@ const PostCreator = ({
   const { userProfile } = useUser();
   const { showSuccess, showError, showWarning } = useNotification();
   
+  // Lista de tags que indicam conteúdo +18 (adulto)
+  const adultTags = ['vixies', '+18', '18+', 'adulto', 'nsfw', 'adult', 'xxx', 'sexual', 'sexy', 'nude', 'nudes'];
+  
   // Post content state
   const [postText, setPostText] = useState('');
   const [mediaFile, setMediaFile] = useState(null);
@@ -68,6 +71,23 @@ const PostCreator = ({
     
     setLoadingAttachments(true);
     try {
+      // Função auxiliar para verificar se item tem conteúdo +18
+      const hasAdultContent = (item) => {
+        // Verificar categorias +18
+        const adultCategories = ['conteudo-18', 'webnamoro']; // conteudo-18 para packs, webnamoro para serviços
+        if (item.category && adultCategories.includes(item.category)) {
+          return true;
+        }
+        
+        // Verificar tags +18
+        if (!item.tags || !Array.isArray(item.tags)) return false;
+        return item.tags.some(tag => 
+          adultTags.some(adultTag => 
+            tag.toLowerCase().includes(adultTag.toLowerCase())
+          )
+        );
+      };
+
       // Load services
       const servicesQuery = query(
         collection(firestore, 'services'),
@@ -75,14 +95,16 @@ const PostCreator = ({
         where('isActive', '==', true)
       );
       const servicesSnapshot = await getDocs(servicesQuery);
-      const services = servicesSnapshot.docs.map(doc => {
+      let services = servicesSnapshot.docs.map(doc => {
         const data = doc.data();
         console.log('Service data loaded:', {
           id: doc.id,
           title: data.title,
+          category: data.category,
           coverImageURL: data.coverImageURL,
           coverImage: data.coverImage,
           image: data.image,
+          tags: data.tags,
           allFields: Object.keys(data)
         });
         return {
@@ -99,14 +121,16 @@ const PostCreator = ({
         where('isActive', '==', true)
       );
       const packsSnapshot = await getDocs(packsQuery);
-      const packs = packsSnapshot.docs.map(doc => {
+      let packs = packsSnapshot.docs.map(doc => {
         const data = doc.data();
         console.log('Pack data loaded:', {
           id: doc.id,
           title: data.title,
+          category: data.category,
           coverImageURL: data.coverImageURL,
           coverImage: data.coverImage,
           image: data.image,
+          tags: data.tags,
           allFields: Object.keys(data)
         });
         return {
@@ -115,6 +139,20 @@ const PostCreator = ({
           type: 'pack'
         };
       });
+
+      // Se o modo for vixink, filtrar conteúdo +18
+      if (mode === 'vixink') {
+        const originalServicesCount = services.length;
+        const originalPacksCount = packs.length;
+        
+        services = services.filter(service => !hasAdultContent(service));
+        packs = packs.filter(pack => !hasAdultContent(pack));
+        
+        const filteredServicesCount = originalServicesCount - services.length;
+        const filteredPacksCount = originalPacksCount - packs.length;
+        
+        console.log(`Vixink mode: Filtered out ${filteredServicesCount} services and ${filteredPacksCount} packs with adult content (category or tags)`);
+      }
 
       setUserServices(services);
       setUserPacks(packs);

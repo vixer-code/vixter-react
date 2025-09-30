@@ -7,6 +7,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const QRCode = require('qrcode');
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
@@ -308,6 +309,71 @@ async function getVendorInfo(packId) {
 }
 
 /**
+ * Generate QR code as buffer for watermarking
+ */
+async function generateQRCode(url, size = 80) {
+  try {
+    const qrBuffer = await QRCode.toBuffer(url, {
+      type: 'png',
+      width: size,
+      margin: 1,
+      color: {
+        dark: '#FFFFFF', // White QR code
+        light: '#00000000' // Transparent background
+      }
+    });
+    return qrBuffer;
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate multiple QR codes for watermarking pattern
+ */
+async function generateQRCodePattern(user, vendorInfo, imageSize) {
+  const buyerUrl = `https://vixter.com.br/${user.username}`;
+  const vendorUrl = `https://vixter.com.br/${vendorInfo?.username || 'vendor'}`;
+  
+  // Calculate QR code size based on image dimensions
+  const qrSize = Math.min(Math.floor(imageSize.width * 0.08), Math.floor(imageSize.height * 0.08), 120);
+  
+  const [buyerQR, vendorQR] = await Promise.all([
+    generateQRCode(buyerUrl, qrSize),
+    generateQRCode(vendorUrl, qrSize)
+  ]);
+  
+  return {
+    buyerQR,
+    vendorQR,
+    size: qrSize
+  };
+}
+
+/**
+ * Generate QR code pattern for video watermarking
+ */
+async function generateVideoQRCodePattern(user, vendorInfo) {
+  const buyerUrl = `https://vixter.com.br/${user.username}`;
+  const vendorUrl = `https://vixter.com.br/${vendorInfo?.username || 'vendor'}`;
+  
+  // For videos, use smaller QR codes for better performance
+  const qrSize = 60;
+  
+  const [buyerQR, vendorQR] = await Promise.all([
+    generateQRCode(buyerUrl, qrSize),
+    generateQRCode(vendorUrl, qrSize)
+  ]);
+  
+  return {
+    buyerQR,
+    vendorQR,
+    size: qrSize
+  };
+}
+
+/**
  * Generate watermarked media
  */
 async function generateWatermarkedMedia(contentItem, watermark, username, user, vendorInfo) {
@@ -362,7 +428,7 @@ async function generateWatermarkedMedia(contentItem, watermark, username, user, 
 }
 
 /**
- * Add watermark to image using Sharp
+ * Add watermark to image using Sharp with QR codes
  */
 async function addImageWatermark(imageBuffer, watermark, username, contentItem, user, vendorInfo) {
   try {
@@ -370,46 +436,83 @@ async function addImageWatermark(imageBuffer, watermark, username, contentItem, 
     const image = sharp(imageBuffer);
     const metadata = await image.metadata();
     
-    // Calculate watermark size based on image dimensions (20% larger)
+    // Generate QR codes for watermarking
+    const qrPattern = await generateQRCodePattern(user, vendorInfo, metadata);
+    
+    // Calculate watermark size based on image dimensions
     const minDimension = Math.min(metadata.width, metadata.height);
     const watermarkSize = Math.max(24, minDimension / 25);
-    const fontSize = Math.max(14, watermarkSize * 0.8) * 1.2; // 20% larger
+    const fontSize = Math.max(12, watermarkSize * 0.6); // Reduced text size to make room for QR codes
     
     // Create alternating watermark text with profile links
     const buyerProfileUrl = `vixter.com.br/${user.username}`;
     const vendorProfileUrl = `vixter.com.br/${vendorInfo?.username || 'vendor'}`;
     const watermarkText = `${watermark || username} - vixter.com.br`;
     
-    // Create alternating watermark pattern with buyer and vendor usernames
+    // Prepare composite operations for QR codes and text
+    const compositeOperations = [];
+    
+    // Add QR codes in alternating pattern around the image
+    if (qrPattern.buyerQR && qrPattern.vendorQR) {
+      const qrSize = qrPattern.size;
+      const spacing = Math.max(qrSize * 1.5, 100);
+      
+      // Calculate grid positions for QR codes
+      const cols = Math.ceil(metadata.width / spacing);
+      const rows = Math.ceil(metadata.height / spacing);
+      
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const x = col * spacing + (spacing - qrSize) / 2;
+          const y = row * spacing + (spacing - qrSize) / 2;
+          
+          // Skip if QR code would go outside image bounds
+          if (x + qrSize > metadata.width || y + qrSize > metadata.height) continue;
+          
+          // Alternate between buyer and vendor QR codes
+          const useBuyerQR = (row + col) % 2 === 0;
+          const qrBuffer = useBuyerQR ? qrPattern.buyerQR : qrPattern.vendorQR;
+          
+          compositeOperations.push({
+            input: qrBuffer,
+            top: Math.round(y),
+            left: Math.round(x),
+            blend: 'overlay'
+          });
+        }
+      }
+    }
+    
+    // Create text watermark SVG with reduced density
     const watermarkSvg = `
       <svg width="${metadata.width}" height="${metadata.height}" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <!-- Alternating pattern with buyer and vendor usernames -->
-          <pattern id="watermark" patternUnits="userSpaceOnUse" width="${watermarkSize * 8}" height="${watermarkSize * 8}">
-            <!-- Buyer username -->
-            <text x="${watermarkSize * 2}" y="${watermarkSize * 2}" 
+          <!-- Reduced density text pattern -->
+          <pattern id="watermark" patternUnits="userSpaceOnUse" width="${watermarkSize * 12}" height="${watermarkSize * 12}">
+            <!-- Buyer username - less dense -->
+            <text x="${watermarkSize * 3}" y="${watermarkSize * 3}" 
                   font-family="Arial, sans-serif" 
                   font-size="${fontSize}" 
                   font-weight="bold"
-                  fill="rgba(255,255,255,0.4)" 
-                  stroke="rgba(0,0,0,0.6)"
-                  stroke-width="1"
+                  fill="rgba(255,255,255,0.3)" 
+                  stroke="rgba(0,0,0,0.5)"
+                  stroke-width="0.8"
                   text-anchor="middle" 
                   dominant-baseline="central"
-                  transform="rotate(-45 ${watermarkSize * 2} ${watermarkSize * 2})">
+                  transform="rotate(-45 ${watermarkSize * 3} ${watermarkSize * 3})">
               vixter.com.br/${user.username}
             </text>
-            <!-- Vendor username -->
-            <text x="${watermarkSize * 6}" y="${watermarkSize * 6}" 
+            <!-- Vendor username - less dense -->
+            <text x="${watermarkSize * 9}" y="${watermarkSize * 9}" 
                   font-family="Arial, sans-serif" 
                   font-size="${fontSize}" 
                   font-weight="bold"
-                  fill="rgba(255,255,255,0.4)" 
-                  stroke="rgba(0,0,0,0.6)"
-                  stroke-width="1"
+                  fill="rgba(255,255,255,0.3)" 
+                  stroke="rgba(0,0,0,0.5)"
+                  stroke-width="0.8"
                   text-anchor="middle" 
                   dominant-baseline="central"
-                  transform="rotate(-45 ${watermarkSize * 6} ${watermarkSize * 6})">
+                  transform="rotate(-45 ${watermarkSize * 9} ${watermarkSize * 9})">
               vixter.com.br/${vendorInfo?.username || 'vendor'}
             </text>
           </pattern>
@@ -419,39 +522,40 @@ async function addImageWatermark(imageBuffer, watermark, username, contentItem, 
         <!-- Corner watermarks for extra security -->
         <text x="20" y="30" 
               font-family="Arial, sans-serif" 
-              font-size="${Math.max(10, fontSize * 0.6)}" 
+              font-size="${Math.max(10, fontSize * 0.7)}" 
               font-weight="bold"
-              fill="rgba(255,255,255,0.3)" 
-              stroke="rgba(0,0,0,0.5)"
+              fill="rgba(255,255,255,0.25)" 
+              stroke="rgba(0,0,0,0.4)"
               stroke-width="0.5">Comprador: ${buyerProfileUrl}</text>
               
         <text x="20" y="50" 
               font-family="Arial, sans-serif" 
-              font-size="${Math.max(10, fontSize * 0.6)}" 
+              font-size="${Math.max(10, fontSize * 0.7)}" 
               font-weight="bold"
-              fill="rgba(255,255,255,0.3)" 
-              stroke="rgba(0,0,0,0.5)"
+              fill="rgba(255,255,255,0.25)" 
+              stroke="rgba(0,0,0,0.4)"
               stroke-width="0.5">Vendedora: ${vendorProfileUrl}</text>
               
         <text x="${metadata.width - 20}" y="${metadata.height - 10}" 
               font-family="Arial, sans-serif" 
-              font-size="${Math.max(10, fontSize * 0.6)}" 
+              font-size="${Math.max(10, fontSize * 0.7)}" 
               font-weight="bold"
-              fill="rgba(255,255,255,0.3)" 
-              stroke="rgba(0,0,0,0.5)"
+              fill="rgba(255,255,255,0.25)" 
+              stroke="rgba(0,0,0,0.4)"
               stroke-width="0.5"
               text-anchor="end">vixter.com.br</text>
       </svg>
     `;
 
-    // Apply watermark with better blending
+    // Add text watermark
+    compositeOperations.push({
+      input: Buffer.from(watermarkSvg),
+      blend: 'overlay'
+    });
+
+    // Apply all watermarks
     const watermarkedImage = await image
-      .composite([
-        {
-          input: Buffer.from(watermarkSvg),
-          blend: 'overlay'
-        }
-      ])
+      .composite(compositeOperations)
       .jpeg({ quality: 85, progressive: true }) // Use JPEG for better compression
       .toBuffer();
 
@@ -465,20 +569,24 @@ async function addImageWatermark(imageBuffer, watermark, username, contentItem, 
 }
 
 /**
- * Add watermark to video using FFmpeg
+ * Add watermark to video using FFmpeg with QR codes and optimized performance
  */
 async function addVideoWatermark(videoBuffer, watermark, username, contentItem, user, vendorInfo) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     let ffmpegProcess = null;
     let timeoutId = null;
     let inputPath = null;
     let outputPath = null;
+    let buyerQRPath = null;
+    let vendorQRPath = null;
     
     // Define cleanup function with proper scope
     const cleanup = () => {
       try {
         if (inputPath && fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
         if (outputPath && fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+        if (buyerQRPath && fs.existsSync(buyerQRPath)) fs.unlinkSync(buyerQRPath);
+        if (vendorQRPath && fs.existsSync(vendorQRPath)) fs.unlinkSync(vendorQRPath);
       } catch (cleanupError) {
         console.error('Error cleaning up temp files:', cleanupError);
       }
@@ -486,20 +594,34 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
     
     try {
       // Check video size - if too large, return original with warning
-      const maxSize = 100 * 1024 * 1024; // 100MB limit
+      const maxSize = 150 * 1024 * 1024; // Increased to 150MB limit
       if (videoBuffer.length > maxSize) {
         console.warn('Video too large for watermarking, returning original');
         resolve(videoBuffer);
         return;
       }
       
+      // Generate QR codes for video watermarking
+      const qrPattern = await generateVideoQRCodePattern(user, vendorInfo);
+      
       // Create temporary files for processing
       const tempDir = os.tmpdir();
-      inputPath = path.join(tempDir, `input_${Date.now()}.${getFileExtension(contentItem.type)}`);
-      outputPath = path.join(tempDir, `output_${Date.now()}.mp4`);
+      const timestamp = Date.now();
+      inputPath = path.join(tempDir, `input_${timestamp}.${getFileExtension(contentItem.type)}`);
+      outputPath = path.join(tempDir, `output_${timestamp}.mp4`);
       
       // Write input buffer to temporary file
       fs.writeFileSync(inputPath, videoBuffer);
+      
+      // Save QR codes to temporary files
+      if (qrPattern.buyerQR) {
+        buyerQRPath = path.join(tempDir, `buyer_qr_${timestamp}.png`);
+        fs.writeFileSync(buyerQRPath, qrPattern.buyerQR);
+      }
+      if (qrPattern.vendorQR) {
+        vendorQRPath = path.join(tempDir, `vendor_qr_${timestamp}.png`);
+        fs.writeFileSync(vendorQRPath, qrPattern.vendorQR);
+      }
       
       // Create alternating watermark text with profile links (escape special characters)
       const buyerProfileUrl = `vixter.com.br/${user.username}`;
@@ -508,72 +630,88 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
       const buyerText = escapeFFmpegText(`Comprador: ${buyerProfileUrl}`);
       const vendorText = escapeFFmpegText(`Vendedora: ${vendorProfileUrl}`);
       
-      // Set timeout for video processing (5 minutes max)
+      // Set timeout for video processing (reduced to 4 minutes for better performance)
       timeoutId = setTimeout(() => {
         if (ffmpegProcess) {
           ffmpegProcess.kill('SIGKILL');
         }
         cleanup();
         reject(new Error('Video processing timeout'));
-      }, 300000); // 5 minutes
+      }, 240000); // 4 minutes
       
-      // FFmpeg command to add watermark - use simpler filter approach
+      // Build video filters array
+      const videoFilters = [];
+      
+      // Add QR code overlays if available
+      if (buyerQRPath && vendorQRPath) {
+        const qrSize = qrPattern.size;
+        const spacing = qrSize * 2; // Moderate density
+        
+        // Add buyer QR codes
+        videoFilters.push(`movie=${buyerQRPath}:loop=0,setpts=N/(FRAME_RATE*TB),scale=${qrSize}:${qrSize}[buyer_qr]`);
+        videoFilters.push(`movie=${vendorQRPath}:loop=0,setpts=N/(FRAME_RATE*TB),scale=${qrSize}:${qrSize}[vendor_qr]`);
+        
+        // Position QR codes in alternating pattern
+        videoFilters.push(`[buyer_qr]overlay=x=if(eq(mod(t*2,2),0),10,w-${qrSize+10}):y=10:format=auto:alpha=0.7[buyer_overlay]`);
+        videoFilters.push(`[vendor_qr]overlay=x=if(eq(mod(t*2,2),0),w-${qrSize+10},10):y=h-${qrSize+10}:format=auto:alpha=0.7[vendor_overlay]`);
+        videoFilters.push(`[buyer_overlay][vendor_overlay]overlay=x=w/2-${qrSize/2}:y=h/2-${qrSize/2}:format=auto:alpha=0.5[qr_final]`);
+        
+        // Corner QR codes for additional coverage
+        videoFilters.push(`[qr_final]movie=${buyerQRPath}:loop=0,setpts=N/(FRAME_RATE*TB),scale=${Math.floor(qrSize*0.7)}:${Math.floor(qrSize*0.7)}[corner_buyer]`);
+        videoFilters.push(`[corner_buyer]overlay=x=w-${Math.floor(qrSize*0.7)+10}:y=10:format=auto:alpha=0.4[corner_final]`);
+      }
+      
+      // Add text watermarks with reduced density
+      const textFilters = [
+        // Main corner text watermarks
+        `drawtext=text='${buyerText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=16:fontcolor=white@0.6:x=15:y=25`,
+        `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=16:fontcolor=white@0.6:x=15:y=45`,
+        `drawtext=text='vixter.com.br':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.6:x=w-text_w-15:y=h-15`,
+        
+        // Reduced density text pattern - buyer username
+        `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=w/4:y=h/4`,
+        `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=3*w/4:y=3*h/4`,
+        `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.3:x=w/2:y=h/2`,
+        
+        // Reduced density text pattern - vendor username
+        `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=16:fontcolor=white@0.3:x=w/6:y=h/6`,
+        `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=16:fontcolor=white@0.3:x=5*w/6:y=5*h/6`,
+        
+        // Additional corner watermarks
+        `drawtext=text='vixter.com.br':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=14:fontcolor=white@0.4:x=15:y=h-15`,
+        `drawtext=text='vixter.com.br':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=14:fontcolor=white@0.4:x=w-15:y=15`
+      ];
+      
+      // Combine QR filters with text filters
+      if (videoFilters.length > 0) {
+        videoFilters.push(...textFilters);
+        videoFilters[videoFilters.length - 1] = videoFilters[videoFilters.length - 1].replace('corner_final', '0:v');
+      } else {
+        videoFilters.push(...textFilters);
+      }
+      
+      // FFmpeg command with optimized settings for better performance
       ffmpegProcess = ffmpeg(inputPath)
         .videoCodec('libx264')
         .audioCodec('aac')
         .outputOptions([
-          '-preset ultrafast', // Fastest encoding for Cloud Functions
-          '-crf 28', // Higher compression for faster processing
+          '-preset superfast', // Faster than ultrafast but still good quality
+          '-crf 25', // Better quality than before
           '-movflags +faststart', // Optimize for streaming
           '-pix_fmt yuv420p', // Ensure compatibility
           '-tune zerolatency', // Optimize for low latency
-          '-maxrate 2M', // Limit bitrate
-          '-bufsize 4M' // Buffer size
+          '-maxrate 3M', // Slightly higher bitrate for better quality
+          '-bufsize 6M', // Buffer size
+          '-g 30', // Keyframe interval for better seeking
+          '-threads 0' // Use all available threads
         ])
-        .videoFilters([
-          // Main watermark with rotation (30% larger) - repeated pattern
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=28:fontcolor=white@0.7:x=(w-text_w)/2:y=(h-text_h)/2`,
-          // Profile watermarks (30% larger) - more visible
-          `drawtext=text='${buyerText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.6:x=15:y=25`,
-          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.6:x=15:y=45`,
-          `drawtext=text='vixter.com.br':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=22:fontcolor=white@0.6:x=w-text_w-15:y=h-15`,
-          
-          // High density watermark pattern - buyer username
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=24:fontcolor=white@0.5:x=w/4:y=h/4`,
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=24:fontcolor=white@0.5:x=3*w/4:y=3*h/4`,
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=22:fontcolor=white@0.4:x=w/2:y=h/3`,
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=22:fontcolor=white@0.4:x=w/2:y=2*h/3`,
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=w/6:y=h/6`,
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=5*w/6:y=5*h/6`,
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=w/3:y=h/6`,
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=2*w/3:y=5*h/6`,
-          
-          // High density watermark pattern - vendor username
-          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=w/8:y=h/8`,
-          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=20:fontcolor=white@0.4:x=7*w/8:y=7*h/8`,
-          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.3:x=w/5:y=h/5`,
-          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.3:x=4*w/5:y=4*h/5`,
-          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.3:x=w/7:y=h/7`,
-          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white@0.3:x=6*w/7:y=6*h/7`,
-          
-          // Corner watermarks with both usernames
-          `drawtext=text='vixter.com.br':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=16:fontcolor=white@0.5:x=15:y=h-15`,
-          `drawtext=text='vixter.com.br':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=16:fontcolor=white@0.5:x=w-15:y=15`,
-          `drawtext=text='${buyerText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=14:fontcolor=white@0.4:x=w-15:y=h-35`,
-          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=14:fontcolor=white@0.4:x=15:y=65`,
-          
-          // Additional diagonal watermarks for extra coverage
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=16:fontcolor=white@0.3:x=w/10:y=h/10`,
-          `drawtext=text='${watermarkText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=16:fontcolor=white@0.3:x=9*w/10:y=9*h/10`,
-          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=14:fontcolor=white@0.3:x=w/12:y=h/12`,
-          `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=14:fontcolor=white@0.3:x=11*w/12:y=11*h/12`
-        ])
+        .videoFilters(videoFilters)
         .on('start', (commandLine) => {
-          console.log('FFmpeg process started:', commandLine);
+          console.log('FFmpeg process started with QR codes:', commandLine);
         })
         .on('progress', (progress) => {
           if (progress.percent) {
-            console.log('Video processing: ' + Math.round(progress.percent) + '% done');
+            console.log('Video processing with QR codes: ' + Math.round(progress.percent) + '% done');
           }
         })
         .on('end', () => {
@@ -585,7 +723,7 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
             
             cleanup();
             
-            console.log('Video watermarking completed successfully');
+            console.log('Video watermarking with QR codes completed successfully');
             resolve(watermarkedBuffer);
           } catch (error) {
             console.error('Error reading watermarked video:', error);
