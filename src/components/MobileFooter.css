@@ -97,9 +97,9 @@
     }
   }
 
-  /* Ajustar padding do main-content para dar espaço ao footer */
-  body {
-    padding-bottom: env(safe-area-inset-bottom);
+  /* Garantir espaço para safe area em dispositivos iOS */
+  .mobile-footer {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 }
 

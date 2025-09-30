@@ -202,9 +202,9 @@ body {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  /* Espaço para o footer mobile */
+  /* Espaço para o footer mobile + safe area (iPhone, etc) */
   .main-content {
-    padding-bottom: 70px;
+    padding-bottom: calc(70px + env(safe-area-inset-bottom));
   }
   
   .container {
