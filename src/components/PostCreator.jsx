@@ -51,6 +51,31 @@ const PostCreator = ({
     }
   }, [showAttachmentModal, currentUser]);
 
+  // Bloquear scroll do body quando modal está aberto
+  useEffect(() => {
+    if (showAttachmentModal) {
+      // Salvar posição atual do scroll
+      const scrollY = window.scrollY;
+      
+      // Bloquear scroll do body
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      
+      // Cleanup: restaurar scroll quando modal fechar
+      return () => {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        
+        // Restaurar posição do scroll
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [showAttachmentModal]);
+
   // Load attachments when modal is opened (alternative approach)
   const handleModalOpen = async () => {
     if (currentUser) {
