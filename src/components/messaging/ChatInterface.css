@@ -655,10 +655,10 @@ input.message-input {
     padding: 12px 15px;
     /* Mobile keyboard handling */
     position: fixed;
-    bottom: 0;
+    bottom: calc(70px + env(safe-area-inset-bottom)); /* Espaço para o footer mobile */
     left: 0;
     right: 0;
-    z-index: 1000;
+    z-index: 100; /* Acima do footer (99), mas abaixo de modais */
     background: var(--vixter-bg-secondary);
     border-top: 1px solid var(--vixter-border);
     /* Ensure it stays above keyboard */
@@ -670,9 +670,9 @@ input.message-input {
     touch-action: manipulation;
   }
   
-  /* Adjust messages container to account for fixed input */
+  /* Adjust messages container to account for fixed input + footer mobile */
   .messages-container {
-    padding-bottom: 100px; /* Space for fixed input */
+    padding-bottom: calc(170px + env(safe-area-inset-bottom)); /* Space for fixed input (80px) + footer (70px) + extra (20px) */
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -688,7 +688,7 @@ input.message-input {
   
   .media-options {
     grid-template-columns: repeat(2, 1fr);
-    bottom: 100px; /* Position above fixed input */
+    bottom: calc(170px + env(safe-area-inset-bottom)); /* Position above fixed input + footer */
   }
   
   .emoji-grid {
@@ -703,7 +703,7 @@ input.message-input {
     }
     
     .messages-container {
-      height: calc(100dvh - 150px); /* Account for header and input */
+      height: calc(100dvh - 220px); /* Account for header, input, and footer mobile */
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
@@ -715,7 +715,7 @@ input.message-input {
     .message-input-container {
       /* iOS Safari keyboard handling */
       position: fixed;
-      bottom: env(keyboard-inset-height, 0px);
+      bottom: calc(70px + env(safe-area-inset-bottom) + env(keyboard-inset-height, 0px));
       transform: translateY(0);
     }
     
