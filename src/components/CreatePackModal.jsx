@@ -333,18 +333,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   const handleCoverImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) {
-      console.log('No file selected in handleCoverImageChange');
       return;
     }
-    
-    console.log('=== COVER IMAGE DEBUG ===');
-    console.log('File selected:', file);
-    console.log('File name:', file.name);
-    console.log('File size:', file.size);
-    console.log('File type:', file.type);
-    console.log('File instanceof File:', file instanceof File);
-    console.log('User Agent:', navigator.userAgent);
-    console.log('========================');
     
     // Validate file size (max 10MB - increased for mobile camera photos)
     const maxSize = 10 * 1024 * 1024; // 10MB
@@ -368,14 +358,34 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       return;
     }
     
-    console.log('Setting cover image file in state...');
-    
-    // Android-specific fix: Use a more reliable state update
+    // Android-specific fix: Ensure file is properly stored
     const isAndroid = /Android/i.test(navigator.userAgent);
+    
     if (isAndroid) {
-      console.log('Android detected, using reliable state update...');
-      // Force immediate state update for Android
-      setCoverImageFile(() => file);
+      // Create a new File object to ensure it's properly handled on Android
+      const androidFile = new File([file], file.name, {
+        type: file.type,
+        lastModified: file.lastModified
+      });
+      
+      // Verify the file is valid
+      if (!androidFile.name || androidFile.size === 0 || !androidFile.type) {
+        showError('Erro ao processar arquivo no Android. Tente novamente.');
+        e.target.value = '';
+        return;
+      }
+      
+      setCoverImageFile(androidFile);
+      
+      // Double-check after a short delay
+      setTimeout(() => {
+        setCoverImageFile(prevFile => {
+          if (!prevFile || prevFile !== androidFile) {
+            return androidFile;
+          }
+          return prevFile;
+        });
+      }, 100);
     } else {
       setCoverImageFile(file);
     }
@@ -383,10 +393,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     try {
       // Create optimized preview (Blob URL or compressed for mobile)
       const previewUrl = await createImagePreview(file);
-      console.log('Cover image preview URL created:', previewUrl);
       setCoverImagePreview(previewUrl);
     } catch (error) {
-      console.error('Error creating preview:', error);
       showError('Erro ao criar preview da imagem. Por favor, tente novamente.');
     }
     
@@ -584,24 +592,43 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       return;
     }
     
-    console.log('Adding pack files:', validFiles);
-    
-    // Android-specific fix: Use a more reliable state update
+    // Android-specific fix: Ensure files are properly stored
     const isAndroid = /Android/i.test(navigator.userAgent);
+    
     if (isAndroid) {
-      console.log('Android detected, using reliable state update for pack files...');
-      // Force immediate state update for Android
-      setPackFiles(prev => {
-        const newFiles = [...prev, ...validFiles];
-        console.log('Updated packFiles (Android):', newFiles);
-        return newFiles;
-      });
+      // Create new File objects to ensure they're properly handled on Android
+      const androidFiles = validFiles.map(file => 
+        new File([file], file.name, {
+          type: file.type,
+          lastModified: file.lastModified
+        })
+      );
+      
+      // Verify all files are valid
+      const invalidFiles = androidFiles.filter(file => 
+        !file.name || file.size === 0 || !file.type
+      );
+      
+      if (invalidFiles.length > 0) {
+        showError('Alguns arquivos são inválidos no Android. Tente novamente.');
+        return;
+      }
+      
+      setPackFiles(prev => [...prev, ...androidFiles]);
+      
+      // Double-check after a short delay
+      setTimeout(() => {
+        setPackFiles(prev => {
+          const allFiles = [...prev, ...androidFiles];
+          // Remove duplicates and ensure all files are present
+          const uniqueFiles = allFiles.filter((file, index, self) => 
+            index === self.findIndex(f => f === file)
+          );
+          return uniqueFiles;
+        });
+      }, 100);
     } else {
-      setPackFiles(prev => {
-        const newFiles = [...prev, ...validFiles];
-        console.log('Updated packFiles:', newFiles);
-        return newFiles;
-      });
+      setPackFiles(prev => [...prev, ...validFiles]);
     }
     
     // Create previews using blob URLs for better mobile performance
@@ -889,17 +916,11 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       }
 
       // Android-specific validation: Check if coverImageFile is valid
-      if (coverImageFile) {
-        console.log('Validating coverImageFile for Android...');
-        console.log('- File object:', coverImageFile);
-        console.log('- File name:', coverImageFile.name);
-        console.log('- File size:', coverImageFile.size);
-        console.log('- File type:', coverImageFile.type);
-        console.log('- File lastModified:', coverImageFile.lastModified);
-        
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      
+      if (isAndroid && coverImageFile) {
         // Check if file is still valid (Android specific issue)
         if (!coverImageFile.name || coverImageFile.size === 0 || !coverImageFile.type) {
-          console.error('Cover image file is corrupted on Android, attempting to recover...');
           throw new Error('Arquivo de capa corrompido. Por favor, selecione novamente.');
         }
         
@@ -907,10 +928,43 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         try {
           const testBlob = URL.createObjectURL(coverImageFile);
           URL.revokeObjectURL(testBlob);
-          console.log('Cover image file accessibility test passed');
         } catch (error) {
-          console.error('Cover image file accessibility test failed:', error);
           throw new Error('Erro ao acessar arquivo de capa. Por favor, selecione novamente.');
+        }
+      }
+      
+      // Additional Android validation: Force file re-validation
+      if (isAndroid) {
+        // Check if we have files but they might be corrupted
+        if (coverImageFile && (!(coverImageFile instanceof File) || !coverImageFile.name)) {
+          throw new Error('Arquivo de capa inválido. Por favor, selecione novamente.');
+        }
+        
+        if (packFiles && packFiles.length > 0) {
+          const invalidFiles = packFiles.filter(file => 
+            !(file instanceof File) || !file.name || file.size === 0
+          );
+          if (invalidFiles.length > 0) {
+            throw new Error('Alguns arquivos do pack são inválidos. Por favor, selecione novamente.');
+          }
+        }
+      }
+
+      // Android-specific file validation before creating payload
+      if (isAndroid) {
+        // Ensure coverImageFile is valid
+        if (coverImageFile && (!(coverImageFile instanceof File) || !coverImageFile.name || coverImageFile.size === 0)) {
+          throw new Error('Arquivo de capa inválido no Android. Por favor, selecione novamente.');
+        }
+        
+        // Ensure packFiles are valid
+        if (packFiles && packFiles.length > 0) {
+          const invalidPackFiles = packFiles.filter(file => 
+            !(file instanceof File) || !file.name || file.size === 0
+          );
+          if (invalidPackFiles.length > 0) {
+            throw new Error('Alguns arquivos do pack são inválidos no Android. Por favor, selecione novamente.');
+          }
         }
       }
 
