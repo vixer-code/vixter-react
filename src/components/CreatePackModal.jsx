@@ -261,7 +261,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       // This is much more memory-efficient than Base64 data URLs
       const blobUrl = URL.createObjectURL(file);
       
-      // For mobile devices, we'll also compress the preview
+      // For mobile devices with large files, create compressed preview
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       
       if (!isMobile || file.size < 1024 * 1024) {
@@ -332,7 +332,19 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   // Cover image
   const handleCoverImageChange = async (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      console.log('No file selected in handleCoverImageChange');
+      return;
+    }
+    
+    console.log('=== COVER IMAGE DEBUG ===');
+    console.log('File selected:', file);
+    console.log('File name:', file.name);
+    console.log('File size:', file.size);
+    console.log('File type:', file.type);
+    console.log('File instanceof File:', file instanceof File);
+    console.log('User Agent:', navigator.userAgent);
+    console.log('========================');
     
     // Validate file size (max 10MB - increased for mobile camera photos)
     const maxSize = 10 * 1024 * 1024; // 10MB
@@ -349,13 +361,20 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       return;
     }
     
-    console.log('Cover image file selected:', file.name, file.size, 'bytes');
+    // Basic file validation
+    if (!file.name || file.size === 0) {
+      showError('Arquivo inválido. Por favor, tente novamente.');
+      e.target.value = '';
+      return;
+    }
+    
+    console.log('Setting cover image file in state...');
     setCoverImageFile(file);
     
     try {
       // Create optimized preview (Blob URL or compressed for mobile)
       const previewUrl = await createImagePreview(file);
-      console.log('Cover image preview URL created');
+      console.log('Cover image preview URL created:', previewUrl);
       setCoverImagePreview(previewUrl);
     } catch (error) {
       console.error('Error creating preview:', error);
@@ -519,17 +538,52 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   // Pack files (downloadable content)
   const handlePackFilesChange = async (e) => {
     const files = Array.from(e.target.files || []);
-    if (!files.length) return;
+    if (!files.length) {
+      console.log('No files selected in handlePackFilesChange');
+      return;
+    }
     
-    console.log('Adding pack files:', files);
+    console.log('=== PACK FILES DEBUG ===');
+    console.log('Files selected:', files);
+    console.log('Files count:', files.length);
+    files.forEach((file, index) => {
+      console.log(`File ${index}:`, {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        instanceof: file instanceof File
+      });
+    });
+    console.log('User Agent:', navigator.userAgent);
+    console.log('========================');
+    
+    // Basic file validation
+    const validFiles = files.filter(file => {
+      if (!file.name || file.size === 0) {
+        console.warn('Invalid file detected:', file);
+        return false;
+      }
+      return true;
+    });
+    
+    if (validFiles.length !== files.length) {
+      showError('Alguns arquivos são inválidos e foram ignorados.');
+    }
+    
+    if (validFiles.length === 0) {
+      showError('Nenhum arquivo válido selecionado.');
+      return;
+    }
+    
+    console.log('Adding pack files:', validFiles);
     setPackFiles(prev => {
-      const newFiles = [...prev, ...files];
+      const newFiles = [...prev, ...validFiles];
       console.log('Updated packFiles:', newFiles);
       return newFiles;
     });
     
     // Create previews using blob URLs for better mobile performance
-    for (const file of files) {
+    for (const file of validFiles) {
       try {
         const isVideo = file.type.startsWith('video/');
         let previewUrl;
@@ -777,12 +831,31 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       return showError('Você deve carregar uma imagem de capa');
     }
 
+    
     setIsSubmitting(true);
     setUploadingFiles(true);
     setUploadProgress(0);
     setUploadStatus('Preparando...');
 
     try {
+      // Debug: Log all file states before creating payload
+      console.log('=== PACK CREATION DEBUG ===');
+      console.log('coverImageFile:', coverImageFile);
+      console.log('sampleImageFiles:', sampleImageFiles);
+      console.log('sampleVideoFiles:', sampleVideoFiles);
+      console.log('packFiles:', packFiles);
+      console.log('coverImagePreview:', coverImagePreview);
+      console.log('sampleImagePreviews:', sampleImagePreviews);
+      console.log('sampleVideoPreviews:', sampleVideoPreviews);
+      console.log('packFilePreviews:', packFilePreviews);
+      console.log('User Agent:', navigator.userAgent);
+      console.log('========================');
+
+      // Validate files before creating payload
+      if (!coverImageFile && !formData.coverImage) {
+        throw new Error('Imagem de capa é obrigatória');
+      }
+
       // Prepare pack data with file references for R2 upload
       const packDataWithFiles = {
         title: formData.title.trim(),
@@ -796,11 +869,11 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         disableWatermark: formData.disableWatermark,
         createdAt: Date.now(),
         isActive: true,
-        // Pass files for R2 upload
-        coverImageFile: coverImageFile,
-        sampleImageFiles: sampleImageFiles,
-        sampleVideoFiles: sampleVideoFiles,
-        packFiles: packFiles,
+        // Pass files for R2 upload - ensure they are not null/undefined
+        coverImageFile: coverImageFile || null,
+        sampleImageFiles: sampleImageFiles || [],
+        sampleVideoFiles: sampleVideoFiles || [],
+        packFiles: packFiles || [],
         // Keep existing URLs for editing
         existingCoverImage: formData.coverImage,
         existingSampleImages: formData.sampleImages,
@@ -808,10 +881,12 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         existingPackContent: formData.packContent
       };
 
-      console.log('Submitting pack data:', {
-        packFiles: packFiles,
-        packFilePreviews: packFilePreviews,
-        existingPackContent: formData.packContent,
+
+      console.log('Final pack data payload:', {
+        coverImageFile: packDataWithFiles.coverImageFile,
+        sampleImageFiles: packDataWithFiles.sampleImageFiles,
+        sampleVideoFiles: packDataWithFiles.sampleVideoFiles,
+        packFiles: packDataWithFiles.packFiles,
         editingPack: editingPack
       });
 

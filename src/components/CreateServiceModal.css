@@ -290,6 +290,9 @@
   overflow-y: auto; /* Allow scrolling when content grows (attachments) */
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  /* Fix for Android devices - ensure proper scrolling */
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .form-step {
@@ -834,8 +837,13 @@
   border-radius: 12px;
   padding: 25px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  overflow: hidden;
+  overflow: visible;
   box-sizing: border-box;
+  /* Ensure content is fully visible and scrollable */
+  min-height: auto;
+  max-height: none;
+  /* Allow content to expand naturally */
+  display: block;
 }
 
 .preview-header {
@@ -921,9 +929,14 @@
 .preview-features,
 .preview-options,
 .preview-media-section,
-.preview-tags {
+.preview-tags,
+.preview-pack-content-section,
+.preview-watermark-info {
   margin-bottom: 20px;
   width: 100%;
+  /* Ensure sections are fully visible */
+  overflow: visible;
+  max-height: none;
 }
 
 .preview-description h3,
@@ -1032,8 +1045,12 @@
 
 /* Preview Media */
 .preview-photos,
-.preview-videos {
+.preview-videos,
+.preview-pack-files {
   margin-bottom: 20px;
+  /* Ensure media sections are fully visible */
+  overflow: visible;
+  max-height: none;
 }
 
 .preview-photos h4,
@@ -1049,6 +1066,9 @@
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 15px;
   width: 100%;
+  /* Ensure grid content is fully visible */
+  overflow: visible;
+  max-height: none;
 }
 
 .showcase-item {
@@ -1314,6 +1334,10 @@
     flex-direction: column;
     min-height: 0;
     margin: 0 !important; /* Ensure no margin on mobile */
+    /* Fix for Android - ensure proper scrolling */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
   }
   
   .form-step {
@@ -1322,6 +1346,9 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+    /* Ensure form step content is scrollable */
+    overflow: visible;
+    max-height: none;
   }
   
   .form-group {
@@ -1334,6 +1361,34 @@
   .form-group textarea {
     width: 100%;
     box-sizing: border-box;
+  }
+  
+  /* Fix for preview section on mobile */
+  .service-preview {
+    padding: 20px;
+    /* Ensure preview content is fully visible */
+    overflow: visible;
+    max-height: none;
+    min-height: auto;
+  }
+  
+  /* Ensure all preview sections are visible */
+  .preview-description,
+  .preview-media-section,
+  .preview-pack-content-section,
+  .preview-watermark-info,
+  .preview-tags {
+    overflow: visible;
+    max-height: none;
+    margin-bottom: 15px;
+  }
+  
+  /* Fix showcase grid on mobile */
+  .showcase-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    overflow: visible;
+    max-height: none;
   }
 }
 

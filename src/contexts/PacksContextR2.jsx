@@ -214,6 +214,15 @@ export const PacksProviderR2 = ({ children }) => {
         ...packMetadata 
       } = packData;
       
+      // Debug: Log file extraction
+      console.log('=== PACKS CONTEXT DEBUG ===');
+      console.log('Extracted coverImageFile:', coverImageFile);
+      console.log('Extracted sampleImageFiles:', sampleImageFiles);
+      console.log('Extracted sampleVideoFiles:', sampleVideoFiles);
+      console.log('Extracted packFiles:', packFiles);
+      console.log('User Agent:', navigator.userAgent);
+      console.log('===========================');
+      
       // Create the pack with metadata only (no File objects)
       const result = await apiFunc({
         resource: 'pack',
@@ -244,8 +253,10 @@ export const PacksProviderR2 = ({ children }) => {
 
         // Upload cover image
         if (coverImageFile) {
+          console.log('Uploading cover image:', coverImageFile.name, coverImageFile.size);
           onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), 'Enviando imagem de capa...');
           const coverResult = await uploadPackMedia(coverImageFile, packId);
+          console.log('Cover image upload result:', coverResult);
           mediaData.coverImage = {
             key: coverResult.key,
             publicUrl: coverResult.publicUrl,
@@ -289,10 +300,13 @@ export const PacksProviderR2 = ({ children }) => {
 
         // Upload pack content files (to private bucket)
         if (packFiles && packFiles.length > 0) {
+          console.log('Uploading pack files:', packFiles.length);
           for (let i = 0; i < packFiles.length; i++) {
             const file = packFiles[i];
+            console.log(`Uploading pack file ${i + 1}:`, file.name, file.size);
             onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), `Enviando arquivo do pack ${i + 1}/${packFiles.length}...`);
             const contentResult = await uploadPackContentMedia(file, packId);
+            console.log('Pack file upload result:', contentResult);
             mediaData.packContent.push({
               key: contentResult.key,
               // No publicUrl for pack content (private bucket)
