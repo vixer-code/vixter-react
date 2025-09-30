@@ -957,6 +957,11 @@
   line-height: 1.6;
   margin: 0;
   font-size: 0.95rem;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  white-space: pre-wrap;
 }
 
 .features-list {
@@ -1383,6 +1388,17 @@
     margin-bottom: 15px;
   }
   
+  /* Enhanced text wrapping for mobile */
+  .preview-description p {
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  
   /* Fix showcase grid on mobile */
   .showcase-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -1428,6 +1444,17 @@
     flex-direction: column;
     gap: 10px;
     align-items: flex-end;
+  }
+  
+  /* Enhanced text wrapping for small mobile */
+  .preview-description p {
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    white-space: pre-wrap;
+    font-size: 0.85rem;
+    line-height: 1.4;
   }
   
   .auto-save-status {
@@ -1662,6 +1689,17 @@
   .form-group {
     margin-bottom: 12px;
     flex-shrink: 0;
+  }
+  
+  /* Enhanced text wrapping for very small screens */
+  .preview-description p {
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    white-space: pre-wrap;
+    font-size: 0.8rem;
+    line-height: 1.3;
   }
   
   /* Ensure progress steps are hidden on very small screens too */

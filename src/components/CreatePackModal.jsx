@@ -369,7 +369,16 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     }
     
     console.log('Setting cover image file in state...');
-    setCoverImageFile(file);
+    
+    // Android-specific fix: Use a more reliable state update
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    if (isAndroid) {
+      console.log('Android detected, using reliable state update...');
+      // Force immediate state update for Android
+      setCoverImageFile(() => file);
+    } else {
+      setCoverImageFile(file);
+    }
     
     try {
       // Create optimized preview (Blob URL or compressed for mobile)
@@ -576,11 +585,24 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     }
     
     console.log('Adding pack files:', validFiles);
-    setPackFiles(prev => {
-      const newFiles = [...prev, ...validFiles];
-      console.log('Updated packFiles:', newFiles);
-      return newFiles;
-    });
+    
+    // Android-specific fix: Use a more reliable state update
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    if (isAndroid) {
+      console.log('Android detected, using reliable state update for pack files...');
+      // Force immediate state update for Android
+      setPackFiles(prev => {
+        const newFiles = [...prev, ...validFiles];
+        console.log('Updated packFiles (Android):', newFiles);
+        return newFiles;
+      });
+    } else {
+      setPackFiles(prev => {
+        const newFiles = [...prev, ...validFiles];
+        console.log('Updated packFiles:', newFiles);
+        return newFiles;
+      });
+    }
     
     // Create previews using blob URLs for better mobile performance
     for (const file of validFiles) {
@@ -770,7 +792,12 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   // Currency helpers (same logic as Service: VC -> VP @ 1.5x)
   const convertVCtoVP = (vcAmount) => vcAmount * 1.5;
   const formatCurrency = (amount, decimals = 2) => {
-    return parseFloat(amount || 0).toFixed(decimals).replace('.', ',');
+    const num = parseFloat(amount || 0);
+    // If the number is a whole number, don't show decimals
+    if (num % 1 === 0) {
+      return num.toString().replace('.', ',');
+    }
+    return num.toFixed(decimals).replace('.', ',');
   };
   const formatVC = (amount) => `${formatCurrency(amount)} VC`;
   const formatVP = (amount) => `${formatCurrency(amount)} VP`;
@@ -841,9 +868,14 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       // Debug: Log all file states before creating payload
       console.log('=== PACK CREATION DEBUG ===');
       console.log('coverImageFile:', coverImageFile);
+      console.log('coverImageFile type:', typeof coverImageFile);
+      console.log('coverImageFile instanceof File:', coverImageFile instanceof File);
+      console.log('coverImageFile name:', coverImageFile?.name);
+      console.log('coverImageFile size:', coverImageFile?.size);
       console.log('sampleImageFiles:', sampleImageFiles);
       console.log('sampleVideoFiles:', sampleVideoFiles);
       console.log('packFiles:', packFiles);
+      console.log('packFiles length:', packFiles?.length);
       console.log('coverImagePreview:', coverImagePreview);
       console.log('sampleImagePreviews:', sampleImagePreviews);
       console.log('sampleVideoPreviews:', sampleVideoPreviews);
@@ -854,6 +886,32 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       // Validate files before creating payload
       if (!coverImageFile && !formData.coverImage) {
         throw new Error('Imagem de capa é obrigatória');
+      }
+
+      // Android-specific validation: Check if coverImageFile is valid
+      if (coverImageFile) {
+        console.log('Validating coverImageFile for Android...');
+        console.log('- File object:', coverImageFile);
+        console.log('- File name:', coverImageFile.name);
+        console.log('- File size:', coverImageFile.size);
+        console.log('- File type:', coverImageFile.type);
+        console.log('- File lastModified:', coverImageFile.lastModified);
+        
+        // Check if file is still valid (Android specific issue)
+        if (!coverImageFile.name || coverImageFile.size === 0 || !coverImageFile.type) {
+          console.error('Cover image file is corrupted on Android, attempting to recover...');
+          throw new Error('Arquivo de capa corrompido. Por favor, selecione novamente.');
+        }
+        
+        // Test file accessibility (Android specific)
+        try {
+          const testBlob = URL.createObjectURL(coverImageFile);
+          URL.revokeObjectURL(testBlob);
+          console.log('Cover image file accessibility test passed');
+        } catch (error) {
+          console.error('Cover image file accessibility test failed:', error);
+          throw new Error('Erro ao acessar arquivo de capa. Por favor, selecione novamente.');
+        }
       }
 
       // Prepare pack data with file references for R2 upload

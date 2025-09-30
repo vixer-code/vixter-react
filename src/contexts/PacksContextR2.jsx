@@ -217,11 +217,32 @@ export const PacksProviderR2 = ({ children }) => {
       // Debug: Log file extraction
       console.log('=== PACKS CONTEXT DEBUG ===');
       console.log('Extracted coverImageFile:', coverImageFile);
+      console.log('coverImageFile type:', typeof coverImageFile);
+      console.log('coverImageFile instanceof File:', coverImageFile instanceof File);
+      console.log('coverImageFile name:', coverImageFile?.name);
+      console.log('coverImageFile size:', coverImageFile?.size);
       console.log('Extracted sampleImageFiles:', sampleImageFiles);
       console.log('Extracted sampleVideoFiles:', sampleVideoFiles);
       console.log('Extracted packFiles:', packFiles);
+      console.log('packFiles length:', packFiles?.length);
       console.log('User Agent:', navigator.userAgent);
       console.log('===========================');
+      
+      // Android-specific validation
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      if (isAndroid) {
+        console.log('Android device detected, validating files...');
+        
+        if (coverImageFile && (!(coverImageFile instanceof File) || !coverImageFile.name || coverImageFile.size === 0)) {
+          console.error('Cover image file is invalid on Android:', coverImageFile);
+          throw new Error('Arquivo de capa inválido no Android');
+        }
+        
+        if (packFiles && (!Array.isArray(packFiles) || packFiles.some(file => !(file instanceof File) || !file.name || file.size === 0))) {
+          console.error('Pack files are invalid on Android:', packFiles);
+          throw new Error('Arquivos do pack inválidos no Android');
+        }
+      }
       
       // Create the pack with metadata only (no File objects)
       const result = await apiFunc({
