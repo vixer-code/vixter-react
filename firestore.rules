@@ -53,6 +53,9 @@ service cloud.firestore {
                      isOwner(resource.data.fromUserId) || 
                      isOwner(resource.data.toUserId));
       
+      // Allow list queries for authenticated users to read their own transactions
+      allow list: if isAuthenticated();
+      
       // Only Cloud Functions can create transactions (no direct client writes)
       // This ensures transaction integrity and prevents fraud
       allow write: if false;
