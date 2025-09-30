@@ -191,6 +191,26 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   }, [isOpen]);
 
   const clearForm = (resetStep = true) => {
+    // Clean up blob URLs to free memory
+    if (coverImagePreview && coverImagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(coverImagePreview);
+    }
+    sampleImagePreviews.forEach(url => {
+      if (url && url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    });
+    sampleVideoPreviews.forEach(url => {
+      if (url && url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    });
+    packFilePreviews.forEach(preview => {
+      if (preview?.src && preview.src.startsWith('blob:')) {
+        URL.revokeObjectURL(preview.src);
+      }
+    });
+    
     setFormData({
       title: '',
       category: '',
@@ -234,15 +254,90 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     setFormData(prev => ({ ...prev, tags: prev.tags.filter((_, i) => i !== index) }));
   };
 
+  // Helper function to create optimized preview for mobile
+  const createImagePreview = async (file) => {
+    return new Promise((resolve, reject) => {
+      // Use Blob URL for better performance (especially on mobile)
+      // This is much more memory-efficient than Base64 data URLs
+      const blobUrl = URL.createObjectURL(file);
+      
+      // For mobile devices, we'll also compress the preview
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      if (!isMobile || file.size < 1024 * 1024) {
+        // Desktop or small files: use blob URL directly
+        console.log('Using blob URL for preview (desktop or small file)');
+        resolve(blobUrl);
+        return;
+      }
+      
+      // Mobile with large file: create compressed preview
+      console.log('Creating compressed preview for mobile');
+      const img = new Image();
+      img.onload = () => {
+        try {
+          // Create canvas for compression
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Calculate new dimensions (max 800px for preview)
+          const maxDimension = 800;
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > height && width > maxDimension) {
+            height = (height * maxDimension) / width;
+            width = maxDimension;
+          } else if (height > maxDimension) {
+            width = (width * maxDimension) / height;
+            height = maxDimension;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Draw compressed image
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to blob URL (more efficient than data URL)
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedUrl = URL.createObjectURL(blob);
+                console.log('Compressed preview created, original:', file.size, 'compressed:', blob.size);
+                resolve(compressedUrl);
+              } else {
+                // Fallback to original blob URL
+                resolve(blobUrl);
+              }
+            },
+            'image/jpeg',
+            0.85 // 85% quality
+          );
+        } catch (error) {
+          console.error('Error creating compressed preview:', error);
+          resolve(blobUrl); // Fallback to original
+        }
+      };
+      
+      img.onerror = () => {
+        console.error('Error loading image for compression');
+        resolve(blobUrl); // Fallback to original
+      };
+      
+      img.src = blobUrl;
+    });
+  };
+
   // Cover image
-  const handleCoverImageChange = (e) => {
+  const handleCoverImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Validate file size (max 5MB for mobile compatibility)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    // Validate file size (max 10MB - increased for mobile camera photos)
+    const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      showError('A imagem de capa deve ter no máximo 5MB para melhor compatibilidade mobile');
+      showError('A imagem de capa deve ter no máximo 10MB');
       e.target.value = ''; // Reset input
       return;
     }
@@ -254,21 +349,18 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       return;
     }
     
-    console.log('Cover image file selected:', file);
+    console.log('Cover image file selected:', file.name, file.size, 'bytes');
     setCoverImageFile(file);
     
-    // Generate preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result;
-      console.log('Cover image preview generated, length:', result?.length);
-      setCoverImagePreview(result);
-    };
-    reader.onerror = () => {
-      console.error('Error reading file');
-      showError('Erro ao ler a imagem. Por favor, tente novamente.');
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Create optimized preview (Blob URL or compressed for mobile)
+      const previewUrl = await createImagePreview(file);
+      console.log('Cover image preview URL created');
+      setCoverImagePreview(previewUrl);
+    } catch (error) {
+      console.error('Error creating preview:', error);
+      showError('Erro ao criar preview da imagem. Por favor, tente novamente.');
+    }
     
     // Reset input to allow selecting the same file again
     e.target.value = '';
@@ -284,6 +376,11 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       }
     }
     
+    // Revoke blob URL to free memory
+    if (coverImagePreview && coverImagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(coverImagePreview);
+    }
+    
     setCoverImageFile(null);
     setCoverImagePreview('');
     setFormData(prev => ({ ...prev, coverImage: null }));
@@ -297,7 +394,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   // Sample content (limit 5 total as per create-pack.js)
   const MAX_SAMPLES = 5;
 
-  const handleSampleImagesChange = (e) => {
+  const handleSampleImagesChange = async (e) => {
     const files = Array.from(e.target.files || []);
     const total = sampleImageFiles.length + sampleVideoFiles.length + files.length;
     if (total > MAX_SAMPLES) {
@@ -305,11 +402,16 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       return;
     }
     setSampleImageFiles(prev => [...prev, ...files]);
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = ev => setSampleImagePreviews(prev => [...prev, ev.target.result]);
-      reader.readAsDataURL(file);
-    });
+    
+    // Create previews using blob URLs for better mobile performance
+    for (const file of files) {
+      try {
+        const previewUrl = await createImagePreview(file);
+        setSampleImagePreviews(prev => [...prev, previewUrl]);
+      } catch (error) {
+        console.error('Error creating sample preview:', error);
+      }
+    }
   };
 
   const handleSampleVideosChange = (e) => {
@@ -320,10 +422,11 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       return;
     }
     setSampleVideoFiles(prev => [...prev, ...files]);
+    
+    // For videos, blob URLs are much more efficient than data URLs
     files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = ev => setSampleVideoPreviews(prev => [...prev, ev.target.result]);
-      reader.readAsDataURL(file);
+      const blobUrl = URL.createObjectURL(file);
+      setSampleVideoPreviews(prev => [...prev, blobUrl]);
     });
   };
 
@@ -359,8 +462,12 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         console.log('Pack update result:', updateResult);
       }
     } else {
-      // This is a new file - just remove from local state
+      // This is a new file - remove from local state and clean up blob URL
       const newFileIndex = index - totalExistingImages;
+      const previewToRemove = sampleImagePreviews[newFileIndex];
+      if (previewToRemove && previewToRemove.startsWith('blob:')) {
+        URL.revokeObjectURL(previewToRemove);
+      }
       setSampleImageFiles(prev => prev.filter((_, i) => i !== newFileIndex));
       setSampleImagePreviews(prev => prev.filter((_, i) => i !== newFileIndex));
     }
@@ -398,15 +505,19 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         console.log('Pack update result:', updateResult);
       }
     } else {
-      // This is a new file - just remove from local state
+      // This is a new file - remove from local state and clean up blob URL
       const newFileIndex = index - totalExistingVideos;
+      const previewToRemove = sampleVideoPreviews[newFileIndex];
+      if (previewToRemove && previewToRemove.startsWith('blob:')) {
+        URL.revokeObjectURL(previewToRemove);
+      }
       setSampleVideoFiles(prev => prev.filter((_, i) => i !== newFileIndex));
       setSampleVideoPreviews(prev => prev.filter((_, i) => i !== newFileIndex));
     }
   };
 
   // Pack files (downloadable content)
-  const handlePackFilesChange = (e) => {
+  const handlePackFilesChange = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     
@@ -417,19 +528,31 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       return newFiles;
     });
     
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const previewData = { src: ev.target.result, isVideo: file.type.startsWith('video/') };
-        console.log('Adding pack file preview:', previewData);
+    // Create previews using blob URLs for better mobile performance
+    for (const file of files) {
+      try {
+        const isVideo = file.type.startsWith('video/');
+        let previewUrl;
+        
+        if (isVideo) {
+          // For videos, always use blob URL
+          previewUrl = URL.createObjectURL(file);
+        } else {
+          // For images, use optimized preview
+          previewUrl = await createImagePreview(file);
+        }
+        
+        const previewData = { src: previewUrl, isVideo };
+        console.log('Adding pack file preview:', isVideo ? 'video' : 'image');
         setPackFilePreviews(prev => {
           const newPreviews = [...prev, previewData];
           console.log('Updated packFilePreviews:', newPreviews);
           return newPreviews;
         });
-      };
-      reader.readAsDataURL(file);
-    });
+      } catch (error) {
+        console.error('Error creating pack file preview:', error);
+      }
+    }
   };
   const removePackFile = async (index) => {
     console.log('Removing pack file at index:', index);
@@ -465,8 +588,12 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
         console.log('Pack update result:', updateResult);
       }
     } else {
-      // This is a new file - just remove from local state
+      // This is a new file - remove from local state and clean up blob URL
       const newFileIndex = index - totalExistingContent;
+      const previewToRemove = packFilePreviews[newFileIndex];
+      if (previewToRemove?.src && previewToRemove.src.startsWith('blob:')) {
+        URL.revokeObjectURL(previewToRemove.src);
+      }
       setPackFiles(prev => {
         const newFiles = prev.filter((_, i) => i !== newFileIndex);
         console.log('Updated packFiles after removal:', newFiles);
