@@ -93,6 +93,13 @@ const CachedImage = ({
         setError(null);
         let imageUrl = null;
 
+        // For data URLs and blob URLs, use them directly without caching
+        if (typeof desired === 'string' && (desired.startsWith('data:') || desired.startsWith('blob:'))) {
+          setImageSrc(desired);
+          setLoading(false);
+          return;
+        }
+
         // Try cache first for non-priority images
         if (enableCache && typeof desired === 'string') {
           const cached = imageCache.getCachedImage(desired);

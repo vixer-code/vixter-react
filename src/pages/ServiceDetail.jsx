@@ -360,7 +360,7 @@ const ServiceDetail = () => {
     if (isNaN(amount) || amount === null || amount === undefined) {
       return '0 VP';
     }
-    return `${amount} VP`;
+    return `${parseInt(amount, 10)} VP`;
   };
 
   if (loading) {

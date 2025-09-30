@@ -17,6 +17,8 @@
   grid-template-columns: 1fr 400px;
   gap: 30px;
   align-items: start;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .pack-main {
@@ -24,6 +26,11 @@
   border: 1px solid #333;
   border-radius: 12px;
   padding: 30px;
+  min-width: 0;
+  min-height: 400px;
+  box-sizing: border-box;
+  width: 100%;
+  overflow: visible;
 }
 
 .pack-header {
@@ -33,6 +40,8 @@
   margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 1px solid #333;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .pack-title-section h1 {
@@ -117,6 +126,11 @@
 
 .pack-status-badge.paused {
   background: rgba(255, 152, 0, 0.9);
+  margin-top: 8px;
+  margin-left: 0;
+  align-self: flex-end;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .pack-status-badge i {
@@ -835,6 +849,10 @@
   .pack-sidebar {
     position: static;
     order: -1; /* Move sidebar to top on mobile */
+  }
+  .pack-main {
+    padding: 16px;
+    border-radius: 8px;
   }
 }
 

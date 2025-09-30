@@ -167,6 +167,29 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     }
   }, [isOpen, formData.packType]);
 
+  // Bloquear scroll do body quando modal está aberto (especialmente importante no mobile)
+  useEffect(() => {
+    if (isOpen) {
+      // Salvar a posição atual do scroll
+      const scrollY = window.scrollY;
+      
+      // Aplicar estilos para bloquear scroll
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        // Restaurar scroll quando modal fechar
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
+
   const clearForm = (resetStep = true) => {
     setFormData({
       title: '',
@@ -233,10 +256,17 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     
     console.log('Cover image file selected:', file);
     setCoverImageFile(file);
+    
+    // Generate preview
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      console.log('Cover image preview generated:', ev.target.result);
-      setCoverImagePreview(ev.target.result);
+    reader.onloadend = () => {
+      const result = reader.result;
+      console.log('Cover image preview generated, length:', result?.length);
+      setCoverImagePreview(result);
+    };
+    reader.onerror = () => {
+      console.error('Error reading file');
+      showError('Erro ao ler a imagem. Por favor, tente novamente.');
     };
     reader.readAsDataURL(file);
     

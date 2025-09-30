@@ -69,9 +69,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   padding: 20px;
   box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: none;
+  overscroll-behavior: contain;
 }
 
 .create-service-modal {
@@ -86,6 +90,7 @@
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
   position: relative;
+  touch-action: pan-y;
 }
 
 /* Modal Header */
@@ -1118,14 +1123,17 @@
 }
 
 .btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none !important;
+  filter: brightness(0.9);
+  pointer-events: none;
 }
 
 .btn.primary {
   background: linear-gradient(135deg, #8A2BE2, #00FFCA);
   color: #0F0F1A;
+  font-weight: 700;
 }
 
 .btn.primary:hover:not(:disabled) {
@@ -1266,6 +1274,8 @@
     padding: 10px;
     align-items: flex-start;
     padding-top: 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   .create-service-modal {

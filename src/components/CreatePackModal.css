@@ -1,6 +1,12 @@
 /* Reuse identical visual layout and components from CreateServiceModal */
 @import './CreateServiceModal.css';
 
+/* Ensure modal overlay blocks all interactions on mobile */
+.create-service-modal-overlay {
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
 /* Additional mobile-specific overrides for pack creation */
 @media (max-width: 768px) {
   /* Ensure progress steps are hidden on mobile for pack creation too */
@@ -15,6 +21,23 @@
   /* Remove margin from pack creation modal content on mobile */
   .create-pack-modal .modal-content {
     margin: 0 !important;
+  }
+  
+  /* Force modal overlay to block all touch interactions */
+  .create-service-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    touch-action: none;
+    overscroll-behavior: contain;
+  }
+  
+  /* Ensure modal content can scroll but not the overlay */
+  .create-service-modal {
+    touch-action: pan-y;
   }
 }
 

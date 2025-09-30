@@ -34,7 +34,7 @@ const SmartMediaViewer = ({
       return;
     }
 
-    // If mediaData is a string, it's a regular URL
+    // If mediaData is a string, it's a regular URL or data URL
     if (typeof mediaData === 'string') {
       setIsR2Media(false);
       setR2Key(null);
@@ -49,6 +49,7 @@ const SmartMediaViewer = ({
         url = `https://${url}`;
       }
       
+      console.log('SmartMediaViewer: Setting fallback URL:', url.substring(0, 50) + '...');
       setFallbackUrl(url);
       return;
     }
