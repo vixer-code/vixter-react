@@ -14,6 +14,7 @@ import { PackOrderProvider } from './contexts/PackOrderContext';
 import { ReviewProvider } from './contexts/ReviewContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import MobileFooter from './components/MobileFooter';
 import NotificationContainer from './components/NotificationContainer';
 import ProtectedRoute from './components/ProtectedRoute';
 import { preloadCommonImages } from './utils/imagePreloader';
@@ -109,6 +110,7 @@ function App() {
                             </Suspense>
                           </main>
                           <Footer />
+                          <MobileFooter />
                           <NotificationContainer />
                         </div>
                       </Router>

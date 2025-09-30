@@ -1,0 +1,119 @@
+/* Mobile Footer - Apenas visível em dispositivos móveis */
+.mobile-footer {
+  display: none; /* Escondido por padrão (desktop) */
+}
+
+/* Mostrar apenas em mobile */
+@media (max-width: 768px) {
+  .mobile-footer {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(15, 15, 26, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    border-top: 1px solid rgba(0, 255, 202, 0.2);
+    z-index: 99;
+    padding: 8px 0;
+  }
+
+  .mobile-footer-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    max-width: 768px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+
+  .mobile-footer-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 16px;
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.6);
+    transition: all 0.3s ease;
+    position: relative;
+    flex: 1;
+    border-radius: 12px;
+  }
+
+  .mobile-footer-item i {
+    font-size: 20px;
+    transition: all 0.3s ease;
+  }
+
+  .mobile-footer-item span {
+    font-size: 11px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+
+  /* Estado hover */
+  .mobile-footer-item:hover {
+    color: rgba(0, 255, 202, 0.8);
+    background: rgba(0, 255, 202, 0.05);
+  }
+
+  .mobile-footer-item:hover i {
+    transform: translateY(-2px);
+  }
+
+  /* Estado ativo */
+  .mobile-footer-item.active {
+    color: #00FFCA;
+    background: rgba(0, 255, 202, 0.1);
+  }
+
+  .mobile-footer-item.active i {
+    filter: drop-shadow(0 0 8px rgba(0, 255, 202, 0.6));
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .mobile-footer-item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #00FFCA, transparent);
+    border-radius: 2px;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      filter: drop-shadow(0 0 8px rgba(0, 255, 202, 0.6));
+    }
+    50% {
+      filter: drop-shadow(0 0 12px rgba(0, 255, 202, 0.9));
+    }
+  }
+
+  /* Ajustar padding do main-content para dar espaço ao footer */
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Telas muito pequenas */
+@media (max-width: 360px) {
+  .mobile-footer-item {
+    padding: 6px 8px;
+  }
+
+  .mobile-footer-item i {
+    font-size: 18px;
+  }
+
+  .mobile-footer-item span {
+    font-size: 10px;
+  }
+}
