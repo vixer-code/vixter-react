@@ -201,11 +201,24 @@ export const PacksProviderR2 = ({ children }) => {
     try {
       setCreating(true);
       
-      // Create the pack using unified API
+      // Extract file objects (cannot be sent to Cloud Function)
+      const { 
+        coverImageFile, 
+        sampleImageFiles, 
+        sampleVideoFiles, 
+        packFiles,
+        existingCoverImage,
+        existingSampleImages,
+        existingSampleVideos,
+        existingPackContent,
+        ...packMetadata 
+      } = packData;
+      
+      // Create the pack with metadata only (no File objects)
       const result = await apiFunc({
         resource: 'pack',
         action: 'create',
-        payload: packData
+        payload: packMetadata
       });
       
       if (result.data.success) {
@@ -213,10 +226,10 @@ export const PacksProviderR2 = ({ children }) => {
         
         // Calculate total files to upload
         const totalFiles = [
-          packData.coverImageFile,
-          ...(packData.sampleImageFiles || []),
-          ...(packData.sampleVideoFiles || []),
-          ...(packData.packFiles || [])
+          coverImageFile,
+          ...(sampleImageFiles || []),
+          ...(sampleVideoFiles || []),
+          ...(packFiles || [])
         ].filter(Boolean).length;
 
         let uploadedFiles = 0;
@@ -230,9 +243,9 @@ export const PacksProviderR2 = ({ children }) => {
         };
 
         // Upload cover image
-        if (packData.coverImageFile) {
+        if (coverImageFile) {
           onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), 'Enviando imagem de capa...');
-          const coverResult = await uploadPackMedia(packData.coverImageFile, packId);
+          const coverResult = await uploadPackMedia(coverImageFile, packId);
           mediaData.coverImage = {
             key: coverResult.key,
             publicUrl: coverResult.publicUrl,
@@ -243,10 +256,10 @@ export const PacksProviderR2 = ({ children }) => {
         }
 
         // Upload sample images
-        if (packData.sampleImageFiles && packData.sampleImageFiles.length > 0) {
-          for (let i = 0; i < packData.sampleImageFiles.length; i++) {
-            const file = packData.sampleImageFiles[i];
-            onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), `Enviando amostra ${i + 1}/${packData.sampleImageFiles.length}...`);
+        if (sampleImageFiles && sampleImageFiles.length > 0) {
+          for (let i = 0; i < sampleImageFiles.length; i++) {
+            const file = sampleImageFiles[i];
+            onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), `Enviando amostra ${i + 1}/${sampleImageFiles.length}...`);
             const sampleResult = await uploadPackMedia(file, packId);
             mediaData.sampleImages.push({
               key: sampleResult.key,
@@ -259,10 +272,10 @@ export const PacksProviderR2 = ({ children }) => {
         }
 
         // Upload sample videos
-        if (packData.sampleVideoFiles && packData.sampleVideoFiles.length > 0) {
-          for (let i = 0; i < packData.sampleVideoFiles.length; i++) {
-            const file = packData.sampleVideoFiles[i];
-            onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), `Enviando vídeo de amostra ${i + 1}/${packData.sampleVideoFiles.length}...`);
+        if (sampleVideoFiles && sampleVideoFiles.length > 0) {
+          for (let i = 0; i < sampleVideoFiles.length; i++) {
+            const file = sampleVideoFiles[i];
+            onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), `Enviando vídeo de amostra ${i + 1}/${sampleVideoFiles.length}...`);
             const sampleResult = await uploadPackMedia(file, packId);
             mediaData.sampleVideos.push({
               key: sampleResult.key,
@@ -275,10 +288,10 @@ export const PacksProviderR2 = ({ children }) => {
         }
 
         // Upload pack content files (to private bucket)
-        if (packData.packFiles && packData.packFiles.length > 0) {
-          for (let i = 0; i < packData.packFiles.length; i++) {
-            const file = packData.packFiles[i];
-            onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), `Enviando arquivo do pack ${i + 1}/${packData.packFiles.length}...`);
+        if (packFiles && packFiles.length > 0) {
+          for (let i = 0; i < packFiles.length; i++) {
+            const file = packFiles[i];
+            onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), `Enviando arquivo do pack ${i + 1}/${packFiles.length}...`);
             const contentResult = await uploadPackContentMedia(file, packId);
             mediaData.packContent.push({
               key: contentResult.key,

@@ -215,6 +215,22 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
   const handleCoverImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Validate file size (max 5MB for mobile compatibility)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      showError('A imagem de capa deve ter no máximo 5MB para melhor compatibilidade mobile');
+      e.target.value = ''; // Reset input
+      return;
+    }
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showError('Por favor, selecione apenas arquivos de imagem');
+      e.target.value = ''; // Reset input
+      return;
+    }
+    
     console.log('Cover image file selected:', file);
     setCoverImageFile(file);
     const reader = new FileReader();
@@ -223,6 +239,9 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       setCoverImagePreview(ev.target.result);
     };
     reader.readAsDataURL(file);
+    
+    // Reset input to allow selecting the same file again
+    e.target.value = '';
   };
 
   const removeCoverImage = async () => {
@@ -1038,36 +1057,38 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                     onChange={handleCoverImageChange}
                     style={{ display: 'none' }}
                   />
-                  <label htmlFor="cover-image" className="upload-placeholder">
-                    {coverImagePreview ? (
-                      <div className="cover-image-container">
-                        <SmartMediaViewer
-                          mediaData={coverImagePreview}
-                          type="pack"
-                          watermarked={false}
-                          isOwner={true}
-                          fallbackSrc="/images/default-pack.jpg"
-                          alt="Cover preview"
-                          className="image-preview"
-                        />
-                        <button 
-                          type="button" 
-                          className="remove-cover-image" 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            removeCoverImage();
-                          }}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <i className="upload-icon">+</i>
-                        <span>Adicionar Imagem de Capa</span>
-                      </>
-                    )}
-                  </label>
+                  {coverImagePreview ? (
+                    <div className="cover-image-container">
+                      <SmartMediaViewer
+                        mediaData={coverImagePreview}
+                        type="pack"
+                        watermarked={false}
+                        isOwner={true}
+                        fallbackSrc="/images/default-pack.jpg"
+                        alt="Cover preview"
+                        className="image-preview"
+                      />
+                      <button 
+                        type="button" 
+                        className="remove-cover-image" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          removeCoverImage();
+                        }}
+                      >
+                        ×
+                      </button>
+                      <label htmlFor="cover-image" className="change-cover-image-btn">
+                        Alterar Imagem
+                      </label>
+                    </div>
+                  ) : (
+                    <label htmlFor="cover-image" className="upload-placeholder">
+                      <i className="upload-icon">+</i>
+                      <span>Adicionar Imagem de Capa</span>
+                    </label>
+                  )}
                 </div>
                 <small>Obrigatório</small>
               </div>

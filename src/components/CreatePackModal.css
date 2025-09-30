@@ -318,7 +318,9 @@
 
 .cover-image-container {
   position: relative;
-  display: inline-block;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   width: 100%;
 }
 
@@ -338,9 +340,9 @@
   color: white;
   border: none;
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  font-size: 16px;
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
   font-weight: bold;
   cursor: pointer;
   display: flex;
@@ -348,9 +350,58 @@
   justify-content: center;
   z-index: 10;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .remove-cover-image:hover {
   background: #ff3742;
   transform: scale(1.1);
+}
+
+.remove-cover-image:active {
+  transform: scale(0.95);
+}
+
+.change-cover-image-btn {
+  display: inline-block;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #00FFCA, #00D4AA);
+  color: #0F0F1A;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.change-cover-image-btn:hover {
+  background: linear-gradient(135deg, #00D4AA, #00B894);
+  transform: translateY(-1px);
+}
+
+.change-cover-image-btn:active {
+  transform: translateY(0);
+}
+
+/* Mobile-specific adjustments for cover image */
+@media (max-width: 768px) {
+  .cover-image-container {
+    gap: 10px;
+  }
+  
+  .remove-cover-image {
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+    top: 8px;
+    right: 8px;
+  }
+  
+  .change-cover-image-btn {
+    padding: 12px 20px;
+    font-size: 1rem;
+  }
 }

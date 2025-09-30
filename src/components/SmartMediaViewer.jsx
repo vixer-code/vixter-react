@@ -39,9 +39,13 @@ const SmartMediaViewer = ({
       setIsR2Media(false);
       setR2Key(null);
       
-      // Ensure URL has protocol
+      // Ensure URL has protocol (but don't modify data URLs, blob URLs, or URLs that already have protocol)
       let url = mediaData;
-      if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+      if (url && 
+          !url.startsWith('http://') && 
+          !url.startsWith('https://') && 
+          !url.startsWith('data:') && 
+          !url.startsWith('blob:')) {
         url = `https://${url}`;
       }
       
