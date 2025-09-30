@@ -235,6 +235,17 @@ const Wallet = () => {
   const getTransactionAmountDisplay = (transaction) => {
     if (!transaction.amounts) return { amount: 0, currency: 'VP' };
 
+    // Para transações de bônus de VBP (resgate diário)
+    if (transaction.type === 'BONUS' && transaction.amounts.vbp) {
+      const vbpAmount = transaction.amounts.vbp || 0;
+      return {
+        amount: Math.abs(vbpAmount),
+        currency: 'VBP',
+        isPositive: vbpAmount >= 0,
+        description: 'Resgate diário de VBP'
+      };
+    }
+
     // For BUY_VP transactions, prioritize VP amount but also include VBP
     if (transaction.type === 'BUY_VP') {
       const vpAmount = transaction.amounts.vp || 0;
@@ -261,6 +272,10 @@ const Wallet = () => {
   };
 
   const getTransactionIcon = (transaction) => {
+    // Ícone especial para bônus de VBP
+    if (transaction.type === 'BONUS' && transaction.amounts.vbp) {
+      return 'fas fa-gift';
+    }
     // Determine transaction type (matching new transaction structure)
     let typeClass = '';
 
@@ -294,6 +309,10 @@ const Wallet = () => {
   };
 
   const getTransactionColor = (transaction) => {
+    // Verde para bônus de VBP
+    if (transaction.type === 'BONUS' && transaction.amounts.vbp) {
+      return '#27ae60';
+    }
     // Get transaction amount and currency
     const { amount, currency, isPositive } = getTransactionAmountDisplay(transaction);
 
@@ -960,7 +979,12 @@ const Wallet = () => {
                   </div>
                   <div className="transaction-details">
                     <div className="transaction-description">
-                      {transaction.metadata?.description || 'Transação'}
+                      {(() => {
+                        if (transaction.type === 'BONUS' && transaction.amounts.vbp) {
+                          return 'Resgate diário de VBP';
+                        }
+                        return transaction.metadata?.description || 'Transação';
+                      })()}
                     </div>
                     <div className="transaction-date">{formatDate(transaction.timestamp)}</div>
                   </div>
