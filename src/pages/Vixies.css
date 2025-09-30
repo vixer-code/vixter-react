@@ -98,20 +98,61 @@
   gap: 20px;
 }
 
-/* ===== Tabs (Principal / Seguindo / Meus posts) ===== */
+/* ===== Tabs Container (Principal / Seguindo / Meus posts) ===== */
+.vixies-tabs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+  width: 100%;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .vixies-tabs {
   display: flex;
   justify-content: center;
   gap: 4px;
-  margin-bottom: 24px;
   background: var(--bg-primary);
   border-radius: 12px;
   padding: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border-color);
-  max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
+}
+
+.vixies-tabs-myposts {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Desktop: todos os botões na mesma linha */
+@media (min-width: 769px) {
+  .vixies-tabs-container {
+    flex-direction: row;
+    gap: 0;
+  }
+  
+  .vixies-tabs {
+    flex: 1;
+    border-radius: 12px 0 0 12px;
+  }
+  
+  .vixies-tabs-myposts {
+    background: var(--bg-primary);
+    border-radius: 0 12px 12px 0;
+    padding: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border-color);
+    border-left: none;
+    width: auto;
+  }
+  
+  .vixies-tabs-myposts .tab-btn-myposts {
+    margin: 0;
+    width: auto;
+  }
 }
 
 .tab-btn {
@@ -176,6 +217,80 @@
 .tab-btn span {
   position: relative;
   z-index: 1;
+}
+
+/* Botão "Meus posts" - estilo especial para mobile */
+.tab-btn-myposts {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+  border: 1px solid #444;
+  border-radius: 25px;
+  color: #888;
+  cursor: pointer;
+  transition: all .3s ease;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.tab-btn-myposts::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%);
+  transition: left 0.3s ease;
+  z-index: 0;
+}
+
+.tab-btn-myposts:hover {
+  border-color: #8A2BE2;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(138, 43, 226, 0.3);
+}
+
+.tab-btn-myposts:hover::before {
+  left: 0;
+}
+
+.tab-btn-myposts.active {
+  background: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%);
+  border-color: #8A2BE2;
+  color: #000;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(138, 43, 226, 0.4);
+}
+
+.tab-btn-myposts.active::before {
+  display: none;
+}
+
+.tab-btn-myposts span,
+.tab-btn-myposts i {
+  position: relative;
+  z-index: 1;
+}
+
+/* Mobile: botão "Meus posts" com mais destaque */
+@media (max-width: 768px) {
+  .vixies-tabs-myposts {
+    margin-top: 4px;
+  }
+  
+  .tab-btn-myposts {
+    font-size: 15px;
+    font-weight: 600;
+  }
 }
 
 /* ===== Sidebar ===== */
