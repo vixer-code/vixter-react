@@ -47,23 +47,8 @@ const Profile = () => {
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const { createOrGetConversation } = useEnhancedMessaging();
   
-  // Format time ago function (same as in Feed.jsx)
-  const formatTimeAgo = (timestamp) => {
-    if (!timestamp) return 'Agora';
-    const now = Date.now();
-    const diff = Math.floor((now - timestamp) / 1000);
-    if (diff < 60) return 'Agora mesmo';
-    if (diff < 3600) return `${Math.floor(diff / 60)} min atrás`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)} h atrás`;
-    if (diff < 2592000) return `${Math.floor(diff / 86400)} dias atrás`;
-    if (diff < 31536000) return `${Math.floor(diff / 2592000)} meses atrás`;
-    return `${Math.floor(diff / 31536000)} anos atrás`;
-  };
-  
+  // All useState hooks must be at the top before any other logic
   const [profile, setProfile] = useState(null);
-  
-  // Calculate isOwner after profile is declared
-  const isOwner = !username || currentUser?.uid === profile?.id;
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -102,42 +87,63 @@ const Profile = () => {
   const [deleteStatus, setDeleteStatus] = useState('');
   const [profileRating, setProfileRating] = useState(0);
   const [profileReviewsCount, setProfileReviewsCount] = useState(0);
-
-  // Direct Firebase Storage uploads only
-
-  // Visitor preview modals before buying
   const [showServicePreview, setShowServicePreview] = useState(false);
   const [serviceToPreview, setServiceToPreview] = useState(null);
   const [showPackPreview, setShowPackPreview] = useState(false);
   const [packToPreview, setPackToPreview] = useState(null);
-
-  // Service purchase confirmation (refund policy)
   const [showServiceConfirm, setShowServiceConfirm] = useState(false);
   const [confirmServiceAck, setConfirmServiceAck] = useState(false);
   const [servicePendingPurchase, setServicePendingPurchase] = useState(null);
-  // Pack purchase confirmation (refund policy)
   const [showPackConfirm, setShowPackConfirm] = useState(false);
   const [confirmPackAck, setConfirmPackAck] = useState(false);
   const [packPendingPurchase, setPackPendingPurchase] = useState(null);
-
-  // Service sales view (owner)
   const [showServiceSalesModal, setShowServiceSalesModal] = useState(false);
   const [salesService, setSalesService] = useState(null);
   const [serviceSales, setServiceSales] = useState([]);
   const [serviceSalesLoading, setServiceSalesLoading] = useState(false);
   const [serviceTotalVCEarned, setServiceTotalVCEarned] = useState(0);
-
-  // Pack sales view (owner)
   const [showPackSalesModal, setShowPackSalesModal] = useState(false);
   const [salesPack, setSalesPack] = useState(null);
   const [packSales, setPackSales] = useState([]);
   const [packSalesLoading, setPackSalesLoading] = useState(false);
   const [packTotalVCEarned, setPackTotalVCEarned] = useState(0);
-
-
-  // Pack buyers modal
   const [showPackBuyersModal, setShowPackBuyersModal] = useState(false);
   const [selectedPack, setSelectedPack] = useState(null);
+  const [switchingServiceId, setSwitchingServiceId] = useState(null);
+  const [switchingPackId, setSwitchingPackId] = useState(null);
+  const [salesLoading, setSalesLoading] = useState(false);
+  const [salesError, setSalesError] = useState(null);
+  const [totalVCEarned, setTotalVCEarned] = useState(0);
+  const [totalSalesCount, setTotalSalesCount] = useState(0);
+  const [bestSellers, setBestSellers] = useState([]);
+  const [topBuyers, setTopBuyers] = useState([]);
+  const [recentSales, setRecentSales] = useState([]);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [formData, setFormData] = useState({
+    displayName: '',
+    bio: '',
+    location: '',
+    interests: [],
+    languages: '',
+    hobbies: '',
+    aboutMe: ''
+  });
+
+  // Format time ago function (same as in Feed.jsx)
+  const formatTimeAgo = (timestamp) => {
+    if (!timestamp) return 'Agora';
+    const now = Date.now();
+    const diff = Math.floor((now - timestamp) / 1000);
+    if (diff < 60) return 'Agora mesmo';
+    if (diff < 3600) return `${Math.floor(diff / 60)} min atrás`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} h atrás`;
+    if (diff < 2592000) return `${Math.floor(diff / 86400)} dias atrás`;
+    if (diff < 31536000) return `${Math.floor(diff / 2592000)} meses atrás`;
+    return `${Math.floor(diff / 31536000)} anos atrás`;
+  };
+  
+  // Calculate isOwner after profile state is declared
+  const isOwner = !username || currentUser?.uid === profile?.id;
 
   // Open pack buyers modal
   const openPackBuyers = (pack) => {
@@ -166,21 +172,6 @@ const Profile = () => {
       showError('Erro ao criar conversa');
     }
   };
-
-
-  // Toggle animation state
-  const [switchingServiceId, setSwitchingServiceId] = useState(null);
-  const [switchingPackId, setSwitchingPackId] = useState(null);
-
-  // Sales dashboard states (provider only)
-  const [salesLoading, setSalesLoading] = useState(false);
-  const [salesError, setSalesError] = useState(null);
-  const [totalVCEarned, setTotalVCEarned] = useState(0);
-  const [totalSalesCount, setTotalSalesCount] = useState(0);
-  const [bestSellers, setBestSellers] = useState([]); // {id, title, type, totalVC, count}
-  const [topBuyers, setTopBuyers] = useState([]); // {buyerId, username, count, totalVC}
-  const [recentSales, setRecentSales] = useState([]); // recent combined sales
-  const [withdrawAmount, setWithdrawAmount] = useState('');
 
   // Load profile from UserContext or Firestore
   useEffect(() => {
@@ -223,17 +214,6 @@ const Profile = () => {
 
     loadProfileData();
   }, [username, currentUser, userProfile, getUserByUsername, showError, navigate]);
-
-  // Form state for editing
-  const [formData, setFormData] = useState({
-    displayName: '',
-    bio: '',
-    location: '',
-    interests: [],
-    languages: '',
-    hobbies: '',
-    aboutMe: ''
-  });
 
   // Initialize form data when profile changes
   useEffect(() => {
