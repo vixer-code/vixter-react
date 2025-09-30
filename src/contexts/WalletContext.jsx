@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { 
   collection,
   doc,
@@ -43,6 +43,10 @@ export const WalletProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [processingPayment, setProcessingPayment] = useState(false);
 
+  // Refs to store unsubscribe functions
+  const walletUnsubscribeRef = useRef(null);
+  const transactionsUnsubscribeRef = useRef(null);
+
   // Firebase Functions (using the configured instance from firebase.js)
   const createStripeSession = httpsCallable(functions, 'createStripeSession');
   const initializeWallet = httpsCallable(functions, 'initializeWallet');
@@ -73,15 +77,41 @@ export const WalletProvider = ({ children }) => {
 
   // Initialize wallet when user changes
   useEffect(() => {
+    // Clean up existing listeners first
+    if (walletUnsubscribeRef.current) {
+      console.log('🧹 Cleaning up wallet listener');
+      walletUnsubscribeRef.current();
+      walletUnsubscribeRef.current = null;
+    }
+    if (transactionsUnsubscribeRef.current) {
+      console.log('🧹 Cleaning up transactions listener');
+      transactionsUnsubscribeRef.current();
+      transactionsUnsubscribeRef.current = null;
+    }
+
     if (currentUser) {
+      console.log('👤 User logged in, initializing wallet and transactions');
       initUserWallet();
       loadTransactions();
       checkPaymentStatus();
     } else {
+      console.log('👋 User logged out, clearing wallet state');
       setWallet(null);
       setTransactions([]);
       setLoading(false);
     }
+
+    // Cleanup function
+    return () => {
+      if (walletUnsubscribeRef.current) {
+        console.log('🧹 Cleanup: Unsubscribing wallet listener');
+        walletUnsubscribeRef.current();
+      }
+      if (transactionsUnsubscribeRef.current) {
+        console.log('🧹 Cleanup: Unsubscribing transactions listener');
+        transactionsUnsubscribeRef.current();
+      }
+    };
   }, [currentUser]);
 
   // Check payment status from URL on mount
@@ -119,7 +149,8 @@ export const WalletProvider = ({ children }) => {
           }
         });
         
-        return unsubscribe;
+        // Store unsubscribe function
+        walletUnsubscribeRef.current = unsubscribe;
       } else {
         // Initialize new wallet via Cloud Function
         const result = await initializeWallet();
@@ -133,7 +164,8 @@ export const WalletProvider = ({ children }) => {
             }
           });
           
-          return unsubscribe;
+          // Store unsubscribe function
+          walletUnsubscribeRef.current = unsubscribe;
         }
       }
     } catch (error) {
@@ -191,7 +223,8 @@ export const WalletProvider = ({ children }) => {
         showError('Erro ao carregar transações.', 'Erro');
       });
       
-      return unsubscribe;
+      // Store unsubscribe function
+      transactionsUnsubscribeRef.current = unsubscribe;
     } catch (error) {
       console.error('Error loading transactions:', error);
       showError('Erro ao carregar transações.', 'Erro');

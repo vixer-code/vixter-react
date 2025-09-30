@@ -5,6 +5,7 @@ import { useUser } from '../contexts/UserContext';
 import { useWallet } from '../contexts/WalletContext';
 import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import { useNotification } from '../contexts/NotificationContext';
+import useKycStatus from '../hooks/useKycStatus';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import CachedImage from '../components/CachedImage';
@@ -19,6 +20,7 @@ const ServiceDetail = () => {
   const { vpBalance } = useWallet();
   const { createServiceOrder, processing } = useServiceOrder();
   const { showSuccess, showError, showWarning } = useNotification();
+  const { kycState, isKycVerified, kycLoading } = useKycStatus();
 
   // Function to calculate provider statistics dynamically
   const calculateProviderStats = async (providerData) => {
@@ -275,6 +277,24 @@ const ServiceDetail = () => {
     if (service.providerId === currentUser.uid) {
       showWarning('Você não pode comprar seu próprio serviço');
       return;
+    }
+
+    // KYC validation for +18 content (Webnamoro)
+    if (service.category === 'webnamoro') {
+      if (kycLoading) {
+        return showError('Aguarde a verificação do status KYC...');
+      }
+      if (!isKycVerified) {
+        if (kycState === 'PENDING_UPLOAD') {
+          showError('Para acessar serviços +18 (Webnamoro), você precisa completar sua verificação KYC primeiro.');
+          setTimeout(() => {
+            window.location.href = '/settings';
+          }, 2000);
+          return;
+        } else {
+          return showError('Para acessar serviços +18 (Webnamoro), sua verificação KYC precisa estar aprovada. Status atual: ' + (kycState === 'PENDING_VERIFICATION' ? 'Em análise' : 'Pendente'));
+        }
+      }
     }
 
     const totalCost = calculateVpTotal();
@@ -571,14 +591,36 @@ const ServiceDetail = () => {
               {currentUser ? (
                 (userProfile?.accountType === 'client' || userProfile?.accountType === 'both') ? (
                   service.providerId !== currentUser.uid ? (
-                    <button 
-                      className={`btn-purchase ${service.status && service.status !== 'active' ? 'disabled' : ''}`}
-                      onClick={() => setShowPurchaseModal(true)}
-                      disabled={processing || (service.status && service.status !== 'active')}
-                    >
-                      <i className="fas fa-shopping-cart"></i>
-                      {service.status && service.status !== 'active' ? 'Serviço Pausado' : 'Comprar Serviço'}
-                    </button>
+                    <>
+                      {/* KYC Warning for +18 content */}
+                      {service.category === 'webnamoro' && !isKycVerified && (
+                        <div className="kyc-warning">
+                          <i className="fas fa-exclamation-triangle"></i>
+                          <div className="warning-content">
+                            <strong>Verificação KYC Necessária</strong>
+                            <p>Para acessar serviços +18 (Webnamoro), você precisa ter sua identidade verificada.</p>
+                            <button 
+                              className="btn-kyc"
+                              onClick={() => navigate('/settings')}
+                            >
+                              <i className="fas fa-id-card"></i>
+                              Verificar Identidade
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <button 
+                        className={`btn-purchase ${service.status && service.status !== 'active' ? 'disabled' : ''} ${service.category === 'webnamoro' && !isKycVerified ? 'disabled' : ''}`}
+                        onClick={() => setShowPurchaseModal(true)}
+                        disabled={processing || (service.status && service.status !== 'active') || (service.category === 'webnamoro' && !isKycVerified)}
+                      >
+                        <i className="fas fa-shopping-cart"></i>
+                        {service.status && service.status !== 'active' ? 'Serviço Pausado' : 
+                         service.category === 'webnamoro' && !isKycVerified ? 'KYC Necessário' : 
+                         'Comprar Serviço'}
+                      </button>
+                    </>
                   ) : (
                     <div className="own-service-notice">
                       <i className="fas fa-info-circle"></i>

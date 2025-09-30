@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useWallet } from '../contexts/WalletContext';
 import { useNotification } from '../contexts/NotificationContext';
+import useKycStatus from '../hooks/useKycStatus';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref as rtdbRef, get as rtdbGet } from 'firebase/database';
 import { db, database } from '../../config/firebase';
@@ -33,6 +34,7 @@ const PackDetail = () => {
   const { userProfile } = useUser();
   const { vpBalance, createPackOrder } = useWallet();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
+  const { kycState, isKycVerified, kycLoading } = useKycStatus();
 
   // Function to calculate provider statistics dynamically
   const calculateProviderStats = async (providerData) => {
@@ -338,6 +340,24 @@ const PackDetail = () => {
     if (pack.status && pack.status !== 'active') {
       showWarning('Este pack está pausado e não está disponível para compra');
       return;
+    }
+
+    // KYC validation for +18 content (Vixies)
+    if (pack.category === 'conteudo-18') {
+      if (kycLoading) {
+        return showError('Aguarde a verificação do status KYC...');
+      }
+      if (!isKycVerified) {
+        if (kycState === 'PENDING_UPLOAD') {
+          showError('Para acessar conteúdo +18 (Vixies), você precisa completar sua verificação KYC primeiro.');
+          setTimeout(() => {
+            window.location.href = '/settings';
+          }, 2000);
+          return;
+        } else {
+          return showError('Para acessar conteúdo +18 (Vixies), sua verificação KYC precisa estar aprovada. Status atual: ' + (kycState === 'PENDING_VERIFICATION' ? 'Em análise' : 'Pendente'));
+        }
+      }
     }
 
     const totalCost = calculateVpTotal();
@@ -685,14 +705,36 @@ const PackDetail = () => {
               {currentUser ? (
                 (userProfile?.accountType === 'client' || userProfile?.accountType === 'both') ? (
                   pack.authorId !== currentUser.uid ? (
-            <button 
-              className={`btn-purchase ${pack.status && pack.status !== 'active' ? 'disabled' : ''}`}
-              onClick={handlePurchase}
-              disabled={pack.status && pack.status !== 'active'}
-            >
-              <i className="fas fa-shopping-cart"></i>
-              {pack.status && pack.status !== 'active' ? 'Pack Pausado' : 'Comprar Pack'}
-            </button>
+                    <>
+                      {/* KYC Warning for +18 content */}
+                      {pack.category === 'conteudo-18' && !isKycVerified && (
+                        <div className="kyc-warning">
+                          <i className="fas fa-exclamation-triangle"></i>
+                          <div className="warning-content">
+                            <strong>Verificação KYC Necessária</strong>
+                            <p>Para acessar conteúdo +18 (Vixies), você precisa ter sua identidade verificada.</p>
+                            <button 
+                              className="btn-kyc"
+                              onClick={() => navigate('/settings')}
+                            >
+                              <i className="fas fa-id-card"></i>
+                              Verificar Identidade
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <button 
+                        className={`btn-purchase ${pack.status && pack.status !== 'active' ? 'disabled' : ''} ${pack.category === 'conteudo-18' && !isKycVerified ? 'disabled' : ''}`}
+                        onClick={handlePurchase}
+                        disabled={pack.status && pack.status !== 'active' || (pack.category === 'conteudo-18' && !isKycVerified)}
+                      >
+                        <i className="fas fa-shopping-cart"></i>
+                        {pack.status && pack.status !== 'active' ? 'Pack Pausado' : 
+                         pack.category === 'conteudo-18' && !isKycVerified ? 'KYC Necessário' : 
+                         'Comprar Pack'}
+                      </button>
+                    </>
                   ) : (
                     <div className="own-pack-notice">
                       <i className="fas fa-info-circle"></i>

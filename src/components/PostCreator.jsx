@@ -6,6 +6,7 @@ import { database, storage, firestore } from '../../config/firebase';
 import { ref, push } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import Portal from './Portal';
 import './PostCreator.css';
 
 const PostCreator = ({ 
@@ -487,19 +488,20 @@ const PostCreator = ({
 
       {/* Attachment Modal */}
       {showAttachmentModal && (
-        <div className="modal-overlay">
-          <div className="attachment-modal">
-            <div className="modal-header">
-              <h3>Anexar Serviço ou Pack</h3>
-              <button 
-                onClick={() => setShowAttachmentModal(false)}
-                className="close-btn"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="attachment-grid">
+        <Portal>
+          <div className="modal-overlay" onClick={() => setShowAttachmentModal(false)}>
+            <div className="attachment-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Anexar Serviço ou Pack</h3>
+                <button 
+                  onClick={() => setShowAttachmentModal(false)}
+                  className="close-btn"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="attachment-grid">
               {loadingAttachments ? (
                 <div className="loading">Carregando...</div>
               ) : (
@@ -602,9 +604,10 @@ const PostCreator = ({
                   )}
                 </>
               )}
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
     </div>
   );
