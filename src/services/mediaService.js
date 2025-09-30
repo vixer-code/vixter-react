@@ -58,10 +58,35 @@ class MediaService {
    */
   async uploadFile(file, type, itemId = null) {
     try {
+      // Android fix: Ensure file.type is not empty
+      let contentType = file.type;
+      if (!contentType || contentType === '') {
+        // Detect content type from file extension
+        const extension = file.name.split('.').pop().toLowerCase();
+        const mimeTypes = {
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'png': 'image/png',
+          'gif': 'image/gif',
+          'webp': 'image/webp',
+          'mp4': 'video/mp4',
+          'mov': 'video/quicktime',
+          'avi': 'video/x-msvideo',
+          'pdf': 'application/pdf',
+          'zip': 'application/zip',
+          'rar': 'application/x-rar-compressed',
+          'txt': 'text/plain',
+          'doc': 'application/msword',
+          'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        };
+        contentType = mimeTypes[extension] || 'application/octet-stream';
+        console.log(`Android fix: Detected content type ${contentType} for file ${file.name}`);
+      }
+
       // Generate upload URL
       const uploadData = await this.generateUploadUrl(
         type,
-        file.type,
+        contentType,
         file.name,
         itemId
       );
@@ -71,7 +96,7 @@ class MediaService {
         method: 'PUT',
         body: file,
         headers: {
-          'Content-Type': file.type,
+          'Content-Type': contentType,
         },
       });
 
@@ -83,7 +108,7 @@ class MediaService {
         key: uploadData.key,
         publicUrl: uploadData.publicUrl,
         size: file.size,
-        type: file.type,
+        type: contentType,
         name: file.name,
       };
     } catch (error) {

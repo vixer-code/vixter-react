@@ -362,9 +362,27 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     const isAndroid = /Android/i.test(navigator.userAgent);
     
     if (isAndroid) {
+      // Android fix: Ensure file.type is not empty
+      let fileType = file.type;
+      if (!fileType || fileType === '') {
+        // Detect content type from file extension
+        const extension = file.name.split('.').pop().toLowerCase();
+        const mimeTypes = {
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'png': 'image/png',
+          'gif': 'image/gif',
+          'webp': 'image/webp',
+          'mp4': 'video/mp4',
+          'mov': 'video/quicktime',
+          'avi': 'video/x-msvideo'
+        };
+        fileType = mimeTypes[extension] || 'image/jpeg';
+      }
+      
       // Create a new File object to ensure it's properly handled on Android
       const androidFile = new File([file], file.name, {
-        type: file.type,
+        type: fileType,
         lastModified: file.lastModified
       });
       
@@ -596,13 +614,36 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
     const isAndroid = /Android/i.test(navigator.userAgent);
     
     if (isAndroid) {
-      // Create new File objects to ensure they're properly handled on Android
-      const androidFiles = validFiles.map(file => 
-        new File([file], file.name, {
-          type: file.type,
+      // Android fix: Ensure file.type is not empty for all files
+      const androidFiles = validFiles.map(file => {
+        let fileType = file.type;
+        if (!fileType || fileType === '') {
+          // Detect content type from file extension
+          const extension = file.name.split('.').pop().toLowerCase();
+          const mimeTypes = {
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'gif': 'image/gif',
+            'webp': 'image/webp',
+            'mp4': 'video/mp4',
+            'mov': 'video/quicktime',
+            'avi': 'video/x-msvideo',
+            'pdf': 'application/pdf',
+            'zip': 'application/zip',
+            'rar': 'application/x-rar-compressed',
+            'txt': 'text/plain',
+            'doc': 'application/msword',
+            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          };
+          fileType = mimeTypes[extension] || 'application/octet-stream';
+        }
+        
+        return new File([file], file.name, {
+          type: fileType,
           lastModified: file.lastModified
-        })
-      );
+        });
+      });
       
       // Verify all files are valid
       const invalidFiles = androidFiles.filter(file => 
