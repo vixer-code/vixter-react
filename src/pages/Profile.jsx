@@ -128,6 +128,9 @@ const Profile = () => {
     hobbies: '',
     aboutMe: ''
   });
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [modalImageUrl, setModalImageUrl] = useState('');
+  const [modalImageAlt, setModalImageAlt] = useState('');
 
   // Format time ago function (same as in Feed.jsx)
   const formatTimeAgo = (timestamp) => {
@@ -1212,11 +1215,6 @@ const Profile = () => {
       showError('Erro ao solicitar saque. Tente novamente.', 'Erro');
     }
   };
-
-  // [1] Novo estado para modal de visualização de imagem
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [modalImageUrl, setModalImageUrl] = useState('');
-  const [modalImageAlt, setModalImageAlt] = useState('');
 
   // [2] Função para abrir modal de visualização
   const handleOpenImageModal = (url, alt) => {
