@@ -35,7 +35,9 @@ const Wallet = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [filters, setFilters] = useState({
-    period: 'all'
+    period: 'all',
+    currency: 'all',
+    type: 'all'
   });
   const [providerHistory, setProviderHistory] = useState([]); // full list
   const [providerHistoryLoading, setProviderHistoryLoading] = useState(false);
