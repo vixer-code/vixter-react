@@ -322,9 +322,9 @@ export const WalletProvider = ({ children }) => {
           7000,
           {
             onClick: () => {
-              window.location.href = '/my-services';
+              window.location.href = '/my-purchases';
             },
-            data: { action: 'view_my_services' }
+            data: { action: 'view_my_purchases' }
           }
         );
         return { success: true, serviceOrderId: result.data.order?.id };
@@ -381,9 +381,9 @@ export const WalletProvider = ({ children }) => {
           7000,
           {
             onClick: () => {
-              window.location.href = '/my-services';
+              window.location.href = '/my-purchases';
             },
-            data: { action: 'view_my_services' }
+            data: { action: 'view_my_purchases' }
           }
         );
         return { success: true, packOrderId: result.data.packOrderId };
