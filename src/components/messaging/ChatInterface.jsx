@@ -7,7 +7,6 @@ import { useUserStatus } from '../../hooks/useUserStatus';
 import { getProfileUrl } from '../../utils/profileUrls';
 import CachedImage from '../CachedImage';
 import SendButtonWithAudio from '../SendButtonWithAudio';
-import Portal from '../Portal';
 import './ChatInterface.css';
 
 const ChatInterface = ({ conversation, onClose }) => {
@@ -56,21 +55,14 @@ const ChatInterface = ({ conversation, onClose }) => {
     }
   };
 
-  // Image viewer modal handlers (otimizado para abrir instantaneamente)
-  const handleOpenImageModal = (url, alt = 'Imagem') => {
-    // Tudo de forma síncrona para abertura instantânea
+  // Image viewer modal handlers (mesmo padrão do Profile)
+  const handleOpenImageModal = (url, alt) => {
     setModalImageUrl(url);
     setModalImageAlt(alt);
     setShowImageModal(true);
-    document.body.style.overflow = 'hidden';
   };
-
-  const handleCloseImageModal = () => {
-    setShowImageModal(false);
-    setModalImageUrl('');
-    setModalImageAlt('');
-    document.body.style.overflow = '';
-  };
+  
+  const handleCloseImageModal = () => setShowImageModal(false);
 
   // Check if user is near bottom to determine auto-scroll behavior
   const isNearBottom = () => {
@@ -398,9 +390,8 @@ const ChatInterface = ({ conversation, onClose }) => {
                         className="message-image"
                         enableCache={true}
                         priority={false}
-                        draggable={false}
-                        onClick={() => handleOpenImageModal(message.mediaUrl, 'Imagem da conversa')}
                         style={{ cursor: 'pointer' }}
+                        onClick={() => handleOpenImageModal(message.mediaUrl, 'Imagem da conversa')}
                         onError={(e) => {
                           console.warn('Failed to load message image:', message.mediaUrl, e);
                         }}
@@ -569,86 +560,52 @@ const ChatInterface = ({ conversation, onClose }) => {
         </div>
       )}
 
-      {/* Image Viewer Modal */}
+      {/* Image Viewer Modal - mesmo padrão do Profile */}
       {showImageModal && (
-        <Portal>
+        <div className="modal-overlay" onClick={handleCloseImageModal} tabIndex={-1}>
           <div 
-            className="image-modal-overlay" 
-            onClick={handleCloseImageModal}
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(0, 0, 0, 0.9)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 10000,
-              padding: '20px'
-            }}
+            className="modal-content" 
+            style={{ 
+              maxWidth: '90vw', 
+              maxHeight: '90vh', 
+              background: 'transparent', 
+              boxShadow: 'none', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }} 
+            onClick={e => e.stopPropagation()}
           >
-            <div 
-              className="image-modal-content"
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                position: 'relative',
-                maxWidth: '90vw',
-                maxHeight: '90vh',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+            <img 
+              src={modalImageUrl} 
+              alt={modalImageAlt} 
+              style={{ 
+                maxWidth: '90vw', 
+                maxHeight: '80vh', 
+                borderRadius: 16, 
+                background: '#222' 
+              }} 
+            />
+            <button 
+              className="modal-close" 
+              onClick={handleCloseImageModal} 
+              style={{ 
+                position: 'absolute', 
+                top: 20, 
+                right: 20, 
+                background: 'transparent',
+                color: '#fff', 
+                border: 'none',
+                fontSize: 36,
+                cursor: 'pointer', 
+                zIndex: 10,
+                textShadow: '0 2px 8px rgba(0, 0, 0, 0.8)'
               }}
             >
-              <img 
-                src={modalImageUrl} 
-                alt={modalImageAlt}
-                style={{
-                  maxWidth: '90vw',
-                  maxHeight: '80vh',
-                  borderRadius: '16px',
-                  objectFit: 'contain',
-                  background: '#222',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.8)'
-                }}
-              />
-              <button 
-                className="image-modal-close" 
-                onClick={handleCloseImageModal}
-                style={{
-                  position: 'absolute',
-                  top: '-15px',
-                  right: '-15px',
-                  background: 'transparent',
-                  color: '#fff',
-                  border: 'none',
-                  width: '36px',
-                  height: '36px',
-                  fontSize: '36px',
-                  lineHeight: '1',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.2s ease',
-                  zIndex: 10001,
-                  textShadow: '0 2px 8px rgba(0, 0, 0, 0.8)'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.color = '#00FFCA';
-                  e.target.style.transform = 'scale(1.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.color = '#fff';
-                  e.target.style.transform = 'scale(1)';
-                }}
-              >
-                ×
-              </button>
-            </div>
+              ×
+            </button>
           </div>
-        </Portal>
+        </div>
       )}
     </div>
   );
