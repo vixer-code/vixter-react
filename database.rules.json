@@ -136,6 +136,7 @@
       }
     },
     "users": {
+      ".read": "auth != null",
       "$userId": {
         ".read": "auth != null",
         ".write": "$userId == auth.uid",
@@ -310,7 +311,49 @@
     "posts": {
       ".indexOn": ["userId", "timestamp"],
       ".read": "auth != null",
-      ".write": "auth != null"
+      ".write": "auth != null",
+      "$postId": {
+        ".validate": "newData.hasChildren(['authorId', 'content', 'timestamp']) || newData.hasChildren(['userId', 'text', 'createdAt'])",
+        "authorId": {
+          ".validate": "newData.isString()"
+        },
+        "userId": {
+          ".validate": "newData.isString()"
+        },
+        "authorName": {
+          ".validate": "newData.isString()"
+        },
+        "authorPhotoURL": {
+          ".validate": "newData.isString()"
+        },
+        "authorUsername": {
+          ".validate": "newData.isString()"
+        },
+        "content": {
+          ".validate": "newData.isString() && newData.val().length >= 0 && newData.val().length <= 2000"
+        },
+        "text": {
+          ".validate": "newData.isString() && newData.val().length >= 0 && newData.val().length <= 2000"
+        },
+        "timestamp": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 600000"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 600000"
+        },
+        "media": {
+          ".validate": "newData.hasChildren() || newData.val() == null"
+        },
+        "imageUrl": {
+          ".validate": "newData.isString()"
+        },
+        "likes": {
+          ".validate": "newData.hasChildren() || newData.val() == null"
+        },
+        "likeCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        }
+      }
     },
     "serviceOrders": {
       ".indexOn": ["buyerId"],
