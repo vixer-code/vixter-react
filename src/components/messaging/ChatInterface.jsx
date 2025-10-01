@@ -56,28 +56,20 @@ const ChatInterface = ({ conversation, onClose }) => {
     }
   };
 
-  // Image viewer modal handlers (otimizado para abrir mais rápido)
+  // Image viewer modal handlers (otimizado para abrir instantaneamente)
   const handleOpenImageModal = (url, alt = 'Imagem') => {
-    // Setar estados de forma síncrona
+    // Tudo de forma síncrona para abertura instantânea
     setModalImageUrl(url);
     setModalImageAlt(alt);
     setShowImageModal(true);
-    
-    // Block body scroll de forma assíncrona
-    requestAnimationFrame(() => {
-      document.body.style.overflow = 'hidden';
-    });
+    document.body.style.overflow = 'hidden';
   };
 
   const handleCloseImageModal = () => {
     setShowImageModal(false);
-    
-    // Cleanup assíncrono
-    requestAnimationFrame(() => {
-      setModalImageUrl('');
-      setModalImageAlt('');
-      document.body.style.overflow = '';
-    });
+    setModalImageUrl('');
+    setModalImageAlt('');
+    document.body.style.overflow = '';
   };
 
   // Check if user is near bottom to determine auto-scroll behavior
@@ -401,8 +393,12 @@ const ChatInterface = ({ conversation, onClose }) => {
                   {message.type === 'image' && (
                     <div className="message-media">
                       <div 
-                        onClick={() => handleOpenImageModal(message.mediaUrl, 'Imagem da conversa')}
-                        style={{ cursor: 'pointer', display: 'inline-block' }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleOpenImageModal(message.mediaUrl, 'Imagem da conversa');
+                        }}
+                        style={{ cursor: 'pointer', display: 'inline-block', userSelect: 'none' }}
                       >
                         <CachedImage 
                           src={message.mediaUrl} 
@@ -410,6 +406,7 @@ const ChatInterface = ({ conversation, onClose }) => {
                           className="message-image"
                           enableCache={true}
                           priority={false}
+                          draggable={false}
                           onError={(e) => {
                             console.warn('Failed to load message image:', message.mediaUrl, e);
                           }}
