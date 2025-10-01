@@ -312,6 +312,94 @@
   cursor: pointer;
 }
 
+/* Image Viewer Modal Styles */
+.image-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.image-viewer-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: transparent;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-viewer-img {
+  max-width: 90vw;
+  max-height: 80vh;
+  width: auto;
+  height: auto;
+  border-radius: 16px;
+  background: #222;
+  object-fit: contain;
+}
+
+.image-viewer-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: transparent;
+  color: #fff;
+  border: none;
+  font-size: 36px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 10;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.image-viewer-close:hover {
+  color: #00FFCA;
+  transform: scale(1.1);
+}
+
+/* Mobile ajustes */
+@media (max-width: 768px) {
+  .image-viewer-overlay {
+    padding: 10px;
+  }
+  
+  .image-viewer-content {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+  
+  .image-viewer-img {
+    max-width: 95vw;
+    max-height: 85vh;
+    border-radius: 8px;
+  }
+  
+  .image-viewer-close {
+    top: 10px;
+    right: 10px;
+    font-size: 32px;
+    width: 36px;
+    height: 36px;
+  }
+}
+
 /* Audio styles - usando apenas estilos básicos */
 .message-media audio {
   width: revert;

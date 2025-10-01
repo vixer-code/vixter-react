@@ -560,47 +560,21 @@ const ChatInterface = ({ conversation, onClose }) => {
         </div>
       )}
 
-      {/* Image Viewer Modal - mesmo padrão do Profile */}
+      {/* Image Viewer Modal - responsivo */}
       {showImageModal && (
-        <div className="modal-overlay" onClick={handleCloseImageModal} tabIndex={-1}>
+        <div className="modal-overlay image-viewer-overlay" onClick={handleCloseImageModal} tabIndex={-1}>
           <div 
-            className="modal-content" 
-            style={{ 
-              maxWidth: '90vw', 
-              maxHeight: '90vh', 
-              background: 'transparent', 
-              boxShadow: 'none', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center' 
-            }} 
+            className="modal-content image-viewer-content" 
             onClick={e => e.stopPropagation()}
           >
             <img 
               src={modalImageUrl} 
               alt={modalImageAlt} 
-              style={{ 
-                maxWidth: '90vw', 
-                maxHeight: '80vh', 
-                borderRadius: 16, 
-                background: '#222' 
-              }} 
+              className="image-viewer-img"
             />
             <button 
-              className="modal-close" 
-              onClick={handleCloseImageModal} 
-              style={{ 
-                position: 'absolute', 
-                top: 20, 
-                right: 20, 
-                background: 'transparent',
-                color: '#fff', 
-                border: 'none',
-                fontSize: 36,
-                cursor: 'pointer', 
-                zIndex: 10,
-                textShadow: '0 2px 8px rgba(0, 0, 0, 0.8)'
-              }}
+              className="modal-close image-viewer-close" 
+              onClick={handleCloseImageModal}
             >
               ×
             </button>
