@@ -256,10 +256,19 @@ const Profile = () => {
   useEffect(() => {
     if (profile) {
       loadFollowers(profile.id);
-      loadPosts(profile.id);
       loadProfileRating(profile.id);
+      
+      // Load posts with real-time listener
+      const unsubscribePosts = loadPosts(profile.id);
+      
+      // Cleanup listener quando o profile mudar
+      return () => {
+        if (unsubscribePosts) {
+          unsubscribePosts();
+        }
+      };
     }
-  }, [profile]);
+  }, [profile, loadPosts]);
 
   // Load and calculate profile rating
   const loadProfileRating = async (userId) => {
@@ -345,16 +354,22 @@ const Profile = () => {
     }
   };
 
-  const loadPosts = async (userId) => {
-    try {
-      // Load user's own posts
-      const postsRootRef = ref(database, 'posts');
-      const postsByUserQuery = query(postsRootRef, orderByChild('userId'), equalTo(userId));
-      const snapshot = await get(postsByUserQuery);
+  const loadPosts = useCallback((userId) => {
+    // Load user's posts with real-time listener (como Feed.jsx)
+    const postsRootRef = ref(database, 'posts');
+    const postsByUserQuery = query(postsRootRef, orderByChild('userId'), equalTo(userId));
+    
+    const unsubscribe = onValue(postsByUserQuery, (snapshot) => {
       const postsList = [];
       if (snapshot.exists()) {
         snapshot.forEach(child => {
           const postData = child.val();
+          console.log('Profile - Post loaded:', {
+            id: child.key,
+            likes: postData.likes,
+            likeCount: postData.likeCount,
+            hasLikes: !!postData.likes
+          });
           postsList.push({ 
             id: child.key, 
             ...postData, 
@@ -363,13 +378,17 @@ const Profile = () => {
         });
       }
 
+      console.log('Profile - Total posts loaded:', postsList.length);
       // Sort combined list by display timestamp desc
       postsList.sort((a, b) => (b._displayTimestamp || b.createdAt || b.timestamp || 0) - (a._displayTimestamp || a.createdAt || a.timestamp || 0));
       setPosts(postsList);
-    } catch (error) {
+    }, (error) => {
       console.error('Error loading posts:', error);
-    }
-  };
+    });
+    
+    // Retornar função de cleanup
+    return unsubscribe;
+  }, []);
 
   const handleServiceCreated = (newService) => {
     // The services hook will automatically update the services list
@@ -844,17 +863,23 @@ const Profile = () => {
         // Unlike
         const newLikes = { ...likes };
         delete newLikes[currentUser.uid];
+        console.log('Profile - Unliking post:', postId, 'New likes:', newLikes);
         await update(postRef, {
           likes: newLikes,
           likeCount: Math.max(0, (post.likeCount || 0) - 1)
         });
+        console.log('Profile - Unlike saved successfully');
+        // onValue listener irá atualizar automaticamente
       } else {
         // Like
         const newLikes = { ...likes, [currentUser.uid]: true };
+        console.log('Profile - Liking post:', postId, 'New likes:', newLikes);
         await update(postRef, {
           likes: newLikes,
           likeCount: (post.likeCount || 0) + 1
         });
+        console.log('Profile - Like saved successfully');
+        // onValue listener irá atualizar automaticamente
 
         // Send notification to post author
         const userProfile = users[post.userId || post.authorId];
