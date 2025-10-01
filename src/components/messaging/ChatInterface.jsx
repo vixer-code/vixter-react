@@ -7,6 +7,7 @@ import { useUserStatus } from '../../hooks/useUserStatus';
 import { getProfileUrl } from '../../utils/profileUrls';
 import CachedImage from '../CachedImage';
 import SendButtonWithAudio from '../SendButtonWithAudio';
+import Portal from '../Portal';
 import './ChatInterface.css';
 
 const ChatInterface = ({ conversation, onClose }) => {
@@ -31,6 +32,11 @@ const ChatInterface = ({ conversation, onClose }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   
+  // Image viewer modal state
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [modalImageUrl, setModalImageUrl] = useState('');
+  const [modalImageAlt, setModalImageAlt] = useState('');
+  
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -48,6 +54,23 @@ const ChatInterface = ({ conversation, onClose }) => {
       const profileUrl = getProfileUrl(otherUser);
       navigate(profileUrl);
     }
+  };
+
+  // Image viewer modal handlers
+  const handleOpenImageModal = (url, alt = 'Imagem') => {
+    setModalImageUrl(url);
+    setModalImageAlt(alt);
+    setShowImageModal(true);
+    // Block body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+  };
+
+  const handleCloseImageModal = () => {
+    setShowImageModal(false);
+    setModalImageUrl('');
+    setModalImageAlt('');
+    // Restore body scroll
+    document.body.style.overflow = '';
   };
 
   // Check if user is near bottom to determine auto-scroll behavior
@@ -376,6 +399,8 @@ const ChatInterface = ({ conversation, onClose }) => {
                         className="message-image"
                         enableCache={true}
                         priority={false}
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => handleOpenImageModal(message.mediaUrl, 'Imagem da conversa')}
                         onError={(e) => {
                           console.warn('Failed to load message image:', message.mediaUrl, e);
                         }}
@@ -542,6 +567,81 @@ const ChatInterface = ({ conversation, onClose }) => {
             <span>Este serviço foi concluído. A conversa está arquivada e não permite mais interações.</span>
           </div>
         </div>
+      )}
+
+      {/* Image Viewer Modal */}
+      {showImageModal && (
+        <Portal>
+          <div 
+            className="image-modal-overlay" 
+            onClick={handleCloseImageModal}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.9)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 10000,
+              padding: '20px'
+            }}
+          >
+            <div 
+              className="image-modal-content"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'relative',
+                maxWidth: '90vw',
+                maxHeight: '90vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <img 
+                src={modalImageUrl} 
+                alt={modalImageAlt}
+                style={{
+                  maxWidth: '90vw',
+                  maxHeight: '80vh',
+                  borderRadius: '16px',
+                  objectFit: 'contain',
+                  background: '#222',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.8)'
+                }}
+              />
+              <button 
+                className="image-modal-close" 
+                onClick={handleCloseImageModal}
+                style={{
+                  position: 'absolute',
+                  top: '-10px',
+                  right: '-10px',
+                  background: 'rgba(0, 0, 0, 0.8)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease',
+                  zIndex: 10001
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#00FFCA'}
+                onMouseLeave={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.8)'}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </Portal>
       )}
     </div>
   );

@@ -310,11 +310,13 @@
   border-radius: 8px;
   display: block;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .message-image:hover {
-  transform: scale(1.02);
+  transform: scale(1.03);
+  box-shadow: 0 4px 16px rgba(0, 255, 202, 0.4);
+  filter: brightness(1.05);
 }
 
 /* Audio styles - usando apenas estilos básicos */
