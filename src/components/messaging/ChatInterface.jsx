@@ -392,26 +392,19 @@ const ChatInterface = ({ conversation, onClose }) => {
                   
                   {message.type === 'image' && (
                     <div className="message-media">
-                      <div 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleOpenImageModal(message.mediaUrl, 'Imagem da conversa');
+                      <CachedImage 
+                        src={message.mediaUrl} 
+                        alt="Imagem enviada" 
+                        className="message-image"
+                        enableCache={true}
+                        priority={false}
+                        draggable={false}
+                        onClick={() => handleOpenImageModal(message.mediaUrl, 'Imagem da conversa')}
+                        style={{ cursor: 'pointer' }}
+                        onError={(e) => {
+                          console.warn('Failed to load message image:', message.mediaUrl, e);
                         }}
-                        style={{ cursor: 'pointer', display: 'inline-block', userSelect: 'none' }}
-                      >
-                        <CachedImage 
-                          src={message.mediaUrl} 
-                          alt="Imagem enviada" 
-                          className="message-image"
-                          enableCache={true}
-                          priority={false}
-                          draggable={false}
-                          onError={(e) => {
-                            console.warn('Failed to load message image:', message.mediaUrl, e);
-                          }}
-                        />
-                      </div>
+                      />
                       {message.content && (
                         <div className="message-caption">{message.content}</div>
                       )}
