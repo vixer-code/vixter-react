@@ -56,21 +56,28 @@ const ChatInterface = ({ conversation, onClose }) => {
     }
   };
 
-  // Image viewer modal handlers
+  // Image viewer modal handlers (otimizado para abrir mais rápido)
   const handleOpenImageModal = (url, alt = 'Imagem') => {
+    // Setar estados de forma síncrona
     setModalImageUrl(url);
     setModalImageAlt(alt);
     setShowImageModal(true);
-    // Block body scroll when modal is open
-    document.body.style.overflow = 'hidden';
+    
+    // Block body scroll de forma assíncrona
+    requestAnimationFrame(() => {
+      document.body.style.overflow = 'hidden';
+    });
   };
 
   const handleCloseImageModal = () => {
     setShowImageModal(false);
-    setModalImageUrl('');
-    setModalImageAlt('');
-    // Restore body scroll
-    document.body.style.overflow = '';
+    
+    // Cleanup assíncrono
+    requestAnimationFrame(() => {
+      setModalImageUrl('');
+      setModalImageAlt('');
+      document.body.style.overflow = '';
+    });
   };
 
   // Check if user is near bottom to determine auto-scroll behavior
@@ -393,18 +400,21 @@ const ChatInterface = ({ conversation, onClose }) => {
                   
                   {message.type === 'image' && (
                     <div className="message-media">
-                      <CachedImage 
-                        src={message.mediaUrl} 
-                        alt="Imagem enviada" 
-                        className="message-image"
-                        enableCache={true}
-                        priority={false}
-                        style={{ cursor: 'pointer' }}
+                      <div 
                         onClick={() => handleOpenImageModal(message.mediaUrl, 'Imagem da conversa')}
-                        onError={(e) => {
-                          console.warn('Failed to load message image:', message.mediaUrl, e);
-                        }}
-                      />
+                        style={{ cursor: 'pointer', display: 'inline-block' }}
+                      >
+                        <CachedImage 
+                          src={message.mediaUrl} 
+                          alt="Imagem enviada" 
+                          className="message-image"
+                          enableCache={true}
+                          priority={false}
+                          onError={(e) => {
+                            console.warn('Failed to load message image:', message.mediaUrl, e);
+                          }}
+                        />
+                      </div>
                       {message.content && (
                         <div className="message-caption">{message.content}</div>
                       )}
@@ -618,24 +628,31 @@ const ChatInterface = ({ conversation, onClose }) => {
                 onClick={handleCloseImageModal}
                 style={{
                   position: 'absolute',
-                  top: '-10px',
-                  right: '-10px',
-                  background: 'rgba(0, 0, 0, 0.8)',
+                  top: '-15px',
+                  right: '-15px',
+                  background: 'transparent',
                   color: '#fff',
                   border: 'none',
-                  borderRadius: '50%',
-                  width: '40px',
-                  height: '40px',
-                  fontSize: '24px',
+                  width: '36px',
+                  height: '36px',
+                  fontSize: '36px',
+                  lineHeight: '1',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   transition: 'all 0.2s ease',
-                  zIndex: 10001
+                  zIndex: 10001,
+                  textShadow: '0 2px 8px rgba(0, 0, 0, 0.8)'
                 }}
-                onMouseEnter={(e) => e.target.style.background = '#00FFCA'}
-                onMouseLeave={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.8)'}
+                onMouseEnter={(e) => {
+                  e.target.style.color = '#00FFCA';
+                  e.target.style.transform = 'scale(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.color = '#fff';
+                  e.target.style.transform = 'scale(1)';
+                }}
               >
                 ×
               </button>
