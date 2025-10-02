@@ -10,6 +10,7 @@ import PostCreator from '../components/PostCreator';
 import VixtipModal from '../components/VixtipModal';
 import VixtipSupporters from '../components/VixtipSupporters';
 import PurpleSpinner from '../components/PurpleSpinner';
+import MediaViewer from '../components/MediaViewer';
 import './Vixies.css';
 
 // Component for displaying attachments with validation
@@ -87,6 +88,8 @@ const Vixies = () => {
   const [showVixtipModal, setShowVixtipModal] = useState(false);
   const [selectedPostForTip, setSelectedPostForTip] = useState(null);
   const [likes, setLikes] = useState({}); // New state for likes
+  const [showMediaViewer, setShowMediaViewer] = useState(false);
+  const [mediaToView, setMediaToView] = useState(null);
 
   // Check KYC verification
   const isKycVerified = userProfile?.kyc === true;
@@ -293,6 +296,11 @@ const Vixies = () => {
     if (diffInHours < 24) return `${diffInHours}h`;
     if (diffInDays < 7) return `${diffInDays}d`;
     return date.toLocaleDateString('pt-BR');
+  };
+
+  const handleOpenMediaViewer = (mediaUrl, mediaType, caption = '') => {
+    setMediaToView({ url: mediaUrl, type: mediaType, caption });
+    setShowMediaViewer(true);
   };
 
   // Function to handle WebP compatibility and R2 URLs
@@ -560,7 +568,14 @@ const Vixies = () => {
                       <div className="post-media">
                         {post.media.map((m, idx) => (
                           <React.Fragment key={idx}>
-                            {m.type === 'image' && (<img src={m.url} alt="conteúdo" />)}
+                            {m.type === 'image' && (
+                              <img 
+                                src={m.url} 
+                                alt="conteúdo" 
+                                onClick={() => handleOpenMediaViewer(m.url, 'image', post.content)}
+                                style={{ cursor: 'pointer' }}
+                              />
+                            )}
                             {m.type === 'video' && (<video src={m.url} controls />)}
                             {m.type === 'audio' && (<audio src={m.url} controls />)}
                           </React.Fragment>
@@ -633,6 +648,19 @@ const Vixies = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Media Viewer Modal */}
+      {showMediaViewer && mediaToView && (
+        <MediaViewer
+          mediaUrl={mediaToView.url}
+          mediaType={mediaToView.type}
+          caption={mediaToView.caption}
+          onClose={() => {
+            setShowMediaViewer(false);
+            setMediaToView(null);
+          }}
+        />
       )}
       </div>
     </div>

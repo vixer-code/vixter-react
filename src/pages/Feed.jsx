@@ -9,6 +9,7 @@ import { ref, onValue, off, query, orderByChild, set, update, push, get, remove 
 import { doc, getDoc, setDoc, deleteDoc, writeBatch, increment, collection, getDocs } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 import PostCreator from '../components/PostCreator';
+import MediaViewer from '../components/MediaViewer';
 import './Feed.css';
 
 const Feed = () => {
@@ -27,6 +28,8 @@ const Feed = () => {
   const [showReplyInputs, setShowReplyInputs] = useState({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
+  const [showMediaViewer, setShowMediaViewer] = useState(false);
+  const [mediaToView, setMediaToView] = useState(null);
 
   useEffect(() => {
     let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;
@@ -421,6 +424,11 @@ const Feed = () => {
     return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
   };
 
+  const handleOpenMediaViewer = (mediaUrl, mediaType, caption = '') => {
+    setMediaToView({ url: mediaUrl, type: mediaType, caption });
+    setShowMediaViewer(true);
+  };
+
   const getFilteredPosts = () => {
     if (activeTab === 'following') {
       return posts.filter(post => following.includes(post.userId || post.authorId));
@@ -587,7 +595,9 @@ const Feed = () => {
                       src={m.url}
                       alt="Post content"
                       className="post-image"
+                      onClick={() => handleOpenMediaViewer(m.url, 'image', contentText)}
                       onError={(e) => { e.target.style.display = 'none'; }}
+                      style={{ cursor: 'pointer' }}
                     />
                   )}
                   {m.type === 'video' && (
@@ -736,6 +746,19 @@ const Feed = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Media Viewer Modal */}
+      {showMediaViewer && mediaToView && (
+        <MediaViewer
+          mediaUrl={mediaToView.url}
+          mediaType={mediaToView.type}
+          caption={mediaToView.caption}
+          onClose={() => {
+            setShowMediaViewer(false);
+            setMediaToView(null);
+          }}
+        />
       )}
       </div>
     </div>
