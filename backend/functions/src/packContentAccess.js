@@ -309,20 +309,62 @@ async function getVendorInfo(packId) {
 }
 
 /**
+ * Analyze image brightness to determine if it's a light or dark image
+ */
+async function analyzeImageBrightness(imageBuffer) {
+  try {
+    const image = sharp(imageBuffer);
+    
+    // Resize to small size for faster processing
+    const resized = await image
+      .resize(50, 50, { fit: 'inside' })
+      .greyscale()
+      .raw()
+      .toBuffer();
+    
+    // Calculate average brightness
+    let totalBrightness = 0;
+    for (let i = 0; i < resized.length; i++) {
+      totalBrightness += resized[i];
+    }
+    
+    const averageBrightness = totalBrightness / resized.length;
+    const normalizedBrightness = averageBrightness / 255; // Normalize to 0-1
+    
+    return normalizedBrightness;
+  } catch (error) {
+    console.error('Error analyzing image brightness:', error);
+    return 0.5; // Default to medium brightness if analysis fails
+  }
+}
+
+/**
  * Generate QR code as buffer for watermarking
  */
-async function generateQRCode(url, size = 80) {
+async function generateQRCode(url, size = 80, isLightBackground = false) {
   try {
-    const qrBuffer = await QRCode.toBuffer(url, {
-      type: 'png',
+    const qrColor = isLightBackground ? '#000000' : 'rgba(0, 0, 0, 0.2)';
+    const opacity = isLightBackground ? '0.4' : '0.3';
+
+    // Gera SVG com fundo transparente
+    const svg = await QRCode.toString(url, {
+      type: 'svg',
       width: size,
       margin: 1,
       color: {
-        dark: '#000000', // Black QR code (changed from white)
-        light: '#00000000' // Transparent background
+        dark: qrColor,
+        light: '#00000000' // transparente
       }
     });
-    return qrBuffer;
+
+    // Aplica opacidade apenas nos pixels (path)
+    const svgWithOpacity = svg.replace(
+      /<path/g,
+      `<path fill-opacity="${opacity}"`
+    );
+
+    // Retorna SVG buffer direto (sharp aceita no composite)
+    return Buffer.from(svgWithOpacity);
   } catch (error) {
     console.error('Error generating QR code:', error);
     return null;
@@ -332,22 +374,23 @@ async function generateQRCode(url, size = 80) {
 /**
  * Generate multiple QR codes for watermarking pattern
  */
-async function generateQRCodePattern(user, vendorInfo, imageSize) {
+async function generateQRCodePattern(user, vendorInfo, imageSize, isLightBackground = false) {
   const buyerUrl = `https://vixter.com.br/${user.username}`;
   const vendorUrl = `https://vixter.com.br/${vendorInfo?.username || 'vendor'}`;
   
-  // Calculate QR code size based on image dimensions
-  const qrSize = Math.min(Math.floor(imageSize.width * 0.08), Math.floor(imageSize.height * 0.08), 120);
+  // Calculate QR code size based on image dimensions - balanced size for good visibility
+  const qrSize = Math.min(Math.floor(imageSize.width * 0.06), Math.floor(imageSize.height * 0.06), 90);
   
   const [buyerQR, vendorQR] = await Promise.all([
-    generateQRCode(buyerUrl, qrSize),
-    generateQRCode(vendorUrl, qrSize)
+    generateQRCode(buyerUrl, qrSize, isLightBackground),
+    generateQRCode(vendorUrl, qrSize, isLightBackground)
   ]);
   
   return {
     buyerQR,
     vendorQR,
-    size: qrSize
+    size: qrSize,
+    isLightBackground
   };
 }
 
@@ -436,8 +479,14 @@ async function addImageWatermark(imageBuffer, watermark, username, contentItem, 
     const image = sharp(imageBuffer);
     const metadata = await image.metadata();
     
-    // Generate QR codes for watermarking
-    const qrPattern = await generateQRCodePattern(user, vendorInfo, metadata);
+    // Analyze image brightness to determine QR code color
+    const brightness = await analyzeImageBrightness(imageBuffer);
+    const isLightBackground = brightness > 0.5; // If image is more than 50% bright
+    
+    console.log(`Image brightness: ${(brightness * 100).toFixed(1)}% - Using ${isLightBackground ? 'black' : 'white'} QR codes`);
+    
+    // Generate QR codes for watermarking with adaptive color
+    const qrPattern = await generateQRCodePattern(user, vendorInfo, metadata, isLightBackground);
     
     // Calculate watermark size based on image dimensions
     const minDimension = Math.min(metadata.width, metadata.height);
@@ -452,12 +501,13 @@ async function addImageWatermark(imageBuffer, watermark, username, contentItem, 
     // Prepare composite operations for QR codes and text
     const compositeOperations = [];
     
-    // Add QR codes in alternating pattern around the image
+    // Add QR codes in regular grid pattern covering the entire image
     if (qrPattern.buyerQR && qrPattern.vendorQR) {
       const qrSize = qrPattern.size;
-      const spacing = Math.max(qrSize * 1.5, 100);
+      // Increased spacing for lower density
+      const spacing = Math.max(qrSize * 2.0, 120);
       
-      // Calculate grid positions for QR codes
+      // Calculate grid positions for QR codes - ensure we cover the entire image
       const cols = Math.ceil(metadata.width / spacing);
       const rows = Math.ceil(metadata.height / spacing);
       
@@ -473,15 +523,17 @@ async function addImageWatermark(imageBuffer, watermark, username, contentItem, 
           const useBuyerQR = (row + col) % 2 === 0;
           const qrBuffer = useBuyerQR ? qrPattern.buyerQR : qrPattern.vendorQR;
           
+          // Use 'over' blend to properly respect SVG opacity
           compositeOperations.push({
             input: qrBuffer,
             top: Math.round(y),
             left: Math.round(x),
-            blend: 'overlay',
-            opacity: 0.3 // Changed to 30% opacity for more faded QR codes
+            blend: 'over'
           });
         }
       }
+      
+      console.log(`Generated QR codes in ${rows}x${cols} grid across ${metadata.width}x${metadata.height} image`);
     }
     
     // Create text watermark SVG with reduced density
@@ -551,7 +603,7 @@ async function addImageWatermark(imageBuffer, watermark, username, contentItem, 
     // Add text watermark
     compositeOperations.push({
       input: Buffer.from(watermarkSvg),
-      blend: 'overlay'
+      blend: 'over'
     });
 
     // Apply all watermarks

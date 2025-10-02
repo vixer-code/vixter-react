@@ -152,9 +152,25 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       }
     }
 
+    // Get user's real username from Firestore
+    let username = 'user';
+    try {
+      const userRef = db.collection('users').doc(user.uid);
+      const userSnap = await userRef.get();
+      if (userSnap.exists) {
+        const userData = userSnap.data();
+        username = userData?.username || userData?.displayName || user.email?.split('@')[0] || 'user';
+      } else {
+        // Fallback to email if user document doesn't exist
+        username = user.email?.split('@')[0] || 'user';
+      }
+    } catch (error) {
+      console.warn('Error loading user info:', error);
+      username = user.email?.split('@')[0] || 'user';
+    }
+
     // Generate JWT tokens and simple URLs for each content item
     const contentWithUrls = [];
-    const username = user.email?.split('@')[0] || 'user';
     const cloudFunctionUrl = 'https://packcontentaccess-6twxbx5ima-ue.a.run.app';
 
     // Process packContent

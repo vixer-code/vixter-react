@@ -1,11 +1,13 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useUser } from '../contexts/UserContext';
 
 /**
  * Hook for secure pack content access with watermarking
  */
 export const useSecurePackContent = () => {
   const { currentUser, getIdToken } = useAuth();
+  const { userProfile } = useUser();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -41,7 +43,7 @@ export const useSecurePackContent = () => {
         packId,
         orderId,
         contentKey,
-        username: watermark || currentUser.email?.split('@')[0] || 'user',
+        username: watermark || userProfile?.username || userProfile?.displayName || currentUser.email?.split('@')[0] || 'user',
         token: token
       });
       
@@ -50,7 +52,7 @@ export const useSecurePackContent = () => {
       // Return the secure URL directly (the Cloud Function will handle watermarking)
       return {
         url: secureUrl,
-        watermark: watermark || currentUser.email?.split('@')[0] || 'user',
+        watermark: watermark || userProfile?.username || userProfile?.displayName || currentUser.email?.split('@')[0] || 'user',
         downloadUrl: secureUrl
       };
 
@@ -61,7 +63,7 @@ export const useSecurePackContent = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser, userProfile]);
 
   /**
    * Generate secure URLs for multiple content items
