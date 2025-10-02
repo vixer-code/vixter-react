@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useReview } from '../contexts/ReviewContext';
 import { useNotification } from '../contexts/NotificationContext';
 import Portal from './Portal';
@@ -21,7 +21,7 @@ const BehaviorReviewModal = ({
   const [hoveredRating, setHoveredRating] = useState(0);
 
   // Reset form when modal opens
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isOpen) {
       setRating(0);
       setComment('');
