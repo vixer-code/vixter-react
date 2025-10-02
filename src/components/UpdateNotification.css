@@ -1,0 +1,196 @@
+.update-notification-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: fadeIn 0.3s ease-out;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.update-notification-modal {
+  background: linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F0F1A 100%);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  max-width: 480px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: slideIn 0.3s ease-out;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.update-notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 0 24px;
+}
+
+.update-notification-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0F0F1A;
+  box-shadow: 0 4px 20px rgba(138, 43, 226, 0.3);
+}
+
+.update-notification-close {
+  background: none;
+  border: none;
+  color: #B8B8B8;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.update-notification-close:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.update-notification-content {
+  padding: 24px;
+}
+
+.update-notification-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 12px 0;
+  line-height: 1.3;
+  background: linear-gradient(135deg, #FFFFFF 20%, #8A2BE2 70%, #00FFCA 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.update-notification-message {
+  font-size: 16px;
+  color: #B8B8B8;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.update-notification-actions {
+  padding: 0 24px 24px 24px;
+  display: flex;
+  gap: 12px;
+  flex-direction: column;
+}
+
+.update-notification-button {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.update-notification-button-primary {
+  background: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%);
+  color: #0F0F1A;
+  border: 1px solid rgba(138, 43, 226, 0.3);
+}
+
+.update-notification-button-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(138, 43, 226, 0.4);
+  background: linear-gradient(135deg, #7B1FA2 0%, #00D4AA 100%);
+}
+
+.update-notification-button-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #B8B8B8;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.update-notification-button-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsividade */
+@media (max-width: 640px) {
+  .update-notification-modal {
+    margin: 16px;
+    width: calc(100% - 32px);
+  }
+  
+  .update-notification-header {
+    padding: 20px 20px 0 20px;
+  }
+  
+  .update-notification-content {
+    padding: 20px;
+  }
+  
+  .update-notification-actions {
+    padding: 0 20px 20px 20px;
+  }
+  
+  .update-notification-title {
+    font-size: 20px;
+  }
+  
+  .update-notification-message {
+    font-size: 14px;
+  }
+}
+
+/* Melhorias de acessibilidade */
+.update-notification-modal:focus-within {
+  outline: 2px solid #00FFCA;
+  outline-offset: 2px;
+}
+
+.update-notification-button:focus {
+  outline: 2px solid #00FFCA;
+  outline-offset: 2px;
+}

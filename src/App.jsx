@@ -16,8 +16,10 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import MobileFooter from './components/MobileFooter';
 import NotificationContainer from './components/NotificationContainer';
+import UpdateNotification from './components/UpdateNotification';
 import ProtectedRoute from './components/ProtectedRoute';
 import { preloadCommonImages } from './utils/imagePreloader';
+import { useVersionCheck } from './hooks/useVersionCheck';
 
 import './App.css';
 
@@ -44,6 +46,59 @@ const PackDetail = lazy(() => import('./pages/PackDetail'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Success = lazy(() => import('./pages/Success'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+
+// Componente interno para usar o hook de verificação de versão
+function AppContent() {
+  const { isUpdateAvailable, updateApp, dismissUpdate } = useVersionCheck();
+
+  return (
+    <Router>
+      <div className="App">
+        <Header />
+        <main className="main-content">
+          <Suspense fallback={<div className="page-loading">Carregando...</div>}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/feed" element={<Feed />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/profile/:username" element={<Profile />} />
+              <Route path="/wallet" element={<Wallet />} />
+              <Route path="/messages" element={<Messages />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/auth-action" element={<AuthAction />} />
+              <Route path="/handle-auth-action" element={<HandleAuthAction />} />
+              <Route path="/vixies" element={<Vixies />} />
+              <Route path="/vixink" element={<Vixink />} />
+              <Route path="/search" element={<SearchResults />} />
+              <Route path="/my-services" element={<MyServices />} />
+              <Route path="/my-purchases" element={<MyPurchases />} />
+              <Route path="/service/:serviceId" element={<ServiceDetail />} />
+              <Route path="/pack/:packId" element={<PackDetail />} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/success" element={<Success />} />
+              <Route path="/services" element={<div>Services Page - Coming Soon</div>} />
+              
+              {/* Catch-all route - must be last */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </main>
+        <Footer />
+        <MobileFooter />
+        <NotificationContainer />
+        <UpdateNotification 
+          isVisible={isUpdateAvailable}
+          onUpdate={updateApp}
+          onDismiss={dismissUpdate}
+        />
+      </div>
+    </Router>
+  );
+}
 
 function App() {
   // Preload common images when the app starts
@@ -74,46 +129,7 @@ function App() {
                       <ReviewProvider>
                         <CentrifugoProvider>
                           <MessagingProvider>
-                      <Router>
-                        <div className="App">
-                          <Header />
-                          <main className="main-content">
-                            <Suspense fallback={<div className="page-loading">Carregando...</div>}>
-                              <Routes>
-                                <Route path="/" element={<Home />} />
-                                <Route path="/login" element={<Login />} />
-                                <Route path="/register" element={<Register />} />
-                                <Route path="/feed" element={<Feed />} />
-                                <Route path="/profile" element={<Profile />} />
-                                <Route path="/profile/:username" element={<Profile />} />
-                                <Route path="/wallet" element={<Wallet />} />
-                                <Route path="/messages" element={<Messages />} />
-                                <Route path="/verify-email" element={<VerifyEmail />} />
-                                <Route path="/forgot-password" element={<ForgotPassword />} />
-                                <Route path="/reset-password" element={<ResetPassword />} />
-                                <Route path="/auth-action" element={<AuthAction />} />
-                                <Route path="/handle-auth-action" element={<HandleAuthAction />} />
-                                <Route path="/vixies" element={<Vixies />} />
-                                <Route path="/vixink" element={<Vixink />} />
-                                <Route path="/search" element={<SearchResults />} />
-                                <Route path="/my-services" element={<MyServices />} />
-                                <Route path="/my-purchases" element={<MyPurchases />} />
-                                <Route path="/service/:serviceId" element={<ServiceDetail />} />
-                                <Route path="/pack/:packId" element={<PackDetail />} />
-                                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                                <Route path="/success" element={<Success />} />
-                                <Route path="/services" element={<div>Services Page - Coming Soon</div>} />
-                                
-                                {/* Catch-all route - must be last */}
-                                <Route path="*" element={<NotFound />} />
-                              </Routes>
-                            </Suspense>
-                          </main>
-                          <Footer />
-                          <MobileFooter />
-                          <NotificationContainer />
-                        </div>
-                      </Router>
+                            <AppContent />
                           </MessagingProvider>
                         </CentrifugoProvider>
                       </ReviewProvider>
