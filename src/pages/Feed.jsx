@@ -656,25 +656,31 @@ const Feed = () => {
       </div>
 
       <div className="vixies-content">
-        <div className="vixies-tabs">
-          <button 
-            className={`tab-btn ${activeTab === 'main' ? 'active' : ''}`}
-            onClick={() => setActiveTab('main')}
-          >
-            Principal
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'following' ? 'active' : ''}`}
-            onClick={() => setActiveTab('following')}
-          >
-            Seguindo
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'myposts' ? 'active' : ''}`}
-            onClick={() => setActiveTab('myposts')}
-          >
-            Meus posts
-          </button>
+        <div className="vixies-tabs-container">
+          <div className="vixies-tabs">
+            <button 
+              className={`tab-btn ${activeTab === 'main' ? 'active' : ''}`}
+              onClick={() => setActiveTab('main')}
+            >
+              Principal
+            </button>
+            <button 
+              className={`tab-btn ${activeTab === 'following' ? 'active' : ''}`}
+              onClick={() => setActiveTab('following')}
+            >
+              Seguindo
+            </button>
+          </div>
+          {currentUser && (
+            <div className="vixies-tabs-myposts">
+              <button 
+                className={`tab-btn-myposts ${activeTab === 'myposts' ? 'active' : ''}`}
+                onClick={() => setActiveTab('myposts')}
+              >
+                Meus posts
+              </button>
+            </div>
+          )}
         </div>
 
         {/* PostCreator moved to top of feed */}
