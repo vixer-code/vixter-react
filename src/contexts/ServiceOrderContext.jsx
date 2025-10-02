@@ -51,17 +51,22 @@ export const ServiceOrderProvider = ({ children }) => {
     createServiceConversation = messagingContext?.createServiceConversation || (() => Promise.resolve(null));
     markServiceConversationCompleted = messagingContext?.markServiceConversationCompleted || (() => Promise.resolve());
     
-    console.log('🔍 Messaging context functions loaded:', {
-      sendServiceNotification: typeof sendServiceNotification,
-      createServiceConversation: typeof createServiceConversation,
-      markServiceConversationCompleted: typeof markServiceConversationCompleted
-    });
-  } catch (error) {
-    console.warn('Messaging context not available, using fallback functions:', error);
-    sendServiceNotification = () => Promise.resolve();
-    createServiceConversation = () => Promise.resolve(null);
-    markServiceConversationCompleted = () => Promise.resolve();
-  }
+        console.log('🔍 Messaging context functions loaded:', {
+          sendServiceNotification: typeof sendServiceNotification,
+          createServiceConversation: typeof createServiceConversation,
+          markServiceConversationCompleted: typeof markServiceConversationCompleted
+        });
+      } catch (error) {
+        console.warn('❌ Messaging context not available, using fallback functions:', error);
+        console.warn('❌ Error details:', {
+          message: error.message,
+          code: error.code,
+          stack: error.stack
+        });
+        sendServiceNotification = () => Promise.resolve();
+        createServiceConversation = () => Promise.resolve(null);
+        markServiceConversationCompleted = () => Promise.resolve();
+      }
   
   // State
   const [serviceOrders, setServiceOrders] = useState([]);
@@ -318,7 +323,12 @@ export const ServiceOrderProvider = ({ children }) => {
             }
           } catch (conversationError) {
             console.error('❌ Error creating service conversation:', conversationError);
-            console.error('❌ Error details:', conversationError.message, conversationError.stack);
+            console.error('❌ Error details:', {
+              message: conversationError.message,
+              code: conversationError.code,
+              stack: conversationError.stack,
+              order: order
+            });
           }
 
           // Send email notification to buyer
@@ -345,7 +355,8 @@ export const ServiceOrderProvider = ({ children }) => {
             orderId
           );
         } else {
-          console.error('Order not found for conversation creation:', orderId);
+          console.error('❌ Order not found for conversation creation:', orderId);
+          console.error('❌ Available orders:', serviceOrders.map(o => ({ id: o.id, status: o.status })));
         }
         
         
@@ -354,7 +365,13 @@ export const ServiceOrderProvider = ({ children }) => {
 
       return false;
     } catch (error) {
-      console.error('Error accepting service order:', error);
+      console.error('❌ Error accepting service order:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack,
+        orderId: orderId
+      });
       showError('Erro ao aceitar pedido');
       return false;
     } finally {

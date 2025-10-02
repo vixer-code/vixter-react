@@ -2088,6 +2088,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
   // Create service conversation when order is accepted
   const createServiceConversation = useCallback(async (serviceOrder) => {
+    console.log('🚀 createServiceConversation called with:', serviceOrder);
+    
     if (!currentUser?.uid) {
       console.error('❌ No current user - cannot create service conversation');
       return null;
@@ -2102,7 +2104,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
       console.error('❌ Invalid service order data - missing required fields:', {
         buyerId: serviceOrder.buyerId,
         sellerId: serviceOrder.sellerId,
-        id: serviceOrder.id
+        id: serviceOrder.id,
+        fullOrder: serviceOrder
       });
       return null;
     }
@@ -2140,6 +2143,16 @@ export const EnhancedMessagingProvider = ({ children }) => {
       
       console.log('🔍 Buyer user data:', buyerUser);
       console.log('🔍 Seller user data:', sellerUser);
+      
+      if (!buyerUser || !sellerUser) {
+        console.error('❌ Failed to load user data:', {
+          buyerUser: !!buyerUser,
+          sellerUser: !!sellerUser,
+          buyerId: serviceOrder.buyerId,
+          sellerId: serviceOrder.sellerId
+        });
+        return null;
+      }
       
       const buyerUsername = buyerUser?.username || buyerUser?.displayName || 'Comprador';
       const sellerUsername = sellerUser?.username || sellerUser?.displayName || 'Vendedor';
@@ -2181,10 +2194,22 @@ export const EnhancedMessagingProvider = ({ children }) => {
       // Validate database connection
       if (!database) {
         console.error('❌ Database not initialized - cannot save conversation');
+        console.error('❌ Database object:', database);
         return null;
       }
       
+      console.log('✅ Database connection validated');
+      
       try {
+        console.log('🚀 Attempting to save conversation to RTDB...');
+        console.log('🔍 Conversation reference:', conversationRef.toString());
+        console.log('🔍 Conversation data to save:', {
+          ...conversationData,
+          messages: {},
+          messageCount: 0,
+          lastActivity: Date.now()
+        });
+        
         await set(conversationRef, {
           ...conversationData,
           // Initialize messages structure for Centrifugo compatibility
@@ -2196,6 +2221,11 @@ export const EnhancedMessagingProvider = ({ children }) => {
         console.log('✅ Service conversation saved to RTDB successfully:', conversationId);
       } catch (saveError) {
         console.error('❌ Error saving conversation to RTDB:', saveError);
+        console.error('❌ Save error details:', {
+          message: saveError.message,
+          code: saveError.code,
+          stack: saveError.stack
+        });
         throw saveError;
       }
       
@@ -2217,12 +2247,24 @@ export const EnhancedMessagingProvider = ({ children }) => {
       console.log('Service conversation saved to RTDB:', conversationId);
 
       // Add to local state immediately
-      setServiceConversations(prev => [conversationData, ...prev]);
-      console.log('Service conversation added to local state');
+      console.log('🚀 Adding conversation to local state...');
+      setServiceConversations(prev => {
+        console.log('🔍 Previous service conversations:', prev.length);
+        const newState = [conversationData, ...prev];
+        console.log('🔍 New service conversations:', newState.length);
+        return newState;
+      });
+      console.log('✅ Service conversation added to local state');
 
       return conversationData;
     } catch (error) {
-      console.error('Error creating service conversation:', error);
+      console.error('❌ Error creating service conversation:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack,
+        serviceOrder: serviceOrder
+      });
       return null;
     }
   }, [currentUser, getUserById, serviceConversations]);

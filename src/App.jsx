@@ -124,17 +124,17 @@ function App() {
             <WalletProvider>
               <PacksProvider>
                 <ServicesProvider>
-                  <ServiceOrderProvider>
-                    <PackOrderProvider>
-                      <ReviewProvider>
-                        <CentrifugoProvider>
-                          <MessagingProvider>
+                  <CentrifugoProvider>
+                    <MessagingProvider>
+                      <ServiceOrderProvider>
+                        <PackOrderProvider>
+                          <ReviewProvider>
                             <AppContent />
-                          </MessagingProvider>
-                        </CentrifugoProvider>
-                      </ReviewProvider>
-                    </PackOrderProvider>
-                  </ServiceOrderProvider>
+                          </ReviewProvider>
+                        </PackOrderProvider>
+                      </ServiceOrderProvider>
+                    </MessagingProvider>
+                  </CentrifugoProvider>
                 </ServicesProvider>
               </PacksProvider>
             </WalletProvider>
