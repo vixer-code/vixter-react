@@ -39,9 +39,9 @@
   font-size: 0.8rem;
 }
 
-.category {
-  background: linear-gradient(135deg, #8A2BE2, #00FFCA);
-  color: #0F0F1A;
+.pack-content-viewer .category {
+  background: linear-gradient(135deg, #8A2BE2, #00FFCA) !important;
+  color: #0F0F1A !important;
   padding: 4px 8px;
   border-radius: 4px;
   font-weight: 600;
@@ -105,7 +105,7 @@
 }
 
 .content-warning i {
-  color: #ffc107;
+  color: #ffffff !important;
   font-size: 1.2rem;
 }
 
@@ -138,6 +138,7 @@
 .watermark-info i,
 .video-info i {
   margin-right: 5px;
+  color: #ffffff !important;
 }
 
 .video-info {
@@ -147,7 +148,7 @@
 }
 
 .video-info i {
-  color: #ffc107;
+  color: #ffffff !important;
 }
 
 .error-message {
