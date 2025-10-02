@@ -132,17 +132,32 @@ const MyPurchases = () => {
             description: pack.description,
             price: pack.price,
             packContent: pack.packContent || [],
-            content: pack.content || []
+            content: pack.content || [],
+            isAvailable: true
+          };
+        } else {
+          // Pack não existe mais - marcado como indisponível
+          packDataMap[packId] = {
+            title: 'Pack Indisponível',
+            coverImage: null,
+            description: '',
+            price: 0,
+            packContent: [],
+            content: [],
+            isAvailable: false
           };
         }
       } catch (error) {
         console.error('Error loading pack data:', error);
-        // Set fallback data
+        // Set fallback data for errored packs
         packDataMap[packId] = {
-          title: 'Pack',
+          title: 'Pack Indisponível',
           coverImage: null,
           description: '',
-          price: 0
+          price: 0,
+          packContent: [],
+          content: [],
+          isAvailable: false
         };
       }
     }
@@ -713,6 +728,7 @@ const MyPurchases = () => {
             const statusInfo = getStatusInfo(purchase.status);
             const isService = purchase.type === 'service';
             const isPack = purchase.type === 'pack';
+            const isPackUnavailable = isPack && packData[purchase.packId] && !packData[purchase.packId].isAvailable;
 
             const isCompleted = purchase.status === 'CONFIRMED' || purchase.status === 'COMPLETED' || purchase.status === 'AUTO_RELEASED';
             
@@ -729,7 +745,7 @@ const MyPurchases = () => {
             });
             
             return (
-              <div key={purchase.id} className={`purchase-card ${isCompleted ? 'completed' : ''}`}>
+              <div key={purchase.id} className={`purchase-card ${isCompleted ? 'completed' : ''} ${isPackUnavailable ? 'unavailable' : ''}`}>
                 <div className="purchase-header">
                   <div className="purchase-info">
                     <h3>
@@ -754,6 +770,16 @@ const MyPurchases = () => {
                 </div>
 
                 <div className="purchase-content">
+                  {isPackUnavailable && (
+                    <div className="pack-unavailable-warning">
+                      <i className="fas fa-exclamation-triangle"></i>
+                      <div className="warning-content">
+                        <strong>Pack Indisponível</strong>
+                        <p>Este pack foi removido pelo vendedor e não está mais disponível. Você ainda pode acessar as mídias que foram compradas anteriormente.</p>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="purchase-cover">
                     {isService ? (
                       <SmartMediaViewer
