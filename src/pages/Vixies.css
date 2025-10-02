@@ -120,37 +120,45 @@
   border: 1px solid var(--border-color);
 }
 
-.vixies-tabs-myposts {
+/* Botão separado para mobile */
+.vixies-tabs-myposts-mobile {
   display: flex;
   justify-content: center;
   width: 100%;
 }
 
+/* Mobile: botão "Meus Posts" separado */
+@media (max-width: 768px) {
+  .vixies-tabs .tab-btn-myposts {
+    display: none;
+  }
+  
+  .vixies-tabs-myposts-mobile {
+    display: flex;
+  }
+}
+
 /* Desktop: todos os botões na mesma linha */
 @media (min-width: 769px) {
   .vixies-tabs-container {
-    flex-direction: row;
-    gap: 0;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 500px;
   }
   
   .vixies-tabs {
-    flex: 1;
-    border-radius: 12px 0 0 12px;
+    flex: none;
+    border-radius: 12px;
+    justify-content: center;
+    gap: 4px;
   }
   
-  .vixies-tabs-myposts {
-    background: var(--bg-primary);
-    border-radius: 0 12px 12px 0;
-    padding: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    border: 1px solid var(--border-color);
-    border-left: none;
-    width: auto;
+  .vixies-tabs .tab-btn-myposts {
+    display: flex;
   }
   
-  .vixies-tabs-myposts .tab-btn-myposts {
-    margin: 0;
-    width: auto;
+  .vixies-tabs-myposts-mobile {
+    display: none;
   }
 }
 
@@ -170,6 +178,8 @@
   text-decoration: none;
   position: relative;
   overflow: hidden;
+  flex: 1;
+  justify-content: center;
 }
 
 .tab-btn::before {

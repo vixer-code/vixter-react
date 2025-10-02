@@ -142,13 +142,16 @@
 /* Desktop: todos os botões na mesma linha */
 @media (min-width: 769px) {
   .vixies-tabs-container {
-    flex-direction: row;
-    gap: 0;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 500px;
   }
   
   .vixies-tabs {
-    flex: 1;
+    flex: none;
     border-radius: 12px;
+    justify-content: center;
+    gap: 4px;
   }
   
   .vixies-tabs .tab-btn-myposts {
@@ -176,6 +179,8 @@
   text-decoration: none;
   position: relative;
   overflow: hidden;
+  flex: 1;
+  justify-content: center;
 }
 
 .tab-btn::before {

@@ -216,17 +216,9 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
       }
       
       switch (e.key) {
-        case 'ArrowLeft':
-          e.preventDefault();
-          prevMedia();
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          nextMedia();
-          break;
         case 'Escape':
           e.preventDefault();
-          closeGallery();
+          closeLightbox();
           break;
       }
     };
@@ -260,7 +252,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
       document.removeEventListener('dragstart', handleDragStart);
       document.removeEventListener('selectstart', handleSelectStart);
     };
-  }, [galleryOpen]);
+  }, [lightboxOpen]);
 
   if (!pack) {
     return (
