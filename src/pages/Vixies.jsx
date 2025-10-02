@@ -456,9 +456,18 @@ const Vixies = () => {
             >
               Seguindo
             </button>
+            {userProfile && userProfile.accountType !== 'client' && (
+              <button 
+                className={`tab-btn tab-btn-myposts ${activeTab === 'myposts' ? 'active' : ''}`}
+                onClick={() => setActiveTab('myposts')}
+              >
+                Meus posts
+              </button>
+            )}
           </div>
+          {/* Botão separado para mobile */}
           {userProfile && userProfile.accountType !== 'client' && (
-            <div className="vixies-tabs-myposts">
+            <div className="vixies-tabs-myposts-mobile">
               <button 
                 className={`tab-btn-myposts ${activeTab === 'myposts' ? 'active' : ''}`}
                 onClick={() => setActiveTab('myposts')}

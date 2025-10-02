@@ -670,9 +670,18 @@ const Feed = () => {
             >
               Seguindo
             </button>
+            {currentUser && (
+              <button 
+                className={`tab-btn tab-btn-myposts ${activeTab === 'myposts' ? 'active' : ''}`}
+                onClick={() => setActiveTab('myposts')}
+              >
+                Meus posts
+              </button>
+            )}
           </div>
+          {/* Botão separado para mobile */}
           {currentUser && (
-            <div className="vixies-tabs-myposts">
+            <div className="vixies-tabs-myposts-mobile">
               <button 
                 className={`tab-btn-myposts ${activeTab === 'myposts' ? 'active' : ''}`}
                 onClick={() => setActiveTab('myposts')}
