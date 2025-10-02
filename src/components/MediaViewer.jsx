@@ -36,14 +36,6 @@ const MediaViewer = ({ mediaUrl, mediaType, caption, onClose }) => {
     }
   };
 
-  const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = mediaUrl;
-    link.download = `media_${Date.now()}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   return (
     <div className="media-viewer-overlay" onClick={handleBackdropClick}>
@@ -51,13 +43,6 @@ const MediaViewer = ({ mediaUrl, mediaType, caption, onClose }) => {
         {/* Header */}
         <div className="media-viewer-header">
           <div className="media-viewer-actions">
-            <button
-              onClick={handleDownload}
-              className="media-viewer-btn"
-              title="Download"
-            >
-              <i className="fas fa-download"></i>
-            </button>
             <button
               onClick={onClose}
               className="media-viewer-btn close"
