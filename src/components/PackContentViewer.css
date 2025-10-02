@@ -237,11 +237,53 @@
 .preview-loaded i,
 .preview-placeholder i {
   font-size: 3rem;
-  color: #8A2BE2;
+  color: #8A2BE2 !important;
+}
+
+/* Ensure all icons within content items use purple theme */
+.content-item .fas,
+.content-item .fa,
+.content-item i {
+  color: #8A2BE2 !important;
+}
+
+.content-item .view-btn .fas,
+.content-item .view-btn .fa,
+.content-item .view-btn i {
+  color: #0F0F1A !important;
+}
+
+/* Override any global icon colors within the pack viewer */
+.pack-content-viewer .fas,
+.pack-content-viewer .fa,
+.pack-content-viewer i {
+  color: #8A2BE2 !important;
+}
+
+.pack-content-viewer .view-btn .fas,
+.pack-content-viewer .view-btn .fa,
+.pack-content-viewer .view-btn i {
+  color: #0F0F1A !important;
+}
+
+.pack-content-viewer .vendor-info .fas,
+.pack-content-viewer .vendor-info .fa,
+.pack-content-viewer .vendor-info i {
+  color: #8A2BE2 !important;
 }
 
 .content-info {
   flex: 1;
+  border: 1px solid rgba(138, 43, 226, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(138, 43, 226, 0.05);
+  transition: all 0.3s ease;
+}
+
+.content-item:hover .content-info {
+  border-color: rgba(138, 43, 226, 0.4);
+  background: rgba(138, 43, 226, 0.1);
 }
 
 .content-name {
