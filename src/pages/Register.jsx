@@ -481,7 +481,20 @@ const Register = () => {
           profilePictureURL: user.photoURL || null,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-          stats: { totalPosts: 0, totalServices: 0, totalPacks: 0, totalSales: 0 },
+          stats: { 
+            // Stats para clientes
+            totalSpent: 0,
+            totalPacksBought: 0,
+            totalServicesBought: 0,
+            // Stats para provedores
+            totalPacksSold: 0,
+            totalServicesSold: 0,
+            totalSales: 0,
+            totalPosts: 0,
+            totalPostsVixies: 0,
+            totalPostsFeed: 0,
+            totalPostsVixink: 0
+          },
           searchTerms: [
             (formData.displayName || user.displayName || '').toLowerCase(),
             normalizedUsername

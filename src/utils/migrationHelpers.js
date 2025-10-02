@@ -111,10 +111,18 @@ export const MIGRATION_MAPPINGS = {
     newFields: {
       // Add new Firestore-specific fields
       'stats': {
+        // Stats para clientes
+        totalSpent: 0,
+        totalPacksBought: 0,
+        totalServicesBought: 0,
+        // Stats para provedores
+        totalPacksSold: 0,
+        totalServicesSold: 0,
+        totalSales: 0,
         totalPosts: 0,
-        totalServices: 0, 
-        totalPacks: 0,
-        totalSales: 0
+        totalPostsVixies: 0,
+        totalPostsFeed: 0,
+        totalPostsVixink: 0
       }
     }
   },

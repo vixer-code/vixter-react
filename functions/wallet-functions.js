@@ -35,7 +35,145 @@ setGlobalOptions({
   concurrency: 1,     // Required when cpu < 1 vCPU
 });
 
+// Trigger para atualizar stats quando posts são criados
+export const onPostCreated = onDocumentUpdated({
+  document: "posts/{postId}",
+  region: "us-east1"
+}, async (event) => {
+  const beforeData = event.data?.before?.data();
+  const afterData = event.data?.after?.data();
+  
+  // Verificar se é um novo post (beforeData não existe)
+  if (!beforeData && afterData) {
+    const authorId = afterData.authorId || afterData.userId;
+    if (!authorId) return;
+    
+    try {
+      await updateUserStats(authorId, {
+        totalPosts: 1,
+        totalPostsFeed: 1
+      });
+      logger.info(`Updated post stats for user ${authorId} (general feed)`);
+    } catch (error) {
+      logger.error(`Error updating post stats for user ${authorId}:`, error);
+    }
+  }
+});
+
+// Trigger para atualizar stats quando posts do Vixies são criados
+export const onVixiesPostCreated = onDocumentUpdated({
+  document: "vixies_posts/{postId}",
+  region: "us-east1"
+}, async (event) => {
+  const beforeData = event.data?.before?.data();
+  const afterData = event.data?.after?.data();
+  
+  // Verificar se é um novo post (beforeData não existe)
+  if (!beforeData && afterData) {
+    const authorId = afterData.authorId || afterData.userId;
+    if (!authorId) return;
+    
+    try {
+      await updateUserStats(authorId, {
+        totalPosts: 1,
+        totalPostsVixies: 1
+      });
+      logger.info(`Updated post stats for user ${authorId} (vixies)`);
+    } catch (error) {
+      logger.error(`Error updating post stats for user ${authorId}:`, error);
+    }
+  }
+});
+
+// Trigger para atualizar stats quando posts do Vixink são criados
+export const onVixinkPostCreated = onDocumentUpdated({
+  document: "vixink_posts/{postId}",
+  region: "us-east1"
+}, async (event) => {
+  const beforeData = event.data?.before?.data();
+  const afterData = event.data?.after?.data();
+  
+  // Verificar se é um novo post (beforeData não existe)
+  if (!beforeData && afterData) {
+    const authorId = afterData.authorId || afterData.userId;
+    if (!authorId) return;
+    
+    try {
+      await updateUserStats(authorId, {
+        totalPosts: 1,
+        totalPostsVixink: 1
+      });
+      logger.info(`Updated post stats for user ${authorId} (vixink)`);
+    } catch (error) {
+      logger.error(`Error updating post stats for user ${authorId}:`, error);
+    }
+  }
+});
+
 const db = admin.firestore();
+
+/**
+ * Atualiza estatísticas do usuário
+ */
+async function updateUserStats(userId, statsUpdate) {
+  try {
+    const userRef = db.collection('users').doc(userId);
+    const userSnap = await userRef.get();
+    
+    if (!userSnap.exists) {
+      logger.warn(`User ${userId} not found for stats update`);
+      return;
+    }
+    
+    const userData = userSnap.data();
+    const accountType = userData.accountType;
+    
+    // Preparar updates baseados no tipo de conta
+    const updates = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    // Inicializar stats se não existir
+    if (!userData.stats) {
+      updates.stats = {};
+    }
+    
+    // Stats para clientes
+    if (accountType === 'client') {
+      updates.stats = {
+        ...userData.stats,
+        totalSpent: admin.firestore.FieldValue.increment(statsUpdate.totalSpent || 0),
+        totalPacksBought: admin.firestore.FieldValue.increment(statsUpdate.totalPacksBought || 0),
+        totalServicesBought: admin.firestore.FieldValue.increment(statsUpdate.totalServicesBought || 0)
+      };
+    }
+    
+    // Stats para provedores
+    if (accountType === 'provider') {
+      updates.stats = {
+        ...userData.stats,
+        totalPacksSold: admin.firestore.FieldValue.increment(statsUpdate.totalPacksSold || 0),
+        totalServicesSold: admin.firestore.FieldValue.increment(statsUpdate.totalServicesSold || 0),
+        totalPosts: admin.firestore.FieldValue.increment(statsUpdate.totalPosts || 0),
+        totalPostsVixies: admin.firestore.FieldValue.increment(statsUpdate.totalPostsVixies || 0),
+        totalPostsFeed: admin.firestore.FieldValue.increment(statsUpdate.totalPostsFeed || 0),
+        totalPostsVixink: admin.firestore.FieldValue.increment(statsUpdate.totalPostsVixink || 0)
+      };
+      
+      // Calcular totalSales como soma de packs e serviços vendidos
+      const totalPacksSold = (userData.stats?.totalPacksSold || 0) + (statsUpdate.totalPacksSold || 0);
+      const totalServicesSold = (userData.stats?.totalServicesSold || 0) + (statsUpdate.totalServicesSold || 0);
+      updates.stats.totalSales = totalPacksSold + totalServicesSold;
+    }
+    
+    await userRef.update(updates);
+    logger.info(`Updated stats for user ${userId} (${accountType}):`, statsUpdate);
+    
+  } catch (error) {
+    logger.error(`Error updating stats for user ${userId}:`, error);
+    // Não falhar a operação principal se a atualização de stats falhar
+  }
+}
 
 /**
  * Inicializa carteira do usuário
@@ -980,6 +1118,19 @@ async function confirmServiceDeliveryInternal(buyerId, orderId) {
 
   await batch.commit();
 
+  // Atualizar estatísticas dos usuários
+  await Promise.all([
+    // Stats do cliente (comprou um serviço)
+    updateUserStats(order.buyerId, {
+      totalSpent: order.vpAmount,
+      totalServicesBought: 1
+    }),
+    // Stats do provedor (vendeu um serviço)
+    updateUserStats(order.sellerId, {
+      totalServicesSold: 1
+    })
+  ]);
+
   logger.info(`✅ Service delivery confirmed: ${orderId}`);
   return { success: true };
 }
@@ -1093,6 +1244,27 @@ async function autoCompleteDeliveredServicesInternal() {
       try {
         await batch.commit();
         logger.info(`✅ Batch ${Math.floor(i/batchSize) + 1} committed successfully`);
+        
+        // Atualizar estatísticas para cada serviço auto-completado neste batch
+        for (const serviceDoc of currentBatch) {
+          try {
+            const serviceData = serviceDoc.data();
+            await Promise.all([
+              // Stats do cliente (comprou um serviço)
+              updateUserStats(serviceData.buyerId, {
+                totalSpent: serviceData.vpAmount,
+                totalServicesBought: 1
+              }),
+              // Stats do provedor (vendeu um serviço)
+              updateUserStats(serviceData.sellerId, {
+                totalServicesSold: 1
+              })
+            ]);
+          } catch (statsError) {
+            logger.warn(`Error updating stats for service ${serviceDoc.id}:`, statsError);
+            // Não falhar o processo se stats falhar
+          }
+        }
       } catch (error) {
         logger.error(`❌ Error committing batch ${Math.floor(i/batchSize) + 1}:`, error);
         errors.push({ batch: Math.floor(i/batchSize) + 1, error: error.message });
@@ -1335,6 +1507,19 @@ async function acceptPackOrderInternal(sellerId, orderId) {
   });
 
   await batch.commit();
+
+  // Atualizar estatísticas dos usuários
+  await Promise.all([
+    // Stats do cliente (comprou um pack)
+    updateUserStats(order.buyerId, {
+      totalSpent: order.vpAmount,
+      totalPacksBought: 1
+    }),
+    // Stats do provedor (vendeu um pack)
+    updateUserStats(order.sellerId, {
+      totalPacksSold: 1
+    })
+  ]);
 
   logger.info(`✅ Pack order accepted: ${orderId}`);
   return { success: true };

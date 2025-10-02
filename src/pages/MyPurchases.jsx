@@ -775,7 +775,7 @@ const MyPurchases = () => {
                       <i className="fas fa-exclamation-triangle"></i>
                       <div className="warning-content">
                         <strong>Pack Indisponível</strong>
-                        <p>Este pack foi removido pelo vendedor e não está mais disponível. Você ainda pode acessar as mídias que foram compradas anteriormente.</p>
+                        <p>Este pack foi removido pelo vendedor e não está mais disponível.</p>
                       </div>
                     </div>
                   )}
