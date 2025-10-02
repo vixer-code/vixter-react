@@ -403,9 +403,70 @@ const PostCreator = ({
     }
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0] || null;
+    if (!file) return;
+
+    // Validate file type
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const validVideoTypes = ['video/mp4', 'video/mov', 'video/avi', 'video/webm', 'video/quicktime'];
+    
+    if (!validImageTypes.includes(file.type) && !validVideoTypes.includes(file.type)) {
+      showError('Tipo de arquivo não suportado. Use imagens (JPG, PNG, GIF, WebP) ou vídeos (MP4, MOV, AVI, WebM).');
+      return;
+    }
+
+    // Validate file size (max 100MB for videos, 10MB for images)
+    const maxImageSize = 10 * 1024 * 1024; // 10MB
+    const maxVideoSize = 100 * 1024 * 1024; // 100MB
+    const maxSize = validImageTypes.includes(file.type) ? maxImageSize : maxVideoSize;
+    
+    if (file.size > maxSize) {
+      const sizeType = validImageTypes.includes(file.type) ? 'imagens (10MB)' : 'vídeos (100MB)';
+      showError(`Arquivo muito grande. O tamanho máximo para ${sizeType}.`);
+      return;
+    }
+
+    // If it's a video, validate duration (max 60 seconds)
+    if (validVideoTypes.includes(file.type)) {
+      try {
+        const duration = await getVideoDuration(file);
+        if (duration > 60) {
+          showError('Vídeos devem ter no máximo 60 segundos de duração.');
+          return;
+        }
+        console.log(`Video duration: ${duration}s`);
+      } catch (error) {
+        console.error('Error getting video duration:', error);
+        showError('Erro ao validar duração do vídeo. Tente novamente.');
+        return;
+      }
+    }
+
+    // Set media type based on file type
+    const type = validVideoTypes.includes(file.type) ? 'video' : 'image';
+    setMediaType(type);
     setMediaFile(file);
+  };
+
+  // Function to get video duration
+  const getVideoDuration = (file) => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        resolve(video.duration);
+      };
+      
+      video.onerror = () => {
+        window.URL.revokeObjectURL(video.src);
+        reject(new Error('Error loading video metadata'));
+      };
+      
+      video.src = URL.createObjectURL(file);
+    });
   };
 
   const handleRemoveFile = () => {
@@ -464,19 +525,29 @@ const PostCreator = ({
       {/* Selected File Display */}
       {mediaFile && (
         <div className="selected-file">
-          <span>Arquivo selecionado: {mediaFile.name}</span>
-          <button type="button" onClick={handleRemoveFile}>Remover</button>
+          <div className="file-info">
+            <i className={`fas fa-${mediaType === 'video' ? 'video' : 'image'}`}></i>
+            <div className="file-details">
+              <span className="file-name">{mediaFile.name}</span>
+              <span className="file-type">{mediaType === 'video' ? 'Vídeo' : 'Imagem'}</span>
+              {mediaType === 'video' && (
+                <span className="file-size">({(mediaFile.size / (1024 * 1024)).toFixed(1)} MB)</span>
+              )}
+            </div>
+          </div>
+          <button type="button" onClick={handleRemoveFile} className="remove-file-btn">
+            <i className="fas fa-times"></i>
+          </button>
         </div>
       )}
 
       <div className="create-post-actions">
         <div className="action-buttons-left">
           <label className="action-btn">
-            <i className="fa-solid fa-image"></i> Imagem
+            <i className="fa-solid fa-photo-film"></i> Mídia
             <input
               type="file"
-              accept="image/*"
-              multiple
+              accept="image/*,video/*"
               style={{ display: 'none' }}
               onChange={handleFileChange}
             />

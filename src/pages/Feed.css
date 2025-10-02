@@ -1288,3 +1288,41 @@
   color: #ff4757 !important; 
 }
 
+/* Post Media Styles */
+.post-media {
+  margin-top: 12px;
+}
+
+.post-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.post-image:hover {
+  transform: scale(1.02);
+}
+
+.post-video {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: #000;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.post-video:hover {
+  transform: scale(1.02);
+}
+
+.post-audio {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+

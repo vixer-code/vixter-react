@@ -144,7 +144,9 @@ async function updateUserStats(userId, statsUpdate) {
         ...userData.stats,
         totalSpent: admin.firestore.FieldValue.increment(statsUpdate.totalSpent || 0),
         totalPacksBought: admin.firestore.FieldValue.increment(statsUpdate.totalPacksBought || 0),
-        totalServicesBought: admin.firestore.FieldValue.increment(statsUpdate.totalServicesBought || 0)
+        totalServicesBought: admin.firestore.FieldValue.increment(statsUpdate.totalServicesBought || 0),
+        totalVixtipsSent: admin.firestore.FieldValue.increment(statsUpdate.totalVixtipsSent || 0),
+        totalVixtipsSentAmount: admin.firestore.FieldValue.increment(statsUpdate.totalVixtipsSentAmount || 0)
       };
     }
     
@@ -157,7 +159,9 @@ async function updateUserStats(userId, statsUpdate) {
         totalPosts: admin.firestore.FieldValue.increment(statsUpdate.totalPosts || 0),
         totalPostsVixies: admin.firestore.FieldValue.increment(statsUpdate.totalPostsVixies || 0),
         totalPostsFeed: admin.firestore.FieldValue.increment(statsUpdate.totalPostsFeed || 0),
-        totalPostsVixink: admin.firestore.FieldValue.increment(statsUpdate.totalPostsVixink || 0)
+        totalPostsVixink: admin.firestore.FieldValue.increment(statsUpdate.totalPostsVixink || 0),
+        totalVixtipsReceived: admin.firestore.FieldValue.increment(statsUpdate.totalVixtipsReceived || 0),
+        totalVixtipsReceivedAmount: admin.firestore.FieldValue.increment(statsUpdate.totalVixtipsReceivedAmount || 0)
       };
       
       // Calcular totalSales como soma de packs e serviços vendidos
@@ -2269,6 +2273,20 @@ export const processVixtip = onCall(async (request) => {
         sellerId: authorId
       };
     });
+
+    // Atualizar estatísticas dos usuários
+    await Promise.all([
+      // Stats do cliente (enviou uma gorjeta)
+      updateUserStats(buyerId, {
+        totalVixtipsSent: 1,
+        totalVixtipsSentAmount: vpAmount
+      }),
+      // Stats do provedor (recebeu uma gorjeta)
+      updateUserStats(authorId, {
+        totalVixtipsReceived: 1,
+        totalVixtipsReceivedAmount: vcAmount
+      })
+    ]);
 
     logger.info(`✅ Gorjeta processada com sucesso: ${result.vcCredited} VC creditados para ${result.sellerId}`);
     

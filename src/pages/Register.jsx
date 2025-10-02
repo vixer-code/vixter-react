@@ -486,6 +486,8 @@ const Register = () => {
             totalSpent: 0,
             totalPacksBought: 0,
             totalServicesBought: 0,
+            totalVixtipsSent: 0,
+            totalVixtipsSentAmount: 0,
             // Stats para provedores
             totalPacksSold: 0,
             totalServicesSold: 0,
@@ -493,7 +495,9 @@ const Register = () => {
             totalPosts: 0,
             totalPostsVixies: 0,
             totalPostsFeed: 0,
-            totalPostsVixink: 0
+            totalPostsVixink: 0,
+            totalVixtipsReceived: 0,
+            totalVixtipsReceivedAmount: 0
           },
           searchTerms: [
             (formData.displayName || user.displayName || '').toLowerCase(),
