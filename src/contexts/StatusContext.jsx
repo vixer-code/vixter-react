@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { ref, onValue, set, onDisconnect, serverTimestamp, get } from 'firebase/database';
-import { database } from '../../config/firebase';
+import { database, auth } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 
 const StatusContext = createContext();
@@ -67,6 +67,11 @@ export const StatusProvider = ({ children }) => {
 
     // Handle page visibility changes and beforeunload events
     const handleVisibilityChange = () => {
+      if (!auth?.currentUser) {
+        console.log('📱 Visibility change ignored - user not authenticated');
+        return;
+      }
+      
       if (document.hidden) {
         // Page is hidden, set user as offline
         const userStatusRef = ref(database, `status/${uid}`);
@@ -87,6 +92,11 @@ export const StatusProvider = ({ children }) => {
     };
 
     const handleBeforeUnload = () => {
+      if (!auth?.currentUser) {
+        console.log('🚪 Page unload ignored - user not authenticated');
+        return;
+      }
+      
       // Set user as offline when page is about to unload
       const userStatusRef = ref(database, `status/${uid}`);
       set(userStatusRef, {
@@ -166,8 +176,8 @@ export const StatusProvider = ({ children }) => {
     setInitialOnlineStatus();
 
     return () => {
-      // Force offline status before cleanup
-      if (currentUser?.uid) {
+      // Force offline status before cleanup - only if user is still authenticated
+      if (currentUser?.uid && auth?.currentUser) {
         const userStatusRef = ref(database, `status/${currentUser.uid}`);
         set(userStatusRef, {
           state: 'offline',
@@ -176,6 +186,8 @@ export const StatusProvider = ({ children }) => {
           console.error('❌ Error setting offline status during cleanup:', error);
         });
         console.log('🧹 Cleanup - User set to offline:', currentUser.uid);
+      } else {
+        console.log('🧹 Cleanup - Skipping status update (user not authenticated)');
       }
       
       unsubscribeConnected();
@@ -188,7 +200,10 @@ export const StatusProvider = ({ children }) => {
   }, [currentUser]);
 
   const updateUserStatus = useCallback(async (status) => {
-    if (!currentUser) return false;
+    if (!currentUser || !auth?.currentUser) {
+      console.log('❌ Cannot update status: user not authenticated');
+      return false;
+    }
 
     // Only allow online/offline for simplified system
     if (status !== 'online' && status !== 'offline') {
