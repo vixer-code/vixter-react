@@ -2459,7 +2459,7 @@ const Profile = () => {
                     {serviceSales.map((sale) => (
                       <li key={sale.id} className="sale-item">
                         <div className="sale-buyer">
-                          <span className="label">Comprador:</span> @{sale.buyerUsername || sale.buyerId}
+                          <span className="label">Usuário:</span> @{sale.buyerUsername || sale.buyerId}
                         </div>
                         <div className="sale-amount">
                           <span className="label">Recebido:</span> {Number(sale.priceVC || 0).toFixed(2)} VC
@@ -2497,7 +2497,7 @@ const Profile = () => {
                     {packSales.map((sale) => (
                       <li key={sale.id} className="sale-item">
                         <div className="sale-buyer">
-                          <span className="label">Comprador:</span> @{sale.buyerUsername || sale.buyerId}
+                          <span className="label">Usuário:</span> @{sale.buyerUsername || sale.buyerId}
                         </div>
                         <div className="sale-amount">
                           <span className="label">Recebido:</span> {Number(sale.priceVC || 0).toFixed(2)} VC

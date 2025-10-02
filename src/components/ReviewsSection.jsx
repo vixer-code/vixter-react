@@ -89,22 +89,10 @@ const ReviewsSection = ({
     }
   };
 
-  const handleBehaviorReview = async () => {
+  const handleBehaviorReview = () => {
     if (!buyerId) return;
     
-    // Get current user's account type from context
-    // Providers can review any user's behavior
-    // Clients can only review providers who provided services/packs to them
-    const canReview = await canReviewBuyerBehavior(buyerId, userType);
-    if (!canReview) {
-      if (userType === 'buyer') {
-        alert('Você só pode avaliar vendedoras que prestaram serviços/packs para você');
-      } else {
-        alert('Você já avaliou este usuário');
-      }
-      return;
-    }
-    
+    // Abre o modal imediatamente - validação será feita dentro do modal
     setShowBehaviorModal(true);
   };
 

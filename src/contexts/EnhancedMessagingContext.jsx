@@ -1947,7 +1947,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
   }, [currentUser, createOrGetConversation, showError]);
 
   // Get other participant in conversation
-  const getOtherParticipant = useCallback((conversation) => {
+  const getOtherParticipant = useCallback(async (conversation) => {
     if (!conversation?.participants || !currentUser?.uid) return {};
     
     const participantIds = Object.keys(conversation.participants);
@@ -1961,19 +1961,40 @@ export const EnhancedMessagingProvider = ({ children }) => {
       return {
         ...userData,
         // Ensure we have uid for consistency
-        uid: otherId
+        uid: otherId,
+        id: otherId
       };
+    }
+    
+    // If user data not in cache, try to load it
+    try {
+      const loadedUserData = await getUserById(otherId);
+      if (loadedUserData) {
+        // Update users cache
+        setUsers(prev => ({
+          ...prev,
+          [otherId]: loadedUserData
+        }));
+        return {
+          ...loadedUserData,
+          uid: otherId,
+          id: otherId
+        };
+      }
+    } catch (error) {
+      console.error('Error loading user data for participant:', error);
     }
     
     // Fallback: return basic user info with uid
     return {
       uid: otherId,
+      id: otherId,
       displayName: `Usuário ${otherId.slice(0, 8)}`,
       name: `Usuário ${otherId.slice(0, 8)}`,
       photoURL: null,
       profilePictureURL: null
     };
-  }, [currentUser, users]);
+  }, [currentUser, users, getUserById]);
 
   // Load specific user data by ID
   const loadUserData = useCallback(async (userId) => {
@@ -2180,6 +2201,17 @@ export const EnhancedMessagingProvider = ({ children }) => {
         isCompleted: false
       };
 
+      // Create initial message ID
+      const initialMessageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const initialMessage = {
+        id: initialMessageId,
+        text: `Esta é a conversa do serviço "${serviceName}", entre @${sellerUsername} e @${buyerUsername}`,
+        senderId: serviceOrder.sellerId,
+        timestamp: Date.now(),
+        type: 'text',
+        read: false
+      };
+
       // Save to RTDB with messages structure for Centrifugo compatibility
       const conversationRef = ref(database, `conversations/${conversationId}`);
       
@@ -2213,8 +2245,10 @@ export const EnhancedMessagingProvider = ({ children }) => {
         await set(conversationRef, {
           ...conversationData,
           // Initialize messages structure for Centrifugo compatibility
-          messages: {},
-          messageCount: 0,
+          messages: {
+            [initialMessageId]: initialMessage
+          },
+          messageCount: 1,
           lastActivity: Date.now()
         });
         

@@ -13,7 +13,7 @@ const BehaviorReviewModal = ({
   userType = 'seller',
   onReviewSubmitted 
 }) => {
-  const { createBehaviorReview, processing } = useReview();
+  const { createBehaviorReview, processing, canReviewBuyerBehavior } = useReview();
   const { showError } = useNotification();
   
   const [rating, setRating] = useState(0);
@@ -32,6 +32,7 @@ const BehaviorReviewModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Validações básicas (instantâneas)
     if (rating === 0) {
       showError('Por favor, selecione uma avaliação');
       return;
@@ -47,11 +48,29 @@ const BehaviorReviewModal = ({
       return;
     }
 
-    const result = await createBehaviorReview(buyerId, rating, comment, userType);
-    
-    if (result && result.success) {
-      onReviewSubmitted && onReviewSubmitted();
-      onClose();
+    // Validações demoradas (queries no Firestore)
+    try {
+      const canReviewResult = await canReviewBuyerBehavior(buyerId, userType);
+      
+      if (!canReviewResult) {
+        if (userType === 'buyer') {
+          showError('Você só pode avaliar vendedoras que prestaram serviços/packs para você');
+        } else {
+          showError('Você já avaliou este usuário');
+        }
+        return;
+      }
+
+      // Se passou na validação, cria a avaliação
+      const result = await createBehaviorReview(buyerId, rating, comment, userType);
+      
+      if (result && result.success) {
+        onReviewSubmitted && onReviewSubmitted();
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error validating or creating review:', error);
+      showError('Erro ao processar avaliação');
     }
   };
 

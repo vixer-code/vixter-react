@@ -44,8 +44,15 @@ const ChatInterface = ({ conversation, onClose }) => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  const otherUser = getOtherParticipant(conversation);
+  const [otherUser, setOtherUser] = useState({});
   const otherUserStatus = useUserStatus(otherUser?.id);
+
+  // Load other user data when conversation changes
+  useEffect(() => {
+    if (conversation) {
+      getOtherParticipant(conversation).then(setOtherUser);
+    }
+  }, [conversation, getOtherParticipant]);
 
   // Handle profile navigation
   const handleProfileClick = () => {
