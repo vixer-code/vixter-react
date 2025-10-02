@@ -1,0 +1,489 @@
+/* MediaLightbox Styles */
+.media-lightbox-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.95);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: lightboxFadeIn 0.3s ease-out;
+}
+
+@keyframes lightboxFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+.media-lightbox-modal {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Close button */
+.lightbox-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  color: white;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  z-index: 10001;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.lightbox-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+/* Navigation buttons */
+.lightbox-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  color: white;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  z-index: 10001;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.lightbox-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.lightbox-prev {
+  left: 20px;
+}
+
+.lightbox-next {
+  right: 20px;
+}
+
+/* Media container */
+.lightbox-media-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.lightbox-media-wrapper {
+  max-width: 90%;
+  max-height: 90%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease-out;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.lightbox-media {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
+/* R2MediaViewer specific styles in lightbox */
+.lightbox-media.r2-media-viewer {
+  pointer-events: auto;
+}
+
+.lightbox-media.r2-media-viewer img,
+.lightbox-media.r2-media-viewer video {
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
+/* Video controls protection */
+.lightbox-media.r2-media-viewer video {
+  controlsList: nodownload nofullscreen noremoteplayback;
+  disablePictureInPicture: true;
+}
+
+.lightbox-media.r2-media-viewer video::-webkit-media-controls {
+  -webkit-user-select: none;
+}
+
+.lightbox-media.r2-media-viewer video::-webkit-media-controls-enclosure {
+  -webkit-user-select: none;
+}
+
+/* Video controls */
+.lightbox-video-toggle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  color: white;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 10002;
+}
+
+.lightbox-video-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* Zoom controls */
+.lightbox-zoom-controls {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 25px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 10001;
+}
+
+.lightbox-zoom-controls button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+
+.lightbox-zoom-controls button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.lightbox-zoom-controls span {
+  color: white;
+  font-weight: 500;
+  min-width: 50px;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Media counter */
+.lightbox-counter {
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 10001;
+}
+
+/* Instructions */
+.lightbox-instructions {
+  position: absolute;
+  bottom: 30px;
+  left: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10001;
+}
+
+.instruction-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  opacity: 0.8;
+}
+
+.instruction-item i {
+  font-size: 12px;
+  width: 14px;
+  text-align: center;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .media-lightbox-modal {
+    padding: 10px;
+  }
+
+  .lightbox-close-btn {
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .lightbox-nav-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+
+  .lightbox-prev {
+    left: 10px;
+  }
+
+  .lightbox-next {
+    right: 10px;
+  }
+
+  .lightbox-video-toggle {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+  }
+
+  .lightbox-zoom-controls {
+    bottom: 20px;
+    padding: 8px 15px;
+    gap: 10px;
+  }
+
+  .lightbox-zoom-controls button {
+    padding: 6px;
+    font-size: 14px;
+  }
+
+  .lightbox-counter {
+    bottom: 20px;
+    right: 20px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .lightbox-instructions {
+    bottom: 20px;
+    left: 20px;
+    gap: 6px;
+  }
+
+  .instruction-item {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .instruction-item i {
+    font-size: 11px;
+    width: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .lightbox-media-wrapper {
+    max-width: 95%;
+    max-height: 95%;
+  }
+
+  .lightbox-instructions {
+    display: none; /* Hide instructions on very small screens */
+  }
+
+  .lightbox-zoom-controls {
+    bottom: 80px; /* Move above counter */
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .media-lightbox-overlay,
+  .lightbox-close-btn,
+  .lightbox-nav-btn,
+  .lightbox-video-toggle,
+  .lightbox-zoom-controls button {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .media-lightbox-overlay {
+    background-color: rgba(0, 0, 0, 1);
+  }
+  
+  .lightbox-close-btn,
+  .lightbox-nav-btn,
+  .lightbox-video-toggle,
+  .lightbox-zoom-controls,
+  .lightbox-counter,
+  .instruction-item {
+    background: rgba(0, 0, 0, 1);
+    border: 2px solid white;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .lightbox-close-btn:hover,
+  .lightbox-nav-btn:hover,
+  .lightbox-video-toggle:hover,
+  .lightbox-zoom-controls button:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* Secure Media Lightbox specific styles */
+.lightbox-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+  gap: 15px;
+}
+
+.lightbox-loading i {
+  font-size: 32px;
+  color: #00ffca;
+}
+
+.lightbox-security-notice {
+  position: absolute;
+  top: 80px;
+  left: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10001;
+}
+
+.security-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.security-item i {
+  font-size: 12px;
+  width: 14px;
+  text-align: center;
+}
+
+/* Responsive security notice */
+@media (max-width: 768px) {
+  .lightbox-security-notice {
+    top: 60px;
+    left: 20px;
+    gap: 6px;
+  }
+
+  .security-item {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .security-item i {
+    font-size: 11px;
+    width: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .lightbox-security-notice {
+    top: 50px;
+    left: 15px;
+  }
+
+  .security-item {
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+}

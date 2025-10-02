@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSecurePackContent } from '../hooks/useSecurePackContent';
+import SecureMediaLightbox from './SecureMediaLightbox';
 import './PackContentViewer.css';
 
 const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
@@ -10,9 +11,9 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
   const [contentUrls, setContentUrls] = useState({});
   const [loading, setLoading] = useState({});
   const [error, setError] = useState(null);
-  const [galleryOpen, setGalleryOpen] = useState(false);
-  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
-  const [mediaItems, setMediaItems] = useState([]);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxItems, setLightboxItems] = useState([]);
   const [mediaBlobUrls, setMediaBlobUrls] = useState({});
 
   // Load authenticated media using fetch with JWT token
@@ -71,7 +72,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
   useEffect(() => {
     if (pack?.contentWithUrls && Array.isArray(pack.contentWithUrls)) {
       const urls = {};
-      const media = [];
+      const mediaItems = [];
       
       pack.contentWithUrls.forEach((contentItem, index) => {
         if (contentItem.key && contentItem.secureUrl) {
@@ -80,18 +81,23 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
           // Check if it's a media item (image or video)
           if (contentItem.type.startsWith('image/') || contentItem.type.startsWith('video/') || 
               (contentItem.type === 'image/webp' && contentItem.name.toLowerCase().includes('video'))) {
-            media.push({
-              ...contentItem,
-              index,
-              isVideo: contentItem.type.startsWith('video/') || 
-                      (contentItem.type === 'image/webp' && contentItem.name.toLowerCase().includes('video'))
+            mediaItems.push({
+              key: contentItem.key,
+              type: contentItem.type.startsWith('video/') || 
+                    (contentItem.type === 'image/webp' && contentItem.name.toLowerCase().includes('video')) 
+                    ? 'video' : 'image',
+              url: contentItem.secureUrl,
+              name: contentItem.name,
+              requiresAuth: contentItem.requiresAuth,
+              jwtToken: contentItem.jwtToken,
+              originalItem: contentItem
             });
           }
         }
       });
       
       setContentUrls(urls);
-      setMediaItems(media);
+      setLightboxItems(mediaItems);
     }
   }, [pack?.contentWithUrls]);
 
@@ -102,12 +108,12 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
     const isMedia = contentItem.type.startsWith('image/') || contentItem.type.startsWith('video/') || 
                    (contentItem.type === 'image/webp' && contentItem.name.toLowerCase().includes('video'));
 
-    if (isMedia && mediaItems.length > 0) {
-      // Open gallery for media items
-      const mediaIndex = mediaItems.findIndex(item => item.key === contentItem.key);
+    if (isMedia && lightboxItems.length > 0) {
+      // Open lightbox for media items
+      const mediaIndex = lightboxItems.findIndex(item => item.key === contentItem.key);
       if (mediaIndex >= 0) {
-        setSelectedMediaIndex(mediaIndex);
-        setGalleryOpen(true);
+        setLightboxIndex(mediaIndex);
+        setLightboxOpen(true);
       }
     } else {
       // For non-media files, open in new tab with JWT authentication
@@ -175,30 +181,15 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Gallery navigation functions
-  const nextMedia = () => {
-    setSelectedMediaIndex((prev) => (prev + 1) % mediaItems.length);
+  // Close lightbox function
+  const closeLightbox = () => {
+    setLightboxOpen(false);
   };
-
-  const prevMedia = () => {
-    setSelectedMediaIndex((prev) => (prev - 1 + mediaItems.length) % mediaItems.length);
-  };
-
-  const closeGallery = () => {
-    setGalleryOpen(false);
-  };
-
-  // Load authenticated media when gallery opens
-  useEffect(() => {
-    if (galleryOpen && mediaItems[selectedMediaIndex]) {
-      loadAuthenticatedMedia(mediaItems[selectedMediaIndex]);
-    }
-  }, [galleryOpen, selectedMediaIndex, mediaItems, loadAuthenticatedMedia]);
 
   // Handle keyboard navigation and disable download shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (!galleryOpen) return;
+      if (!lightboxOpen) return;
       
       // Disable common download shortcuts
       if (e.ctrlKey || e.metaKey) {
@@ -410,124 +401,16 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
         )}
       </div>
 
-      {/* Media Gallery Modal */}
-      {galleryOpen && mediaItems.length > 0 && (
-        <div className="media-gallery-overlay" onClick={closeGallery}>
-          <div className="media-gallery-container" onClick={(e) => e.stopPropagation()}>
-            <div className="gallery-header">
-              <div className="gallery-info">
-                <h3>{mediaItems[selectedMediaIndex]?.name}</h3>
-                <span className="gallery-counter">
-                  {selectedMediaIndex + 1} de {mediaItems.length}
-                </span>
-              </div>
-              <button className="gallery-close-btn" onClick={closeGallery}>
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-
-            <div className="gallery-content">
-              {mediaItems.length > 1 && (
-                <button className="gallery-nav-btn gallery-prev" onClick={prevMedia}>
-                  <i className="fas fa-chevron-left"></i>
-                </button>
-              )}
-
-              <div className="gallery-media">
-                {loading[mediaItems[selectedMediaIndex]?.key] ? (
-                  <div className="gallery-loading">
-                    <i className="fas fa-spinner fa-spin"></i>
-                    <p>Carregando mídia...</p>
-                  </div>
-                ) : mediaItems[selectedMediaIndex]?.isVideo ? (
-                  <video
-                    key={mediaItems[selectedMediaIndex]?.key}
-                    src={mediaBlobUrls[mediaItems[selectedMediaIndex]?.key] || (mediaItems[selectedMediaIndex]?.requiresAuth ? '' : mediaItems[selectedMediaIndex]?.secureUrl)}
-                    controls
-                    autoPlay
-                    className="gallery-video"
-                    crossOrigin="anonymous"
-                    controlsList="nodownload nofullscreen noremoteplayback"
-                    disablePictureInPicture
-                    onContextMenu={(e) => e.preventDefault()}
-                    onLoadStart={() => {
-                      console.log('=== VIDEO LOAD START ===');
-                      console.log('Video src:', mediaBlobUrls[mediaItems[selectedMediaIndex]?.key] || mediaItems[selectedMediaIndex]?.secureUrl);
-                      console.log('Requires auth:', mediaItems[selectedMediaIndex]?.requiresAuth);
-                      console.log('JWT token length:', mediaItems[selectedMediaIndex]?.jwtToken?.length);
-                    }}
-                    onError={(e) => {
-                      console.error('=== VIDEO LOAD ERROR ===');
-                      console.error('Error:', e);
-                      console.error('Video src:', e.target.src);
-                    }}
-                    style={{
-                      userSelect: 'none',
-                      WebkitUserSelect: 'none',
-                      MozUserSelect: 'none',
-                      msUserSelect: 'none',
-                      pointerEvents: 'auto'
-                    }}
-                  />
-                ) : (
-                  <img
-                    key={mediaItems[selectedMediaIndex]?.key}
-                    src={mediaBlobUrls[mediaItems[selectedMediaIndex]?.key] || (mediaItems[selectedMediaIndex]?.requiresAuth ? '' : mediaItems[selectedMediaIndex]?.secureUrl)}
-                    alt={mediaItems[selectedMediaIndex]?.name}
-                    className="gallery-image"
-                    crossOrigin="anonymous"
-                    onLoad={() => {
-                      console.log('=== IMAGE LOAD SUCCESS ===');
-                      console.log('Image src:', mediaBlobUrls[mediaItems[selectedMediaIndex]?.key] || mediaItems[selectedMediaIndex]?.secureUrl);
-                      console.log('Requires auth:', mediaItems[selectedMediaIndex]?.requiresAuth);
-                      console.log('JWT token length:', mediaItems[selectedMediaIndex]?.jwtToken?.length);
-                    }}
-                    onError={(e) => {
-                      console.error('=== IMAGE LOAD ERROR ===');
-                      console.error('Error:', e);
-                      console.error('Image src:', e.target.src);
-                    }}
-                  />
-                )}
-              </div>
-
-              {mediaItems.length > 1 && (
-                <button className="gallery-nav-btn gallery-next" onClick={nextMedia}>
-                  <i className="fas fa-chevron-right"></i>
-                </button>
-              )}
-            </div>
-
-            {mediaItems.length > 1 && (
-              <div className="gallery-thumbnails">
-                {mediaItems.map((item, index) => (
-                  <div
-                    key={item.key}
-                    className={`gallery-thumbnail ${index === selectedMediaIndex ? 'active' : ''}`}
-                    onClick={() => setSelectedMediaIndex(index)}
-                  >
-                    <div className="thumbnail-icon">
-                      <i className={item.isVideo ? 'fas fa-video' : 'fas fa-image'}></i>
-                    </div>
-                    <span className="thumbnail-name">{item.name}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="gallery-controls">
-              <span className="watermark-notice">
-                <i className="fas fa-shield-alt"></i>
-                Conteúdo protegido com watermark personalizado
-              </span>
-              <span className="download-warning">
-                <i className="fas fa-ban"></i>
-                Download desabilitado - Conteúdo protegido
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Secure Media Lightbox */}
+      <SecureMediaLightbox
+        isOpen={lightboxOpen}
+        onClose={closeLightbox}
+        mediaItems={lightboxItems}
+        currentIndex={lightboxIndex}
+        type="pack"
+        watermarked={true}
+        isOwner={false}
+      />
     </div>
   );
 };
