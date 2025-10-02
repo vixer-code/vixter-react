@@ -44,10 +44,9 @@ O modal segue o padrão visual do Vixter:
 
 ### Método 1: Simulação Manual
 1. Abra o DevTools do navegador
-2. Vá para Application > Local Storage
-3. Remova a chave `app-version`
-4. Recarregue a página
-5. O modal deve aparecer imediatamente
+2. Execute o script `test-mobile-update.js` no console
+3. Use `simulateVersionUpdate()` para simular mudança
+4. O modal deve aparecer imediatamente
 
 ### Método 2: Deploy Real
 1. Faça um deploy da aplicação
@@ -57,11 +56,16 @@ O modal segue o padrão visual do Vixter:
 5. Volte para a aba da versão antiga
 6. O modal deve aparecer automaticamente
 
-### Método 3: Teste de Intervalo
-1. Modifique o intervalo no hook para 10 segundos (para teste)
-2. Faça uma mudança na aplicação
-3. Aguarde o próximo ciclo de verificação
-4. O modal deve aparecer
+### Método 3: Teste Mobile
+1. Use o DevTools para simular dispositivos móveis
+2. Execute `testMobileModal()` no console
+3. Teste diferentes tamanhos de tela
+4. Verifique a responsividade do modal
+
+### Método 4: Debug Completo
+1. Execute `debugVersion()` no console
+2. Verifique informações de versão e headers
+3. Confirme se a detecção está funcionando
 
 ## Personalização
 
@@ -86,13 +90,33 @@ Modifique o arquivo `UpdateNotification.css` para personalizar:
 - Layout responsivo
 - Modo escuro
 
+## Melhorias para Mobile
+
+### Design Responsivo
+- **Layout Mobile-First**: Modal otimizado para telas pequenas
+- **Animação Slide-Up**: Entrada suave de baixo para cima no mobile
+- **Touch-Friendly**: Botões maiores e área de toque adequada
+- **Safe Areas**: Respeita áreas seguras do iPhone (notch, home indicator)
+
+### Detecção Aprimorada
+- **Visibility API**: Detecta quando app volta do background
+- **Service Worker**: Suporte para PWA e cache
+- **Múltiplos Headers**: Usa ETag e Last-Modified para maior precisão
+- **Fallback Robusto**: Sistema de backup em caso de erro
+
+### Performance Mobile
+- **Touch Actions**: Otimizado para gestos de toque
+- **Overscroll Behavior**: Previne scroll indesejado
+- **Hardware Acceleration**: Usa transform3d para animações suaves
+
 ## Benefícios
 
 1. **Experiência do Usuário**: Elimina a tela cinza sem feedback
 2. **Atualizações Automáticas**: Detecta mudanças sem intervenção manual
 3. **Não Intrusivo**: Permite ao usuário escolher quando atualizar
-4. **Responsivo**: Funciona em todos os dispositivos
+4. **Responsivo**: Funciona perfeitamente em todos os dispositivos
 5. **Acessível**: Suporte a leitores de tela e navegação por teclado
+6. **Mobile-Optimized**: Especialmente otimizado para dispositivos móveis
 
 ## Considerações Técnicas
 
