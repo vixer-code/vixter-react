@@ -40,10 +40,11 @@
 }
 
 .category {
-  background: #007bff;
-  color: white;
+  background: linear-gradient(135deg, #8A2BE2, #00FFCA);
+  color: #0F0F1A;
   padding: 4px 8px;
   border-radius: 4px;
+  font-weight: 600;
 }
 
 .item-count {
@@ -51,7 +52,7 @@
 }
 
 .vendor-info {
-  color: #00ffca;
+  color: #8A2BE2;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -59,14 +60,15 @@
 }
 
 .vendor-link {
-  color: #00ffca;
+  color: #8A2BE2;
   text-decoration: none;
   font-weight: 600;
   margin-left: 5px;
+  transition: color 0.3s ease;
 }
 
 .vendor-link:hover {
-  color: #00d4aa;
+  color: #00FFCA;
   text-decoration: underline;
 }
 
@@ -124,12 +126,12 @@
 
 .watermark-info,
 .video-info {
-  background: rgba(0, 255, 202, 0.1);
-  border: 1px solid rgba(0, 255, 202, 0.3);
+  background: rgba(138, 43, 226, 0.1);
+  border: 1px solid rgba(138, 43, 226, 0.3);
   border-radius: 6px;
   padding: 10px;
   margin-top: 10px;
-  color: #00ffca;
+  color: #8A2BE2;
   font-size: 0.9rem;
 }
 
@@ -188,9 +190,10 @@
 }
 
 .content-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: #007bff;
+  background: rgba(138, 43, 226, 0.1);
+  border-color: #8A2BE2;
   transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(138, 43, 226, 0.2);
 }
 
 .content-preview {
@@ -214,7 +217,13 @@
 
 .loading-spinner i {
   font-size: 2rem;
-  color: #007bff;
+  color: #8A2BE2;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .preview-loaded,
@@ -228,7 +237,7 @@
 .preview-loaded i,
 .preview-placeholder i {
   font-size: 3rem;
-  color: #007bff;
+  color: #8A2BE2;
 }
 
 .content-info {
@@ -267,8 +276,8 @@
 }
 
 .file-type {
-  background: rgba(0, 123, 255, 0.2);
-  color: #007bff;
+  background: rgba(138, 43, 226, 0.2);
+  color: #8A2BE2;
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -283,8 +292,8 @@
 }
 
 .view-btn {
-  background: #007bff;
-  color: white;
+  background: linear-gradient(135deg, #8A2BE2, #00FFCA);
+  color: #0F0F1A;
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
@@ -293,11 +302,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
+  font-weight: 600;
 }
 
 .view-btn:hover:not(:disabled) {
-  background: #0056b3;
+  background: linear-gradient(135deg, #7B1FA2, #00E6B8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
 }
 
 .view-btn:disabled {

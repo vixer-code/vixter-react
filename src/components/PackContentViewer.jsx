@@ -275,7 +275,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
           <div className="pack-meta">
             <span className="category">{pack.category}</span>
             <span className="item-count">
-              {pack.packContent?.length || 0} itens
+              {(pack.contentWithUrls || pack.packContent || pack.content || []).length} itens
             </span>
             {vendorInfo && (
               <span className="vendor-info">
