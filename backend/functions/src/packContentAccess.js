@@ -318,7 +318,7 @@ async function generateQRCode(url, size = 80) {
       width: size,
       margin: 1,
       color: {
-        dark: '#FFFFFF', // White QR code
+        dark: '#000000', // Black QR code (changed from white)
         light: '#00000000' // Transparent background
       }
     });
@@ -477,7 +477,8 @@ async function addImageWatermark(imageBuffer, watermark, username, contentItem, 
             input: qrBuffer,
             top: Math.round(y),
             left: Math.round(x),
-            blend: 'overlay'
+            blend: 'overlay',
+            opacity: 0.3 // Changed to 30% opacity for more faded QR codes
           });
         }
       }
@@ -556,7 +557,7 @@ async function addImageWatermark(imageBuffer, watermark, username, contentItem, 
     // Apply all watermarks
     const watermarkedImage = await image
       .composite(compositeOperations)
-      .jpeg({ quality: 85, progressive: true }) // Use JPEG for better compression
+      .jpeg({ quality: 95, progressive: true }) // Increased quality from 85 to 95 for better image quality
       .toBuffer();
 
     return watermarkedImage;
@@ -651,14 +652,14 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
         videoFilters.push(`movie=${buyerQRPath}:loop=0,setpts=N/(FRAME_RATE*TB),scale=${qrSize}:${qrSize}[buyer_qr]`);
         videoFilters.push(`movie=${vendorQRPath}:loop=0,setpts=N/(FRAME_RATE*TB),scale=${qrSize}:${qrSize}[vendor_qr]`);
         
-        // Position QR codes in alternating pattern
-        videoFilters.push(`[buyer_qr]overlay=x=if(eq(mod(t*2,2),0),10,w-${qrSize+10}):y=10:format=auto:alpha=0.7[buyer_overlay]`);
-        videoFilters.push(`[vendor_qr]overlay=x=if(eq(mod(t*2,2),0),w-${qrSize+10},10):y=h-${qrSize+10}:format=auto:alpha=0.7[vendor_overlay]`);
-        videoFilters.push(`[buyer_overlay][vendor_overlay]overlay=x=w/2-${qrSize/2}:y=h/2-${qrSize/2}:format=auto:alpha=0.5[qr_final]`);
+        // Position QR codes in alternating pattern with 30% transparency
+        videoFilters.push(`[buyer_qr]overlay=x=if(eq(mod(t*2,2),0),10,w-${qrSize+10}):y=10:format=auto:alpha=0.3[buyer_overlay]`);
+        videoFilters.push(`[vendor_qr]overlay=x=if(eq(mod(t*2,2),0),w-${qrSize+10},10):y=h-${qrSize+10}:format=auto:alpha=0.3[vendor_overlay]`);
+        videoFilters.push(`[buyer_overlay][vendor_overlay]overlay=x=w/2-${qrSize/2}:y=h/2-${qrSize/2}:format=auto:alpha=0.3[qr_final]`);
         
         // Corner QR codes for additional coverage
         videoFilters.push(`[qr_final]movie=${buyerQRPath}:loop=0,setpts=N/(FRAME_RATE*TB),scale=${Math.floor(qrSize*0.7)}:${Math.floor(qrSize*0.7)}[corner_buyer]`);
-        videoFilters.push(`[corner_buyer]overlay=x=w-${Math.floor(qrSize*0.7)+10}:y=10:format=auto:alpha=0.4[corner_final]`);
+        videoFilters.push(`[corner_buyer]overlay=x=w-${Math.floor(qrSize*0.7)+10}:y=10:format=auto:alpha=0.3[corner_final]`);
       }
       
       // Add text watermarks with reduced density
@@ -696,12 +697,12 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
         .audioCodec('aac')
         .outputOptions([
           '-preset superfast', // Faster than ultrafast but still good quality
-          '-crf 25', // Better quality than before
+          '-crf 20', // Improved quality (lower CRF = better quality, was 25)
           '-movflags +faststart', // Optimize for streaming
           '-pix_fmt yuv420p', // Ensure compatibility
           '-tune zerolatency', // Optimize for low latency
-          '-maxrate 3M', // Slightly higher bitrate for better quality
-          '-bufsize 6M', // Buffer size
+          '-maxrate 5M', // Increased bitrate for better quality (was 3M)
+          '-bufsize 10M', // Increased buffer size (was 6M)
           '-g 30', // Keyframe interval for better seeking
           '-threads 0' // Use all available threads
         ])
