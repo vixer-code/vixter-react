@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useReview } from '../contexts/ReviewContext';
+import { useNotification } from '../contexts/NotificationContext';
 import './ServicePackReviewModal.css';
 
 const ServicePackReviewModal = ({ 
@@ -13,44 +14,93 @@ const ServicePackReviewModal = ({
   sellerPhotoURL,
   onReviewSubmitted 
 }) => {
-  const { createServiceReview, processing } = useReview();
+  const { createServiceReview, processing, canReviewOrder } = useReview();
+  const { showError } = useNotification();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [hoveredRating, setHoveredRating] = useState(0);
 
-  const handleSubmit = async () => {
-    if (rating === 0 || !comment.trim()) {
+  // Reset form when modal opens
+  useLayoutEffect(() => {
+    if (isOpen) {
+      setRating(0);
+      setComment('');
+      setHoveredRating(0);
+    }
+  }, [isOpen]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validações básicas (instantâneas)
+    if (rating === 0) {
+      showError('Por favor, selecione uma avaliação');
       return;
     }
 
-    const success = await createServiceReview(orderId, rating, comment, orderType);
-    if (success) {
-      onReviewSubmitted();
-      onClose();
-      // Reset form
-      setRating(0);
-      setComment('');
+    if (!comment.trim()) {
+      showError('Por favor, escreva um comentário');
+      return;
+    }
+
+    if (comment.length > 200) {
+      showError('Comentário deve ter no máximo 200 caracteres');
+      return;
+    }
+
+    // Validações demoradas (queries no Firestore) - APENAS NO SUBMIT
+    try {
+      const canReviewResult = await canReviewOrder(orderId, orderType);
+      
+      if (!canReviewResult) {
+        showError('Você não pode fazer esta avaliação');
+        return;
+      }
+
+      // Se passou na validação, cria a avaliação
+      const result = await createServiceReview(orderId, rating, comment, orderType);
+      
+      if (result && result.success) {
+        onReviewSubmitted && onReviewSubmitted();
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error validating or creating review:', error);
+      showError('Erro ao processar avaliação');
     }
   };
 
   const handleClose = () => {
-    // Reset form first
-    setRating(0);
-    setComment('');
-    // Then close modal
     onClose();
   };
 
-  const renderStars = (currentRating, onStarClick) => {
+  const handleStarClick = (starRating) => {
+    setRating(starRating);
+  };
+
+  const handleStarHover = (starRating) => {
+    setHoveredRating(starRating);
+  };
+
+  const handleStarLeave = () => {
+    setHoveredRating(0);
+  };
+
+  const renderStars = () => {
+    const displayRating = hoveredRating || rating;
     const stars = [];
     for (let i = 1; i <= 5; i++) {
       stars.push(
-        <span
+        <button
           key={i}
-          className={`star ${i <= currentRating ? 'filled' : ''} interactive`}
-          onClick={() => onStarClick(i)}
+          type="button"
+          className={`star ${i <= displayRating ? 'filled' : ''}`}
+          onClick={() => handleStarClick(i)}
+          onMouseEnter={() => handleStarHover(i)}
+          onMouseLeave={handleStarLeave}
         >
           <i className="fas fa-star"></i>
-        </span>
+        </button>
       );
     }
     return stars;
@@ -91,7 +141,7 @@ const ServicePackReviewModal = ({
                 <label>Avaliação:</label>
                 <div className="stars-container">
                   <div className="stars">
-                    {renderStars(rating, setRating)}
+                    {renderStars()}
                   </div>
                   <span className="rating-text">
                     {rating > 0 ? `${rating}/5 estrelas` : 'Selecione uma avaliação'}

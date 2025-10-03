@@ -377,7 +377,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
           'mov': 'video/quicktime',
           'avi': 'video/x-msvideo'
         };
-        fileType = mimeTypes[extension] || 'image/jpeg';
+        fileType = mimeTypes[extension] || 'video/mp4';
       }
       
       // Create a new File object to ensure it's properly handled on Android
