@@ -2103,7 +2103,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
           serviceData.status === 'ACCEPTED' ? 
           'Seu pedido foi aceito pelo provedor' :
           serviceData.status === 'DELIVERED' ? 
-          'O serviço foi entregue' :
+          `${serviceData.metadata?.serviceName || serviceData.serviceName || 'O serviço'} foi entregue, confirme o recebimento e avalie!` :
           serviceData.status === 'CONFIRMED' ? 
           'O serviço foi concluído' :
           serviceData.status === 'CANCELLED' ? 
@@ -2123,6 +2123,44 @@ export const EnhancedMessagingProvider = ({ children }) => {
     }
   }, [currentUser]);
 
+  // Send pack notification
+  const sendPackNotification = useCallback(async (packData) => {
+    if (!currentUser?.uid) return;
+
+    try {
+      const notificationData = {
+        id: `pack_${packData.id}_${Date.now()}`,
+        type: packData.status === 'PENDING_ACCEPTANCE' ? 'pack_requested' : 
+              packData.status === 'ACCEPTED' ? 'pack_accepted' :
+              packData.status === 'DELIVERED' ? 'pack_delivered' :
+              packData.status === 'CONFIRMED' ? 'pack_completed' :
+              packData.status === 'CANCELLED' ? 'pack_declined' : 'pack_update',
+        orderId: packData.id,
+        packName: packData.metadata?.packName || packData.packName || 'Pack',
+        vpAmount: packData.vpAmount,
+        status: packData.status,
+        description: packData.status === 'PENDING_ACCEPTANCE' ? 
+          'Você recebeu um novo pedido de pack' :
+          packData.status === 'ACCEPTED' ? 
+          'Seu pedido foi aceito pelo(a) vendedor(a)' :
+          packData.status === 'CONFIRMED' ? 
+          `${packData.metadata?.packName || packData.packName || 'O pack'} foi concluído, avalie o conteúdo!` :
+          packData.status === 'CANCELLED' ? 
+          'O pedido foi recusado' : 'Status do pack atualizado',
+        timestamp: serverTimestamp(),
+        read: false,
+        recipientId: packData.status === 'PENDING_ACCEPTANCE' ? packData.sellerId : packData.buyerId
+      };
+
+      // Save notification to RTDB
+      const notificationRef = ref(database, `notifications/${notificationData.recipientId}/${notificationData.id}`);
+      await set(notificationRef, notificationData);
+
+      return notificationData;
+    } catch (error) {
+      console.error('Error sending pack notification:', error);
+    }
+  }, [currentUser]);
 
   // Create service conversation when order is accepted
   const createServiceConversation = useCallback(async (serviceOrder) => {
@@ -2345,6 +2383,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     
     // Service functions
     sendServiceNotification,
+    sendPackNotification,
     createServiceConversation,
     markServiceConversationCompleted,
     fixServiceConversationMetadata,
@@ -2384,6 +2423,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     createOrGetConversation,
     deleteMessage,
     sendServiceNotification,
+    sendPackNotification,
     createServiceConversation,
     markServiceConversationCompleted,
     fixServiceConversationMetadata,
