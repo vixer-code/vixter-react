@@ -9,7 +9,6 @@ const MediaInput = ({ onMediaSelect, disabled = false }) => {
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
-  const videoInputRef = useRef(null);
 
   const handleFileSelect = (type) => {
     return (event) => {
@@ -42,8 +41,6 @@ const MediaInput = ({ onMediaSelect, disabled = false }) => {
     switch (type) {
       case MESSAGE_TYPES.IMAGE:
         return ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-      case MESSAGE_TYPES.VIDEO:
-        return ['video/mp4', 'video/mov', 'video/avi', 'video/webm'];
       case MESSAGE_TYPES.FILE:
         return [
           // Documents
@@ -82,8 +79,6 @@ const MediaInput = ({ onMediaSelect, disabled = false }) => {
     switch (type) {
       case MESSAGE_TYPES.IMAGE:
         return 'image/*';
-      case MESSAGE_TYPES.VIDEO:
-        return 'video/*';
       case MESSAGE_TYPES.FILE:
         return '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z';
       default:
@@ -122,15 +117,6 @@ const MediaInput = ({ onMediaSelect, disabled = false }) => {
               <span>Foto</span>
             </button>
 
-            <button
-              type="button"
-              className="media-option"
-              onClick={() => videoInputRef.current?.click()}
-              disabled={uploadingMedia}
-            >
-              <i className="fas fa-video"></i>
-              <span>Vídeo</span>
-            </button>
 
             <button
               type="button"
@@ -178,13 +164,6 @@ const MediaInput = ({ onMediaSelect, disabled = false }) => {
         style={{ display: 'none' }}
       />
 
-      <input
-        ref={videoInputRef}
-        type="file"
-        accept={getFileAccept(MESSAGE_TYPES.VIDEO)}
-        onChange={handleFileSelect(MESSAGE_TYPES.VIDEO)}
-        style={{ display: 'none' }}
-      />
 
       <input
         ref={fileInputRef}

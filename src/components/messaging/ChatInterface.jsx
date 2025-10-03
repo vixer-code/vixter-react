@@ -218,12 +218,11 @@ const ChatInterface = ({ conversation, onClose }) => {
     if (!file) return;
 
     const fileType = file.type.startsWith('image/') ? 'image' : 
-                    file.type.startsWith('video/') ? 'video' : 
                     file.type.startsWith('audio/') ? 'audio' : null;
 
-    // Only allow image, video, and audio files
+    // Only allow image and audio files
     if (!fileType) {
-      showError('Tipo de arquivo não suportado. Apenas imagens, vídeos e áudios são permitidos.');
+      showError('Tipo de arquivo não suportado. Apenas imagens e áudios são permitidos.');
       return;
     }
 
@@ -409,17 +408,6 @@ const ChatInterface = ({ conversation, onClose }) => {
                     </div>
                   )}
                   
-                  {message.type === 'video' && (
-                    <div className="message-media">
-                      <video controls>
-                        <source src={message.mediaUrl} type="video/mp4" />
-                        Seu navegador não suporta vídeos.
-                      </video>
-                      {message.content && (
-                        <div className="message-caption">{message.content}</div>
-                      )}
-                    </div>
-                  )}
                   
                   {message.type === 'audio' && (
                     <div className="message-media">
@@ -519,12 +507,6 @@ const ChatInterface = ({ conversation, onClose }) => {
             className="media-option"
             onClick={() => fileInputRef.current?.click()}
           >
-            🎥 Vídeo
-          </button>
-          <button
-            className="media-option"
-            onClick={() => fileInputRef.current?.click()}
-          >
             🎵 Áudio
           </button>
         </div>
@@ -551,7 +533,7 @@ const ChatInterface = ({ conversation, onClose }) => {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*,video/*,audio/*"
+          accept="image/*,audio/*"
           onChange={handleFileUpload}
           style={{ display: 'none' }}
         />

@@ -462,6 +462,9 @@ export const ServiceOrderProvider = ({ children }) => {
             deliveryNotes
           });
 
+          // Mark service conversation as completed when delivered
+          await markServiceConversationCompleted(orderId);
+
           // Send email notification to buyer
           try {
             const buyerData = await loadUserDataForEmail(order.buyerId);

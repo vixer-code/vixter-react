@@ -2175,8 +2175,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
         return null;
       }
       
-      const buyerUsername = buyerUser?.username || buyerUser?.displayName || 'Comprador';
-      const sellerUsername = sellerUser?.username || sellerUser?.displayName || 'Vendedor';
+      const buyerUsername = buyerUser?.username || buyerUser?.displayName || buyerUser?.name || 'Comprador';
+      const sellerUsername = sellerUser?.username || sellerUser?.displayName || sellerUser?.name || 'Vendedor';
       const serviceName = serviceOrder.metadata?.serviceName || 'Serviço';
       
       console.log('🔍 Usernames:', { buyerUsername, sellerUsername, serviceName });
@@ -2192,10 +2192,14 @@ export const EnhancedMessagingProvider = ({ children }) => {
         serviceName: serviceName,
         buyerId: serviceOrder.buyerId,
         sellerId: serviceOrder.sellerId,
+        buyerUsername: buyerUsername,
+        sellerUsername: sellerUsername,
+        buyerPhotoURL: buyerUser?.profilePictureURL || buyerUser?.photoURL,
+        sellerPhotoURL: sellerUser?.profilePictureURL || sellerUser?.photoURL,
         additionalFeatures: serviceOrder.additionalFeatures || [],
         createdAt: Date.now(),
         lastMessageTime: Date.now(),
-        lastMessage: `Esta é a conversa do serviço "${serviceName}", entre @${sellerUsername} e @${buyerUsername}`,
+        lastMessage: `Esta é a conversa do serviço "${serviceName}", entre ${sellerUsername} e ${buyerUsername}`,
         lastSenderId: serviceOrder.sellerId,
         unreadCount: { [serviceOrder.buyerId]: 0, [serviceOrder.sellerId]: 0 },
         isCompleted: false
@@ -2205,7 +2209,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       const initialMessageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const initialMessage = {
         id: initialMessageId,
-        text: `Esta é a conversa do serviço "${serviceName}", entre @${sellerUsername} e @${buyerUsername}`,
+        text: `Esta é a conversa do serviço "${serviceName}", entre ${sellerUsername} e ${buyerUsername}`,
         senderId: serviceOrder.sellerId,
         timestamp: Date.now(),
         type: 'text',

@@ -461,6 +461,50 @@ async function addImageWatermark(imageBuffer, watermark, username, contentItem, 
 }
 
 /**
+ * Test QR code overlay functionality
+ */
+async function testQRCodeOverlay(qrPath) {
+  return new Promise((resolve, reject) => {
+    const ffmpeg = require('fluent-ffmpeg');
+    const tempDir = os.tmpdir();
+    const testOutputPath = path.join(tempDir, `qr_test_${Date.now()}.mp4`);
+    
+    const testFilters = [
+      `movie=${qrPath}[qr]`,
+      `[0:v][qr]overlay=20:20[final]`
+    ];
+    
+    ffmpeg()
+      .input('testsrc=duration=2:size=320x240:rate=1')
+      .videoFilters(testFilters.join(','))
+      .outputOptions(['-f', 'mp4', '-t', '2'])
+      .on('end', () => {
+        console.log('QR code overlay test completed successfully');
+        try {
+          if (fs.existsSync(testOutputPath)) {
+            fs.unlinkSync(testOutputPath);
+          }
+        } catch (cleanupError) {
+          console.warn('Could not clean up QR test file:', cleanupError);
+        }
+        resolve(true);
+      })
+      .on('error', (error) => {
+        console.error('QR code overlay test failed:', error);
+        try {
+          if (fs.existsSync(testOutputPath)) {
+            fs.unlinkSync(testOutputPath);
+          }
+        } catch (cleanupError) {
+          console.warn('Could not clean up QR test file:', cleanupError);
+        }
+        reject(error);
+      })
+      .save(testOutputPath);
+  });
+}
+
+/**
  * Test if ffmpeg is working correctly
  */
 async function testFFmpeg() {
@@ -588,16 +632,61 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
         reject(new Error('Video processing timeout'));
       }, 240000);
       
-      // Simplified video filters - only text watermarks for now
+      // Build video filters with QR codes and text
       const videoFilters = [];
       
-      // Simple text watermarks without font file dependency
-      const textFilters = [
-        `drawtext=text='${buyerText}':fontsize=12:fontcolor=white@0.3:x=20:y=20`,
-        `drawtext=text='${vendorText}':fontsize=12:fontcolor=white@0.3:x=20:y=35`
-      ];
-      
-      videoFilters.push(textFilters.join(','));
+      // Try QR code approach first, fallback to text only
+      if (buyerQRPath && vendorQRPath && fs.existsSync(buyerQRPath) && fs.existsSync(vendorQRPath)) {
+        console.log('Attempting QR code watermarking...');
+        
+        try {
+          // Verify QR files are valid
+          const buyerQRStats = fs.statSync(buyerQRPath);
+          const vendorQRStats = fs.statSync(vendorQRPath);
+          
+          if (buyerQRStats.size > 0 && vendorQRStats.size > 0) {
+            const qrSize = qrPattern.size;
+            const margin = 20;
+            
+            // Test QR code overlay functionality first
+            try {
+              await testQRCodeOverlay(buyerQRPath);
+              console.log('QR code overlay test passed');
+              
+              // Alternative approach: use image2 demuxer for static QR code
+              const staticFilters = [
+                `movie=${buyerQRPath}[buyer_qr]`,
+                `[0:v][buyer_qr]overlay=${margin}:${margin}[qr1]`,
+                `[qr1]drawtext=text='${buyerText}':fontsize=12:fontcolor=white@0.3:x=20:y=h-th-40[final]`
+              ];
+              
+              videoFilters.push(staticFilters.join(','));
+              console.log('QR code filters applied');
+            } catch (qrTestError) {
+              console.warn('QR code overlay test failed, using text only:', qrTestError);
+              throw new Error('QR code overlay test failed');
+            }
+          } else {
+            throw new Error('QR code files are empty');
+          }
+        } catch (qrError) {
+          console.warn('QR code watermarking failed, falling back to text only:', qrError);
+          // Fallback to text only
+          const textFilters = [
+            `drawtext=text='${buyerText}':fontsize=12:fontcolor=white@0.3:x=20:y=20`,
+            `drawtext=text='${vendorText}':fontsize=12:fontcolor=white@0.3:x=20:y=35`
+          ];
+          videoFilters.push(textFilters.join(','));
+        }
+      } else {
+        console.log('QR code files not available, using text watermarks only');
+        // Fallback to text only
+        const textFilters = [
+          `drawtext=text='${buyerText}':fontsize=12:fontcolor=white@0.3:x=20:y=20`,
+          `drawtext=text='${vendorText}':fontsize=12:fontcolor=white@0.3:x=20:y=35`
+        ];
+        videoFilters.push(textFilters.join(','));
+      }
       
       console.log('FFmpeg video filters:', videoFilters);
       

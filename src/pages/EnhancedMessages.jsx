@@ -3,6 +3,7 @@ import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useCentrifugo } from '../contexts/CentrifugoContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
+import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import { useLocation, useParams } from 'react-router-dom';
 import UserSelector from '../components/messaging/UserSelector';
 import ChatInterface from '../components/messaging/ChatInterface';
@@ -33,6 +34,7 @@ const EnhancedMessages = () => {
   const { isConnected, isConnecting } = useCentrifugo();
   const { currentUser } = useAuth();
   const { showInfo } = useNotification();
+  const { receivedOrders, sentOrders, getOrderStatusInfo } = useServiceOrder();
   const location = useLocation();
   const { conversationId } = useParams();
   
@@ -60,6 +62,25 @@ const EnhancedMessages = () => {
       }
     };
   }, []);
+
+  // Get service order status for conversation
+  const getServiceOrderStatus = (conversation) => {
+    if (!conversation?.serviceOrderId || !currentUser) return null;
+    
+    // Look in received orders (user is seller)
+    const receivedOrder = receivedOrders.find(order => order.id === conversation.serviceOrderId);
+    if (receivedOrder) {
+      return getOrderStatusInfo(receivedOrder.status);
+    }
+    
+    // Look in sent orders (user is buyer)
+    const sentOrder = sentOrders.find(order => order.id === conversation.serviceOrderId);
+    if (sentOrder) {
+      return getOrderStatusInfo(sentOrder.status);
+    }
+    
+    return null;
+  };
 
   // Handle URL parameters for conversation selection
   useEffect(() => {
@@ -241,11 +262,26 @@ const EnhancedMessages = () => {
             <span>📱 Modo offline - {offlineMessages.length} mensagem(ns) na fila</span>
           </div>
         )}
-        {selectedConversation?.type === 'service' && selectedConversation?.serviceOrderId && (
-          <div className="service-status-indicator">
-            <span>🛠️ Conversa de serviço - Aguardando aceitação do vendedor</span>
-          </div>
-        )}
+        {selectedConversation?.type === 'service' && selectedConversation?.serviceOrderId && (() => {
+          const serviceStatus = getServiceOrderStatus(selectedConversation);
+          if (!serviceStatus) return null;
+          
+          const statusMessages = {
+            'Aguardando Aceitação': '🛠️ Conversa de serviço - Aguardando aceitação do vendedor',
+            'Aceito': '🛠️ Conversa de serviço - Serviço aceito',
+            'Entregue': '🛠️ Conversa de serviço - Serviço entregue',
+            'Confirmado': '🛠️ Conversa de serviço - Serviço confirmado',
+            'Liberado Automaticamente': '🛠️ Conversa de serviço - Serviço confirmado',
+            'Cancelado': '🛠️ Conversa de serviço - Serviço cancelado',
+            'Em Disputa': '🛠️ Conversa de serviço - Serviço em disputa'
+          };
+          
+          return (
+            <div className="service-status-indicator">
+              <span>{statusMessages[serviceStatus.label] || '🛠️ Conversa de serviço'}</span>
+            </div>
+          );
+        })()}
       </div>
 
       <div className="messages-container">
@@ -395,7 +431,7 @@ const EnhancedMessages = () => {
                   // Use enriched data if available, fallback to users context
                   const otherUserName = conversation.buyerUsername && conversation.sellerUsername ? 
                     (conversation.sellerId === currentUser?.uid ? conversation.buyerUsername : conversation.sellerUsername) :
-                    (otherUser?.displayName || otherUser?.username || 'Usuário');
+                    (otherUser?.username || otherUser?.displayName || 'Usuário');
                   
                   const serviceName = conversation.serviceName || 'Serviço';
                   
@@ -445,7 +481,7 @@ const EnhancedMessages = () => {
                       <div className="conversation-content">
                         <div className="conversation-header">
                           <div className="conversation-name">
-                            {serviceName} - @{otherUserName}
+                            {serviceName} - {otherUserName}
                             {conversation.isCompleted && (
                               <span className="completed-text"> (Concluído)</span>
                             )}
@@ -456,7 +492,7 @@ const EnhancedMessages = () => {
                         </div>
                         <div className="conversation-participant">
                           <span className="participant-role">{participantRole}:</span>
-                          <span className="participant-name">@{otherUserName}</span>
+                          <span className="participant-name">{otherUserName}</span>
                         </div>
                         {conversation.additionalFeatures && conversation.additionalFeatures.length > 0 && (
                           <div className="conversation-additionals">
