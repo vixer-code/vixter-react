@@ -7,7 +7,7 @@ import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import { usePacksR2 } from '../contexts/PacksContextR2';
 import { useReview } from '../contexts/ReviewContext';
 import ServicePackReviewModal from '../components/ServicePackReviewModal';
-import { collection, query as fsQuery, where, orderBy, getDocs, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, query as fsQuery, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { Link, useNavigate } from 'react-router-dom';
 import SmartMediaViewer from '../components/SmartMediaViewer';
@@ -18,11 +18,11 @@ import './MyPurchases.css';
 const MyPurchases = () => {
   const { currentUser } = useAuth();
   const { userProfile, getUserById } = useUser();
-  const { showError, showSuccess } = useNotification();
+  const { showError } = useNotification();
   const { createOrGetConversation } = useEnhancedMessaging();
   const { confirmServiceDelivery, processing } = useServiceOrder();
   const { getPackById } = usePacksR2();
-  const { canReviewOrder, canReviewBuyerBehavior } = useReview();
+  const { canReviewOrder } = useReview();
   const navigate = useNavigate();
   
   
@@ -98,6 +98,16 @@ const MyPurchases = () => {
           }
         });
         
+        // Sort pack orders by creation date (most recent first)
+        orders.sort((a, b) => {
+          // Try createdAt first, fallback to updatedAt
+          const aTime = a.timestamps?.createdAt?.toMillis?.() || 
+                       a.timestamps?.updatedAt?.toMillis?.() || 0;
+          const bTime = b.timestamps?.createdAt?.toMillis?.() || 
+                       b.timestamps?.updatedAt?.toMillis?.() || 0;
+          return bTime - aTime;
+        });
+        
         console.log('Filtered pack orders:', orders.length);
         setPurchasedPacks(orders);
         
@@ -113,7 +123,7 @@ const MyPurchases = () => {
     );
     
     return unsubscribe;
-  }, [currentUser, showError]);
+  }, [currentUser, showError, loadPackData]);
 
   // Load pack data for purchased packs
   const loadPackData = useCallback(async (packs) => {
@@ -206,6 +216,8 @@ const MyPurchases = () => {
       const uniqueOrders = allOrders.filter((order, index, self) => 
         index === self.findIndex((o) => o.id === order.id)
       );
+      
+      // Sort service orders by creation date (most recent first)
       uniqueOrders.sort((a, b) => {
         // Try createdAt first, fallback to updatedAt
         const aTime = a.timestamps?.createdAt?.toMillis?.() || 
@@ -355,7 +367,7 @@ const MyPurchases = () => {
     if (purchasedPacks.length > 0 || purchasedServices.length > 0) {
       checkReviewPermissions();
     }
-  }, [currentUser, purchasedPacks, purchasedServices]);
+  }, [currentUser, purchasedPacks, purchasedServices, canReviewOrder]);
 
   // Check if service/pack still exists
   const checkItemExists = async (purchase) => {
@@ -456,9 +468,6 @@ const MyPurchases = () => {
     }
   };
 
-  const handleViewServiceMedia = (service) => {
-    setViewingService(service);
-  };
 
   const handleClosePackViewer = () => {
     setViewingPack(null);
@@ -532,7 +541,14 @@ const MyPurchases = () => {
       case 'services':
         return purchasedServices;
       default:
-        return allPurchases;
+        // Sort all purchases by creation date (most recent first)
+        return allPurchases.sort((a, b) => {
+          const aTime = a.timestamps?.createdAt?.toMillis?.() || 
+                       a.timestamps?.updatedAt?.toMillis?.() || 0;
+          const bTime = b.timestamps?.createdAt?.toMillis?.() || 
+                       b.timestamps?.updatedAt?.toMillis?.() || 0;
+          return bTime - aTime;
+        });
     }
   };
 
