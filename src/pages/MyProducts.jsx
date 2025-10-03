@@ -34,7 +34,6 @@ const MyProducts = () => {
     ORDER_STATUS: PACK_ORDER_STATUS
   } = usePackOrder();
   const { showNotification } = useNotification();
-  const { cleanupDuplicateConversations } = useMessaging();
 
   // Fallback constants in case contexts haven't loaded yet
   const SERVICE_STATUS = SERVICE_ORDER_STATUS || {
