@@ -40,8 +40,6 @@ const MyPurchases = () => {
   const [reviewingOrder, setReviewingOrder] = useState(null);
   const [canReviewMap, setCanReviewMap] = useState({});
   const [checkingPermissions, setCheckingPermissions] = useState(false);
-  const [openingModal, setOpeningModal] = useState(false);
-  const [lastClickTime, setLastClickTime] = useState(0);
 
   // Redirect if not a client
   useEffect(() => {
@@ -504,57 +502,25 @@ const MyPurchases = () => {
     loadPurchasedServices();
   };
 
-  const handleOpenServicePackReview = async (order) => {
-    const currentTime = Date.now();
+  const handleOpenServicePackReview = (order) => {
+    // Pre-load necessary data for the modal
+    const orderData = {
+      ...order,
+      itemName: order.type === 'service' 
+        ? (order.metadata?.serviceName || 'Serviço')
+        : (packData[order.packId]?.title || order.metadata?.packName || 'Pack'),
+      sellerName: sellerData[order.sellerId]?.name || 'Vendedor',
+      sellerPhotoURL: sellerData[order.sellerId]?.profilePicture
+    };
     
-    // Debounce: prevent clicks within 500ms of each other
-    if (currentTime - lastClickTime < 500) {
-      console.log('Click debounced, ignoring');
-      return;
-    }
-    
-    console.log('Opening review modal for order:', order);
-    console.log('Current canReviewMap:', canReviewMap);
-    console.log('Can review this order:', canReviewMap[order.id]);
-    
-    // Prevent multiple clicks
-    if (openingModal || showServicePackReviewModal) {
-      console.log('Modal already opening or open, ignoring click');
-      return;
-    }
-    
-    setLastClickTime(currentTime);
-    setOpeningModal(true);
-    
-    try {
-      // Pre-load necessary data for the modal
-      const orderData = {
-        ...order,
-        itemName: order.type === 'service' 
-          ? (order.metadata?.serviceName || 'Serviço')
-          : (packData[order.packId]?.title || order.metadata?.packName || 'Pack'),
-        sellerName: sellerData[order.sellerId]?.name || 'Vendedor',
-        sellerPhotoURL: sellerData[order.sellerId]?.profilePicture
-      };
-      
-      console.log('Pre-loaded order data:', orderData);
-      
-      // Set the modal data immediately without artificial delay
-      setReviewingOrder(orderData);
-      setShowServicePackReviewModal(true);
-    } catch (error) {
-      console.error('Error opening review modal:', error);
-      showError('Erro ao abrir modal de avaliação');
-    } finally {
-      setOpeningModal(false);
-    }
+    // Set the modal data and open immediately
+    setReviewingOrder(orderData);
+    setShowServicePackReviewModal(true);
   };
 
   const handleCloseServicePackReview = () => {
     setShowServicePackReviewModal(false);
     setReviewingOrder(null);
-    setOpeningModal(false);
-    setLastClickTime(0);
   };
 
   const getFilteredPurchases = () => {
@@ -878,10 +844,10 @@ const MyPurchases = () => {
                               <button 
                                 className="btn-review-service"
                                 onClick={() => handleOpenServicePackReview(purchase)}
-                                disabled={checkingPermissions || openingModal || showServicePackReviewModal}
+                                disabled={checkingPermissions}
                               >
-                                <i className={`fas ${openingModal ? 'fa-spinner fa-spin' : 'fa-star'}`}></i>
-                                {checkingPermissions ? 'Verificando...' : openingModal ? 'Abrindo...' : 'Avaliar Serviço'}
+                                <i className="fas fa-star"></i>
+                                {checkingPermissions ? 'Verificando...' : 'Avaliar Serviço'}
                               </button>
                             </>
                           )}
@@ -914,10 +880,10 @@ const MyPurchases = () => {
                           <button 
                             className="btn-review-service"
                             onClick={() => handleOpenServicePackReview(purchase)}
-                            disabled={checkingPermissions || openingModal || showServicePackReviewModal}
+                            disabled={checkingPermissions}
                           >
-                            <i className={`fas ${openingModal ? 'fa-spinner fa-spin' : 'fa-star'}`}></i>
-                            {checkingPermissions ? 'Verificando...' : openingModal ? 'Abrindo...' : 'Avaliar Pack'}
+                            <i className="fas fa-star"></i>
+                            {checkingPermissions ? 'Verificando...' : 'Avaliar Pack'}
                           </button>
                         </>
                       )}
@@ -1029,16 +995,6 @@ const MyPurchases = () => {
         </div>
       )}
 
-
-      {/* Loading overlay for modal opening */}
-      {openingModal && (
-        <div className="modal-loading-overlay">
-          <div className="modal-loading-content">
-            <i className="fas fa-spinner fa-spin"></i>
-            <p>Preparando avaliação...</p>
-          </div>
-        </div>
-      )}
 
       {/* Service/Pack Review Modal */}
       {showServicePackReviewModal && reviewingOrder && (
