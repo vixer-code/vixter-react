@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useReview } from '../contexts/ReviewContext';
-import Portal from './Portal';
 import './EditReviewModal.css';
 
 const EditReviewModal = ({ 
@@ -49,10 +49,9 @@ const EditReviewModal = ({
 
   if (!isOpen) return null;
 
-  return (
-    <Portal>
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content edit-review-modal" onClick={(e) => e.stopPropagation()}>
+  return createPortal(
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content edit-review-modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h2>Editar Avaliação</h2>
             <button className="modal-close" onClick={onClose}>
@@ -104,7 +103,8 @@ const EditReviewModal = ({
           </div>
         </div>
       </div>
-    </Portal>
+    </div>,
+    document.body
   );
 };
 

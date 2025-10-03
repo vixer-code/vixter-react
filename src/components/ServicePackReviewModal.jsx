@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useReview } from '../contexts/ReviewContext';
-import Portal from './Portal';
 import './ServicePackReviewModal.css';
 
 const ServicePackReviewModal = ({ 
@@ -58,10 +58,9 @@ const ServicePackReviewModal = ({
 
   if (!isOpen) return null;
 
-  return (
-    <Portal>
-      <div className="modal-overlay" onClick={handleClose}>
-        <div className="modal-content service-pack-review-modal" onClick={(e) => e.stopPropagation()}>
+  return createPortal(
+    <div className="modal-overlay" onClick={handleClose}>
+      <div className="modal-content service-pack-review-modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h2>
               <i className={`fas ${orderType === 'service' ? 'fa-cogs' : 'fa-images'}`}></i>
@@ -146,7 +145,8 @@ const ServicePackReviewModal = ({
           </div>
         </div>
       </div>
-    </Portal>
+    </div>,
+    document.body
   );
 };
 
