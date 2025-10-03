@@ -11,6 +11,18 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.r2-media-viewer video {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: #000;
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+}
+
 .r2-media-viewer.loading {
   display: flex;
   flex-direction: column;

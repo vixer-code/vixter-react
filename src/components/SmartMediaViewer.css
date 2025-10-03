@@ -12,3 +12,16 @@
   object-fit: cover;
   display: block;
 }
+
+.smart-media-viewer.video {
+  width: 100%;
+  height: auto;
+  background: #000;
+}
+
+.smart-media-viewer.video video {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  display: block;
+}

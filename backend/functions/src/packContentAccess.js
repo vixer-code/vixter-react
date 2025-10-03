@@ -469,17 +469,15 @@ async function testQRCodeOverlay(qrPath) {
     const tempDir = os.tmpdir();
     const testOutputPath = path.join(tempDir, `qr_test_${Date.now()}.mp4`);
     
-    const testFilters = [
-      `movie=${qrPath}[qr]`,
-      `[0:v][qr]overlay=20:20[final]`
-    ];
-    
+    // Try the modern approach first: use .input() + complexFilter
     ffmpeg()
-      .input('testsrc=duration=2:size=320x240:rate=1')
-      .videoFilters(testFilters.join(','))
+      .input('color=c=black:s=320x240:d=2')
+      .inputFormat('lavfi')
+      .input(qrPath)
+      .complexFilter('[0:v][1:v]overlay=20:20')
       .outputOptions(['-f', 'mp4', '-t', '2'])
       .on('end', () => {
-        console.log('QR code overlay test completed successfully');
+        console.log('QR code overlay test completed successfully (modern approach)');
         try {
           if (fs.existsSync(testOutputPath)) {
             fs.unlinkSync(testOutputPath);
@@ -490,15 +488,42 @@ async function testQRCodeOverlay(qrPath) {
         resolve(true);
       })
       .on('error', (error) => {
-        console.error('QR code overlay test failed:', error);
-        try {
-          if (fs.existsSync(testOutputPath)) {
-            fs.unlinkSync(testOutputPath);
-          }
-        } catch (cleanupError) {
-          console.warn('Could not clean up QR test file:', cleanupError);
-        }
-        reject(error);
+        console.log('Modern QR overlay approach failed, trying legacy movie filter...');
+        
+        // Fallback to legacy movie filter approach
+        const testFilters = [
+          `movie=${qrPath}[qr]`,
+          `[0:v][qr]overlay=20:20[final]`
+        ];
+        
+        ffmpeg()
+          .input('color=c=black:s=320x240:d=2')
+          .inputFormat('lavfi')
+          .videoFilters(testFilters.join(','))
+          .outputOptions(['-f', 'mp4', '-t', '2'])
+          .on('end', () => {
+            console.log('QR code overlay test completed successfully (legacy approach)');
+            try {
+              if (fs.existsSync(testOutputPath)) {
+                fs.unlinkSync(testOutputPath);
+              }
+            } catch (cleanupError) {
+              console.warn('Could not clean up QR test file:', cleanupError);
+            }
+            resolve(true);
+          })
+          .on('error', (legacyError) => {
+            console.error('Both QR overlay approaches failed:', { modern: error.message, legacy: legacyError.message });
+            try {
+              if (fs.existsSync(testOutputPath)) {
+                fs.unlinkSync(testOutputPath);
+              }
+            } catch (cleanupError) {
+              console.warn('Could not clean up QR test file:', cleanupError);
+            }
+            resolve(false); // Don't reject, just return false to indicate QR overlay not available
+          })
+          .save(testOutputPath);
       })
       .save(testOutputPath);
   });
@@ -510,37 +535,29 @@ async function testQRCodeOverlay(qrPath) {
 async function testFFmpeg() {
   return new Promise((resolve, reject) => {
     const ffmpeg = require('fluent-ffmpeg');
-    const tempDir = os.tmpdir();
-    const testOutputPath = path.join(tempDir, `ffmpeg_test_${Date.now()}.mp4`);
     
+    // Simple test that just checks if ffmpeg can be executed
+    // without creating actual files or using complex filters
     ffmpeg()
-      .input('testsrc=duration=1:size=320x240:rate=1')
-      .outputOptions(['-f', 'mp4', '-t', '1'])
+      .input('color=c=black:s=320x240:d=1')
+      .inputFormat('lavfi')  // 👈 diz que é "lavfi input"
+      .outputOptions(['-f', 'null'])
       .on('end', () => {
         console.log('FFmpeg test completed successfully');
-        // Clean up test file
-        try {
-          if (fs.existsSync(testOutputPath)) {
-            fs.unlinkSync(testOutputPath);
-          }
-        } catch (cleanupError) {
-          console.warn('Could not clean up test file:', cleanupError);
-        }
         resolve(true);
       })
       .on('error', (error) => {
         console.error('FFmpeg test failed:', error);
-        // Clean up test file
-        try {
-          if (fs.existsSync(testOutputPath)) {
-            fs.unlinkSync(testOutputPath);
-          }
-        } catch (cleanupError) {
-          console.warn('Could not clean up test file:', cleanupError);
-        }
-        reject(error);
+        // Don't reject, just log the error and continue
+        // This allows the function to fallback gracefully
+        console.log('FFmpeg not available, will skip video watermarking');
+        resolve(false);
       })
-      .save(testOutputPath);
+      .on('stderr', (stderrLine) => {
+        // Suppress stderr output for cleaner logs
+        // FFmpeg often outputs warnings that aren't errors
+      })
+      .save('/dev/null'); // Use /dev/null to avoid file system issues
   });
 }
 
@@ -569,14 +586,13 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
     
     try {
       // Test ffmpeg availability first
-      try {
-        await testFFmpeg();
-        console.log('FFmpeg test passed, proceeding with video watermarking');
-      } catch (ffmpegTestError) {
-        console.error('FFmpeg test failed, returning original video:', ffmpegTestError);
+      const ffmpegAvailable = await testFFmpeg();
+      if (!ffmpegAvailable) {
+        console.log('FFmpeg not available, returning original video without watermark');
         resolve(videoBuffer);
         return;
       }
+      console.log('FFmpeg test passed, proceeding with video watermarking');
       const maxSize = 150 * 1024 * 1024;
       if (videoBuffer.length > maxSize) {
         console.warn('Video too large for watermarking, returning original');
