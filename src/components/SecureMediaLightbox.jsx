@@ -15,7 +15,6 @@ const SecureMediaLightbox = ({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [mediaBlobUrls, setMediaBlobUrls] = useState({});
   const [loading, setLoading] = useState({});
   const [error, setError] = useState(null);
@@ -70,7 +69,6 @@ const SecureMediaLightbox = ({
       setCurrentMediaIndex(currentIndex);
       setZoom(1);
       setPan({ x: 0, y: 0 });
-      setIsVideoPlaying(false);
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -271,19 +269,6 @@ const SecureMediaLightbox = ({
     return false;
   }, []);
 
-  // Handle video play/pause
-  const handleVideoToggle = useCallback(() => {
-    const video = mediaRef.current?.querySelector('video');
-    if (video) {
-      if (video.paused) {
-        video.play();
-        setIsVideoPlaying(true);
-      } else {
-        video.pause();
-        setIsVideoPlaying(false);
-      }
-    }
-  }, []);
 
   if (!isOpen || mediaItems.length === 0) return null;
 
@@ -400,16 +385,6 @@ const SecureMediaLightbox = ({
               />
             )}
 
-            {/* Video play/pause overlay */}
-            {isVideo && !isLoading && (
-              <button 
-                className="lightbox-video-toggle"
-                onClick={handleVideoToggle}
-                aria-label={isVideoPlaying ? "Pausar" : "Reproduzir"}
-              >
-                <i className={`fas fa-${isVideoPlaying ? 'pause' : 'play'}`}></i>
-              </button>
-            )}
           </div>
         </div>
 

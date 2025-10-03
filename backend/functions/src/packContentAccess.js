@@ -345,7 +345,13 @@ async function generateWatermarkedMedia(contentItem, watermark, username, user, 
     const fileBuffer = Buffer.concat(chunks);
 
     if (contentItem.type.startsWith('video/')) {
-      return await addVideoWatermark(fileBuffer, watermark, username, contentItem, user, vendorInfo);
+      try {
+        return await addVideoWatermark(fileBuffer, watermark, username, contentItem, user, vendorInfo);
+      } catch (videoError) {
+        console.error('Video watermarking failed, returning original video:', videoError);
+        // Return original video if watermarking fails
+        return fileBuffer;
+      }
     } else if (contentItem.type === 'image/webp') {
       const isAnimatedWebP = await checkIfAnimatedWebP(fileBuffer);
       if (isAnimatedWebP) {
@@ -455,6 +461,46 @@ async function addImageWatermark(imageBuffer, watermark, username, contentItem, 
 }
 
 /**
+ * Test if ffmpeg is working correctly
+ */
+async function testFFmpeg() {
+  return new Promise((resolve, reject) => {
+    const ffmpeg = require('fluent-ffmpeg');
+    const tempDir = os.tmpdir();
+    const testOutputPath = path.join(tempDir, `ffmpeg_test_${Date.now()}.mp4`);
+    
+    ffmpeg()
+      .input('testsrc=duration=1:size=320x240:rate=1')
+      .outputOptions(['-f', 'mp4', '-t', '1'])
+      .on('end', () => {
+        console.log('FFmpeg test completed successfully');
+        // Clean up test file
+        try {
+          if (fs.existsSync(testOutputPath)) {
+            fs.unlinkSync(testOutputPath);
+          }
+        } catch (cleanupError) {
+          console.warn('Could not clean up test file:', cleanupError);
+        }
+        resolve(true);
+      })
+      .on('error', (error) => {
+        console.error('FFmpeg test failed:', error);
+        // Clean up test file
+        try {
+          if (fs.existsSync(testOutputPath)) {
+            fs.unlinkSync(testOutputPath);
+          }
+        } catch (cleanupError) {
+          console.warn('Could not clean up test file:', cleanupError);
+        }
+        reject(error);
+      })
+      .save(testOutputPath);
+  });
+}
+
+/**
  * Add subtle watermark to video
  */
 async function addVideoWatermark(videoBuffer, watermark, username, contentItem, user, vendorInfo) {
@@ -478,10 +524,26 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
     };
     
     try {
+      // Test ffmpeg availability first
+      try {
+        await testFFmpeg();
+        console.log('FFmpeg test passed, proceeding with video watermarking');
+      } catch (ffmpegTestError) {
+        console.error('FFmpeg test failed, returning original video:', ffmpegTestError);
+        resolve(videoBuffer);
+        return;
+      }
       const maxSize = 150 * 1024 * 1024;
       if (videoBuffer.length > maxSize) {
         console.warn('Video too large for watermarking, returning original');
         resolve(videoBuffer);
+        return;
+      }
+      
+      // Validate video buffer
+      if (!videoBuffer || videoBuffer.length === 0) {
+        console.error('Invalid video buffer provided');
+        reject(new Error('Invalid video buffer'));
         return;
       }
       
@@ -492,21 +554,33 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
       inputPath = path.join(tempDir, `input_${timestamp}.${getFileExtension(contentItem.type)}`);
       outputPath = path.join(tempDir, `output_${timestamp}.mp4`);
       
+      console.log(`Writing input video to: ${inputPath} (${videoBuffer.length} bytes)`);
       fs.writeFileSync(inputPath, videoBuffer);
+      
+      // Verify input file was written correctly
+      if (!fs.existsSync(inputPath) || fs.statSync(inputPath).size === 0) {
+        console.error('Failed to write input video file');
+        cleanup();
+        reject(new Error('Failed to write input video file'));
+        return;
+      }
       
       if (qrPattern.buyerQR) {
         buyerQRPath = path.join(tempDir, `buyer_qr_${timestamp}.png`);
         fs.writeFileSync(buyerQRPath, qrPattern.buyerQR);
+        console.log(`Buyer QR code written to: ${buyerQRPath}`);
       }
       if (qrPattern.vendorQR) {
         vendorQRPath = path.join(tempDir, `vendor_qr_${timestamp}.png`);
         fs.writeFileSync(vendorQRPath, qrPattern.vendorQR);
+        console.log(`Vendor QR code written to: ${vendorQRPath}`);
       }
       
       const buyerText = escapeFFmpegText(`vixter.com.br/${user.username}`);
       const vendorText = escapeFFmpegText(`vixter.com.br/${vendorInfo?.username || 'vendor'}`);
       
       timeoutId = setTimeout(() => {
+        console.error('Video processing timeout - killing ffmpeg process');
         if (ffmpegProcess) {
           ffmpegProcess.kill('SIGKILL');
         }
@@ -514,68 +588,66 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
         reject(new Error('Video processing timeout'));
       }, 240000);
       
+      // Simplified video filters - only text watermarks for now
       const videoFilters = [];
       
-      // Strategic QR placement - corners only
-      if (buyerQRPath && vendorQRPath) {
-        const qrSize = qrPattern.size;
-        const margin = 15;
-        
-        // QR codes already have opacity baked in
-        videoFilters.push(`movie=${buyerQRPath}:loop=0,setpts=N/(FRAME_RATE*TB),scale=${qrSize}:${qrSize}[buyer_qr]`);
-        videoFilters.push(`movie=${vendorQRPath}:loop=0,setpts=N/(FRAME_RATE*TB),scale=${qrSize}:${qrSize}[vendor_qr]`);
-        
-        // Place in corners
-        videoFilters.push(`[0:v][buyer_qr]overlay=${margin}:${margin}[qr1]`);
-        videoFilters.push(`[qr1][vendor_qr]overlay=w-${qrSize+margin}:${margin}[qr2]`);
-        videoFilters.push(`[qr2][buyer_qr]overlay=${margin}:h-${qrSize+margin}[qr3]`);
-        videoFilters.push(`[qr3][vendor_qr]overlay=w-${qrSize+margin}:h-${qrSize+margin}[qr_final]`);
-      }
-      
-      // Subtle text watermarks
+      // Simple text watermarks without font file dependency
       const textFilters = [
-        `drawtext=text='${buyerText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=12:fontcolor=white@0.3:x=20:y=20`,
-        `drawtext=text='${vendorText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=12:fontcolor=white@0.3:x=20:y=35`
+        `drawtext=text='${buyerText}':fontsize=12:fontcolor=white@0.3:x=20:y=20`,
+        `drawtext=text='${vendorText}':fontsize=12:fontcolor=white@0.3:x=20:y=35`
       ];
       
-      if (videoFilters.length > 0) {
-        const baseFilter = videoFilters.join(',');
-        const allTextFilters = textFilters.join(',');
-        videoFilters.length = 0;
-        videoFilters.push(`${baseFilter},${allTextFilters}`);
-      } else {
-        videoFilters.push(textFilters.join(','));
-      }
+      videoFilters.push(textFilters.join(','));
+      
+      console.log('FFmpeg video filters:', videoFilters);
       
       ffmpegProcess = ffmpeg(inputPath)
         .videoCodec('libx264')
         .audioCodec('aac')
         .outputOptions([
           '-preset superfast',
-          '-crf 20',
+          '-crf 23',
           '-movflags +faststart',
           '-pix_fmt yuv420p',
-          '-tune zerolatency',
-          '-maxrate 5M',
-          '-bufsize 10M',
-          '-g 30',
+          '-maxrate 3M',
+          '-bufsize 6M',
           '-threads 0'
         ])
         .videoFilters(videoFilters)
         .on('start', (commandLine) => {
-          console.log('FFmpeg process started:', commandLine);
+          console.log('FFmpeg process started with command:', commandLine);
         })
         .on('progress', (progress) => {
           if (progress.percent) {
             console.log('Video processing: ' + Math.round(progress.percent) + '% done');
           }
         })
+        .on('stderr', (stderrLine) => {
+          console.log('FFmpeg stderr:', stderrLine);
+        })
         .on('end', () => {
           try {
             clearTimeout(timeoutId);
+            
+            // Verify output file exists and has content
+            if (!fs.existsSync(outputPath)) {
+              console.error('Output file was not created');
+              cleanup();
+              reject(new Error('Output file was not created'));
+              return;
+            }
+            
+            const outputStats = fs.statSync(outputPath);
+            if (outputStats.size === 0) {
+              console.error('Output file is empty');
+              cleanup();
+              reject(new Error('Output file is empty'));
+              return;
+            }
+            
             const watermarkedBuffer = fs.readFileSync(outputPath);
             cleanup();
-            console.log('Video watermarking completed successfully');
+            console.log(`Video watermarking completed successfully. Output size: ${watermarkedBuffer.length} bytes`);
             resolve(watermarkedBuffer);
           } catch (error) {
             console.error('Error reading watermarked video:', error);
@@ -584,7 +656,13 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
           }
         })
         .on('error', (error) => {
-          console.error('FFmpeg error:', error);
+          console.error('FFmpeg error details:', {
+            message: error.message,
+            code: error.code,
+            signal: error.signal,
+            killed: error.killed,
+            cmd: error.cmd
+          });
           clearTimeout(timeoutId);
           cleanup();
           reject(error);
