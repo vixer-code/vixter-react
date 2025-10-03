@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useReview } from '../contexts/ReviewContext';
 import { useNotification } from '../contexts/NotificationContext';
-import Portal from './Portal';
 import './BehaviorReviewModal.css';
 
 const BehaviorReviewModal = ({ 
@@ -111,7 +110,7 @@ const BehaviorReviewModal = ({
   if (!isOpen) return null;
 
   return (
-    <Portal>
+    <>
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal-content behavior-review-modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
@@ -219,7 +218,7 @@ const BehaviorReviewModal = ({
           </div>
         </div>
       </div>
-    </Portal>
+    </>
   );
 };
 
