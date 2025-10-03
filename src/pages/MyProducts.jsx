@@ -4,7 +4,6 @@ import { useUser } from '../contexts/UserContext';
 import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import { usePackOrder } from '../contexts/PackOrderContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useBuyerData } from '../hooks/useBuyerData';
 import { Link } from 'react-router-dom';
 import PurpleSpinner from '../components/PurpleSpinner';
@@ -24,8 +23,6 @@ const MyProducts = () => {
     getOrderStatusInfo: getServiceStatusInfo,
     ORDER_STATUS: SERVICE_ORDER_STATUS
   } = useServiceOrder();
-  
-  const { fixServiceConversationMetadata } = useEnhancedMessaging();
   const { 
     receivedOrders: packOrders, 
     loading: packLoading, 
@@ -567,25 +564,13 @@ const MyProducts = () => {
                   {isService && (
                     <>
                       {order.chatId ? (
-                        <>
-                          <Link 
-                            to={`/messages?service=${order.id}`}
-                            className="btn-secondary"
-                          >
-                            <i className="fas fa-comments"></i>
-                            Conversa
-                          </Link>
-                          <button 
-                            className="btn-info"
-                            onClick={() => fixServiceConversationMetadata(order.chatId)}
-                            disabled={serviceProcessing}
-                            title="Corrigir metadados da conversa (nome do serviço, usuários)"
-                            style={{ fontSize: '12px', padding: '5px 8px' }}
-                          >
-                            <i className="fas fa-wrench"></i>
-                            Corrigir Metadados
-                          </button>
-                        </>
+                        <Link 
+                          to={`/messages?service=${order.id}`}
+                          className="btn-secondary"
+                        >
+                          <i className="fas fa-comments"></i>
+                          Conversa
+                        </Link>
                       ) : (
                         <button 
                           className="btn-warning"
