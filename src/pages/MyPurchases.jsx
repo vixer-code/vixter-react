@@ -49,6 +49,54 @@ const MyPurchases = () => {
     }
   }, [userProfile, showError, navigate]);
 
+  // Load pack data for purchased packs
+  const loadPackData = useCallback(async (packs) => {
+    const packIds = [...new Set(packs.map(pack => pack.packId).filter(Boolean))];
+    const packDataMap = {};
+    
+    for (const packId of packIds) {
+      try {
+        const pack = await getPackById(packId);
+        if (pack) {
+          packDataMap[packId] = {
+            title: pack.title || 'Pack',
+            coverImage: pack.coverImage,
+            description: pack.description,
+            price: pack.price,
+            packContent: pack.packContent || [],
+            content: pack.content || [],
+            isAvailable: true
+          };
+        } else {
+          // Pack não existe mais - marcado como indisponível
+          packDataMap[packId] = {
+            title: 'Pack Indisponível',
+            coverImage: null,
+            description: '',
+            price: 0,
+            packContent: [],
+            content: [],
+            isAvailable: false
+          };
+        }
+      } catch (error) {
+        console.error('Error loading pack data:', error);
+        // Set fallback data for errored packs
+        packDataMap[packId] = {
+          title: 'Pack Indisponível',
+          coverImage: null,
+          description: '',
+          price: 0,
+          packContent: [],
+          content: [],
+          isAvailable: false
+        };
+      }
+    }
+    
+    setPackData(packDataMap);
+  }, [getPackById]);
+
   // Load purchased packs with real-time updates
   const loadPurchasedPacks = useCallback(() => {
     if (!currentUser) {
@@ -124,54 +172,6 @@ const MyPurchases = () => {
     
     return unsubscribe;
   }, [currentUser, showError, loadPackData]);
-
-  // Load pack data for purchased packs
-  const loadPackData = useCallback(async (packs) => {
-    const packIds = [...new Set(packs.map(pack => pack.packId).filter(Boolean))];
-    const packDataMap = {};
-    
-    for (const packId of packIds) {
-      try {
-        const pack = await getPackById(packId);
-        if (pack) {
-          packDataMap[packId] = {
-            title: pack.title || 'Pack',
-            coverImage: pack.coverImage,
-            description: pack.description,
-            price: pack.price,
-            packContent: pack.packContent || [],
-            content: pack.content || [],
-            isAvailable: true
-          };
-        } else {
-          // Pack não existe mais - marcado como indisponível
-          packDataMap[packId] = {
-            title: 'Pack Indisponível',
-            coverImage: null,
-            description: '',
-            price: 0,
-            packContent: [],
-            content: [],
-            isAvailable: false
-          };
-        }
-      } catch (error) {
-        console.error('Error loading pack data:', error);
-        // Set fallback data for errored packs
-        packDataMap[packId] = {
-          title: 'Pack Indisponível',
-          coverImage: null,
-          description: '',
-          price: 0,
-          packContent: [],
-          content: [],
-          isAvailable: false
-        };
-      }
-    }
-    
-    setPackData(packDataMap);
-  }, [getPackById]);
 
   // Load seller data for services and packs
   const loadSellerData = useCallback(async (services, packs = []) => {
