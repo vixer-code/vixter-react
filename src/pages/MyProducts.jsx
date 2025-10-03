@@ -4,7 +4,7 @@ import { useUser } from '../contexts/UserContext';
 import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import { usePackOrder } from '../contexts/PackOrderContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { useMessaging } from '../contexts/EnhancedMessagingContext';
+import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useBuyerData } from '../hooks/useBuyerData';
 import { Link } from 'react-router-dom';
 import PurpleSpinner from '../components/PurpleSpinner';
@@ -24,6 +24,8 @@ const MyProducts = () => {
     getOrderStatusInfo: getServiceStatusInfo,
     ORDER_STATUS: SERVICE_ORDER_STATUS
   } = useServiceOrder();
+  
+  const { fixServiceConversationMetadata } = useEnhancedMessaging();
   const { 
     receivedOrders: packOrders, 
     loading: packLoading, 
@@ -356,16 +358,6 @@ const MyProducts = () => {
       <div className="my-services-header">
         <h1>Minhas Vendas</h1>
         <p>Gerencie seus pedidos de serviços e packs</p>
-        
-        {/* Temporary cleanup button */}
-        <button 
-          className="btn-warning"
-          onClick={cleanupDuplicateConversations}
-          style={{ marginTop: '10px', fontSize: '12px' }}
-        >
-          <i className="fas fa-broom"></i>
-          Limpar Conversas Duplicadas
-        </button>
       </div>
 
       {/* Product Type Tabs */}
@@ -575,13 +567,25 @@ const MyProducts = () => {
                   {isService && (
                     <>
                       {order.chatId ? (
-                        <Link 
-                          to={`/messages?service=${order.id}`}
-                          className="btn-secondary"
-                        >
-                          <i className="fas fa-comments"></i>
-                          Conversa
-                        </Link>
+                        <>
+                          <Link 
+                            to={`/messages?service=${order.id}`}
+                            className="btn-secondary"
+                          >
+                            <i className="fas fa-comments"></i>
+                            Conversa
+                          </Link>
+                          <button 
+                            className="btn-info"
+                            onClick={() => fixServiceConversationMetadata(order.chatId)}
+                            disabled={serviceProcessing}
+                            title="Corrigir metadados da conversa (nome do serviço, usuários)"
+                            style={{ fontSize: '12px', padding: '5px 8px' }}
+                          >
+                            <i className="fas fa-wrench"></i>
+                            Corrigir Metadados
+                          </button>
+                        </>
                       ) : (
                         <button 
                           className="btn-warning"

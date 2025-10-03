@@ -7,6 +7,7 @@ import {
   update,
   off, 
   get,
+  remove,
   query, 
   orderByChild, 
   equalTo,
@@ -2107,84 +2108,19 @@ export const EnhancedMessagingProvider = ({ children }) => {
     }
   }, [currentUser]);
 
-  // Clean up duplicate conversations with invalid IDs
-  const cleanupDuplicateConversations = useCallback(async () => {
-    if (!currentUser?.uid) return;
-
-    try {
-      console.log('🧹 Cleaning up duplicate conversations...');
-      
-      // Get all conversations
-      const conversationsRef = ref(database, 'conversations');
-      const snapshot = await get(conversationsRef);
-      
-      if (!snapshot.exists()) return;
-      
-      const conversations = snapshot.val();
-      const conversationsToDelete = [];
-      
-      // Find conversations with invalid IDs (starting with -)
-      Object.keys(conversations).forEach(conversationId => {
-        if (conversationId.startsWith('-') || conversationId.startsWith('_')) {
-          console.log('🗑️ Found invalid conversation ID:', conversationId);
-          conversationsToDelete.push(conversationId);
-        }
-      });
-      
-      // Delete invalid conversations
-      for (const conversationId of conversationsToDelete) {
-        try {
-          const conversationRef = ref(database, `conversations/${conversationId}`);
-          await remove(conversationRef);
-          console.log('✅ Deleted invalid conversation:', conversationId);
-        } catch (error) {
-          console.error('❌ Error deleting conversation:', conversationId, error);
-        }
-      }
-      
-      console.log(`🧹 Cleanup completed. Deleted ${conversationsToDelete.length} invalid conversations.`);
-      
-    } catch (error) {
-      console.error('❌ Error during conversation cleanup:', error);
-    }
-  }, [currentUser]);
 
   // Create service conversation when order is accepted
   const createServiceConversation = useCallback(async (serviceOrder) => {
-    console.log('🚀 createServiceConversation called with:', serviceOrder);
-    
-    if (!currentUser?.uid) {
-      console.error('❌ No current user - cannot create service conversation');
-      return null;
-    }
-
-    if (!serviceOrder) {
-      console.error('❌ No service order provided - cannot create service conversation');
-      return null;
-    }
-
-    if (!serviceOrder.buyerId || !serviceOrder.sellerId || !serviceOrder.id) {
-      console.error('❌ Invalid service order data - missing required fields:', {
-        buyerId: serviceOrder.buyerId,
-        sellerId: serviceOrder.sellerId,
-        id: serviceOrder.id,
-        fullOrder: serviceOrder
-      });
+    if (!currentUser?.uid || !serviceOrder || !serviceOrder.buyerId || !serviceOrder.sellerId || !serviceOrder.id) {
       return null;
     }
 
     try {
-      console.log('Creating service conversation for order:', serviceOrder);
-      console.log('Order buyerId:', serviceOrder.buyerId);
-      console.log('Order sellerId:', serviceOrder.sellerId);
-      console.log('Order id:', serviceOrder.id);
-      
       const conversationId = generateConversationId(
         serviceOrder.buyerId, 
         serviceOrder.sellerId, 
         serviceOrder.id
       );
-      console.log('Generated unique service conversation ID:', conversationId);
 
       // Check if conversation already exists in RTDB
       const conversationRef = ref(database, `conversations/${conversationId}`);
@@ -2195,33 +2131,20 @@ export const EnhancedMessagingProvider = ({ children }) => {
           id: conversationId,
           ...existingConversationSnapshot.val()
         };
-        console.log('Service conversation already exists in RTDB:', existingConversation.id);
         return existingConversation;
       }
 
       // Get user data for initial message
-      console.log('🔍 Loading user data for conversation...');
       const buyerUser = await getUserById(serviceOrder.buyerId);
       const sellerUser = await getUserById(serviceOrder.sellerId);
       
-      console.log('🔍 Buyer user data:', buyerUser);
-      console.log('🔍 Seller user data:', sellerUser);
-      
       if (!buyerUser || !sellerUser) {
-        console.error('❌ Failed to load user data:', {
-          buyerUser: !!buyerUser,
-          sellerUser: !!sellerUser,
-          buyerId: serviceOrder.buyerId,
-          sellerId: serviceOrder.sellerId
-        });
         return null;
       }
       
       const buyerUsername = buyerUser?.username || buyerUser?.displayName || buyerUser?.name || 'Comprador';
       const sellerUsername = sellerUser?.username || sellerUser?.displayName || sellerUser?.name || 'Vendedor';
       const serviceName = serviceOrder.metadata?.serviceName || 'Serviço';
-      
-      console.log('🔍 Usernames:', { buyerUsername, sellerUsername, serviceName });
       
       // Create conversation data
       const conversationData = {
@@ -2257,21 +2180,12 @@ export const EnhancedMessagingProvider = ({ children }) => {
         return null;
       }
       
-      console.log('✅ Database connection validated');
-      
       try {
-        console.log('🚀 Attempting to save conversation to RTDB...');
-        console.log('🔍 Conversation reference:', conversationRef.toString());
-        console.log('🔍 Conversation data to save:', conversationData);
-        
         // Save directly with the original ID to avoid duplicates
         await set(conversationRef, conversationData);
         
-        console.log('✅ Service conversation saved to RTDB successfully:', conversationId);
-        
         // Add to local state
         setServiceConversations(prev => {
-          console.log('🔍 Adding conversation to local state');
           return [conversationData, ...prev];
         });
         
@@ -2297,6 +2211,71 @@ export const EnhancedMessagingProvider = ({ children }) => {
       return null;
     }
   }, [currentUser, getUserById, serviceConversations]);
+
+  // Fix existing service conversation metadata
+  const fixServiceConversationMetadata = useCallback(async (conversationId) => {
+    if (!currentUser?.uid) return false;
+
+    try {
+      const conversationRef = ref(database, `conversations/${conversationId}`);
+      const conversationSnapshot = await get(conversationRef);
+      
+      if (!conversationSnapshot.exists()) {
+        return false;
+      }
+
+      const conversation = conversationSnapshot.val();
+      
+      // Check if it's a service conversation that needs fixing
+      if (!conversation.serviceOrderId || conversation.type !== 'service') {
+        return false;
+      }
+
+      // Get user data
+      const buyerUser = await getUserById(conversation.buyerId);
+      const sellerUser = await getUserById(conversation.sellerId);
+      
+      if (!buyerUser || !sellerUser) {
+        return false;
+      }
+
+      const buyerUsername = buyerUser?.username || buyerUser?.displayName || buyerUser?.name || 'Comprador';
+      const sellerUsername = sellerUser?.username || sellerUser?.displayName || sellerUser?.name || 'Vendedor';
+      
+      // Get service order data to get service name
+      const serviceOrderRef = ref(database, `serviceOrders/${conversation.serviceOrderId}`);
+      const serviceOrderSnapshot = await get(serviceOrderRef);
+      const serviceName = serviceOrderSnapshot.exists() ? 
+        (serviceOrderSnapshot.val().metadata?.serviceName || 'Serviço') : 'Serviço';
+
+      // Update conversation with missing metadata
+      const updates = {
+        serviceName: serviceName,
+        buyerUsername: buyerUsername,
+        sellerUsername: sellerUsername,
+        buyerPhotoURL: buyerUser?.profilePictureURL || buyerUser?.photoURL,
+        sellerPhotoURL: sellerUser?.profilePictureURL || sellerUser?.photoURL,
+        lastMessage: `Esta é a conversa do serviço "${serviceName}", entre ${sellerUsername} e ${buyerUsername}`,
+        updatedAt: Date.now()
+      };
+
+      await update(conversationRef, updates);
+      
+      // Update local state
+      setServiceConversations(prev => {
+        return prev.map(conv => 
+          conv.id === conversationId 
+            ? { ...conv, ...updates }
+            : conv
+        );
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error fixing service conversation metadata:', error);
+      return false;
+    }
+  }, [currentUser, getUserById, setServiceConversations]);
 
   // Mark service conversation as completed
   const markServiceConversationCompleted = useCallback(async (serviceOrderId) => {
@@ -2353,7 +2332,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     sendServiceNotification,
     createServiceConversation,
     markServiceConversationCompleted,
-    cleanupDuplicateConversations,
+    fixServiceConversationMetadata,
     
     // Typing functions
     handleTypingChange,
@@ -2392,7 +2371,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     sendServiceNotification,
     createServiceConversation,
     markServiceConversationCompleted,
-    cleanupDuplicateConversations,
+    fixServiceConversationMetadata,
     markMessagesAsRead,
     getOtherParticipant,
     loadUserData,
