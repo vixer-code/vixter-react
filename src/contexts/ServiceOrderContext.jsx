@@ -320,6 +320,34 @@ export const ServiceOrderProvider = ({ children }) => {
               console.error('❌ Failed to create service conversation - function returned null');
             } else {
               console.log('✅ Service conversation created successfully:', conversation.id);
+              
+              // Update the service order with the chatId
+              try {
+                console.log('🚀 Updating service order with chatId:', conversation.id);
+                const updateResult = await apiFunc({
+                  resource: 'serviceOrder',
+                  action: 'update',
+                  payload: { 
+                    orderId: order.id,
+                    updates: { chatId: conversation.id }
+                  }
+                });
+                
+                if (updateResult.data.success) {
+                  console.log('✅ Service order updated with chatId successfully');
+                } else {
+                  console.error('❌ Failed to update service order with chatId:', updateResult.data.error);
+                }
+              } catch (updateError) {
+                console.error('❌ Error updating service order with chatId:', updateError);
+                console.error('❌ Update error details:', {
+                  message: updateError.message,
+                  code: updateError.code,
+                  stack: updateError.stack,
+                  orderId: order.id,
+                  chatId: conversation.id
+                });
+              }
             }
           } catch (conversationError) {
             console.error('❌ Error creating service conversation:', conversationError);
@@ -679,6 +707,61 @@ export const ServiceOrderProvider = ({ children }) => {
     }
   }, [currentUser, apiFunc, serviceOrders, sendServiceNotification, showSuccess, showError]);
 
+  // Fix service orders that don't have chatId (for existing orders)
+  const fixServiceOrderChatId = useCallback(async (orderId) => {
+    if (!currentUser) return false;
+
+    try {
+      setProcessing(true);
+
+      // Get the order
+      const order = serviceOrders.find(o => o.id === orderId);
+      if (!order) {
+        showError('Pedido não encontrado');
+        return false;
+      }
+
+      // Check if order is accepted but doesn't have chatId
+      if (order.status === 'ACCEPTED' && !order.chatId) {
+        console.log('🔧 Fixing service order without chatId:', orderId);
+        
+        // Create the conversation
+        const conversation = await createServiceConversation(order);
+        if (conversation) {
+          // Update the service order with the chatId
+          const updateResult = await apiFunc({
+            resource: 'serviceOrder',
+            action: 'update',
+            payload: { 
+              orderId: order.id,
+              updates: { chatId: conversation.id }
+            }
+          });
+          
+          if (updateResult.data.success) {
+            showSuccess('Conversa criada e vinculada ao serviço com sucesso!');
+            return true;
+          } else {
+            showError('Erro ao vincular conversa ao serviço');
+            return false;
+          }
+        } else {
+          showError('Erro ao criar conversa para o serviço');
+          return false;
+        }
+      } else {
+        showInfo('Este serviço já possui uma conversa vinculada');
+        return true;
+      }
+    } catch (error) {
+      console.error('Error fixing service order chatId:', error);
+      showError('Erro ao corrigir conversa do serviço');
+      return false;
+    } finally {
+      setProcessing(false);
+    }
+  }, [currentUser, serviceOrders, createServiceConversation, showSuccess, showError, showInfo]);
+
   const value = useMemo(() => ({
     // State
     serviceOrders,
@@ -694,6 +777,7 @@ export const ServiceOrderProvider = ({ children }) => {
     markServiceDelivered,
     confirmServiceDelivery,
     autoReleaseService,
+    fixServiceOrderChatId,
     getOrderById,
 
     // Utilities
@@ -716,6 +800,7 @@ export const ServiceOrderProvider = ({ children }) => {
     markServiceDelivered,
     confirmServiceDelivery,
     autoReleaseService,
+    fixServiceOrderChatId,
     getOrderById,
     calculateOrderTotal,
     getOrderStatusInfo,

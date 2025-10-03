@@ -19,6 +19,7 @@ const MyProducts = () => {
     acceptServiceOrder,
     declineServiceOrder,
     markServiceDelivered,
+    fixServiceOrderChatId,
     getOrderStatusInfo: getServiceStatusInfo,
     ORDER_STATUS: SERVICE_ORDER_STATUS
   } = useServiceOrder();
@@ -560,13 +561,27 @@ const MyProducts = () => {
                   )}
 
                   {isService && (
-                    <Link 
-                      to={`/messages?service=${order.id}`}
-                      className="btn-secondary"
-                    >
-                      <i className="fas fa-comments"></i>
-                      Conversa
-                    </Link>
+                    <>
+                      {order.chatId ? (
+                        <Link 
+                          to={`/messages?service=${order.id}`}
+                          className="btn-secondary"
+                        >
+                          <i className="fas fa-comments"></i>
+                          Conversa
+                        </Link>
+                      ) : (
+                        <button 
+                          className="btn-warning"
+                          onClick={() => fixServiceOrderChatId(order.id)}
+                          disabled={serviceProcessing}
+                          title="Este serviço não possui conversa vinculada. Clique para criar."
+                        >
+                          <i className="fas fa-tools"></i>
+                          Corrigir Conversa
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
