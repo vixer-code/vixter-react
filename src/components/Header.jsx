@@ -526,10 +526,10 @@ const Header = () => {
 
         <ul className="mobile-nav-links">
           <li><Link to="/vixies" className={isActive('/vixies') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
-            <i className="fas fa-users"></i>Vixies
+            <i className="fa-solid fa-heart"></i>Vixies
           </Link></li>
           <li><Link to="/vixink" className={isActive('/vixink') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
-            <i className="fas fa-link"></i>Vixink
+            <i className="fa-solid fa-store"></i>Vixink
           </Link></li>
           
           

@@ -21,7 +21,7 @@ const MobileFooter = () => {
           to="/vixies" 
           className={`mobile-footer-item ${isActive('/vixies') ? 'active' : ''}`}
         >
-          <i className="fas fa-users"></i>
+          <i className="fa-solid fa-heart"></i>
           <span>Vixies</span>
         </Link>
         
@@ -29,7 +29,7 @@ const MobileFooter = () => {
           to="/vixink" 
           className={`mobile-footer-item ${isActive('/vixink') ? 'active' : ''}`}
         >
-          <i className="fas fa-link"></i>
+          <i className="fa-solid fa-store"></i>
           <span>Vixink</span>
         </Link>
         

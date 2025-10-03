@@ -679,11 +679,11 @@ const MyPurchases = () => {
             {activeTab === 'all' && (
               <div className="no-purchases-actions">
                 <Link to="/vixies" className="btn-primary">
-                  <i className="fas fa-search"></i>
+                  <i className="fa-solid fa-heart"></i>
                   Procurar Serviços
                 </Link>
                 <Link to="/vixink" className="btn-secondary">
-                  <i className="fas fa-box-open"></i>
+                  <i className="fa-solid fa-store"></i>
                   Ver Packs
                 </Link>
               </div>

@@ -181,7 +181,7 @@ const MyOrders = () => {
             </p>
             {activeTab === 'all' && (
               <Link to="/" className="btn-primary">
-                <i className="fas fa-search"></i>
+                <i className="fa-solid fa-heart"></i>
                 Procurar Serviços
               </Link>
             )}
