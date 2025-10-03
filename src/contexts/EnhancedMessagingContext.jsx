@@ -2107,6 +2107,48 @@ export const EnhancedMessagingProvider = ({ children }) => {
     }
   }, [currentUser]);
 
+  // Clean up duplicate conversations with invalid IDs
+  const cleanupDuplicateConversations = useCallback(async () => {
+    if (!currentUser?.uid) return;
+
+    try {
+      console.log('🧹 Cleaning up duplicate conversations...');
+      
+      // Get all conversations
+      const conversationsRef = ref(database, 'conversations');
+      const snapshot = await get(conversationsRef);
+      
+      if (!snapshot.exists()) return;
+      
+      const conversations = snapshot.val();
+      const conversationsToDelete = [];
+      
+      // Find conversations with invalid IDs (starting with -)
+      Object.keys(conversations).forEach(conversationId => {
+        if (conversationId.startsWith('-') || conversationId.startsWith('_')) {
+          console.log('🗑️ Found invalid conversation ID:', conversationId);
+          conversationsToDelete.push(conversationId);
+        }
+      });
+      
+      // Delete invalid conversations
+      for (const conversationId of conversationsToDelete) {
+        try {
+          const conversationRef = ref(database, `conversations/${conversationId}`);
+          await remove(conversationRef);
+          console.log('✅ Deleted invalid conversation:', conversationId);
+        } catch (error) {
+          console.error('❌ Error deleting conversation:', conversationId, error);
+        }
+      }
+      
+      console.log(`🧹 Cleanup completed. Deleted ${conversationsToDelete.length} invalid conversations.`);
+      
+    } catch (error) {
+      console.error('❌ Error during conversation cleanup:', error);
+    }
+  }, [currentUser]);
+
   // Create service conversation when order is accepted
   const createServiceConversation = useCallback(async (serviceOrder) => {
     console.log('🚀 createServiceConversation called with:', serviceOrder);
@@ -2222,31 +2264,18 @@ export const EnhancedMessagingProvider = ({ children }) => {
         console.log('🔍 Conversation reference:', conversationRef.toString());
         console.log('🔍 Conversation data to save:', conversationData);
         
-        // Try to save the conversation using push to create a new node
-        const conversationsRef = ref(database, 'conversations');
-        const newConversationRef = push(conversationsRef);
+        // Save directly with the original ID to avoid duplicates
+        await set(conversationRef, conversationData);
         
-        // Save with the generated ID
-        await set(newConversationRef, {
-          ...conversationData,
-          id: newConversationRef.key
-        });
-        
-        console.log('✅ Service conversation saved to RTDB successfully:', newConversationRef.key);
-        
-        // Return the conversation with the new ID
-        const savedConversation = {
-          ...conversationData,
-          id: newConversationRef.key
-        };
+        console.log('✅ Service conversation saved to RTDB successfully:', conversationId);
         
         // Add to local state
         setServiceConversations(prev => {
-          console.log('🔍 Adding new conversation to local state');
-          return [savedConversation, ...prev];
+          console.log('🔍 Adding conversation to local state');
+          return [conversationData, ...prev];
         });
         
-        return savedConversation;
+        return conversationData;
         
       } catch (saveError) {
         console.error('❌ Error saving conversation to RTDB:', saveError);
@@ -2255,24 +2284,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
           code: saveError.code,
           stack: saveError.stack
         });
-        
-        // If push fails, try direct set with the original ID
-        try {
-          console.log('🔄 Retrying with direct set...');
-          await set(conversationRef, conversationData);
-          console.log('✅ Service conversation saved with direct set:', conversationId);
-          
-          // Add to local state
-          setServiceConversations(prev => {
-            console.log('🔍 Adding conversation to local state');
-            return [conversationData, ...prev];
-          });
-          
-          return conversationData;
-        } catch (retryError) {
-          console.error('❌ Retry also failed:', retryError);
-          throw retryError;
-        }
+        throw saveError;
       }
     } catch (error) {
       console.error('❌ Error creating service conversation:', error);
@@ -2341,6 +2353,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     sendServiceNotification,
     createServiceConversation,
     markServiceConversationCompleted,
+    cleanupDuplicateConversations,
     
     // Typing functions
     handleTypingChange,
@@ -2379,6 +2392,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     sendServiceNotification,
     createServiceConversation,
     markServiceConversationCompleted,
+    cleanupDuplicateConversations,
     markMessagesAsRead,
     getOtherParticipant,
     loadUserData,

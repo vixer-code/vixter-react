@@ -4,6 +4,7 @@ import { useUser } from '../contexts/UserContext';
 import { useServiceOrder } from '../contexts/ServiceOrderContext';
 import { usePackOrder } from '../contexts/PackOrderContext';
 import { useNotification } from '../contexts/NotificationContext';
+import { useMessaging } from '../contexts/EnhancedMessagingContext';
 import { useBuyerData } from '../hooks/useBuyerData';
 import { Link } from 'react-router-dom';
 import PurpleSpinner from '../components/PurpleSpinner';
@@ -34,6 +35,7 @@ const MyProducts = () => {
     ORDER_STATUS: PACK_ORDER_STATUS
   } = usePackOrder();
   const { showNotification } = useNotification();
+  const { cleanupDuplicateConversations } = useMessaging();
 
   // Fallback constants in case contexts haven't loaded yet
   const SERVICE_STATUS = SERVICE_ORDER_STATUS || {
@@ -354,6 +356,16 @@ const MyProducts = () => {
       <div className="my-services-header">
         <h1>Minhas Vendas</h1>
         <p>Gerencie seus pedidos de serviços e packs</p>
+        
+        {/* Temporary cleanup button */}
+        <button 
+          className="btn-warning"
+          onClick={cleanupDuplicateConversations}
+          style={{ marginTop: '10px', fontSize: '12px' }}
+        >
+          <i className="fas fa-broom"></i>
+          Limpar Conversas Duplicadas
+        </button>
       </div>
 
       {/* Product Type Tabs */}
