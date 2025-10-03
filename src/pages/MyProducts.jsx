@@ -20,6 +20,7 @@ const MyProducts = () => {
     declineServiceOrder,
     markServiceDelivered,
     fixServiceOrderChatId,
+    cleanInvalidChatIds,
     getOrderStatusInfo: getServiceStatusInfo,
     ORDER_STATUS: SERVICE_ORDER_STATUS
   } = useServiceOrder();
@@ -354,6 +355,17 @@ const MyProducts = () => {
       <div className="my-services-header">
         <h1>Minhas Vendas</h1>
         <p>Gerencie seus pedidos de serviços e packs</p>
+        
+        {/* Temporary cleanup button */}
+        <button 
+          className="btn-danger"
+          onClick={cleanInvalidChatIds}
+          disabled={serviceProcessing}
+          style={{ marginTop: '10px', fontSize: '12px' }}
+        >
+          <i className="fas fa-broom"></i>
+          Limpar ChatIds Inválidos
+        </button>
       </div>
 
       {/* Product Type Tabs */}

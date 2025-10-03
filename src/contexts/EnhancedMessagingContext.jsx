@@ -379,6 +379,11 @@ export const EnhancedMessagingProvider = ({ children }) => {
           if (conversation.participants && conversation.participants[currentUser.uid]) {
             // Include all service conversations (both active and completed)
             if (conversation.serviceOrderId) {
+              // Skip invalid conversation IDs (starting with - or _)
+              if (conversation.id.startsWith('-') || conversation.id.startsWith('_')) {
+                console.log('🚫 Skipping invalid service conversation ID from RTDB:', conversation.id);
+                return;
+              }
               serviceConversationsData.push(conversation);
               console.log('✅ Added service conversation from RTDB:', conversation.id, 'Order:', conversation.serviceOrderId, 'Completed:', conversation.isCompleted);
             }
@@ -454,6 +459,11 @@ export const EnhancedMessagingProvider = ({ children }) => {
         for (const doc of buyerSnapshot.docs) {
           const orderData = doc.data();
           if (orderData.chatId) {
+            // Skip invalid conversation IDs (starting with - or _)
+            if (orderData.chatId.startsWith('-') || orderData.chatId.startsWith('_')) {
+              console.log('🚫 Skipping invalid conversation ID from buyer order:', orderData.chatId, 'Order:', doc.id);
+              continue;
+            }
             const isCompleted = orderData.status === 'COMPLETED' || orderData.status === 'CONFIRMED' || orderData.status === 'AUTO_RELEASED';
             
             const conversation = {
@@ -485,6 +495,11 @@ export const EnhancedMessagingProvider = ({ children }) => {
         for (const doc of sellerSnapshot.docs) {
           const orderData = doc.data();
           if (orderData.chatId) {
+            // Skip invalid conversation IDs (starting with - or _)
+            if (orderData.chatId.startsWith('-') || orderData.chatId.startsWith('_')) {
+              console.log('🚫 Skipping invalid conversation ID from seller order:', orderData.chatId, 'Order:', doc.id);
+              continue;
+            }
             const isCompleted = orderData.status === 'COMPLETED' || orderData.status === 'CONFIRMED' || orderData.status === 'AUTO_RELEASED';
             
             const conversation = {

@@ -762,6 +762,51 @@ export const ServiceOrderProvider = ({ children }) => {
     }
   }, [currentUser, serviceOrders, createServiceConversation, showSuccess, showError, showInfo]);
 
+  // Clean invalid chatId from service orders
+  const cleanInvalidChatIds = useCallback(async () => {
+    if (!currentUser) return false;
+    try {
+      setProcessing(true);
+      console.log('🧹 Cleaning invalid chatIds from service orders...');
+      
+      const invalidOrders = serviceOrders.filter(order => 
+        order.chatId && (order.chatId.startsWith('-') || order.chatId.startsWith('_'))
+      );
+      
+      console.log(`Found ${invalidOrders.length} orders with invalid chatIds`);
+      
+      for (const order of invalidOrders) {
+        try {
+          const updateResult = await apiFunc({
+            resource: 'serviceOrder',
+            action: 'update',
+            payload: { 
+              orderId: order.id,
+              updates: { chatId: null }
+            }
+          });
+          
+          if (updateResult.data.success) {
+            console.log(`✅ Cleaned invalid chatId from order: ${order.id}`);
+          } else {
+            console.error(`❌ Failed to clean chatId from order: ${order.id}`);
+          }
+        } catch (error) {
+          console.error(`❌ Error cleaning chatId from order ${order.id}:`, error);
+        }
+      }
+      
+      showSuccess(`Limpeza concluída! ${invalidOrders.length} pedidos corrigidos.`);
+      return true;
+    } catch (error) {
+      console.error('Error cleaning invalid chatIds:', error);
+      showError('Erro ao limpar chatIds inválidos');
+      return false;
+    } finally {
+      setProcessing(false);
+    }
+  }, [currentUser, serviceOrders, apiFunc, showSuccess, showError]);
+
   const value = useMemo(() => ({
     // State
     serviceOrders,
@@ -778,6 +823,7 @@ export const ServiceOrderProvider = ({ children }) => {
     confirmServiceDelivery,
     autoReleaseService,
     fixServiceOrderChatId,
+    cleanInvalidChatIds,
     getOrderById,
 
     // Utilities
@@ -801,6 +847,7 @@ export const ServiceOrderProvider = ({ children }) => {
     confirmServiceDelivery,
     autoReleaseService,
     fixServiceOrderChatId,
+    cleanInvalidChatIds,
     getOrderById,
     calculateOrderTotal,
     getOrderStatusInfo,
