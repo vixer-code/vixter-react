@@ -2142,18 +2142,18 @@ export const EnhancedMessagingProvider = ({ children }) => {
         serviceOrder.sellerId, 
         serviceOrder.id
       );
-      console.log('Generated conversation ID:', conversationId);
+      console.log('Generated unique service conversation ID:', conversationId);
 
-      // Check if conversation already exists to prevent duplicates
-      const existingConversation = serviceConversations.find(conv => 
-        conv.id === conversationId || 
-        (conv.serviceOrderId === serviceOrder.id && 
-         conv.participants[serviceOrder.buyerId] && 
-         conv.participants[serviceOrder.sellerId])
-      );
-
-      if (existingConversation) {
-        console.log('Service conversation already exists:', existingConversation.id);
+      // Check if conversation already exists in RTDB
+      const conversationRef = ref(database, `conversations/${conversationId}`);
+      const existingConversationSnapshot = await get(conversationRef);
+      
+      if (existingConversationSnapshot.exists()) {
+        const existingConversation = {
+          id: conversationId,
+          ...existingConversationSnapshot.val()
+        };
+        console.log('Service conversation already exists in RTDB:', existingConversation.id);
         return existingConversation;
       }
 
@@ -2181,6 +2181,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       
       console.log('🔍 Usernames:', { buyerUsername, sellerUsername, serviceName });
       
+      // Create conversation data
       const conversationData = {
         id: conversationId,
         type: 'service',
@@ -2202,31 +2203,11 @@ export const EnhancedMessagingProvider = ({ children }) => {
         lastMessage: `Esta é a conversa do serviço "${serviceName}", entre ${sellerUsername} e ${buyerUsername}`,
         lastSenderId: serviceOrder.sellerId,
         unreadCount: { [serviceOrder.buyerId]: 0, [serviceOrder.sellerId]: 0 },
-        isCompleted: false
-      };
-
-      // Create initial message ID
-      const initialMessageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const initialMessage = {
-        id: initialMessageId,
-        text: `Esta é a conversa do serviço "${serviceName}", entre ${sellerUsername} e ${buyerUsername}`,
-        senderId: serviceOrder.sellerId,
-        timestamp: Date.now(),
-        type: 'text',
-        read: false
-      };
-
-      // Save to RTDB with messages structure for Centrifugo compatibility
-      const conversationRef = ref(database, `conversations/${conversationId}`);
-      
-      console.log('🚀 Saving service conversation to RTDB:', conversationId);
-      console.log('🔍 Conversation data being saved:', {
-        ...conversationData,
-        messages: {},
+        isCompleted: false,
         messageCount: 0,
         lastActivity: Date.now()
-      });
-      
+      };
+
       // Validate database connection
       if (!database) {
         console.error('❌ Database not initialized - cannot save conversation');
@@ -2239,24 +2220,34 @@ export const EnhancedMessagingProvider = ({ children }) => {
       try {
         console.log('🚀 Attempting to save conversation to RTDB...');
         console.log('🔍 Conversation reference:', conversationRef.toString());
-        console.log('🔍 Conversation data to save:', {
+        console.log('🔍 Conversation data to save:', conversationData);
+        
+        // Try to save the conversation using push to create a new node
+        const conversationsRef = ref(database, 'conversations');
+        const newConversationRef = push(conversationsRef);
+        
+        // Save with the generated ID
+        await set(newConversationRef, {
           ...conversationData,
-          messages: {},
-          messageCount: 0,
-          lastActivity: Date.now()
+          id: newConversationRef.key
         });
         
-        await set(conversationRef, {
+        console.log('✅ Service conversation saved to RTDB successfully:', newConversationRef.key);
+        
+        // Return the conversation with the new ID
+        const savedConversation = {
           ...conversationData,
-          // Initialize messages structure for Centrifugo compatibility
-          messages: {
-            [initialMessageId]: initialMessage
-          },
-          messageCount: 1,
-          lastActivity: Date.now()
+          id: newConversationRef.key
+        };
+        
+        // Add to local state
+        setServiceConversations(prev => {
+          console.log('🔍 Adding new conversation to local state');
+          return [savedConversation, ...prev];
         });
         
-        console.log('✅ Service conversation saved to RTDB successfully:', conversationId);
+        return savedConversation;
+        
       } catch (saveError) {
         console.error('❌ Error saving conversation to RTDB:', saveError);
         console.error('❌ Save error details:', {
@@ -2264,37 +2255,25 @@ export const EnhancedMessagingProvider = ({ children }) => {
           code: saveError.code,
           stack: saveError.stack
         });
-        throw saveError;
-      }
-      
-      // Verify it was saved by reading it back
-      setTimeout(async () => {
+        
+        // If push fails, try direct set with the original ID
         try {
-          const savedConversationSnapshot = await get(conversationRef);
-          if (savedConversationSnapshot.exists()) {
-            console.log('✅ Verification: Service conversation exists in RTDB:', savedConversationSnapshot.val());
-          } else {
-            console.log('❌ Verification: Service conversation NOT found in RTDB');
-          }
-        } catch (verifyError) {
-          console.error('❌ Error verifying service conversation:', verifyError);
+          console.log('🔄 Retrying with direct set...');
+          await set(conversationRef, conversationData);
+          console.log('✅ Service conversation saved with direct set:', conversationId);
+          
+          // Add to local state
+          setServiceConversations(prev => {
+            console.log('🔍 Adding conversation to local state');
+            return [conversationData, ...prev];
+          });
+          
+          return conversationData;
+        } catch (retryError) {
+          console.error('❌ Retry also failed:', retryError);
+          throw retryError;
         }
-      }, 1000);
-
-      // Service conversations are stored in RTDB only
-      console.log('Service conversation saved to RTDB:', conversationId);
-
-      // Add to local state immediately
-      console.log('🚀 Adding conversation to local state...');
-      setServiceConversations(prev => {
-        console.log('🔍 Previous service conversations:', prev.length);
-        const newState = [conversationData, ...prev];
-        console.log('🔍 New service conversations:', newState.length);
-        return newState;
-      });
-      console.log('✅ Service conversation added to local state');
-
-      return conversationData;
+      }
     } catch (error) {
       console.error('❌ Error creating service conversation:', error);
       console.error('❌ Error details:', {

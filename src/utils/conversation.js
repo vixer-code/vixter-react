@@ -148,14 +148,20 @@ export const findExistingConversation = (conversations, currentUserId, otherUser
  * Generate conversation ID from two user IDs
  * @param {string} userId1 - First user ID
  * @param {string} userId2 - Second user ID
+ * @param {string} serviceOrderId - Optional service order ID for unique service conversations
  * @returns {string} Conversation ID
  */
-export const generateConversationId = (userId1, userId2) => {
+export const generateConversationId = (userId1, userId2, serviceOrderId = null) => {
   // Sort IDs to ensure consistent conversation ID regardless of order
   const sorted = [userId1, userId2].sort();
   const cleanUserA = sorted[0].replace(/[.#$[\]]/g, '_');
   const cleanUserB = sorted[1].replace(/[.#$[\]]/g, '_');
-  return `conv_${cleanUserA}_${cleanUserB}`;
+  
+  // For service orders, always include the serviceOrderId to ensure uniqueness
+  // This prevents conflicts when multiple orders exist between the same users
+  return serviceOrderId ? 
+    `conv_${cleanUserA}_${cleanUserB}_service_${serviceOrderId}` : 
+    `conv_${cleanUserA}_${cleanUserB}`;
 };
 
 /**
