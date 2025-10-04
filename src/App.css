@@ -36,6 +36,7 @@ body {
 
 /* Default padding for all pages */
 .main-content {
+  padding-top: 80px; /* Account for fixed header */
   min-height: calc(100vh - 80px); /* Full viewport height minus header */
 }
 
