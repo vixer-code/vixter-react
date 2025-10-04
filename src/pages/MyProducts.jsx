@@ -19,8 +19,6 @@ const MyProducts = () => {
     acceptServiceOrder,
     declineServiceOrder,
     markServiceDelivered,
-    fixServiceOrderChatId,
-    cleanInvalidChatIds,
     getOrderStatusInfo: getServiceStatusInfo,
     ORDER_STATUS: SERVICE_ORDER_STATUS
   } = useServiceOrder();
@@ -355,17 +353,6 @@ const MyProducts = () => {
       <div className="my-services-header">
         <h1>Minhas Vendas</h1>
         <p>Gerencie seus pedidos de serviços e packs</p>
-        
-        {/* Temporary cleanup button */}
-        <button 
-          className="btn-danger"
-          onClick={cleanInvalidChatIds}
-          disabled={serviceProcessing}
-          style={{ marginTop: '10px', fontSize: '12px' }}
-        >
-          <i className="fas fa-broom"></i>
-          Limpar ChatIds Inválidos
-        </button>
       </div>
 
       {/* Product Type Tabs */}
@@ -572,28 +559,14 @@ const MyProducts = () => {
                     </button>
                   )}
 
-                  {isService && (
-                    <>
-                      {order.chatId ? (
-                        <Link 
-                          to={`/messages?service=${order.id}`}
-                          className="btn-secondary"
-                        >
-                          <i className="fas fa-comments"></i>
-                          Conversa
-                        </Link>
-                      ) : (
-                        <button 
-                          className="btn-warning"
-                          onClick={() => fixServiceOrderChatId(order.id)}
-                          disabled={serviceProcessing}
-                          title="Este serviço não possui conversa vinculada. Clique para criar."
-                        >
-                          <i className="fas fa-tools"></i>
-                          Corrigir Conversa
-                        </button>
-                      )}
-                    </>
+                  {isService && order.chatId && (
+                    <Link 
+                      to={`/messages?service=${order.id}`}
+                      className="btn-secondary"
+                    >
+                      <i className="fas fa-comments"></i>
+                      Conversa
+                    </Link>
                   )}
                 </div>
               </div>

@@ -44,6 +44,7 @@ const MyPurchases = lazy(() => import('./pages/MyPurchases'));
 const ServiceDetail = lazy(() => import('./pages/ServiceDetail'));
 const PackDetail = lazy(() => import('./pages/PackDetail'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Sobre = lazy(() => import('./pages/Sobre'));
 const Success = lazy(() => import('./pages/Success'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -79,6 +80,7 @@ function AppContent() {
               <Route path="/service/:serviceId" element={<ServiceDetail />} />
               <Route path="/pack/:packId" element={<PackDetail />} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/sobre" element={<Sobre />} />
               <Route path="/success" element={<Success />} />
               <Route path="/services" element={<div>Services Page - Coming Soon</div>} />
               
