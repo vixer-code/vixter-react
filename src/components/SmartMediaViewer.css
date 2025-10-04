@@ -17,11 +17,26 @@
   width: 100%;
   height: auto;
   background: #000;
+  max-height: 70vh;
 }
 
 .smart-media-viewer.video video {
   width: 100%;
   height: auto;
   max-width: 100%;
+  max-height: 70vh;
   display: block;
+  object-fit: contain;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .smart-media-viewer.video {
+    max-height: 50vh;
+  }
+  
+  .smart-media-viewer.video video {
+    max-height: 50vh;
+    border-radius: 4px;
+  }
 }

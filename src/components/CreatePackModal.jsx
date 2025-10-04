@@ -1555,11 +1555,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                         <div key={`sv-${idx}`} className="showcase-item video-showcase">
                           <video 
                             controls 
-                            controlsList="nodownload nofullscreen noremoteplayback"
-                            disablePictureInPicture
-                            onContextMenu={(e) => e.preventDefault()}
-                            onDragStart={(e) => e.preventDefault()}
-                            style={{ userSelect: 'none' }}
+                            controlsList="nodownload"
+                            style={{ maxHeight: '70vh', width: '100%', objectFit: 'contain' }}
                           >
                             <source src={src} type="video/mp4" />
                             Seu navegador não suporta vídeo.
@@ -1626,11 +1623,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                           {prev.isVideo ? (
                             <video 
                               controls 
-                              controlsList="nodownload nofullscreen noremoteplayback"
-                              disablePictureInPicture
-                              onContextMenu={(e) => e.preventDefault()}
-                              onDragStart={(e) => e.preventDefault()}
-                              style={{ userSelect: 'none' }}
+                              controlsList="nodownload"
+                              style={{ maxHeight: '70vh', width: '100%', objectFit: 'contain' }}
                             >
                               <source src={prev.src} type="video/mp4" />
                               Seu navegador não suporta vídeo.
@@ -1776,11 +1770,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                             <div key={idx} className="showcase-item video-showcase">
                               <video 
                                 controls 
-                                controlsList="nodownload nofullscreen noremoteplayback"
-                                disablePictureInPicture
-                                onContextMenu={(e) => e.preventDefault()}
-                                onDragStart={(e) => e.preventDefault()}
-                                style={{ userSelect: 'none' }}
+                                controlsList="nodownload"
+                                style={{ maxHeight: '70vh', width: '100%', objectFit: 'contain' }}
                               >
                                 <source src={src} type="video/mp4" />
                                 Seu navegador não suporta vídeo.
@@ -1835,11 +1826,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                               {prev.isVideo ? (
                                 <video 
                                   controls 
-                                  controlsList="nodownload nofullscreen noremoteplayback"
-                                  disablePictureInPicture
-                                  onContextMenu={(e) => e.preventDefault()}
-                                  onDragStart={(e) => e.preventDefault()}
-                                  style={{ userSelect: 'none' }}
+                                  controlsList="nodownload"
+                                  style={{ maxHeight: '70vh', width: '100%', objectFit: 'contain' }}
                                 >
                                   <source src={prev.src} type="video/mp4" />
                                   Seu navegador não suporta vídeo.

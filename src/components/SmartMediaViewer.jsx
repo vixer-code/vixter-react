@@ -120,11 +120,7 @@ const SmartMediaViewer = ({
       <video 
         controls 
         className={`smart-media-viewer video ${className}`}
-        controlsList="nodownload nofullscreen noremoteplayback"
-        disablePictureInPicture
-        onContextMenu={(e) => e.preventDefault()}
-        onDragStart={(e) => e.preventDefault()}
-        style={{ userSelect: 'none' }}
+        controlsList="nodownload"
         {...props}
       >
         <source src={fallbackUrl} type="video/mp4" />

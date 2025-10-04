@@ -589,11 +589,8 @@ const Vixies = () => {
                               <video 
                                 src={m.url} 
                                 controls 
-                                controlsList="nodownload nofullscreen noremoteplayback"
-                                disablePictureInPicture
-                                onContextMenu={(e) => e.preventDefault()}
-                                onDragStart={(e) => e.preventDefault()}
-                                style={{ userSelect: 'none' }}
+                                controlsList="nodownload"
+                                style={{ maxHeight: '70vh', width: '100%', objectFit: 'contain' }}
                               />
                             )}
                             {m.type === 'audio' && (<audio src={m.url} controls />)}
