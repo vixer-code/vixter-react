@@ -296,14 +296,23 @@ async function generateQRCodePattern(user, vendorInfo, imageSize, isLightBackgro
 }
 
 /**
- * Generate QR code pattern for video watermarking
+ * Generate QR code pattern for video watermarking with full grid coverage
  */
-async function generateVideoQRCodePattern(user, vendorInfo) {
+async function generateVideoQRCodePattern(user, vendorInfo, videoWidth = 1920, videoHeight = 1080) {
   const buyerUrl = `https://vixter.com.br/${user.username}`;
   const vendorUrl = `https://vixter.com.br/${vendorInfo?.username || 'vendor'}`;
   
-  const qrSize = 50;
-  const opacity = 0.15;
+  // Calculate QR code size based on video dimensions - 3% of smallest dimension
+  const smallestDimension = Math.min(videoWidth, videoHeight);
+  const calculatedSize = Math.floor(smallestDimension * 0.03);
+  
+  // Apply min/max constraints for QR codes
+  const qrSize = Math.max(40, Math.min(calculatedSize, 120));
+  
+  // Lower opacity for subtle watermarking
+  const opacity = 0.12;
+  
+  console.log(`Video QR Code size: ${qrSize}px (calculated: ${calculatedSize}px) for video ${videoWidth}x${videoHeight}`);
   
   const [buyerQR, vendorQR] = await Promise.all([
     generateQRCode(buyerUrl, qrSize, false, opacity),
@@ -313,7 +322,9 @@ async function generateVideoQRCodePattern(user, vendorInfo) {
   return {
     buyerQR,
     vendorQR,
-    size: qrSize
+    size: qrSize,
+    videoWidth,
+    videoHeight
   };
 }
 
@@ -579,6 +590,17 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
         if (outputPath && fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
         if (buyerQRPath && fs.existsSync(buyerQRPath)) fs.unlinkSync(buyerQRPath);
         if (vendorQRPath && fs.existsSync(vendorQRPath)) fs.unlinkSync(vendorQRPath);
+        
+        // Clean up all QR grid files
+        const tempDir = os.tmpdir();
+        const qrFiles = fs.readdirSync(tempDir).filter(file => file.startsWith('qr_') && file.endsWith('.png'));
+        qrFiles.forEach(file => {
+          try {
+            fs.unlinkSync(path.join(tempDir, file));
+          } catch (err) {
+            console.warn(`Could not delete QR file ${file}:`, err);
+          }
+        });
       } catch (cleanupError) {
         console.error('Error cleaning up temp files:', cleanupError);
       }
@@ -607,7 +629,9 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
         return;
       }
       
-      const qrPattern = await generateVideoQRCodePattern(user, vendorInfo);
+      // Get video dimensions first to calculate proper QR grid
+      const videoDimensions = await getVideoDimensions(inputPath);
+      const qrPattern = await generateVideoQRCodePattern(user, vendorInfo, videoDimensions.width, videoDimensions.height);
       
       const tempDir = os.tmpdir();
       const timestamp = Date.now();
@@ -651,42 +675,50 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
       // Build video filters with QR codes and text
       const videoFilters = [];
       
-      // Try QR code approach first, fallback to text only
-      if (buyerQRPath && vendorQRPath && fs.existsSync(buyerQRPath) && fs.existsSync(vendorQRPath)) {
-        console.log('Attempting QR code watermarking...');
+      // Try QR code grid approach first, fallback to text only
+      if (qrPattern.buyerQR && qrPattern.vendorQR) {
+        console.log('Attempting QR code grid watermarking...');
         
         try {
-          // Verify QR files are valid
-          const buyerQRStats = fs.statSync(buyerQRPath);
-          const vendorQRStats = fs.statSync(vendorQRPath);
+          // Generate QR code grid for full video coverage
+          const qrOverlays = await generateVideoQRGrid(qrPattern, videoDimensions.width, videoDimensions.height);
           
-          if (buyerQRStats.size > 0 && vendorQRStats.size > 0) {
-            const qrSize = qrPattern.size;
-            const margin = 20;
+          if (qrOverlays.length > 0) {
+            console.log(`Generated ${qrOverlays.length} QR code overlays for grid coverage`);
             
-            // Test QR code overlay functionality first
-            try {
-              await testQRCodeOverlay(buyerQRPath);
-              console.log('QR code overlay test passed');
-              
-              // Alternative approach: use image2 demuxer for static QR code
-              const staticFilters = [
-                `movie=${buyerQRPath}[buyer_qr]`,
-                `[0:v][buyer_qr]overlay=${margin}:${margin}[qr1]`,
-                `[qr1]drawtext=text='${buyerText}':fontsize=12:fontcolor=white@0.3:x=20:y=h-th-40[final]`
-              ];
-              
-              videoFilters.push(staticFilters.join(','));
-              console.log('QR code filters applied');
-            } catch (qrTestError) {
-              console.warn('QR code overlay test failed, using text only:', qrTestError);
-              throw new Error('QR code overlay test failed');
-            }
+            // Build complex filter chain for multiple QR overlays
+            const filterChain = [];
+            let currentInput = '[0:v]';
+            
+            // Add each QR code overlay
+            qrOverlays.forEach((overlay, index) => {
+              const nextInput = index === qrOverlays.length - 1 ? '[final]' : `[qr${index}]`;
+              filterChain.push(`movie=${overlay.path}[qr${index}_img]`);
+              filterChain.push(`${currentInput}[qr${index}_img]overlay=${overlay.x}:${overlay.y}${nextInput}`);
+              currentInput = nextInput;
+            });
+            
+            // Add text watermarks at the end
+            filterChain.push(`[final]drawtext=text='${buyerText}':fontsize=12:fontcolor=white@0.3:x=20:y=20[text1]`);
+            filterChain.push(`[text1]drawtext=text='${vendorText}':fontsize=12:fontcolor=white@0.3:x=20:y=35[final_text]`);
+            
+            videoFilters.push(filterChain.join(','));
+            console.log('QR code grid filters applied');
+            
+            // Store QR paths for cleanup
+            qrOverlays.forEach(overlay => {
+              if (overlay.path && fs.existsSync(overlay.path)) {
+                // Add to cleanup list
+                if (!buyerQRPath) buyerQRPath = overlay.path;
+                if (!vendorQRPath && overlay.path !== buyerQRPath) vendorQRPath = overlay.path;
+              }
+            });
+            
           } else {
-            throw new Error('QR code files are empty');
+            throw new Error('No QR overlays generated');
           }
         } catch (qrError) {
-          console.warn('QR code watermarking failed, falling back to text only:', qrError);
+          console.warn('QR code grid watermarking failed, falling back to text only:', qrError);
           // Fallback to text only
           const textFilters = [
             `drawtext=text='${buyerText}':fontsize=12:fontcolor=white@0.3:x=20:y=20`,
@@ -809,6 +841,75 @@ async function checkIfAnimatedWebP(buffer) {
     console.warn('Error checking WebP animation:', error);
     return false;
   }
+}
+
+/**
+ * Get video dimensions using ffprobe
+ */
+async function getVideoDimensions(videoPath) {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(videoPath, (err, metadata) => {
+      if (err) {
+        console.warn('Could not get video dimensions, using defaults:', err);
+        resolve({ width: 1920, height: 1080 });
+        return;
+      }
+      
+      const videoStream = metadata.streams.find(stream => stream.codec_type === 'video');
+      if (videoStream) {
+        resolve({
+          width: videoStream.width || 1920,
+          height: videoStream.height || 1080
+        });
+      } else {
+        resolve({ width: 1920, height: 1080 });
+      }
+    });
+  });
+}
+
+/**
+ * Generate multiple QR code overlays for full video coverage
+ */
+async function generateVideoQRGrid(qrPattern, videoWidth, videoHeight) {
+  const qrSize = qrPattern.size;
+  const spacing = Math.max(qrSize * 4, 200); // Increased spacing for better coverage
+  
+  // Calculate grid dimensions
+  const cols = Math.ceil(videoWidth / spacing);
+  const rows = Math.ceil(videoHeight / spacing);
+  
+  console.log(`Generating QR grid: ${rows}x${cols} (${rows * cols} total QR codes) for video ${videoWidth}x${videoHeight}`);
+  
+  const qrOverlays = [];
+  
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const x = col * spacing + (spacing - qrSize) / 2;
+      const y = row * spacing + (spacing - qrSize) / 2;
+      
+      // Skip if QR code would go outside video bounds
+      if (x + qrSize > videoWidth || y + qrSize > videoHeight) continue;
+      
+      // Alternate between buyer and vendor QR codes
+      const useBuyerQR = (row + col) % 2 === 0;
+      const qrBuffer = useBuyerQR ? qrPattern.buyerQR : qrPattern.vendorQR;
+      
+      if (qrBuffer) {
+        const qrPath = path.join(os.tmpdir(), `qr_${row}_${col}_${Date.now()}.png`);
+        fs.writeFileSync(qrPath, qrBuffer);
+        
+        qrOverlays.push({
+          path: qrPath,
+          x: Math.round(x),
+          y: Math.round(y),
+          isBuyer: useBuyerQR
+        });
+      }
+    }
+  }
+  
+  return qrOverlays;
 }
 
 /**
