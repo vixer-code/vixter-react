@@ -101,7 +101,7 @@
 
 /* Media container */
 .lightbox-media-container {
-  width: 100%;
+  width: 75%;
   height: 100%;
   display: flex;
   align-items: center;
@@ -126,7 +126,7 @@
 /* Vídeos verticais - mais contidos */
 .lightbox-media-wrapper.vertical-video {
   max-width: 30%;
-  max-height: 32%;
+  max-height: 40%;
 }
 
 .lightbox-media {
@@ -326,7 +326,7 @@
   
   .lightbox-media-wrapper.vertical-video {
     max-width: 30%;
-    max-height: 40%;
+    max-height: 50%;
   }
 
   .lightbox-close-btn {
@@ -400,7 +400,7 @@
   
   .lightbox-media-wrapper.vertical-video {
     max-width: 30%;
-    max-height: 44%;
+    max-height: 55%;
   }
 
   .lightbox-instructions {
