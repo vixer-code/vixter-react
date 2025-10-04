@@ -111,8 +111,6 @@ const Header = () => {
           <ul className="nav-links">
             <li><Link to="/vixies" className={isActive('/vixies') ? 'active' : ''}>Vixies</Link></li>
             <li><Link to="/vixink" className={isActive('/vixink') ? 'active' : ''}>Vixink</Link></li>
-            <li><Link to="/sobre" className={isActive('/sobre') ? 'active' : ''}>Sobre</Link></li>
-            <li><Link to="/support" className={isActive('/support') ? 'active' : ''}>Suporte</Link></li>
             
             {/* Search Bar - Only visible when logged in */}
             {currentUser && (
@@ -374,6 +372,9 @@ const Header = () => {
                     )}
                     <Link to="/wallet"><i className="fas fa-wallet"></i> Carteira</Link>
                     <Link to="/settings"><i className="fas fa-cog"></i> Configurações</Link>
+                    <div className="dropdown-divider"></div>
+                    <Link to="/sobre"><i className="fas fa-info-circle"></i> Sobre</Link>
+                    <Link to="/support"><i className="fas fa-headset"></i> Suporte</Link>
                     <div className="dropdown-divider"></div>
                     <a href="#" onClick={handleLogout}><i className="fas fa-sign-out-alt"></i> Logout</a>
                   </div>
