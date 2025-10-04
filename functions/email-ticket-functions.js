@@ -1,19 +1,10 @@
-// email-ticket-functions.js - Sistema de Tickets via Email Vixter
+// email-ticket-functions-simple.js - Sistema de Tickets Simplificado Vixter
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { setGlobalOptions } from "firebase-functions/v2";
 import admin from "firebase-admin";
-import { logger } from "firebase-functions";
+import { logger } from "firebase-functions/v2";
 import { defineSecret } from 'firebase-functions/params';
-import {
-  getTicketCreatedTemplate,
-  getAdminNotificationTemplate,
-  getTicketStatusUpdateTemplate,
-  getAdminResponseTemplate,
-  getTicketResolvedTemplate,
-  getTicketClosedTemplate
-} from './email-templates.js';
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
@@ -33,13 +24,6 @@ setGlobalOptions({
 const SENDGRID_API_KEY = defineSecret('SENDGRID_API_KEY');
 const SUPPORT_EMAIL = defineSecret('SUPPORT_EMAIL');
 
-// Admin UIDs
-const ADMIN_UIDS = ['admin_uid_1', 'admin_uid_2'];
-
-// Helper function to check if user is admin
-function isAdmin(uid) {
-  return ADMIN_UIDS.includes(uid);
-}
 
 // Generate unique ticket ID
 function generateTicketId() {
@@ -47,10 +31,6 @@ function generateTicketId() {
   const random = Math.random().toString(36).substr(2, 5);
   return `TKT-${timestamp}-${random}`.toUpperCase();
 }
-
-// Templates moved to email-templates.js
-
-// Templates moved to email-templates.js
 
 // Send email using SendGrid
 async function sendEmail(to, subject, html, replyTo = null) {
@@ -75,17 +55,14 @@ async function sendEmail(to, subject, html, replyTo = null) {
   }
 }
 
-// Create support ticket
-export const createSupportTicket = onCall({
-  memory: "256MiB",
-  timeoutSeconds: 60,
-  secrets: [SENDGRID_API_KEY, SUPPORT_EMAIL]
-}, async (request) => {
+// Internal function to create support ticket (without onCall wrapper)
+async function createSupportTicketInternal(request) {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "User must be authenticated");
   }
 
-  const { subject, description, category, priority } = request.data;
+  const { payload } = request.data;
+  const { subject, description, category, priority } = payload;
   const userId = request.auth.uid;
   const userEmail = request.auth.token.email;
   const userName = request.auth.token.name || 'Usuário';
@@ -120,42 +97,81 @@ export const createSupportTicket = onCall({
     await ticketRef.set(ticketData);
 
     // Send confirmation email to user
-    const userEmailHtml = getTicketCreatedTemplate(ticketData);
-    await sendEmail(
-      userEmail,
-      `[${ticketId}] Ticket de Suporte Criado - ${subject}`,
-      userEmailHtml,
-      userEmail
-    );
+    try {
+      const userEmailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #8A2BE2;">Ticket de Suporte Criado</h2>
+          <p>Olá ${userName},</p>
+          <p>Seu ticket de suporte foi criado com sucesso!</p>
+          <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p><strong>ID do Ticket:</strong> ${ticketId}</p>
+            <p><strong>Assunto:</strong> ${subject}</p>
+            <p><strong>Categoria:</strong> ${category}</p>
+            <p><strong>Prioridade:</strong> ${priority}</p>
+            <p><strong>Status:</strong> Aberto</p>
+          </div>
+          <p>Nossa equipe entrará em contato em breve.</p>
+          <p>Atenciosamente,<br>Equipe Vixter</p>
+        </div>
+      `;
+      
+      await sendEmail(
+        userEmail,
+        `[${ticketId}] Ticket de Suporte Criado - ${subject}`,
+        userEmailHtml,
+        userEmail
+      );
+    } catch (emailError) {
+      logger.warn('Failed to send user confirmation email:', emailError);
+    }
 
-    // Send notification email to admins
-    const adminEmailHtml = getAdminNotificationTemplate(ticketData);
-    await sendEmail(
-      SUPPORT_EMAIL.value(),
-      `[${ticketId}] Novo Ticket de Suporte - ${subject}`,
-      adminEmailHtml,
-      userEmail
-    );
+    // Send notification email to admins (using Gmail directly)
+    try {
+      const adminEmailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #FF4444;">Novo Ticket de Suporte</h2>
+          <p>Um novo ticket de suporte foi criado:</p>
+          <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p><strong>ID do Ticket:</strong> ${ticketId}</p>
+            <p><strong>Usuário:</strong> ${userName} (${userEmail})</p>
+            <p><strong>Assunto:</strong> ${subject}</p>
+            <p><strong>Categoria:</strong> ${category}</p>
+            <p><strong>Prioridade:</strong> ${priority}</p>
+            <p><strong>Descrição:</strong></p>
+            <div style="background: white; padding: 10px; border-left: 3px solid #8A2BE2;">
+              ${description.replace(/\n/g, '<br>')}
+            </div>
+          </div>
+          <p>Por favor, acesse o painel administrativo para responder ao ticket.</p>
+        </div>
+      `;
+      
+      await sendEmail(
+        'vixterwebser@gmail.com', // Usar Gmail diretamente
+        `[${ticketId}] Novo Ticket de Suporte - ${subject}`,
+        adminEmailHtml,
+        userEmail
+      );
+    } catch (emailError) {
+      logger.warn('Failed to send admin notification email:', emailError);
+    }
 
     logger.info(`Support ticket created: ${ticketId} for user ${userId}`);
     
     return {
       success: true,
       ticketId,
-      message: "Ticket criado com sucesso. Você receberá um email de confirmação em breve."
+      message: "Ticket criado com sucesso!"
     };
 
   } catch (error) {
     logger.error('Error creating support ticket:', error);
     throw new HttpsError("internal", "Failed to create support ticket");
   }
-});
+}
 
-// Get user tickets
-export const getUserTickets = onCall({
-  memory: "256MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
+// Internal function to get user tickets (without onCall wrapper)
+async function getUserTicketsInternal(request) {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "User must be authenticated");
   }
@@ -164,7 +180,8 @@ export const getUserTickets = onCall({
 
   try {
     const ticketsRef = firestore.collection('supportTickets');
-    const q = ticketsRef.where('userId', '==', userId).orderBy('createdAt', 'desc');
+    // Try without orderBy first to avoid index issues
+    const q = ticketsRef.where('userId', '==', userId);
     const snapshot = await q.get();
 
     const tickets = [];
@@ -175,6 +192,11 @@ export const getUserTickets = onCall({
       });
     });
 
+    // Sort by createdAt descending
+    tickets.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    logger.info(`Retrieved ${tickets.length} tickets for user ${userId}`);
+    
     return {
       success: true,
       tickets
@@ -184,18 +206,17 @@ export const getUserTickets = onCall({
     logger.error('Error getting user tickets:', error);
     throw new HttpsError("internal", "Failed to get user tickets");
   }
-});
+}
 
-// Get ticket by ID
-export const getTicketById = onCall({
-  memory: "256MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
+
+// Internal function to get ticket by ID (without onCall wrapper)
+async function getTicketByIdInternal(request) {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "User must be authenticated");
   }
 
-  const { ticketId } = request.data;
+  const { payload } = request.data;
+  const { ticketId } = payload;
   const userId = request.auth.uid;
 
   if (!ticketId) {
@@ -212,8 +233,8 @@ export const getTicketById = onCall({
 
     const ticketData = ticketSnap.data();
 
-    // Check if user owns the ticket or is admin
-    if (ticketData.userId !== userId && !isAdmin(userId)) {
+    // Check if user owns the ticket
+    if (ticketData.userId !== userId) {
       throw new HttpsError("permission-denied", "Access denied");
     }
 
@@ -229,88 +250,13 @@ export const getTicketById = onCall({
     logger.error('Error getting ticket:', error);
     throw new HttpsError("internal", "Failed to get ticket");
   }
-});
-
-// Update ticket status (admin only)
-export const updateTicketStatus = onCall({
-  memory: "256MiB",
-  timeoutSeconds: 60,
-}, async (request) => {
-  if (!request.auth || !isAdmin(request.auth.uid)) {
-    throw new HttpsError("permission-denied", "Admin access required");
-  }
-
-  const { ticketId, status, adminMessage } = request.data;
-
-  if (!ticketId || !status) {
-    throw new HttpsError("invalid-argument", "Ticket ID and status are required");
-  }
-
-  try {
-    const ticketRef = firestore.collection('supportTickets').doc(ticketId);
-    const ticketSnap = await ticketRef.get();
-
-    if (!ticketSnap.exists) {
-      throw new HttpsError("not-found", "Ticket not found");
-    }
-
-    const ticketData = ticketSnap.data();
-    const updatedAt = Date.now();
-
-    // Update ticket
-    await ticketRef.update({
-      status,
-      updatedAt,
-      lastMessageAt: updatedAt,
-      messageCount: admin.firestore.FieldValue.increment(1)
-    });
-
-    // Send status update email to user
-    const statusUpdateHtml = getTicketStatusUpdateTemplate(ticketData, status, adminMessage);
-    await sendEmail(
-      ticketData.userEmail,
-      `[${ticketData.ticketId}] Status Atualizado - ${ticketData.subject}`,
-      statusUpdateHtml
-    );
-
-    logger.info(`Ticket ${ticketId} status updated to ${status}`);
-    
-    return {
-      success: true,
-      message: "Ticket status updated successfully"
-    };
-
-  } catch (error) {
-    logger.error('Error updating ticket status:', error);
-    throw new HttpsError("internal", "Failed to update ticket status");
-  }
-});
-
-// Trigger: New ticket created
-export const onTicketCreated = onDocumentCreated({
-  document: "supportTickets/{ticketId}",
-  region: "us-east1"
-}, async (event) => {
-  const ticketData = event.data.data();
-  const ticketId = event.params.ticketId;
-
-  try {
-    logger.info(`New support ticket created: ${ticketId} for user ${ticketData.userId}`);
-    
-    // You can add additional processing here, such as:
-    // - Auto-assignment to available admins
-    // - Integration with external ticketing systems
-    // - Slack/Discord notifications
-    
-  } catch (error) {
-    logger.error('Error processing new ticket:', error);
-  }
-});
+}
 
 // Unified API function
 export const api = onCall({
   memory: "256MiB",
   timeoutSeconds: 60,
+  secrets: [SENDGRID_API_KEY, SUPPORT_EMAIL]
 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "User must be authenticated");
@@ -328,16 +274,13 @@ export const api = onCall({
       case 'supportTicket':
         switch (action) {
           case 'create':
-            result = await createSupportTicket(request);
+            result = await createSupportTicketInternal(request);
             break;
           case 'getUserTickets':
-            result = await getUserTickets(request);
+            result = await getUserTicketsInternal(request);
             break;
           case 'getById':
-            result = await getTicketById(request);
-            break;
-          case 'updateStatus':
-            result = await updateTicketStatus(request);
+            result = await getTicketByIdInternal(request);
             break;
           default:
             throw new HttpsError("invalid-argument", "Invalid action");

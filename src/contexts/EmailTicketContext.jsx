@@ -162,34 +162,6 @@ export const EmailTicketProvider = ({ children }) => {
     }
   }, [currentUser, showError, apiFunc]);
 
-  // Update ticket status (admin only)
-  const updateTicketStatus = useCallback(async (ticketId, status, adminMessage = '') => {
-    try {
-      const result = await apiFunc({
-        resource: 'supportTicket',
-        action: 'updateStatus',
-        payload: {
-          ticketId,
-          status,
-          adminMessage
-        }
-      });
-
-      if (result.data.success) {
-        showSuccess('Status do ticket atualizado com sucesso');
-        // Reload tickets
-        await loadTickets();
-        return true;
-      } else {
-        showError('Erro ao atualizar status do ticket');
-        return false;
-      }
-    } catch (error) {
-      console.error('Error updating ticket status:', error);
-      showError('Erro ao atualizar status do ticket');
-      return false;
-    }
-  }, [showSuccess, showError, apiFunc, loadTickets]);
 
   // Get category display name
   const getCategoryDisplayName = useCallback((categoryId) => {
@@ -254,7 +226,6 @@ export const EmailTicketProvider = ({ children }) => {
     createTicket,
     loadTickets,
     getTicketById,
-    updateTicketStatus,
     setSelectedTicket,
     
     // Utilities

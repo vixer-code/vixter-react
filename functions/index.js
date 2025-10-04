@@ -41,11 +41,6 @@ import {
 
 import {
   // Email Ticket Functions
-  createSupportTicket,
-  getUserTickets,
-  getTicketById,
-  updateTicketStatus,
-  onTicketCreated,
   api as emailTicketApi,
 } from './email-ticket-functions.js';
 
@@ -91,11 +86,6 @@ export {
   sendServiceStatusEmail,
 
   // Email Ticket Functions
-  createSupportTicket,
-  getUserTickets,
-  getTicketById,
-  updateTicketStatus,
-  onTicketCreated,
   emailTicketApi,
 
   // Email Reply Processing

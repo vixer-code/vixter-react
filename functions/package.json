@@ -19,6 +19,7 @@
   },
   "main": "index.js",
   "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
     "dotenv": "^17.2.1",
     "ffmpeg-static": "^5.2.0",
     "ffprobe-static": "^3.1.0",
