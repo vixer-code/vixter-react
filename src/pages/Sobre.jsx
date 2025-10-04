@@ -157,7 +157,7 @@ const PrivacyPolicy = () => (
     <section>
       <h3>7. Retenção de Dados</h3>
       <ul>
-        <li>Dados financeiros: 7 anos</li>
+        <li>Dados financeiros: São armazenados pelo Stripe, a Vixter não armazena dados financeiros fora da nossa plataforma.</li>
         <li>Dados de perfil e KYC: O usuário se reserva no direito de revogar acesso aos dados a qualquer momento. Nós, como empresa, faremos o que estiver de acordo com as leis aplicáveis. Para KYC, mantemos os dados em nosso banco de dados por 6 meses a partir do envio de documentos.</li>
         <li>Logs e backups: conforme necessidade de segurança</li>
       </ul>
