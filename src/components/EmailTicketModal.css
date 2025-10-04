@@ -160,10 +160,6 @@
   background: rgba(255, 255, 255, 0.12);
 }
 
-.form-group select:focus option {
-  background: linear-gradient(135deg, #8A2BE2 0%, #6A1B9A 100%);
-  color: white;
-}
 
 .form-group textarea {
   resize: vertical;
@@ -182,20 +178,56 @@
 }
 
 /* Dropdown options styling */
+.form-group select {
+  background-color: rgba(138, 43, 226, 0.2) !important;
+  color: white !important;
+}
+
 .form-group select option {
-  background: linear-gradient(135deg, #8A2BE2 0%, #6A1B9A 100%);
-  color: white;
-  padding: 10px 15px;
-  border: none;
+  background-color: #8A2BE2 !important;
+  color: white !important;
+  padding: 10px 15px !important;
+  border: none !important;
+  font-size: 16px !important;
 }
 
 .form-group select option:hover {
-  background: linear-gradient(135deg, #9C3BE8 0%, #7A2BA0 100%);
+  background-color: #9C3BE8 !important;
+  color: white !important;
 }
 
-.form-group select option:checked {
-  background: linear-gradient(135deg, var(--vixter-accent-primary) 0%, #8A2BE2 100%);
-  color: white;
+.form-group select option:checked,
+.form-group select option:selected {
+  background-color: #00FFCA !important;
+  color: #0F0F1A !important;
+  font-weight: 600 !important;
+}
+
+.form-group select option:focus {
+  background-color: #8A2BE2 !important;
+  color: white !important;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.form-group select option::-webkit-scrollbar {
+  width: 8px;
+}
+
+.form-group select option::-webkit-scrollbar-track {
+  background: rgba(138, 43, 226, 0.3);
+}
+
+.form-group select option::-webkit-scrollbar-thumb {
+  background: #8A2BE2;
+  border-radius: 4px;
+}
+
+/* Firefox */
+@-moz-document url-prefix() {
+  .form-group select option {
+    background-color: #8A2BE2 !important;
+    color: white !important;
+  }
 }
 
 .form-group small {
