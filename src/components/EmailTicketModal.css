@@ -22,9 +22,11 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   max-width: 600px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 95vh;
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
@@ -90,20 +92,29 @@
 
 .modal-content {
   padding: 30px;
-  max-height: calc(90vh - 100px);
+  flex: 1;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .ticket-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  flex: 1;
+  min-height: 0;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.form-group:has(textarea) {
+  flex: 1;
+  min-height: 0;
 }
 
 .form-group label {
@@ -149,8 +160,9 @@
 
 .form-group textarea {
   resize: vertical;
-  min-height: 120px;
+  min-height: 150px;
   line-height: 1.5;
+  flex: 1;
 }
 
 .form-group select {
@@ -224,6 +236,7 @@
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
 }
 
 .btn-primary,
@@ -278,7 +291,7 @@
   }
   
   .email-ticket-modal {
-    max-height: 95vh;
+    max-height: 98vh;
   }
   
   .modal-content {

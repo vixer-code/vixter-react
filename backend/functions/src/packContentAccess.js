@@ -302,15 +302,15 @@ async function generateVideoQRCodePattern(user, vendorInfo, videoWidth = 1920, v
   const buyerUrl = `https://vixter.com.br/${user.username}`;
   const vendorUrl = `https://vixter.com.br/${vendorInfo?.username || 'vendor'}`;
   
-  // Calculate QR code size based on video dimensions - 3% of smallest dimension
+  // Calculate QR code size based on video dimensions - 20% of smallest dimension (200% larger than images)
   const smallestDimension = Math.min(videoWidth, videoHeight);
-  const calculatedSize = Math.floor(smallestDimension * 0.03);
+  const calculatedSize = Math.floor(smallestDimension * 0.20);
   
-  // Apply min/max constraints for QR codes
-  const qrSize = Math.max(40, Math.min(calculatedSize, 120));
+  // Apply min/max constraints for QR codes (4x larger than images)
+  const qrSize = Math.max(200, Math.min(calculatedSize, 600));
   
-  // Lower opacity for subtle watermarking
-  const opacity = 0.12;
+  // Lower opacity for subtle watermarking (same as images)
+  const opacity = 0.15;
   
   console.log(`Video QR Code size: ${qrSize}px (calculated: ${calculatedSize}px) for video ${videoWidth}x${videoHeight}`);
   
@@ -354,24 +354,54 @@ async function generateWatermarkedMedia(contentItem, watermark, username, user, 
       throw new Error('Stream is null or undefined');
     }
     
-    // Check if stream is readable
-    if (typeof stream === 'object' && stream !== null) {
-      if ('readable' in stream && !stream.readable) {
-        throw new Error('Stream is not readable');
+    // More robust stream validation
+    try {
+      // Check if stream has the expected properties
+      if (typeof stream === 'object' && stream !== null) {
+        // Check if it's a readable stream
+        if (typeof stream.readable === 'boolean' && !stream.readable) {
+          throw new Error('Stream is not readable');
+        }
+        
+        // Check if it's iterable (for await...of)
+        if (typeof stream[Symbol.asyncIterator] !== 'function') {
+          console.warn('Stream is not async iterable, trying alternative method');
+          // Try to convert to buffer directly if it's a Uint8Array or similar
+          if (stream instanceof Uint8Array) {
+            const fileBuffer = Buffer.from(stream);
+            return fileBuffer;
+          }
+          throw new Error('Stream is not async iterable');
+        }
       }
-    }
-    
-    for await (const chunk of stream) {
-      chunks.push(chunk);
+      
+      for await (const chunk of stream) {
+        chunks.push(chunk);
+      }
+    } catch (streamError) {
+      console.error('Error processing stream:', streamError);
+      throw new Error(`Stream processing failed: ${streamError.message}`);
     }
     
     const fileBuffer = Buffer.concat(chunks);
 
     if (contentItem.type.startsWith('video/')) {
       try {
-        return await addVideoWatermark(fileBuffer, watermark, username, contentItem, user, vendorInfo);
+        console.log(`Starting video watermarking for: ${contentItem.name}`);
+        console.log(`Video buffer size: ${fileBuffer.length} bytes`);
+        console.log(`User: ${user.username}, Vendor: ${vendorInfo?.username}`);
+        
+        const watermarkedBuffer = await addVideoWatermark(fileBuffer, watermark, username, contentItem, user, vendorInfo);
+        console.log(`Video watermarking completed successfully. Output size: ${watermarkedBuffer.length} bytes`);
+        return watermarkedBuffer;
       } catch (videoError) {
         console.error('Video watermarking failed, returning original video:', videoError);
+        console.error('Error details:', {
+          message: videoError.message,
+          stack: videoError.stack,
+          fileName: contentItem.name,
+          fileSize: fileBuffer.length
+        });
         // Return original video if watermarking fails
         return fileBuffer;
       }
@@ -641,10 +671,6 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
         return;
       }
       
-      // Get video dimensions first to calculate proper QR grid
-      const videoDimensions = await getVideoDimensions(inputPath);
-      const qrPattern = await generateVideoQRCodePattern(user, vendorInfo, videoDimensions.width, videoDimensions.height);
-      
       const tempDir = os.tmpdir();
       const timestamp = Date.now();
       inputPath = path.join(tempDir, `input_${timestamp}.${getFileExtension(contentItem.type)}`);
@@ -660,6 +686,10 @@ async function addVideoWatermark(videoBuffer, watermark, username, contentItem, 
         reject(new Error('Failed to write input video file'));
         return;
       }
+      
+      // Get video dimensions after writing the file
+      const videoDimensions = await getVideoDimensions(inputPath);
+      const qrPattern = await generateVideoQRCodePattern(user, vendorInfo, videoDimensions.width, videoDimensions.height);
       
       if (qrPattern.buyerQR) {
         buyerQRPath = path.join(tempDir, `buyer_qr_${timestamp}.png`);
@@ -860,6 +890,21 @@ async function checkIfAnimatedWebP(buffer) {
  */
 async function getVideoDimensions(videoPath) {
   return new Promise((resolve, reject) => {
+    // Check if file exists first
+    if (!fs.existsSync(videoPath)) {
+      console.warn('Video file does not exist:', videoPath);
+      resolve({ width: 1920, height: 1080 });
+      return;
+    }
+    
+    // Check file size
+    const stats = fs.statSync(videoPath);
+    if (stats.size === 0) {
+      console.warn('Video file is empty:', videoPath);
+      resolve({ width: 1920, height: 1080 });
+      return;
+    }
+    
     ffmpeg.ffprobe(videoPath, (err, metadata) => {
       if (err) {
         console.warn('Could not get video dimensions, using defaults:', err);
@@ -867,13 +912,21 @@ async function getVideoDimensions(videoPath) {
         return;
       }
       
+      if (!metadata || !metadata.streams) {
+        console.warn('No metadata or streams found, using defaults');
+        resolve({ width: 1920, height: 1080 });
+        return;
+      }
+      
       const videoStream = metadata.streams.find(stream => stream.codec_type === 'video');
-      if (videoStream) {
+      if (videoStream && videoStream.width && videoStream.height) {
+        console.log(`Video dimensions: ${videoStream.width}x${videoStream.height}`);
         resolve({
-          width: videoStream.width || 1920,
-          height: videoStream.height || 1080
+          width: videoStream.width,
+          height: videoStream.height
         });
       } else {
+        console.warn('No valid video stream found, using defaults');
         resolve({ width: 1920, height: 1080 });
       }
     });
@@ -885,7 +938,7 @@ async function getVideoDimensions(videoPath) {
  */
 async function generateVideoQRGrid(qrPattern, videoWidth, videoHeight) {
   const qrSize = qrPattern.size;
-  const spacing = Math.max(qrSize * 4, 200); // Increased spacing for better coverage
+  const spacing = Math.max(qrSize * 2, 100); // Reduced spacing for tighter grid
   
   // Calculate grid dimensions
   const cols = Math.ceil(videoWidth / spacing);

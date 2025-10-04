@@ -101,13 +101,20 @@
 
 /* Media container */
 .lightbox-media-container {
-  width: 75%;
+  width: 45%; /* Desktop width */
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   position: relative;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .lightbox-media-container {
+    width: 75%; /* Mobile width */
+  }
 }
 
 .lightbox-media-wrapper {
