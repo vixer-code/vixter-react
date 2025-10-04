@@ -112,6 +112,7 @@ const Header = () => {
             <li><Link to="/vixies" className={isActive('/vixies') ? 'active' : ''}>Vixies</Link></li>
             <li><Link to="/vixink" className={isActive('/vixink') ? 'active' : ''}>Vixink</Link></li>
             <li><Link to="/sobre" className={isActive('/sobre') ? 'active' : ''}>Sobre</Link></li>
+            <li><Link to="/support" className={isActive('/support') ? 'active' : ''}>Suporte</Link></li>
             
             {/* Search Bar - Only visible when logged in */}
             {currentUser && (
@@ -534,6 +535,9 @@ const Header = () => {
           </Link></li>
           <li><Link to="/sobre" className={isActive('/sobre') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
             <i className="fas fa-info-circle"></i>Sobre
+          </Link></li>
+          <li><Link to="/support" className={isActive('/support') ? 'active' : ''} onClick={() => setTimeout(closeMobileMenu, 100)}>
+            <i className="fas fa-headset"></i>Suporte
           </Link></li>
           
           

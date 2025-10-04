@@ -39,6 +39,22 @@ import {
   sendServiceStatusEmail,
 } from './email-functions.js';
 
+import {
+  // Email Ticket Functions
+  createSupportTicket,
+  getUserTickets,
+  getTicketById,
+  updateTicketStatus,
+  onTicketCreated,
+  api as emailTicketApi,
+} from './email-ticket-functions.js';
+
+import {
+  // Email Reply Processing
+  processEmailReply,
+  testEmailReply,
+} from './email-reply-webhook.js';
+
 export {
   // Wallet & Payments
   initializeWallet,
@@ -73,4 +89,16 @@ export {
 
   // Email Functions
   sendServiceStatusEmail,
+
+  // Email Ticket Functions
+  createSupportTicket,
+  getUserTickets,
+  getTicketById,
+  updateTicketStatus,
+  onTicketCreated,
+  emailTicketApi,
+
+  // Email Reply Processing
+  processEmailReply,
+  testEmailReply,
 };

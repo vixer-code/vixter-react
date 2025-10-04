@@ -12,6 +12,7 @@ import { EnhancedMessagingProvider as MessagingProvider } from './contexts/Enhan
 import { ServiceOrderProvider } from './contexts/ServiceOrderContext';
 import { PackOrderProvider } from './contexts/PackOrderContext';
 import { ReviewProvider } from './contexts/ReviewContext';
+import { EmailTicketProvider } from './contexts/EmailTicketContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import MobileFooter from './components/MobileFooter';
@@ -45,6 +46,7 @@ const ServiceDetail = lazy(() => import('./pages/ServiceDetail'));
 const PackDetail = lazy(() => import('./pages/PackDetail'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Sobre = lazy(() => import('./pages/Sobre'));
+const Support = lazy(() => import('./pages/Support'));
 const Success = lazy(() => import('./pages/Success'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -81,6 +83,7 @@ function AppContent() {
               <Route path="/pack/:packId" element={<PackDetail />} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/sobre" element={<Sobre />} />
+              <Route path="/support" element={<Support />} />
               <Route path="/success" element={<Success />} />
               <Route path="/services" element={<div>Services Page - Coming Soon</div>} />
               
@@ -131,7 +134,9 @@ function App() {
                       <ServiceOrderProvider>
                         <PackOrderProvider>
                           <ReviewProvider>
-                            <AppContent />
+                            <EmailTicketProvider>
+                              <AppContent />
+                            </EmailTicketProvider>
                           </ReviewProvider>
                         </PackOrderProvider>
                       </ServiceOrderProvider>
