@@ -105,6 +105,8 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  padding-right: 8px;
+  margin-right: -8px;
 }
 
 .form-group {
@@ -329,20 +331,23 @@
 }
 
 /* Custom scrollbar */
-.modal-content::-webkit-scrollbar {
-  width: 6px;
+.ticket-form::-webkit-scrollbar {
+  width: 8px;
 }
 
-.modal-content::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+.ticket-form::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  margin: 4px 0;
 }
 
-.modal-content::-webkit-scrollbar-thumb {
+.ticket-form::-webkit-scrollbar-thumb {
   background: var(--vixter-accent-primary);
-  border-radius: 3px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.modal-content::-webkit-scrollbar-thumb:hover {
+.ticket-form::-webkit-scrollbar-thumb:hover {
   background: var(--vixter-accent-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
