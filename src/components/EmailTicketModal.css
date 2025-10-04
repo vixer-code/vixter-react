@@ -160,6 +160,11 @@
   background: rgba(255, 255, 255, 0.12);
 }
 
+.form-group select:focus option {
+  background: linear-gradient(135deg, #8A2BE2 0%, #6A1B9A 100%);
+  color: white;
+}
+
 .form-group textarea {
   resize: vertical;
   min-height: 150px;
@@ -174,6 +179,23 @@
   background-position: right 15px center;
   background-size: 12px;
   padding-right: 40px;
+}
+
+/* Dropdown options styling */
+.form-group select option {
+  background: linear-gradient(135deg, #8A2BE2 0%, #6A1B9A 100%);
+  color: white;
+  padding: 10px 15px;
+  border: none;
+}
+
+.form-group select option:hover {
+  background: linear-gradient(135deg, #9C3BE8 0%, #7A2BA0 100%);
+}
+
+.form-group select option:checked {
+  background: linear-gradient(135deg, var(--vixter-accent-primary) 0%, #8A2BE2 100%);
+  color: white;
 }
 
 .form-group small {
