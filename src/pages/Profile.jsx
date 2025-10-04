@@ -1932,16 +1932,31 @@ const Profile = () => {
                   <div className="service-info">
                     <h3 className="service-title">{service.title}</h3>
                     <div className="service-price">
-                      <div className="price-original">VP {(service.price != null ? Math.round(service.price * 1.5).toFixed(2) : '0.00')}</div>
-                      <div className="price-discounted">
-                        VP {(() => {
-                          const basePrice = service.price || 0;
-                          const discount = service.discount || 0;
-                          const discountedPrice = discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
-                          return Math.round(discountedPrice * 1.5).toFixed(2);
-                        })()}
-                        {service.discount && <span className="service-discount">(-{service.discount}%)</span>}
-                      </div>
+                      {(() => {
+                        const basePrice = service.price || 0;
+                        const discount = service.discount || 0;
+                        const originalPrice = Math.round(basePrice * 1.5);
+                        const discountedPrice = discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
+                        const finalPrice = Math.round(discountedPrice * 1.5);
+                        
+                        // Only show original price if there's a discount
+                        if (discount > 0) {
+                          return (
+                            <>
+                              <div className="price-original">VP {originalPrice}</div>
+                              <div className="price-discounted">
+                                VP {finalPrice}
+                                <span className="service-discount">(-{discount}%)</span>
+                              </div>
+                            </>
+                          );
+                        } else {
+                          // No discount, show only final price
+                          return (
+                            <div className="price-single">VP {finalPrice}</div>
+                          );
+                        }
+                      })()}
                     </div>
                     <p className="service-category">{service.category || 'Geral'}</p>
                     {service.tags && service.tags.length > 0 && (

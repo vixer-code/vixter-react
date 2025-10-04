@@ -13,79 +13,7 @@
 /* ===== Header ===== */
 .vixies-header {
   text-align: center;
-  margin-bottom: 0;
-}
-
-/* ===== Cyberpunk Banner ===== */
-.cyberpunk-banner {
-  background-color: #000000;
-  width: 100%;
-  height: 40px;
-  overflow: hidden;
-  position: relative;
-  border-bottom: 2px solid #000;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
   margin-bottom: 30px;
-}
-
-.marquee-wrapper {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.marquee-container {
-  display: flex;
-  width: max-content;
-  height: 100%;
-  animation: marquee 10s linear infinite;
-}
-
-.marquee-text {
-  display: inline-flex;
-  align-items: center;
-  color: hwb(277 50% 7%);
-  font-family: 'Press Start 2P', cursive;
-  font-weight: 400;
-  font-size: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  padding: 0 200px;
-  text-shadow: 1px 0 0 #ff00ff, -1px 0 0 #00ffff;
-  white-space: nowrap;
-}
-
-@keyframes marquee {
-  0% {
-    transform: translateX(100%);
-  }
-  100% {
-    transform: translateX(-100%);
-  }
-}
-
-/* Responsive adjustments for cyberpunk banner */
-@media (max-width: 768px) {
-  .cyberpunk-banner {
-    height: 35px;
-  }
-  
-  .marquee-text {
-    font-size: 0.8rem;
-    padding: 0 150px;
-  }
-}
-
-@media (max-width: 480px) {
-  .cyberpunk-banner {
-    height: 30px;
-  }
-  
-  .marquee-text {
-    font-size: 0.7rem;
-    padding: 0 100px;
-  }
 }
 
 .vixies-title h1 {

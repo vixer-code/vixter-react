@@ -441,18 +441,6 @@ const Vixies = () => {
         </div>
       </div>
 
-      {/* Cyberpunk Banner */}
-      <div className="cyberpunk-banner">
-        <div className="marquee-wrapper">
-          <div className="marquee-container">
-            <div className="marquee-text">COME TO REAL LIFE</div>
-            <div className="marquee-text">COME TO REAL LIFE</div>
-            <div className="marquee-text">COME TO REAL LIFE</div>
-            <div className="marquee-text">COME TO REAL LIFE</div>
-          </div>
-        </div>
-      </div>
-
       <div className="vixies-content">
         <div className="vixies-tabs-container">
           <div className="vixies-tabs">
