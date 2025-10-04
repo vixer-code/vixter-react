@@ -112,7 +112,7 @@
 
 .lightbox-media-wrapper {
   max-width: 90%;
-  max-height: 90%;
+  max-height: 80%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -127,7 +127,6 @@
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -137,6 +136,14 @@
   -moz-user-drag: none;
   -o-user-drag: none;
   user-drag: none;
+}
+
+.lightbox-media img {
+  pointer-events: none;
+}
+
+.lightbox-media video {
+  pointer-events: auto;
 }
 
 /* R2MediaViewer specific styles in lightbox */
@@ -360,7 +367,7 @@
 @media (max-width: 480px) {
   .lightbox-media-wrapper {
     max-width: 95%;
-    max-height: 95%;
+    max-height: 70%;
   }
 
   .lightbox-instructions {

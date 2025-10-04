@@ -351,19 +351,11 @@ const SecureMediaLightbox = ({
                 controls 
                 className="lightbox-media"
                 crossOrigin="anonymous"
-                controlsList="nodownload nofullscreen noremoteplayback"
-                disablePictureInPicture
-                onContextMenu={handleContextMenu}
-                onDragStart={handleDragStart}
-                onSelectStart={handleSelectStart}
+                controlsList="nodownload"
                 style={{ 
                   maxWidth: '100%', 
                   maxHeight: '100%',
-                  objectFit: 'contain',
-                  userSelect: 'none',
-                  WebkitUserSelect: 'none',
-                  MozUserSelect: 'none',
-                  msUserSelect: 'none'
+                  objectFit: 'contain'
                 }}
               >
                 <source src={mediaSrc} type="video/mp4" />
