@@ -23,6 +23,7 @@ export const EmailTicketProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [ticketsLoaded, setTicketsLoaded] = useState(false);
 
   // Cloud Functions
   const apiFunc = httpsCallable(functions, 'api');
@@ -108,6 +109,7 @@ export const EmailTicketProvider = ({ children }) => {
 
       if (result.data.success) {
         setTickets(result.data.tickets);
+        setTicketsLoaded(true);
       } else {
         showError('Erro ao carregar tickets');
       }
@@ -213,12 +215,16 @@ export const EmailTicketProvider = ({ children }) => {
     return new Date(timestamp).toLocaleString('pt-BR');
   }, []);
 
-  // Load tickets on mount
+  // Load tickets on mount - only when user changes, not when loadTickets changes
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && !ticketsLoaded) {
       loadTickets();
+      setTicketsLoaded(true);
+    } else if (!currentUser) {
+      setTicketsLoaded(false);
+      setTickets([]);
     }
-  }, [currentUser, loadTickets]);
+  }, [currentUser, ticketsLoaded]); // Only load once per user session
 
   const value = {
     // State

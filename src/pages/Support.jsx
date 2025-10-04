@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useEmailTicket } from '../contexts/EmailTicketContext';
+import { EmailTicketProvider, useEmailTicket } from '../contexts/EmailTicketContext';
 import { useAuth } from '../contexts/AuthContext';
 import EmailTicketModal from '../components/EmailTicketModal';
 import PurpleSpinner from '../components/PurpleSpinner';
 import './Support.css';
 
-const Support = () => {
+// Componente interno que usa o hook
+const SupportContent = () => {
   const { currentUser } = useAuth();
   const {
     tickets,
@@ -293,6 +294,15 @@ const Support = () => {
         </div>
       )}
     </div>
+  );
+};
+
+// Componente principal que envolve com o provider
+const Support = () => {
+  return (
+    <EmailTicketProvider>
+      <SupportContent />
+    </EmailTicketProvider>
   );
 };
 

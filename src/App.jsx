@@ -12,7 +12,6 @@ import { EnhancedMessagingProvider as MessagingProvider } from './contexts/Enhan
 import { ServiceOrderProvider } from './contexts/ServiceOrderContext';
 import { PackOrderProvider } from './contexts/PackOrderContext';
 import { ReviewProvider } from './contexts/ReviewContext';
-import { EmailTicketProvider } from './contexts/EmailTicketContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import MobileFooter from './components/MobileFooter';
@@ -134,9 +133,7 @@ function App() {
                       <ServiceOrderProvider>
                         <PackOrderProvider>
                           <ReviewProvider>
-                            <EmailTicketProvider>
-                              <AppContent />
-                            </EmailTicketProvider>
+                            <AppContent />
                           </ReviewProvider>
                         </PackOrderProvider>
                       </ServiceOrderProvider>
