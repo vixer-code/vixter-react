@@ -125,8 +125,8 @@
 
 /* Vídeos verticais - mais contidos */
 .lightbox-media-wrapper.vertical-video {
-  max-width: 40%;
-  max-height: 60%;
+  max-width: 30%;
+  max-height: 32%;
 }
 
 .lightbox-media {
@@ -309,8 +309,8 @@
   }
   
   .lightbox-media-wrapper.vertical-video {
-    max-width: 50%;
-    max-height: 65%;
+    max-width: 30%;
+    max-height: 36%;
   }
 }
 
@@ -325,8 +325,8 @@
   }
   
   .lightbox-media-wrapper.vertical-video {
-    max-width: 60%;
-    max-height: 70%;
+    max-width: 30%;
+    max-height: 40%;
   }
 
   .lightbox-close-btn {
@@ -399,8 +399,8 @@
   }
   
   .lightbox-media-wrapper.vertical-video {
-    max-width: 70%;
-    max-height: 75%;
+    max-width: 30%;
+    max-height: 44%;
   }
 
   .lightbox-instructions {
