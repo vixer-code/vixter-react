@@ -93,9 +93,9 @@
 .modal-content {
   padding: 30px;
   flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .ticket-form {
@@ -104,6 +104,7 @@
   gap: 20px;
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
 }
 
 .form-group {
@@ -113,8 +114,7 @@
 }
 
 .form-group:has(textarea) {
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
 }
 
 .form-group label {
@@ -162,7 +162,6 @@
   resize: vertical;
   min-height: 150px;
   line-height: 1.5;
-  flex: 1;
 }
 
 .form-group select {
