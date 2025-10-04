@@ -111,8 +111,8 @@
 }
 
 .lightbox-media-wrapper {
-  max-width: 90%;
-  max-height: 80%;
+  max-width: 70%;
+  max-height: 60%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -121,6 +121,12 @@
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+}
+
+/* Vídeos verticais - mais largos para compensar a altura */
+.lightbox-media-wrapper.vertical-video {
+  max-width: 50%;
+  max-height: 80%;
 }
 
 .lightbox-media {
@@ -296,9 +302,31 @@
 }
 
 /* Responsive design */
+@media (max-width: 1024px) {
+  .lightbox-media-wrapper {
+    max-width: 80%;
+    max-height: 70%;
+  }
+  
+  .lightbox-media-wrapper.vertical-video {
+    max-width: 60%;
+    max-height: 85%;
+  }
+}
+
 @media (max-width: 768px) {
   .media-lightbox-modal {
     padding: 10px;
+  }
+
+  .lightbox-media-wrapper {
+    max-width: 90%;
+    max-height: 80%;
+  }
+  
+  .lightbox-media-wrapper.vertical-video {
+    max-width: 70%;
+    max-height: 90%;
   }
 
   .lightbox-close-btn {
@@ -368,6 +396,11 @@
   .lightbox-media-wrapper {
     max-width: 95%;
     max-height: 70%;
+  }
+  
+  .lightbox-media-wrapper.vertical-video {
+    max-width: 80%;
+    max-height: 85%;
   }
 
   .lightbox-instructions {

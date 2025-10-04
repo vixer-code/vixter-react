@@ -276,6 +276,10 @@ const SecureMediaLightbox = ({
   const isVideo = currentMedia?.type === 'video';
   const mediaSrc = mediaBlobUrls[currentMedia?.key] || currentMedia?.url;
   const isLoading = loading[currentMedia?.key];
+  
+  // Detect if video is vertical (height > width)
+  const isVerticalVideo = isVideo && currentMedia?.originalItem?.height && currentMedia?.originalItem?.width && 
+                         currentMedia.originalItem.height > currentMedia.originalItem.width;
 
   return (
     <div 
@@ -322,7 +326,7 @@ const SecureMediaLightbox = ({
         {/* Media container */}
         <div className="lightbox-media-container">
           <div 
-            className="lightbox-media-wrapper"
+            className={`lightbox-media-wrapper ${isVerticalVideo ? 'vertical-video' : ''}`}
             ref={mediaRef}
             onWheel={handleWheel}
             onMouseDown={handleMouseDown}
