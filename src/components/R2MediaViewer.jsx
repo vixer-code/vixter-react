@@ -104,6 +104,11 @@ const R2MediaViewer = ({
           controls 
           onError={handleError}
           className="r2-video"
+          controlsList="nodownload nofullscreen noremoteplayback"
+          disablePictureInPicture
+          onContextMenu={(e) => e.preventDefault()}
+          onDragStart={(e) => e.preventDefault()}
+          style={{ userSelect: 'none' }}
         >
           <source src={imageSrc} type="video/mp4" />
           Seu navegador não suporta vídeo.

@@ -349,6 +349,18 @@ async function generateWatermarkedMedia(contentItem, watermark, username, user, 
     const chunks = [];
     const stream = response.Body;
     
+    // Check if stream is null or undefined
+    if (!stream) {
+      throw new Error('Stream is null or undefined');
+    }
+    
+    // Check if stream is readable
+    if (typeof stream === 'object' && stream !== null) {
+      if ('readable' in stream && !stream.readable) {
+        throw new Error('Stream is not readable');
+      }
+    }
+    
     for await (const chunk of stream) {
       chunks.push(chunk);
     }

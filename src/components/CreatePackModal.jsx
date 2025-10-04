@@ -1553,7 +1553,14 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                       const actualIndex = (formData.sampleVideos?.length || 0) + idx;
                       return (
                         <div key={`sv-${idx}`} className="showcase-item video-showcase">
-                          <video controls>
+                          <video 
+                            controls 
+                            controlsList="nodownload nofullscreen noremoteplayback"
+                            disablePictureInPicture
+                            onContextMenu={(e) => e.preventDefault()}
+                            onDragStart={(e) => e.preventDefault()}
+                            style={{ userSelect: 'none' }}
+                          >
                             <source src={src} type="video/mp4" />
                             Seu navegador não suporta vídeo.
                           </video>
@@ -1617,7 +1624,14 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                       return (
                         <div key={`pc-prev-${idx}`} className="showcase-item">
                           {prev.isVideo ? (
-                            <video controls>
+                            <video 
+                              controls 
+                              controlsList="nodownload nofullscreen noremoteplayback"
+                              disablePictureInPicture
+                              onContextMenu={(e) => e.preventDefault()}
+                              onDragStart={(e) => e.preventDefault()}
+                              style={{ userSelect: 'none' }}
+                            >
                               <source src={prev.src} type="video/mp4" />
                               Seu navegador não suporta vídeo.
                             </video>
@@ -1760,7 +1774,14 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                         <div className="showcase-grid">
                           {sampleVideoPreviews.map((src, idx) => (
                             <div key={idx} className="showcase-item video-showcase">
-                              <video controls>
+                              <video 
+                                controls 
+                                controlsList="nodownload nofullscreen noremoteplayback"
+                                disablePictureInPicture
+                                onContextMenu={(e) => e.preventDefault()}
+                                onDragStart={(e) => e.preventDefault()}
+                                style={{ userSelect: 'none' }}
+                              >
                                 <source src={src} type="video/mp4" />
                                 Seu navegador não suporta vídeo.
                               </video>
@@ -1812,7 +1833,14 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                           {packFilePreviews.map((prev, idx) => (
                             <div key={idx} className="showcase-item">
                               {prev.isVideo ? (
-                                <video controls>
+                                <video 
+                                  controls 
+                                  controlsList="nodownload nofullscreen noremoteplayback"
+                                  disablePictureInPicture
+                                  onContextMenu={(e) => e.preventDefault()}
+                                  onDragStart={(e) => e.preventDefault()}
+                                  style={{ userSelect: 'none' }}
+                                >
                                   <source src={prev.src} type="video/mp4" />
                                   Seu navegador não suporta vídeo.
                                 </video>

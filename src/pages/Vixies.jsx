@@ -585,7 +585,17 @@ const Vixies = () => {
                                 style={{ cursor: 'pointer' }}
                               />
                             )}
-                            {m.type === 'video' && (<video src={m.url} controls />)}
+                            {m.type === 'video' && (
+                              <video 
+                                src={m.url} 
+                                controls 
+                                controlsList="nodownload nofullscreen noremoteplayback"
+                                disablePictureInPicture
+                                onContextMenu={(e) => e.preventDefault()}
+                                onDragStart={(e) => e.preventDefault()}
+                                style={{ userSelect: 'none' }}
+                              />
+                            )}
                             {m.type === 'audio' && (<audio src={m.url} controls />)}
                           </React.Fragment>
                         ))}

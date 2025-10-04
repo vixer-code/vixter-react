@@ -1144,7 +1144,14 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
                         <div className="showcase-grid">
                           {showcaseVideoPreviews.map((video, index) => (
                             <div key={index} className="showcase-item video-showcase">
-                              <video controls>
+                              <video 
+                                controls 
+                                controlsList="nodownload nofullscreen noremoteplayback"
+                                disablePictureInPicture
+                                onContextMenu={(e) => e.preventDefault()}
+                                onDragStart={(e) => e.preventDefault()}
+                                style={{ userSelect: 'none' }}
+                              >
                                 <source src={video} type="video/mp4" />
                                 Seu navegador não suporta vídeo.
                               </video>
