@@ -18,6 +18,10 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   
+  /* Vixter color variables */
+  --vixter-text-primary: #FFFFFF;
+  --vixter-text-secondary: rgba(255, 255, 255, 0.7);
+  
   /* Mobile-first responsive variables */
   --container-padding: 1rem;
   --section-padding: 2rem;

@@ -61,11 +61,11 @@
 }
 
 .create-ticket-btn {
-  background: linear-gradient(135deg, var(--vixter-accent-secondary) 0%, var(--vixter-accent-primary) 100%);
-  color: white;
+  background: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%);
+  color: #0F0F1A;
   border: none;
   padding: 15px 25px;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -76,9 +76,8 @@
 }
 
 .create-ticket-btn:hover:not(:disabled) {
-  opacity: 0.9;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(138, 43, 226, 0.4);
+  box-shadow: 0 10px 25px rgba(138, 43, 226, 0.4);
 }
 
 .create-ticket-btn:disabled {
@@ -86,6 +85,119 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* Requirements Status */
+.requirements-status {
+  margin-bottom: 40px;
+}
+
+.requirements-status h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.requirements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.requirement-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.requirement-card.verified {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.requirement-card.pending {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.requirement-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.requirement-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.requirement-card.verified .requirement-icon {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+}
+
+.requirement-card.pending .requirement-icon {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+}
+
+.requirement-content h3 {
+  margin: 0 0 10px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--vixter-text-primary);
+}
+
+.requirement-content p {
+  margin: 0 0 8px 0;
+  color: var(--vixter-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.requirement-content small {
+  color: var(--vixter-text-secondary);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.requirements-notice {
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.requirements-notice p {
+  margin: 0;
+  color: #F59E0B;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.requirements-notice i {
+  font-size: 16px;
 }
 
 /* Quick Help */
@@ -268,8 +380,8 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--vixter-accent-secondary) 0%, var(--vixter-accent-primary) 100%);
-  color: white;
+  background: linear-gradient(135deg, #8A2BE2 0%, #00FFCA 100%);
+  color: #0F0F1A;
   border: none;
   padding: 12px 24px;
   border-radius: 8px;
@@ -283,9 +395,8 @@
 }
 
 .btn-primary:hover {
-  opacity: 0.9;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(138, 43, 226, 0.4);
+  box-shadow: 0 10px 25px rgba(138, 43, 226, 0.4);
 }
 
 /* Tickets List */

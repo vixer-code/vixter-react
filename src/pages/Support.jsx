@@ -20,7 +20,13 @@ const SupportContent = () => {
     getPriorityColor,
     getStatusColor,
     formatTicketId,
-    formatDate
+    formatDate,
+    isKycVerified,
+    isKycPending,
+    isKycNotConfigured,
+    emailVerified,
+    emailVerificationLoading,
+    getKycStatusMessage
   } = useEmailTicket();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -33,6 +39,9 @@ const SupportContent = () => {
     }
     setShowCreateModal(true);
   };
+
+  const canCreateTicket = currentUser && isKycVerified && emailVerified;
+  const kycStatus = getKycStatusMessage();
 
   const handleViewTicket = (ticket) => {
     setSelectedTicket(ticket);
@@ -76,12 +85,46 @@ const SupportContent = () => {
           <button 
             className="create-ticket-btn"
             onClick={handleCreateTicket}
-            disabled={!currentUser}
+            disabled={!canCreateTicket}
           >
             <i className="fas fa-plus"></i>
             Novo Ticket
           </button>
         </div>
+
+        {/* Requirements Status */}
+        {currentUser && (
+          <div className="requirements-status">
+            <h2>Status dos Requisitos</h2>
+            <div className="requirements-grid">
+              <div className={`requirement-card ${emailVerified ? 'verified' : 'pending'}`}>
+                <div className="requirement-icon">
+                  <i className={`fas ${emailVerified ? 'fa-check-circle' : 'fa-exclamation-triangle'}`}></i>
+                </div>
+                <div className="requirement-content">
+                  <h3>Verificação de Email</h3>
+                  <p>{emailVerified ? 'Email verificado' : 'Email não verificado'}</p>
+                  {!emailVerified && (
+                    <small>Verifique seu email para criar tickets</small>
+                  )}
+                </div>
+              </div>
+              
+              <div className={`requirement-card ${isKycVerified ? 'verified' : 'pending'}`}>
+                <div className="requirement-icon">
+                  <i className={`fas ${kycStatus.icon}`}></i>
+                </div>
+                <div className="requirement-content">
+                  <h3>Verificação KYC</h3>
+                  <p>{kycStatus.message}</p>
+                  {!isKycVerified && (
+                    <small>Complete o KYC para criar tickets</small>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Quick Help */}
         <div className="quick-help">
@@ -134,10 +177,16 @@ const SupportContent = () => {
                 <button 
                   className="btn-primary"
                   onClick={handleCreateTicket}
+                  disabled={!canCreateTicket}
                 >
                   <i className="fas fa-plus"></i>
                   Criar Primeiro Ticket
                 </button>
+                {!canCreateTicket && (
+                  <div className="requirements-notice">
+                    <p><i className="fas fa-info-circle"></i> Complete a verificação de email e KYC para criar tickets</p>
+                  </div>
+                )}
               </div>
             </div>
           ) : (

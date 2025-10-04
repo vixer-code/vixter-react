@@ -3,6 +3,8 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
+import useKycStatus from '../hooks/useKycStatus';
+import { useEmailVerification } from '../hooks/useEmailVerification';
 
 const EmailTicketContext = createContext({});
 
@@ -17,6 +19,8 @@ export const useEmailTicket = () => {
 export const EmailTicketProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showInfo } = useNotification();
+  const { isKycVerified, isKycPending, isKycNotConfigured, getKycStatusMessage } = useKycStatus();
+  const { emailVerified, loading: emailVerificationLoading } = useEmailVerification();
   
   // State
   const [tickets, setTickets] = useState([]);
@@ -26,7 +30,7 @@ export const EmailTicketProvider = ({ children }) => {
   const [ticketsLoaded, setTicketsLoaded] = useState(false);
 
   // Cloud Functions
-  const apiFunc = httpsCallable(functions, 'api');
+  const apiFunc = httpsCallable(functions, 'emailTicketApi');
 
   // Ticket categories
   const TICKET_CATEGORIES = [
@@ -62,6 +66,19 @@ export const EmailTicketProvider = ({ children }) => {
       return null;
     }
 
+    // Check KYC verification
+    if (!isKycVerified) {
+      const kycStatus = getKycStatusMessage();
+      showError(`KYC obrigatório: ${kycStatus.message}. Complete a verificação para criar tickets de suporte.`);
+      return null;
+    }
+
+    // Check email verification
+    if (!emailVerified) {
+      showError('Verificação de email obrigatória. Verifique seu email para criar tickets de suporte.');
+      return null;
+    }
+
     try {
       setCreating(true);
 
@@ -93,7 +110,7 @@ export const EmailTicketProvider = ({ children }) => {
     } finally {
       setCreating(false);
     }
-  }, [currentUser, showSuccess, showError, apiFunc]);
+  }, [currentUser, showSuccess, showError, apiFunc, isKycVerified, emailVerified, getKycStatusMessage]);
 
   // Load user tickets
   const loadTickets = useCallback(async () => {
@@ -248,6 +265,14 @@ export const EmailTicketProvider = ({ children }) => {
     getStatusColor,
     formatTicketId,
     formatDate,
+    
+    // Validation status
+    isKycVerified,
+    isKycPending,
+    isKycNotConfigured,
+    emailVerified,
+    emailVerificationLoading,
+    getKycStatusMessage,
     
     // Constants
     TICKET_CATEGORIES,
