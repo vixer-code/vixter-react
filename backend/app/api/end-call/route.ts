@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error ending call:', error);
     return NextResponse.json(
-      { error: 'Failed to end call', details: error.message },
+      { error: 'Failed to end call', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

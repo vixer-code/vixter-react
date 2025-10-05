@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error starting call:', error);
     return NextResponse.json(
-      { error: 'Failed to start call', details: error.message },
+      { error: 'Failed to start call', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
