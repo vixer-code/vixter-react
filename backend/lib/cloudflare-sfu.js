@@ -55,16 +55,23 @@ async function createSFURoom(roomId, participants = []) {
   try {
     // Create a new session using Cloudflare Realtime SFU API
     // POST /apps/{appId}/sessions/new
+    
+    const requestBody = {
+      sessionDescription: {
+        type: 'offer',
+        sdp: ''
+      }
+    };
+    
+    console.log('📦 Request body:', JSON.stringify(requestBody, null, 2));
+    
     const response = await fetch(`${CLOUDFLARE_RTC_URL}/apps/${CLOUDFLARE_APP_ID}/sessions/new`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${CLOUDFLARE_APP_SECRET}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        // Optional: Add correlation ID to associate session with user
-        correlationId: roomId
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {

@@ -34,7 +34,11 @@ O sistema de chamadas utiliza:
 
 ### 3. Configurar variáveis de ambiente
 
-Adicione ao seu arquivo `.env.local`:
+#### No Vercel Dashboard:
+
+1. Acesse seu projeto no [Vercel Dashboard](https://vercel.com/dashboard)
+2. Vá em **Settings** → **Environment Variables**
+3. Adicione as seguintes variáveis:
 
 ```env
 # Cloudflare Realtime SFU Configuration
@@ -48,6 +52,18 @@ CLOUDFLARE_RTC_URL=https://rtc.live.cloudflare.com/v1
 # JWT Secret para tokens de autenticação (opcional)
 JWT_SECRET=sua_chave_secreta_aqui
 ```
+
+#### Como obter as credenciais do Cloudflare:
+
+1. **Acesse o Cloudflare Dashboard**
+2. **Vá para Realtime** → **SFU**
+3. **Crie um novo App** ou use um existente
+4. **Copie o App ID e App Secret**
+
+#### ⚠️ Importante:
+- Certifique-se de que as variáveis estão configuradas para **Production**, **Preview** e **Development**
+- Após adicionar as variáveis, faça um novo **deploy** do projeto
+- Verifique os logs do Vercel para confirmar que as variáveis estão sendo carregadas
 
 ## Arquitetura do Sistema
 
@@ -252,6 +268,25 @@ console.log('Call status:', callStatus);
 - Conexões criptografadas
 - Sem armazenamento de mídia
 - Controle de permissões do navegador
+
+## Troubleshooting
+
+### Erro: "Body JSON validation error: sessionDescription"
+- **Causa**: A API do Cloudflare Realtime SFU espera um campo `sessionDescription` no body da requisição
+- **Solução**: ✅ Corrigido automaticamente - o sistema agora envia o payload correto
+
+### Erro: "Invalid bearer token"
+- **Causa**: Variáveis de ambiente `CLOUDFLARE_APP_ID` e `CLOUDFLARE_APP_SECRET` não configuradas
+- **Solução**: Configure as variáveis no Vercel Dashboard e faça um novo deploy
+
+### Debug Logs
+O sistema agora inclui logs detalhados para debug:
+- 🔧 Status das variáveis de ambiente
+- 📦 Payload da requisição
+- ✅ Resposta da API
+- ❌ Erros detalhados
+
+Verifique os logs do Vercel para diagnosticar problemas.
 
 ## Monitoramento
 
