@@ -2704,7 +2704,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
     startCall,
     acceptCall,
     endCall,
-    rejectCall,
     
     // Service functions
     sendServiceNotification,
