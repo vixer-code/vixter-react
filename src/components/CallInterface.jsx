@@ -13,6 +13,7 @@ const CallInterface = ({ conversation, onClose }) => {
     isVideoEnabled,
     isScreenSharing,
     callStatus,
+    callData,
     localVideoRef,
     remoteVideoRef,
     startCall: startCallHook,
@@ -36,6 +37,9 @@ const CallInterface = ({ conversation, onClose }) => {
   const [isIncomingCall, setIsIncomingCall] = useState(false);
   const [incomingCallData, setIncomingCallData] = useState(null);
   const [otherUser, setOtherUser] = useState(null);
+
+  // Get call type with fallback
+  const callType = callData?.callType || 'video';
 
   // Load other user data
   useEffect(() => {
