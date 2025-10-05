@@ -1017,16 +1017,16 @@ export const EnhancedMessagingProvider = ({ children }) => {
         console.log('🌐 Conversation ID:', data.conversationId);
         
         if (data.type === 'call_invite') {
-          console.log('📞 Received call invitation:', data);
+          console.log('📞 Received call room invitation:', data);
           setIncomingCall(data);
-          setCallState('ringing');
+          setCallState('room_available');
           
-          // Show notification for incoming call
+          // Show notification for available call room
           const callTypeText = data.callType === 'video' ? 'vídeo' : 'voz';
           showInfo(
-            `Chamada de ${callTypeText} recebida de ${data.from}`,
-            'Nova Chamada',
-            10000,
+            `${data.from} criou uma sala de ${callTypeText}. Clique para entrar!`,
+            'Sala de Chamada Disponível',
+            15000,
             {
               onClick: () => {
                 // Navigate to messages page and select conversation

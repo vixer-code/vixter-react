@@ -79,41 +79,41 @@ const CallInterface = ({ conversation, onClose }) => {
     return null; // Will be handled by the context
   };
 
-  const handleStartCall = async () => {
+  const handleCreateRoom = async () => {
     if (!conversation) {
       console.error('No conversation provided');
       return;
     }
     
     try {
-      console.log('Starting call for conversation:', conversation.id);
+      console.log('🏠 Creating call room for conversation:', conversation.id);
       const otherUserId = getOtherParticipant();
       console.log('Other user ID:', otherUserId);
       
       if (otherUserId) {
-        // Start video call by default - use only the hook to avoid duplication
-        console.log('Starting call with hook...');
+        // Create video call room by default - use only the hook to avoid duplication
+        console.log('Creating call room with hook...');
         await startCallHook(conversation.id, otherUserId, 'video');
-        console.log('Call hook started successfully');
+        console.log('Call room created successfully');
       } else {
         console.error('Could not find other participant');
       }
     } catch (error) {
-      console.error('Error starting call:', error);
+      console.error('Error creating call room:', error);
     }
   };
 
-  const handleAcceptCall = async () => {
+  const handleJoinRoom = async () => {
     if (!incomingCallData) return;
     
     try {
-      console.log('📞 Accepting call:', incomingCallData);
+      console.log('🚪 Joining call room:', incomingCallData);
       await acceptCall(incomingCallData.room, conversation.id);
       setIsIncomingCall(false);
       setIncomingCallData(null);
-      console.log('✅ Call accepted successfully');
+      console.log('✅ Successfully joined room');
     } catch (error) {
-      console.error('❌ Error accepting call:', error);
+      console.error('❌ Error joining room:', error);
     }
   };
 
@@ -129,7 +129,7 @@ const CallInterface = ({ conversation, onClose }) => {
     onClose?.();
   };
 
-  // Incoming call modal
+  // Available call room modal
   if (isIncomingCall) {
     return (
       <div className="call-modal-overlay">
@@ -157,8 +157,8 @@ const CallInterface = ({ conversation, onClose }) => {
               </div>
             </div>
             <div className="user-details">
-              <h3>Chamada recebida</h3>
-              <p>de {otherUser?.displayName || otherUser?.name || 'Usuário'}</p>
+              <h3>Sala de Chamada Disponível</h3>
+              <p>{otherUser?.displayName || otherUser?.name || 'Usuário'} criou uma sala de {callType === 'video' ? 'vídeo' : 'voz'}</p>
             </div>
           </div>
         </div>
@@ -166,15 +166,15 @@ const CallInterface = ({ conversation, onClose }) => {
           <div className="call-actions">
             <button 
               className="call-button accept"
-              onClick={handleAcceptCall}
+              onClick={handleJoinRoom}
             >
-              📞 Aceitar
+              🚪 Entrar na Sala
             </button>
             <button 
               className="call-button reject"
               onClick={handleRejectCall}
             >
-              ❌ Recusar
+              ❌ Fechar
             </button>
           </div>
         </div>
@@ -339,10 +339,10 @@ const CallInterface = ({ conversation, onClose }) => {
       <div className="call-options-content">
         <button
           className="start-call-button"
-          onClick={handleStartCall}
-          title="Iniciar chamada de vídeo"
+          onClick={handleCreateRoom}
+          title="Criar sala de chamada"
         >
-          📞 Ligar
+          🏠 Criar Sala
         </button>
       </div>
     </div>
