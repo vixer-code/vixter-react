@@ -268,6 +268,13 @@
   color: var(--vixter-text-secondary);
 }
 
+.call-type-indicator {
+  margin: 5px 0 0 0 !important;
+  font-size: 0.8rem !important;
+  color: var(--vixter-accent-primary) !important;
+  font-weight: 600 !important;
+}
+
 .close-button {
   background: rgba(255, 255, 255, 0.2);
   border: none;

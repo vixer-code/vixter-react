@@ -4,7 +4,7 @@ import { publishToChannel } from '../../../lib/centrifugo';
 
 export async function POST(request: NextRequest) {
   try {
-    const { conversationId, callerId, calleeId } = await request.json();
+    const { conversationId, callerId, calleeId, callType = 'video' } = await request.json();
 
     if (!conversationId || !callerId || !calleeId) {
       return NextResponse.json(
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
       room: roomId,
       from: callerId,
       conversationId: conversationId,
+      callType: callType,
       timestamp: Date.now()
     });
 
@@ -39,7 +40,8 @@ export async function POST(request: NextRequest) {
       roomId,
       callerToken: callerToken.token,
       calleeToken: calleeToken.token,
-      expires: callerToken.expires
+      expires: callerToken.expires,
+      callType
     });
 
   } catch (error) {

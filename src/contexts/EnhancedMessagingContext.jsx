@@ -1022,8 +1022,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
           setCallState('ringing');
           
           // Show notification for incoming call
+          const callTypeText = data.callType === 'video' ? 'vídeo' : 'voz';
           showInfo(
-            `Chamada recebida de ${data.from}`,
+            `Chamada de ${callTypeText} recebida de ${data.from}`,
             'Nova Chamada',
             10000,
             {
@@ -2185,7 +2186,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
   }, [currentUser]);
 
   // Call functions
-  const startCall = useCallback(async (conversationId, otherUserId) => {
+  const startCall = useCallback(async (conversationId, otherUserId, callType = 'video') => {
     if (!currentUser?.uid || !conversationId || !otherUserId) return false;
 
     try {
@@ -2197,7 +2198,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
         body: JSON.stringify({
           conversationId,
           callerId: currentUser.uid,
-          calleeId: otherUserId
+          calleeId: otherUserId,
+          callType
         })
       });
 
