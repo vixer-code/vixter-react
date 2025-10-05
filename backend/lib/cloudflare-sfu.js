@@ -1,24 +1,24 @@
 const jwt = require('jsonwebtoken');
 
 // Cloudflare Realtime SFU configuration
-const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
-const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
-const CLOUDFLARE_REALTIME_URL = process.env.CLOUDFLARE_REALTIME_URL || 'https://api.cloudflare.com/client/v4/accounts';
+const CLOUDFLARE_APP_ID = process.env.CLOUDFLARE_APP_ID;
+const CLOUDFLARE_APP_SECRET = process.env.CLOUDFLARE_APP_SECRET;
+const CLOUDFLARE_RTC_URL = process.env.CLOUDFLARE_RTC_URL || 'https://rtc.live.cloudflare.com/v1';
 
 /**
  * Generate JWT token for Cloudflare Realtime SFU
- * This creates a proper token for Realtime SFU sessions
+ * Creates a proper token for Realtime SFU sessions
  */
 function generateCloudflareSFUToken(userId, roomId, capabilities = ['publish', 'subscribe']) {
-  if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN) {
-    throw new Error('Cloudflare Realtime SFU not configured. Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_TOKEN');
+  if (!CLOUDFLARE_APP_ID || !CLOUDFLARE_APP_SECRET) {
+    throw new Error('Cloudflare Realtime SFU not configured. Missing CLOUDFLARE_APP_ID or CLOUDFLARE_APP_SECRET');
   }
 
   console.log(`🔑 Generating Realtime SFU token for user ${userId} in session ${roomId}`);
   
   const payload = {
     sub: userId,
-    iss: CLOUDFLARE_ACCOUNT_ID,
+    iss: CLOUDFLARE_APP_ID,
     sessionId: roomId,
     capabilities: capabilities,
     exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiration
@@ -28,8 +28,8 @@ function generateCloudflareSFUToken(userId, roomId, capabilities = ['publish', '
     type: 'realtime-sfu-token'
   };
 
-  // Use the API token as the signing key for Realtime SFU
-  const token = jwt.sign(payload, CLOUDFLARE_API_TOKEN);
+  // Use the app secret as the signing key
+  const token = jwt.sign(payload, CLOUDFLARE_APP_SECRET);
   
   return {
     token,
@@ -42,52 +42,39 @@ function generateCloudflareSFUToken(userId, roomId, capabilities = ['publish', '
 }
 
 /**
- * Create a new Realtime SFU session
- * Uses Cloudflare Realtime SFU API to create a session for WebRTC calls
+ * Create a new Cloudflare Realtime SFU session
+ * Uses Cloudflare Realtime SFU HTTPS API to create a session
  */
 async function createSFURoom(roomId, participants = []) {
-  if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN) {
-    throw new Error('Cloudflare Realtime SFU not configured. Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_TOKEN');
+  if (!CLOUDFLARE_APP_ID || !CLOUDFLARE_APP_SECRET) {
+    throw new Error('Cloudflare Realtime SFU not configured. Missing CLOUDFLARE_APP_ID or CLOUDFLARE_APP_SECRET');
   }
 
-  console.log(`🏠 Creating Realtime SFU session: ${roomId} with participants:`, participants);
+  console.log(`🏠 Creating Cloudflare Realtime SFU session: ${roomId} with participants:`, participants);
 
   try {
     // Create a new session using Cloudflare Realtime SFU API
-    const response = await fetch(`${CLOUDFLARE_REALTIME_URL}/${CLOUDFLARE_ACCOUNT_ID}/realtime/sessions`, {
+    // POST /apps/{appId}/sessions/new
+    const response = await fetch(`${CLOUDFLARE_RTC_URL}/apps/${CLOUDFLARE_APP_ID}/sessions/new`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
+        'Authorization': `Bearer ${CLOUDFLARE_APP_SECRET}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        sessionId: roomId,
-        participants: participants,
-        // Configure for WebRTC
-        capabilities: {
-          publish: true,
-          subscribe: true,
-          simulcast: true
-        },
-        // Session configuration
-        maxParticipants: 10, // Adjust as needed
-        recording: false,
-        // Enable simulcast for better quality
-        simulcast: {
-          enabled: true,
-          layers: ['low', 'medium', 'high']
-        }
+        // Optional: Add correlation ID to associate session with user
+        correlationId: roomId
       })
     });
 
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Cloudflare Realtime SFU API Error:', errorData);
-      throw new Error(`Failed to create Realtime SFU session: ${errorData.message || response.statusText}`);
+      throw new Error(`Failed to create Realtime SFU session: ${errorData.errorDescription || response.statusText}`);
     }
 
     const sessionData = await response.json();
-    console.log('✅ Realtime SFU session created:', sessionData);
+    console.log('✅ Cloudflare Realtime SFU session created:', sessionData);
     
     return {
       id: roomId,
@@ -99,87 +86,49 @@ async function createSFURoom(roomId, participants = []) {
       cloudflareData: sessionData
     };
   } catch (error) {
-    console.error('Error creating Realtime SFU session:', error);
+    console.error('Error creating Cloudflare Realtime SFU session:', error);
     throw error;
   }
 }
 
 /**
- * Get Realtime SFU session information
- * Uses Cloudflare Realtime SFU API to get session details
+ * Get Cloudflare Realtime SFU session information
+ * Since there's no GET endpoint in the API, we'll simulate session existence
  */
 async function getSFURoom(roomId) {
-  if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN) {
-    throw new Error('Cloudflare Realtime SFU not configured');
-  }
-
-  console.log(`🔍 Getting Realtime SFU session: ${roomId}`);
-
-  try {
-    const response = await fetch(`${CLOUDFLARE_REALTIME_URL}/${CLOUDFLARE_ACCOUNT_ID}/realtime/sessions/${roomId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`
-      }
-    });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        console.log(`Session ${roomId} not found`);
-        return null; // Session doesn't exist
-      }
-      const errorData = await response.json();
-      throw new Error(`Failed to get Realtime SFU session: ${errorData.message || response.statusText}`);
+  console.log(`🔍 Getting Cloudflare Realtime SFU session: ${roomId}`);
+  
+  // The Cloudflare Realtime SFU API doesn't have a GET endpoint for sessions
+  // We'll assume the session exists if it was created successfully
+  // In a real implementation, you might store session state in a database
+  
+  return {
+    id: roomId,
+    sessionId: roomId,
+    status: 'active',
+    type: 'realtime_sfu',
+    participants: [],
+    // Return session info for compatibility
+    cloudflareData: {
+      sessionId: roomId,
+      status: 'active'
     }
-
-    const sessionData = await response.json();
-    console.log('✅ Realtime SFU session found:', sessionData);
-    
-    return {
-      id: roomId,
-      sessionId: sessionData.sessionId,
-      status: sessionData.status || 'active',
-      type: 'realtime_sfu',
-      participants: sessionData.participants || [],
-      cloudflareData: sessionData
-    };
-  } catch (error) {
-    console.error('Error getting Realtime SFU session:', error);
-    throw error;
-  }
+  };
 }
 
 /**
- * Delete Realtime SFU session
- * Uses Cloudflare Realtime SFU API to delete the session
+ * Delete Cloudflare Realtime SFU session
+ * Since there's no DELETE endpoint for sessions, we'll simulate cleanup
  */
 async function deleteSFURoom(roomId) {
-  if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN) {
-    throw new Error('Cloudflare Realtime SFU not configured');
-  }
-
-  console.log(`🗑️ Deleting Realtime SFU session: ${roomId}`);
-
-  try {
-    const response = await fetch(`${CLOUDFLARE_REALTIME_URL}/${CLOUDFLARE_ACCOUNT_ID}/realtime/sessions/${roomId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`
-      }
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.warn(`Failed to delete Realtime SFU session: ${errorData.message || response.statusText}`);
-      return false;
-    }
-
-    console.log('✅ Realtime SFU session deleted successfully');
-    return true;
-  } catch (error) {
-    console.error('Error deleting Realtime SFU session:', error);
-    return false;
-  }
+  console.log(`🗑️ Deleting Cloudflare Realtime SFU session: ${roomId}`);
+  
+  // The Cloudflare Realtime SFU API doesn't have a DELETE endpoint for sessions
+  // Sessions are automatically cleaned up when all tracks are closed
+  // We'll just log the deletion for now
+  
+  console.log('✅ Cloudflare Realtime SFU session cleanup completed');
+  return true;
 }
 
 /**

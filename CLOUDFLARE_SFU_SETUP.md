@@ -37,18 +37,22 @@ O sistema de chamadas utiliza:
 Adicione ao seu arquivo `.env.local`:
 
 ```env
-# Cloudflare SFU Configuration
-CLOUDFLARE_ACCOUNT_ID=seu_account_id_aqui
-CLOUDFLARE_API_TOKEN=seu_api_token_aqui
-CLOUDFLARE_SFU_URL=https://api.cloudflare.com/client/v4/accounts
+# Cloudflare Realtime SFU Configuration
+# Obtenha essas credenciais em: Cloudflare Dashboard > Realtime > SFU
+
+# Optional: Custom RTC API URL (defaults to Cloudflare's API)
+CLOUDFLARE_RTC_URL=https://rtc.live.cloudflare.com/v1
+
+# JWT Secret para tokens de autenticação (opcional)
+JWT_SECRET=sua_chave_secreta_aqui
 ```
 
 ## Arquitetura do Sistema
 
 ```
 Frontend (React)
-    ↓ WebRTC + JWT
-Cloudflare SFU
+    ↓ WebRTC + Cloudflare STUN
+Cloudflare Realtime SFU
     ↓ Sinalização
 Centrifugo (WebSocket)
     ↓ API Calls

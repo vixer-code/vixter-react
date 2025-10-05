@@ -25,9 +25,12 @@ const useCall = () => {
   const roomIdRef = useRef(null);
   const conversationIdRef = useRef(null);
 
-  // WebRTC configuration
+  // WebRTC configuration with Cloudflare STUN
   const rtcConfig = {
     iceServers: [
+      // Cloudflare STUN server as recommended in the documentation
+      { urls: 'stun:stun.cloudflare.com:3478' },
+      // Fallback STUN servers
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' }
     ]
