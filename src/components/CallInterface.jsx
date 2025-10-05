@@ -91,17 +91,10 @@ const CallInterface = ({ conversation, onClose }) => {
       console.log('Other user ID:', otherUserId);
       
       if (otherUserId) {
-        // Start video call by default
-        console.log('Calling startCall API...');
-        const result = await startCall(conversation.id, otherUserId, 'video');
-        console.log('StartCall result:', result);
-        
-        if (result) {
-          // Start the actual call with the hook
-          console.log('Starting call hook...');
-          await startCallHook(conversation.id, otherUserId, 'video');
-          console.log('Call hook started successfully');
-        }
+        // Start video call by default - use only the hook to avoid duplication
+        console.log('Starting call with hook...');
+        await startCallHook(conversation.id, otherUserId, 'video');
+        console.log('Call hook started successfully');
       } else {
         console.error('Could not find other participant');
       }
@@ -114,11 +107,13 @@ const CallInterface = ({ conversation, onClose }) => {
     if (!incomingCallData) return;
     
     try {
+      console.log('📞 Accepting call:', incomingCallData);
       await acceptCall(incomingCallData.room, conversation.id);
       setIsIncomingCall(false);
       setIncomingCallData(null);
+      console.log('✅ Call accepted successfully');
     } catch (error) {
-      console.error('Error accepting call:', error);
+      console.error('❌ Error accepting call:', error);
     }
   };
 

@@ -84,11 +84,19 @@ const useCall = () => {
   // Get user media (camera and microphone)
   const getUserMedia = useCallback(async (constraints = { video: true, audio: true }) => {
     try {
+      console.log('🎥 Requesting user media with constraints:', constraints);
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('✅ User media obtained:', stream);
+      console.log('📹 Video tracks:', stream.getVideoTracks());
+      console.log('🎤 Audio tracks:', stream.getAudioTracks());
       setLocalStream(stream);
       
       if (localVideoRef.current) {
+        console.log('📺 Setting video source object');
         localVideoRef.current.srcObject = stream;
+        console.log('✅ Video source set successfully');
+      } else {
+        console.warn('⚠️ localVideoRef.current is null');
       }
 
       // Add tracks to peer connection
