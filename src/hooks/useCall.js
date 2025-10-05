@@ -131,14 +131,18 @@ const useCall = () => {
   }, []);
 
   // Start a call
-  const startCall = useCallback(async (conversationId, otherUserId) => {
+  const startCall = useCallback(async (conversationId, otherUserId, callType = 'video') => {
     try {
       setCallStatus('calling');
-      setCallData({ conversationId, otherUserId });
+      setCallData({ conversationId, otherUserId, callType });
       conversationIdRef.current = conversationId;
 
-      // Get user media
-      await getUserMedia();
+      // Get user media based on call type
+      const constraints = callType === 'video' 
+        ? { video: true, audio: true }
+        : { video: false, audio: true };
+      
+      await getUserMedia(constraints);
 
       // Initialize peer connection
       initializePeerConnection();
@@ -150,7 +154,8 @@ const useCall = () => {
         body: JSON.stringify({
           conversationId,
           callerId: currentUser.uid,
-          calleeId: otherUserId
+          calleeId: otherUserId,
+          callType
         })
       });
 
