@@ -197,6 +197,17 @@
   color: var(--vixter-accent-primary);
 }
 
+.call-button {
+  color: #2ed573 !important;
+  font-size: 20px;
+}
+
+.call-button:hover {
+  background-color: rgba(46, 213, 115, 0.1) !important;
+  color: #26d065 !important;
+  transform: scale(1.1);
+}
+
 .action-button.close-button {
   font-size: 20px;
   font-weight: bold;

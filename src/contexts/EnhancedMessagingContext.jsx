@@ -189,6 +189,10 @@ export const EnhancedMessagingProvider = ({ children }) => {
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef(null);
   
+  // Call state
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [callState, setCallState] = useState('idle'); // idle, calling, ringing, connected, ended
+  
   // Ref to access current selectedConversation in global subscription
   const selectedConversationRef = useRef(selectedConversation);
   
@@ -1012,7 +1016,25 @@ export const EnhancedMessagingProvider = ({ children }) => {
         console.log('🌐 Message data:', data.message);
         console.log('🌐 Conversation ID:', data.conversationId);
         
-        if (data.type === 'new_message') {
+        if (data.type === 'call_invite') {
+          console.log('📞 Received call invitation:', data);
+          setIncomingCall(data);
+          setCallState('ringing');
+          
+          // Show notification for incoming call
+          showInfo(
+            `Chamada recebida de ${data.from}`,
+            'Nova Chamada',
+            10000,
+            {
+              onClick: () => {
+                // Navigate to messages page and select conversation
+                window.location.href = `/messages`;
+              },
+              data: { conversationId: data.conversationId, callData: data }
+            }
+          );
+        } else if (data.type === 'new_message') {
           const { message, conversationId } = data;
           
           // If this is for the currently selected conversation, it will be handled by the conversation subscription
@@ -2162,6 +2184,107 @@ export const EnhancedMessagingProvider = ({ children }) => {
     }
   }, [currentUser]);
 
+  // Call functions
+  const startCall = useCallback(async (conversationId, otherUserId) => {
+    if (!currentUser?.uid || !conversationId || !otherUserId) return false;
+
+    try {
+      setCallState('calling');
+      
+      const response = await fetch('/api/start-call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationId,
+          callerId: currentUser.uid,
+          calleeId: otherUserId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start call');
+      }
+
+      const callData = await response.json();
+      setCallState('ringing');
+      return callData;
+    } catch (error) {
+      console.error('Error starting call:', error);
+      setCallState('idle');
+      showError('Erro ao iniciar chamada');
+      return false;
+    }
+  }, [currentUser?.uid, showError]);
+
+  const acceptCall = useCallback(async (roomId, conversationId) => {
+    if (!currentUser?.uid || !roomId || !conversationId) return false;
+
+    try {
+      setCallState('connecting');
+      
+      const response = await fetch('/api/accept-call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomId,
+          userId: currentUser.uid,
+          conversationId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to accept call');
+      }
+
+      const callData = await response.json();
+      setCallState('connected');
+      setIncomingCall(null);
+      return callData;
+    } catch (error) {
+      console.error('Error accepting call:', error);
+      setCallState('idle');
+      setIncomingCall(null);
+      showError('Erro ao aceitar chamada');
+      return false;
+    }
+  }, [currentUser?.uid, showError]);
+
+  const endCall = useCallback(async (roomId, conversationId) => {
+    if (!currentUser?.uid) return false;
+
+    try {
+      if (roomId) {
+        const response = await fetch('/api/end-call', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            roomId,
+            userId: currentUser.uid,
+            conversationId
+          })
+        });
+
+        if (!response.ok) {
+          console.warn('Failed to notify backend about call end');
+        }
+      }
+
+      setCallState('idle');
+      setIncomingCall(null);
+      return true;
+    } catch (error) {
+      console.error('Error ending call:', error);
+      setCallState('idle');
+      setIncomingCall(null);
+      return false;
+    }
+  }, [currentUser?.uid]);
+
+  const rejectCall = useCallback(() => {
+    setIncomingCall(null);
+    setCallState('idle');
+  }, []);
+
   // Create service conversation when order is accepted
   const createServiceConversation = useCallback(async (serviceOrder) => {
     if (!currentUser?.uid || !serviceOrder || !serviceOrder.buyerId || !serviceOrder.sellerId || !serviceOrder.id) {
@@ -2370,6 +2493,10 @@ export const EnhancedMessagingProvider = ({ children }) => {
     typingUsers,
     isTyping,
 
+    // Call state
+    incomingCall,
+    callState,
+
     // Actions
     setSelectedConversation,
     setActiveTab,
@@ -2380,6 +2507,12 @@ export const EnhancedMessagingProvider = ({ children }) => {
     createConversation,
     createOrGetConversation,
     deleteMessage,
+    
+    // Call actions
+    startCall,
+    acceptCall,
+    endCall,
+    rejectCall,
     
     // Service functions
     sendServiceNotification,
@@ -2422,6 +2555,10 @@ export const EnhancedMessagingProvider = ({ children }) => {
     createConversation,
     createOrGetConversation,
     deleteMessage,
+    startCall,
+    acceptCall,
+    endCall,
+    rejectCall,
     sendServiceNotification,
     sendPackNotification,
     createServiceConversation,

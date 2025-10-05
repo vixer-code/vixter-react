@@ -7,6 +7,7 @@ import { useUserStatus } from '../../hooks/useUserStatus';
 import { getProfileUrl } from '../../utils/profileUrls';
 import CachedImage from '../CachedImage';
 import SendButtonWithAudio from '../SendButtonWithAudio';
+import CallInterface from '../CallInterface';
 import './ChatInterface.css';
 
 const ChatInterface = ({ conversation, onClose }) => {
@@ -43,6 +44,7 @@ const ChatInterface = ({ conversation, onClose }) => {
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [showCallInterface, setShowCallInterface] = useState(false);
 
   const [otherUser, setOtherUser] = useState({});
   const otherUserStatus = useUserStatus(otherUser?.id);
@@ -362,9 +364,19 @@ const ChatInterface = ({ conversation, onClose }) => {
           </div>
         </div>
         <div className="chat-actions">
-        <button className="action-button close-button back-button" onClick={onClose} title="Voltar">
-          ⵦ
-        </button>
+          {/* Call button - only show for 1:1 conversations */}
+          {conversation?.participants && Object.keys(conversation.participants).length === 2 && (
+            <button 
+              className="action-button call-button" 
+              onClick={() => setShowCallInterface(true)} 
+              title="Iniciar chamada"
+            >
+              📞
+            </button>
+          )}
+          <button className="action-button close-button back-button" onClick={onClose} title="Voltar">
+            ⵦ
+          </button>
         </div>
       </div>
 
@@ -569,6 +581,14 @@ const ChatInterface = ({ conversation, onClose }) => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Call Interface */}
+      {showCallInterface && (
+        <CallInterface 
+          conversation={conversation}
+          onClose={() => setShowCallInterface(false)}
+        />
       )}
     </div>
   );
