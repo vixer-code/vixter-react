@@ -8,6 +8,13 @@ export default defineConfig({
   server: {
     // Handle SPA routing - serve index.html for all routes
     historyApiFallback: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   build: {
     chunkSizeWarningLimit: 1024,
