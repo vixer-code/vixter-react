@@ -8,11 +8,23 @@ export async function POST(request: NextRequest) {
     const { conversationId, callerId, calleeId, callType = 'video' } = await request.json();
     console.log('📞 Request data:', { conversationId, callerId, calleeId, callType });
 
+    // Get origin for CORS
+    const origin = request.headers.get('origin') || 'https://vixter-react.vercel.app';
+    const allowedOrigins = ['https://vixter-react.vercel.app', 'https://vixter.com.br'];
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': allowedOrigins.includes(origin) ? origin : 'https://vixter-react.vercel.app',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    };
+
     if (!conversationId || !callerId || !calleeId) {
       console.error('❌ Missing required parameters');
       return NextResponse.json(
         { error: 'Missing required parameters: conversationId, callerId, calleeId' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
       );
     }
 
@@ -55,13 +67,41 @@ export async function POST(request: NextRequest) {
     };
     
     console.log('📞 Returning response:', { ...response, callerToken: '[REDACTED]', calleeToken: '[REDACTED]' });
-    return NextResponse.json(response);
+    return NextResponse.json(response, {
+      headers: corsHeaders
+    });
 
   } catch (error) {
     console.error('❌ Error starting call:', error);
+    const origin = request.headers.get('origin') || 'https://vixter-react.vercel.app';
+    const allowedOrigins = ['https://vixter-react.vercel.app', 'https://vixter.com.br'];
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': allowedOrigins.includes(origin) ? origin : 'https://vixter-react.vercel.app',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    };
+    
     return NextResponse.json(
       { error: 'Failed to start call', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders
+      }
     );
   }
+}
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin') || 'https://vixter-react.vercel.app';
+  const allowedOrigins = ['https://vixter-react.vercel.app', 'https://vixter.com.br'];
+  
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': allowedOrigins.includes(origin) ? origin : 'https://vixter-react.vercel.app',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
