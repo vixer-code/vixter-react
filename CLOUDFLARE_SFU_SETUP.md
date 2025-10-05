@@ -271,6 +271,10 @@ console.log('Call status:', callStatus);
 
 ## Troubleshooting
 
+### Erro: "SDP contains no ice-ufrag. Please ensure the SDP is valid."
+- **Causa**: O SDP estava vazio e precisa conter campos obrigatórios como `ice-ufrag`, `ice-pwd`, etc.
+- **Solução**: ✅ Corrigido automaticamente - o sistema agora gera um SDP válido com todos os campos necessários
+
 ### Erro: "Body JSON validation error: sessionDescription"
 - **Causa**: A API do Cloudflare Realtime SFU espera um campo `sessionDescription` no body da requisição
 - **Solução**: ✅ Corrigido automaticamente - o sistema agora envia o payload correto

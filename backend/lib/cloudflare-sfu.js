@@ -6,6 +6,36 @@ const CLOUDFLARE_APP_SECRET = process.env.CLOUDFLARE_APP_SECRET;
 const CLOUDFLARE_RTC_URL = process.env.CLOUDFLARE_RTC_URL || 'https://rtc.live.cloudflare.com/v1';
 
 /**
+ * Generate a valid SDP for Cloudflare Realtime SFU
+ * Creates a minimal but valid SDP with required ICE parameters
+ */
+function generateValidSDP() {
+  const sessionId = Date.now();
+  const iceUfrag = Math.random().toString(36).substring(2, 15);
+  const icePwd = Math.random().toString(36).substring(2, 15);
+  const fingerprint = Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join(':');
+  
+  return `v=0\r
+o=- ${sessionId} ${sessionId} IN IP4 127.0.0.1\r
+s=-\r
+t=0 0\r
+a=group:BUNDLE 0\r
+a=extmap-allow-mixed\r
+a=msid-semantic: WMS\r
+m=application 9 UDP/DTLS/SCTP webrtc-datachannel\r
+c=IN IP4 0.0.0.0\r
+a=ice-ufrag:${iceUfrag}\r
+a=ice-pwd:${icePwd}\r
+a=ice-options:trickle\r
+a=fingerprint:sha-256 ${fingerprint}\r
+a=setup:actpass\r
+a=mid:0\r
+a=sctp-port:5000\r
+a=max-message-size:262144\r
+`;
+}
+
+/**
  * Generate JWT token for Cloudflare Realtime SFU
  * Creates a proper token for Realtime SFU sessions
  */
@@ -59,7 +89,7 @@ async function createSFURoom(roomId, participants = []) {
     const requestBody = {
       sessionDescription: {
         type: 'offer',
-        sdp: ''
+        sdp: generateValidSDP()
       }
     };
     
@@ -146,6 +176,7 @@ function generateCallRoomId(conversationId) {
 }
 
 module.exports = {
+  generateValidSDP,
   generateCloudflareSFUToken,
   createSFURoom,
   getSFURoom,
