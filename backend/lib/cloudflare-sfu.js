@@ -144,6 +144,6 @@ module.exports = {
   getSFURoom,
   deleteSFURoom,
   generateCallRoomId,
-  CLOUDFLARE_ACCOUNT_ID,
-  CLOUDFLARE_API_TOKEN
+  CLOUDFLARE_APP_ID,
+  CLOUDFLARE_APP_SECRET
 };

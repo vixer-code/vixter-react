@@ -39,6 +39,8 @@ Adicione ao seu arquivo `.env.local`:
 ```env
 # Cloudflare Realtime SFU Configuration
 # Obtenha essas credenciais em: Cloudflare Dashboard > Realtime > SFU
+CLOUDFLARE_APP_ID=seu_app_id_aqui
+CLOUDFLARE_APP_SECRET=seu_app_secret_aqui
 
 # Optional: Custom RTC API URL (defaults to Cloudflare's API)
 CLOUDFLARE_RTC_URL=https://rtc.live.cloudflare.com/v1
