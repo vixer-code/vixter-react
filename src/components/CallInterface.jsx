@@ -35,9 +35,6 @@ const CallInterface = ({ conversation, onClose }) => {
 
   const [isIncomingCall, setIsIncomingCall] = useState(false);
   const [incomingCallData, setIncomingCallData] = useState(null);
-  const [showCallOptions, setShowCallOptions] = useState(true);
-  const [callType, setCallType] = useState(null); // 'audio' or 'video'
-  const [isConnecting, setIsConnecting] = useState(false);
   const [otherUser, setOtherUser] = useState(null);
 
   // Load other user data
@@ -78,27 +75,34 @@ const CallInterface = ({ conversation, onClose }) => {
     return null; // Will be handled by the context
   };
 
-  const handleStartCall = async (type) => {
-    if (!conversation) return;
+  const handleStartCall = async () => {
+    if (!conversation) {
+      console.error('No conversation provided');
+      return;
+    }
     
     try {
-      setIsConnecting(true);
-      setCallType(type);
-      setShowCallOptions(false);
-      
+      console.log('Starting call for conversation:', conversation.id);
       const otherUserId = getOtherParticipant();
+      console.log('Other user ID:', otherUserId);
       
       if (otherUserId) {
-        const result = await startCall(conversation.id, otherUserId, type);
+        // Start video call by default
+        console.log('Calling startCall API...');
+        const result = await startCall(conversation.id, otherUserId, 'video');
+        console.log('StartCall result:', result);
+        
         if (result) {
           // Start the actual call with the hook
-          await startCallHook(conversation.id, otherUserId, type);
+          console.log('Starting call hook...');
+          await startCallHook(conversation.id, otherUserId, 'video');
+          console.log('Call hook started successfully');
         }
+      } else {
+        console.error('Could not find other participant');
       }
     } catch (error) {
       console.error('Error starting call:', error);
-      setIsConnecting(false);
-      setShowCallOptions(true);
     }
   };
 
@@ -124,12 +128,6 @@ const CallInterface = ({ conversation, onClose }) => {
     endCall();
     endCallHook();
     onClose?.();
-  };
-
-  const handleBackToOptions = () => {
-    setShowCallOptions(true);
-    setCallType(null);
-    setIsConnecting(false);
   };
 
   // Incoming call modal
@@ -308,15 +306,44 @@ const CallInterface = ({ conversation, onClose }) => {
   return (
     <div className="call-interface">
       <div className="call-header">
-        <h3>Erro</h3>
+        <div className="call-user-info">
+          <div className="user-avatar">
+            {(otherUser?.photoURL || otherUser?.profilePictureURL) ? (
+              <img 
+                src={otherUser.photoURL || otherUser.profilePictureURL} 
+                alt={otherUser.displayName || otherUser.name}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div 
+              className="default-avatar"
+              style={{ 
+                display: (otherUser?.photoURL || otherUser?.profilePictureURL) ? 'none' : 'flex' 
+              }}
+            >
+              {(otherUser?.displayName || otherUser?.name || 'U').charAt(0).toUpperCase()}
+            </div>
+          </div>
+          <div className="user-details">
+            <h3>Iniciar Chamada</h3>
+            <p>{otherUser?.displayName || otherUser?.name || 'Usuário'}</p>
+          </div>
+        </div>
         <button className="close-button" onClick={onClose}>
           ✕
         </button>
       </div>
-      <div className="error-content">
-        <p>Algo deu errado. Tente novamente.</p>
-        <button onClick={handleBackToOptions} className="retry-button">
-          Tentar Novamente
+      
+      <div className="call-options-content">
+        <button
+          className="start-call-button"
+          onClick={handleStartCall}
+          title="Iniciar chamada de vídeo"
+        >
+          📞 Ligar
         </button>
       </div>
     </div>
