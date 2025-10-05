@@ -46,6 +46,9 @@ const CallInterface = ({ conversation, onClose }) => {
   const existingRoom = activeRooms[conversation?.id];
   const roomButtonText = existingRoom ? '🚪 Entrar na Sala' : '🏠 Criar Sala';
   const roomButtonTitle = existingRoom ? 'Entrar na sala existente' : 'Criar nova sala de chamada';
+  
+  // Determine if we should show call interface
+  const shouldShowCallInterface = isInCall || (existingRoom && existingRoom.participants?.includes(currentUser?.uid));
 
   // Load other user data
   useEffect(() => {
@@ -61,6 +64,15 @@ const CallInterface = ({ conversation, onClose }) => {
       setIsIncomingCall(true);
     }
   }, [incomingCall, conversation?.id]);
+
+  // Sync call state when room exists
+  useEffect(() => {
+    if (existingRoom && existingRoom.participants?.includes(currentUser?.uid) && !isInCall) {
+      console.log('🔄 Syncing call state for existing room:', existingRoom);
+      // The room exists and user is a participant, but hook state is not synced
+      // This will be handled by the shouldShowCallInterface logic
+    }
+  }, [existingRoom, currentUser?.uid, isInCall]);
 
   // Get other participant info
   const getOtherParticipant = () => {
@@ -106,7 +118,15 @@ const CallInterface = ({ conversation, onClose }) => {
         }
         
         // This will either create a new room or join existing one
-        await startCall(conversation.id, otherUserId, 'video');
+        const result = await startCall(conversation.id, otherUserId, 'video');
+        
+        if (result) {
+          // Always initialize WebRTC connection via the hook
+          console.log('🔌 Initializing WebRTC connection...');
+          await startCallHook(conversation.id, otherUserId, 'video');
+          console.log('✅ WebRTC connection initialized');
+        }
+        
         console.log('✅ Room operation completed successfully');
       } else {
         console.error('Could not find other participant');
@@ -121,7 +141,15 @@ const CallInterface = ({ conversation, onClose }) => {
     
     try {
       console.log('🚪 Joining call room:', incomingCallData);
-      await acceptCall(incomingCallData.room, conversation.id);
+      const result = await acceptCall(incomingCallData.room, conversation.id);
+      
+      if (result) {
+        // Initialize WebRTC connection via the hook
+        console.log('🔌 Initializing WebRTC connection for join...');
+        await acceptCallHook(incomingCallData.room, conversation.id);
+        console.log('✅ WebRTC connection initialized for join');
+      }
+      
       setIsIncomingCall(false);
       setIncomingCallData(null);
       console.log('✅ Successfully joined room');
@@ -196,7 +224,7 @@ const CallInterface = ({ conversation, onClose }) => {
   }
 
   // Call interface (when in call)
-  if (isInCall) {
+  if (shouldShowCallInterface) {
     return (
       <div className="call-interface">
         <div className="call-header">
