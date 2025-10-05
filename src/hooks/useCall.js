@@ -148,7 +148,7 @@ const useCall = () => {
       initializePeerConnection();
 
       // Call backend to create SFU room
-      const response = await fetch('/api/start-call', {
+      const response = await fetch('https://vixter-react-llyd.vercel.app/api/start-call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -196,7 +196,7 @@ const useCall = () => {
       initializePeerConnection();
 
       // Call backend to get token
-      const response = await fetch('/api/accept-call', {
+      const response = await fetch('https://vixter-react-llyd.vercel.app/api/accept-call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -231,7 +231,7 @@ const useCall = () => {
     try {
       if (roomIdRef.current) {
         // Notify backend to end call
-        await fetch('/api/end-call', {
+        await fetch('https://vixter-react-llyd.vercel.app/api/end-call', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

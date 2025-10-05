@@ -1,15 +1,18 @@
-/* Call Interface Styles */
+/* Call Interface Styles - Contained within messaging */
 .call-interface {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(15, 15, 26, 0.95);
+  backdrop-filter: blur(10px);
   z-index: 1000;
   display: flex;
   flex-direction: column;
   color: white;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 /* Call Options Styles */
@@ -214,15 +217,55 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
+  padding: 15px 20px;
+  background: rgba(0, 255, 202, 0.1);
+  border-bottom: 1px solid rgba(0, 255, 202, 0.2);
 }
 
-.call-header h3 {
-  margin: 0;
+.call-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  border: 2px solid rgba(0, 255, 202, 0.3);
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.default-avatar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #00FFCA 0%, #8A2BE2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
   font-size: 1.2rem;
+}
+
+.user-details h3 {
+  margin: 0;
+  font-size: 1.1rem;
   font-weight: 600;
+  color: var(--vixter-accent-primary);
+}
+
+.user-details p {
+  margin: 2px 0 0 0;
+  font-size: 0.9rem;
+  color: var(--vixter-text-secondary);
 }
 
 .close-button {
@@ -250,7 +293,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 15px;
+  min-height: 200px;
 }
 
 .remote-video {
@@ -267,14 +311,14 @@
 
 .local-video {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 200px;
-  height: 150px;
+  top: 15px;
+  right: 15px;
+  width: 120px;
+  height: 90px;
   border-radius: 8px;
   overflow: hidden;
   background: #000;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(0, 255, 202, 0.5);
   z-index: 10;
 }
 
@@ -320,20 +364,20 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 20px;
-  padding: 30px;
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
+  gap: 15px;
+  padding: 20px;
+  background: rgba(0, 255, 202, 0.05);
+  border-top: 1px solid rgba(0, 255, 202, 0.2);
 }
 
 .control-button {
-  width: 60px;
-  height: 60px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 255, 202, 0.2);
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -343,7 +387,7 @@
 }
 
 .control-button:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 255, 202, 0.4);
   transform: scale(1.05);
 }
 
@@ -371,25 +415,24 @@
 }
 
 .start-call-button {
-  background: #2ed573;
+  background: linear-gradient(135deg, #00FFCA 0%, #8A2BE2 100%);
   border: none;
   color: white;
-  padding: 15px 30px;
-  border-radius: 25px;
-  font-size: 1.1rem;
+  padding: 12px 24px;
+  border-radius: 20px;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   transition: all 0.2s;
-  box-shadow: 0 4px 15px rgba(46, 213, 115, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 255, 202, 0.3);
 }
 
 .start-call-button:hover {
-  background: #26d065;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(46, 213, 115, 0.4);
+  box-shadow: 0 6px 20px rgba(0, 255, 202, 0.4);
 }
 
 /* Incoming Call Modal */
@@ -407,25 +450,37 @@
 }
 
 .call-modal {
-  background: white;
+  background: var(--vixter-bg-primary);
   border-radius: 20px;
-  padding: 40px;
+  padding: 30px;
   text-align: center;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   max-width: 400px;
   width: 90%;
+  border: 1px solid var(--vixter-border);
 }
 
-.call-modal h3 {
-  margin: 0 0 10px 0;
-  color: #333;
-  font-size: 1.5rem;
+.call-modal .call-header {
+  background: transparent;
+  border-bottom: none;
+  padding: 0 0 20px 0;
+  margin-bottom: 20px;
 }
 
-.call-modal p {
-  margin: 0 0 30px 0;
-  color: #666;
-  font-size: 1.1rem;
+.call-modal .user-avatar {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 15px auto;
+}
+
+.call-modal .user-details h3 {
+  font-size: 1.3rem;
+  margin-bottom: 5px;
+}
+
+.call-modal .user-details p {
+  font-size: 1rem;
+  color: var(--vixter-text-secondary);
 }
 
 .call-actions {
@@ -446,13 +501,13 @@
 }
 
 .call-button.accept {
-  background: #2ed573;
+  background: linear-gradient(135deg, #00FFCA 0%, #8A2BE2 100%);
   color: white;
 }
 
 .call-button.accept:hover {
-  background: #26d065;
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 255, 202, 0.4);
 }
 
 .call-button.reject {

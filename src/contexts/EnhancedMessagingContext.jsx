@@ -2191,7 +2191,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     try {
       setCallState('calling');
       
-      const response = await fetch('/api/start-call', {
+      const response = await fetch('https://vixter-react-llyd.vercel.app/api/start-call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2222,7 +2222,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     try {
       setCallState('connecting');
       
-      const response = await fetch('/api/accept-call', {
+      const response = await fetch('https://vixter-react-llyd.vercel.app/api/accept-call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2254,7 +2254,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
     try {
       if (roomId) {
-        const response = await fetch('/api/end-call', {
+        const response = await fetch('https://vixter-react-llyd.vercel.app/api/end-call', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

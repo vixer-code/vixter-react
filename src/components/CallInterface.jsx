@@ -29,7 +29,8 @@ const CallInterface = ({ conversation, onClose }) => {
     startCall, 
     acceptCall, 
     endCall, 
-    rejectCall 
+    rejectCall,
+    getOtherParticipant: getOtherParticipantFromContext
   } = useEnhancedMessaging();
 
   const [isIncomingCall, setIsIncomingCall] = useState(false);
@@ -37,6 +38,14 @@ const CallInterface = ({ conversation, onClose }) => {
   const [showCallOptions, setShowCallOptions] = useState(true);
   const [callType, setCallType] = useState(null); // 'audio' or 'video'
   const [isConnecting, setIsConnecting] = useState(false);
+  const [otherUser, setOtherUser] = useState(null);
+
+  // Load other user data
+  useEffect(() => {
+    if (conversation) {
+      getOtherParticipantFromContext(conversation).then(setOtherUser);
+    }
+  }, [conversation, getOtherParticipantFromContext]);
 
   // Handle incoming call from context
   useEffect(() => {
@@ -80,7 +89,7 @@ const CallInterface = ({ conversation, onClose }) => {
       const otherUserId = getOtherParticipant();
       
       if (otherUserId) {
-        const result = await startCall(conversation.id, otherUserId);
+        const result = await startCall(conversation.id, otherUserId, type);
         if (result) {
           // Start the actual call with the hook
           await startCallHook(conversation.id, otherUserId, type);
@@ -128,10 +137,34 @@ const CallInterface = ({ conversation, onClose }) => {
     return (
       <div className="call-modal-overlay">
         <div className="call-modal incoming-call">
-          <div className="call-header">
-            <h3>Chamada recebida</h3>
-            <p>de {conversation?.participants?.[incomingCallData?.from]?.name || 'Usuário'}</p>
+        <div className="call-header">
+          <div className="call-user-info">
+            <div className="user-avatar">
+              {(otherUser?.photoURL || otherUser?.profilePictureURL) ? (
+                <img 
+                  src={otherUser.photoURL || otherUser.profilePictureURL} 
+                  alt={otherUser.displayName || otherUser.name}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div 
+                className="default-avatar"
+                style={{ 
+                  display: (otherUser?.photoURL || otherUser?.profilePictureURL) ? 'none' : 'flex' 
+                }}
+              >
+                {(otherUser?.displayName || otherUser?.name || 'U').charAt(0).toUpperCase()}
+              </div>
+            </div>
+            <div className="user-details">
+              <h3>Chamada recebida</h3>
+              <p>de {otherUser?.displayName || otherUser?.name || 'Usuário'}</p>
+            </div>
           </div>
+        </div>
           
           <div className="call-actions">
             <button 
@@ -157,12 +190,37 @@ const CallInterface = ({ conversation, onClose }) => {
     return (
       <div className="call-interface">
         <div className="call-header">
-          <h3>
-            {callStatus === 'calling' && 'Ligando...'}
-            {callStatus === 'ringing' && 'Chamando...'}
-            {callStatus === 'connected' && 'Conectado'}
-            {callStatus === 'connecting' && 'Conectando...'}
-          </h3>
+          <div className="call-user-info">
+            <div className="user-avatar">
+              {(otherUser?.photoURL || otherUser?.profilePictureURL) ? (
+                <img 
+                  src={otherUser.photoURL || otherUser.profilePictureURL} 
+                  alt={otherUser.displayName || otherUser.name}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div 
+                className="default-avatar"
+                style={{ 
+                  display: (otherUser?.photoURL || otherUser?.profilePictureURL) ? 'none' : 'flex' 
+                }}
+              >
+                {(otherUser?.displayName || otherUser?.name || 'U').charAt(0).toUpperCase()}
+              </div>
+            </div>
+            <div className="user-details">
+              <h3>
+                {callStatus === 'calling' && 'Ligando...'}
+                {callStatus === 'ringing' && 'Chamando...'}
+                {callStatus === 'connected' && 'Conectado'}
+                {callStatus === 'connecting' && 'Conectando...'}
+              </h3>
+              <p>{otherUser?.displayName || otherUser?.name || 'Usuário'}</p>
+            </div>
+          </div>
           <button className="close-button" onClick={handleEndCall}>
             ✕
           </button>
@@ -246,101 +304,7 @@ const CallInterface = ({ conversation, onClose }) => {
     );
   }
 
-  // Call options (when not in call and showing options)
-  if (showCallOptions) {
-    const otherUserId = getOtherParticipant();
-    const otherUser = getOtherParticipantData();
-    
-    return (
-      <div className="call-interface call-options">
-        <div className="call-header">
-          <h3>Iniciar Chamada</h3>
-          <button className="close-button" onClick={onClose}>
-            ✕
-          </button>
-        </div>
-
-        <div className="call-options-content">
-          <div className="call-user-info">
-            <div className="user-avatar">
-              {otherUser?.photoURL || otherUser?.profilePictureURL ? (
-                <img 
-                  src={otherUser.photoURL || otherUser.profilePictureURL} 
-                  alt={otherUser.displayName || otherUser.name || 'Usuário'}
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                  }}
-                />
-              ) : null}
-              <div 
-                className="default-avatar"
-                style={{ 
-                  display: (otherUser?.photoURL || otherUser?.profilePictureURL) ? 'none' : 'flex' 
-                }}
-              >
-                {(otherUser?.displayName || otherUser?.name || 'U').charAt(0).toUpperCase()}
-              </div>
-            </div>
-            <div className="user-details">
-              <h4>{otherUser?.displayName || otherUser?.name || 'Usuário'}</h4>
-              <p>Escolha o tipo de chamada</p>
-            </div>
-          </div>
-
-          <div className="call-type-options">
-            <button
-              className="call-type-button video-call"
-              onClick={() => handleStartCall('video')}
-              disabled={isConnecting}
-            >
-              <div className="call-icon">📹</div>
-              <div className="call-info">
-                <h4>Chamada de Vídeo</h4>
-                <p>Vídeo e áudio</p>
-              </div>
-            </button>
-
-            <button
-              className="call-type-button audio-call"
-              onClick={() => handleStartCall('audio')}
-              disabled={isConnecting}
-            >
-              <div className="call-icon">🎤</div>
-              <div className="call-info">
-                <h4>Chamada de Voz</h4>
-                <p>Apenas áudio</p>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Connecting state
-  if (isConnecting) {
-    return (
-      <div className="call-interface connecting">
-        <div className="call-header">
-          <h3>Conectando...</h3>
-          <button className="close-button" onClick={handleBackToOptions}>
-            ✕
-          </button>
-        </div>
-
-        <div className="connecting-content">
-          <div className="connecting-animation">
-            <div className="spinner"></div>
-          </div>
-          <h4>Ligando para {getOtherParticipantData()?.displayName || getOtherParticipantData()?.name || 'Usuário'}...</h4>
-          <p>{callType === 'video' ? 'Chamada de vídeo' : 'Chamada de voz'}</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Fallback - should not reach here
+  // Call button (when not in call)
   return (
     <div className="call-interface">
       <div className="call-header">
