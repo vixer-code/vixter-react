@@ -1,6 +1,10 @@
-# Cloudflare SFU Setup Guide
+# Cloudflare Realtime SFU Setup Guide
 
-Este guia explica como configurar o Cloudflare SFU para chamadas de voz e vídeo 1:1 na aplicação Vixter.
+Este guia explica como configurar o Cloudflare Realtime SFU para chamadas de voz e vídeo 1:1 na aplicação Vixter.
+
+## Sobre o Cloudflare Realtime SFU
+
+O [Cloudflare Realtime SFU](https://developers.cloudflare.com/realtime/) é um servidor de mídia poderoso que roteia eficientemente streams de vídeo e áudio entre participantes. Ele roda na rede global da Cloudflare em centenas de cidades ao redor do mundo.
 
 ## Visão Geral
 
