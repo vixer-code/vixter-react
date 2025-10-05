@@ -165,7 +165,18 @@ const CallInterface = ({ conversation, onClose }) => {
   };
 
   const handleEndCall = () => {
-    endCall();
+    // Get room info from active rooms or call data
+    const roomId = existingRoom?.roomId || callData?.roomId;
+    const conversationId = conversation?.id;
+    
+    console.log('🔚 Ending call:', { roomId, conversationId });
+    
+    if (roomId && conversationId) {
+      endCall(roomId, conversationId);
+    } else {
+      console.warn('⚠️ Missing roomId or conversationId for end call');
+    }
+    
     endCallHook();
     onClose?.();
   };

@@ -1022,6 +1022,21 @@ export const EnhancedMessagingProvider = ({ children }) => {
           setIncomingCall(data);
           setCallState('room_available');
           
+          // Update active rooms state when receiving call invite
+          if (data.roomId && data.conversationId) {
+            setActiveRooms(prev => ({
+              ...prev,
+              [data.conversationId]: {
+                roomId: data.roomId,
+                conversationId: data.conversationId,
+                participants: [data.callerId, data.calleeId],
+                callType: data.callType,
+                createdAt: Date.now(),
+                status: 'active'
+              }
+            }));
+          }
+          
           // Show notification for available call room
           const callTypeText = data.callType === 'video' ? 'vídeo' : 'voz';
           showInfo(
@@ -1036,6 +1051,39 @@ export const EnhancedMessagingProvider = ({ children }) => {
               data: { conversationId: data.conversationId, callData: data }
             }
           );
+        } else if (data.type === 'room_state_update') {
+          console.log('🏠 Received room state update:', data);
+          // Update active rooms state when receiving room state update
+          if (data.roomId && data.conversationId) {
+            setActiveRooms(prev => ({
+              ...prev,
+              [data.conversationId]: {
+                roomId: data.roomId,
+                conversationId: data.conversationId,
+                participants: data.participants,
+                callType: data.callType,
+                createdAt: data.createdAt,
+                status: data.status
+              }
+            }));
+          }
+        } else if (data.type === 'room_ended') {
+          console.log('🏠 Received room end notification:', data);
+          // Clear active room state when receiving room end notification
+          if (data.conversationId) {
+            setActiveRooms(prev => {
+              const updated = { ...prev };
+              delete updated[data.conversationId];
+              return updated;
+            });
+            
+            // Show notification about room end
+            showInfo(
+              'A sala de chamada foi encerrada',
+              'Chamada Encerrada',
+              5000
+            );
+          }
         } else if (data.type === 'new_message') {
           const { message, conversationId } = data;
           
@@ -2228,17 +2276,36 @@ export const EnhancedMessagingProvider = ({ children }) => {
       const callData = await response.json();
       
       // Store the active room
+      const roomData = {
+        roomId: callData.roomId,
+        conversationId,
+        participants: [currentUser.uid, otherUserId],
+        callType,
+        createdAt: Date.now(),
+        status: 'active'
+      };
+      
       setActiveRooms(prev => ({
         ...prev,
-        [conversationId]: {
+        [conversationId]: roomData
+      }));
+      
+      // Send room state update to other user
+      try {
+        const userChannel = `user:${otherUserId}`;
+        await publish(userChannel, {
+          type: 'room_state_update',
           roomId: callData.roomId,
           conversationId,
           participants: [currentUser.uid, otherUserId],
           callType,
-          createdAt: Date.now(),
+          createdAt: roomData.createdAt,
           status: 'active'
-        }
-      }));
+        });
+        console.log('✅ Room state update sent to:', otherUserId);
+      } catch (error) {
+        console.error('❌ Error sending room state update:', error);
+      }
       
       setCallState('room_created');
       return callData;
@@ -2276,14 +2343,36 @@ export const EnhancedMessagingProvider = ({ children }) => {
       const callData = await response.json();
       
       // Update the active room to include this user
+      const updatedRoom = {
+        ...prev[conversationId],
+        participants: [...(prev[conversationId]?.participants || []), currentUser.uid],
+        status: 'active'
+      };
+      
       setActiveRooms(prev => ({
         ...prev,
-        [conversationId]: {
-          ...prev[conversationId],
-          participants: [...(prev[conversationId]?.participants || []), currentUser.uid],
-          status: 'active'
-        }
+        [conversationId]: updatedRoom
       }));
+      
+      // Send room state update to other participants
+      try {
+        const otherParticipants = updatedRoom.participants.filter(id => id !== currentUser.uid);
+        for (const participantId of otherParticipants) {
+          const userChannel = `user:${participantId}`;
+          await publish(userChannel, {
+            type: 'room_state_update',
+            roomId,
+            conversationId,
+            participants: updatedRoom.participants,
+            callType,
+            createdAt: updatedRoom.createdAt,
+            status: 'active'
+          });
+          console.log('✅ Room state update sent to participant:', participantId);
+        }
+      } catch (error) {
+        console.error('❌ Error sending room state update:', error);
+      }
       
       setCallState('joined');
       return callData;
@@ -2359,13 +2448,36 @@ export const EnhancedMessagingProvider = ({ children }) => {
         }
       }
 
-      // Clear active room state
+      // Clear active room state and notify other participants
       if (conversationId) {
+        const roomToEnd = activeRooms[conversationId];
+        
+        // Clear local state
         setActiveRooms(prev => {
           const updated = { ...prev };
           delete updated[conversationId];
           return updated;
         });
+        
+        // Notify other participants about room end
+        if (roomToEnd && roomToEnd.participants) {
+          try {
+            const otherParticipants = roomToEnd.participants.filter(id => id !== currentUser.uid);
+            for (const participantId of otherParticipants) {
+              const userChannel = `user:${participantId}`;
+              await publish(userChannel, {
+                type: 'room_ended',
+                roomId: roomToEnd.roomId,
+                conversationId,
+                endedBy: currentUser.uid,
+                timestamp: Date.now()
+              });
+              console.log('✅ Room end notification sent to participant:', participantId);
+            }
+          } catch (error) {
+            console.error('❌ Error sending room end notification:', error);
+          }
+        }
       }
       
       setCallState('idle');
@@ -2378,6 +2490,37 @@ export const EnhancedMessagingProvider = ({ children }) => {
       return false;
     }
   }, [currentUser?.uid]);
+
+  // Cleanup function to end all active rooms when user leaves
+  const cleanupActiveRooms = useCallback(async () => {
+    if (!currentUser?.uid) return;
+    
+    console.log('🧹 Cleaning up active rooms on page unload');
+    
+    for (const [conversationId, room] of Object.entries(activeRooms)) {
+      if (room.participants?.includes(currentUser.uid)) {
+        try {
+          await endCall(room.roomId, conversationId);
+          console.log('✅ Cleaned up room:', conversationId);
+        } catch (error) {
+          console.error('❌ Error cleaning up room:', conversationId, error);
+        }
+      }
+    }
+  }, [currentUser?.uid, activeRooms, endCall]);
+
+  // Add cleanup on page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      cleanupActiveRooms();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [cleanupActiveRooms]);
 
   const rejectCall = useCallback(() => {
     setIncomingCall(null);
