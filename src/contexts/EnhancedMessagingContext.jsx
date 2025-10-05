@@ -192,6 +192,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
   // Call state
   const [incomingCall, setIncomingCall] = useState(null);
   const [callState, setCallState] = useState('idle'); // idle, calling, ringing, connected, ended
+  const [activeRooms, setActiveRooms] = useState({}); // Track active call rooms by conversationId
   
   // Ref to access current selectedConversation in global subscription
   const selectedConversationRef = useRef(selectedConversation);
@@ -2190,6 +2191,23 @@ export const EnhancedMessagingProvider = ({ children }) => {
     if (!currentUser?.uid || !conversationId || !otherUserId) return false;
 
     try {
+      // Check if there's already an active room for this conversation
+      const existingRoom = activeRooms[conversationId];
+      if (existingRoom) {
+        console.log('🏠 Room already exists for conversation:', conversationId);
+        console.log('📊 Existing room data:', existingRoom);
+        
+        // If the current user is not in the room, join it
+        if (!existingRoom.participants?.includes(currentUser.uid)) {
+          console.log('🚪 Joining existing room...');
+          return await joinExistingRoom(conversationId, existingRoom.roomId, callType);
+        } else {
+          console.log('✅ User already in room');
+          return existingRoom;
+        }
+      }
+
+      console.log('🏠 Creating new room for conversation:', conversationId);
       setCallState('calling');
       
       const response = await fetch('https://vixter-react-llyd.vercel.app/api/start-call', {
@@ -2208,12 +2226,71 @@ export const EnhancedMessagingProvider = ({ children }) => {
       }
 
       const callData = await response.json();
-      setCallState('ringing');
+      
+      // Store the active room
+      setActiveRooms(prev => ({
+        ...prev,
+        [conversationId]: {
+          roomId: callData.roomId,
+          conversationId,
+          participants: [currentUser.uid, otherUserId],
+          callType,
+          createdAt: Date.now(),
+          status: 'active'
+        }
+      }));
+      
+      setCallState('room_created');
       return callData;
     } catch (error) {
       console.error('Error starting call:', error);
       setCallState('idle');
       showError('Erro ao iniciar chamada');
+      return false;
+    }
+  }, [currentUser?.uid, showError, activeRooms]);
+
+  // Join existing room
+  const joinExistingRoom = useCallback(async (conversationId, roomId, callType = 'video') => {
+    if (!currentUser?.uid || !roomId || !conversationId) return false;
+
+    try {
+      console.log('🚪 Joining existing room:', roomId);
+      setCallState('joining');
+      
+      const response = await fetch('https://vixter-react-llyd.vercel.app/api/accept-call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomId,
+          conversationId,
+          userId: currentUser.uid,
+          callType
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to join room');
+      }
+
+      const callData = await response.json();
+      
+      // Update the active room to include this user
+      setActiveRooms(prev => ({
+        ...prev,
+        [conversationId]: {
+          ...prev[conversationId],
+          participants: [...(prev[conversationId]?.participants || []), currentUser.uid],
+          status: 'active'
+        }
+      }));
+      
+      setCallState('joined');
+      return callData;
+    } catch (error) {
+      console.error('Error joining room:', error);
+      setCallState('idle');
+      showError('Erro ao entrar na sala');
       return false;
     }
   }, [currentUser?.uid, showError]);
@@ -2239,6 +2316,17 @@ export const EnhancedMessagingProvider = ({ children }) => {
       }
 
       const callData = await response.json();
+      
+      // Update the active room to include this user
+      setActiveRooms(prev => ({
+        ...prev,
+        [conversationId]: {
+          ...prev[conversationId],
+          participants: [...(prev[conversationId]?.participants || []), currentUser.uid],
+          status: 'active'
+        }
+      }));
+      
       setCallState('connected');
       setIncomingCall(null);
       return callData;
@@ -2271,6 +2359,15 @@ export const EnhancedMessagingProvider = ({ children }) => {
         }
       }
 
+      // Clear active room state
+      if (conversationId) {
+        setActiveRooms(prev => {
+          const updated = { ...prev };
+          delete updated[conversationId];
+          return updated;
+        });
+      }
+      
       setCallState('idle');
       setIncomingCall(null);
       return true;
@@ -2498,6 +2595,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
     // Call state
     incomingCall,
     callState,
+    activeRooms,
 
     // Actions
     setSelectedConversation,

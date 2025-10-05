@@ -27,6 +27,7 @@ const CallInterface = ({ conversation, onClose }) => {
   const { 
     incomingCall, 
     callState, 
+    activeRooms,
     startCall, 
     acceptCall, 
     endCall, 
@@ -40,6 +41,11 @@ const CallInterface = ({ conversation, onClose }) => {
 
   // Get call type with fallback
   const callType = callData?.callType || 'video';
+  
+  // Check if there's an active room for this conversation
+  const existingRoom = activeRooms[conversation?.id];
+  const roomButtonText = existingRoom ? '🚪 Entrar na Sala' : '🏠 Criar Sala';
+  const roomButtonTitle = existingRoom ? 'Entrar na sala existente' : 'Criar nova sala de chamada';
 
   // Load other user data
   useEffect(() => {
@@ -86,20 +92,27 @@ const CallInterface = ({ conversation, onClose }) => {
     }
     
     try {
-      console.log('🏠 Creating call room for conversation:', conversation.id);
+      console.log('🏠 Creating/joining room for conversation:', conversation.id);
       const otherUserId = getOtherParticipant();
       console.log('Other user ID:', otherUserId);
       
       if (otherUserId) {
-        // Create video call room by default - use only the hook to avoid duplication
-        console.log('Creating call room with hook...');
-        await startCallHook(conversation.id, otherUserId, 'video');
-        console.log('Call room created successfully');
+        // Check if room already exists
+        const existingRoom = activeRooms[conversation.id];
+        if (existingRoom) {
+          console.log('🏠 Room already exists, joining...');
+        } else {
+          console.log('🏠 Creating new room...');
+        }
+        
+        // This will either create a new room or join existing one
+        await startCall(conversation.id, otherUserId, 'video');
+        console.log('✅ Room operation completed successfully');
       } else {
         console.error('Could not find other participant');
       }
     } catch (error) {
-      console.error('Error creating call room:', error);
+      console.error('Error with room operation:', error);
     }
   };
 
@@ -340,9 +353,9 @@ const CallInterface = ({ conversation, onClose }) => {
         <button
           className="start-call-button"
           onClick={handleCreateRoom}
-          title="Criar sala de chamada"
+          title={roomButtonTitle}
         >
-          🏠 Criar Sala
+          {roomButtonText}
         </button>
       </div>
     </div>

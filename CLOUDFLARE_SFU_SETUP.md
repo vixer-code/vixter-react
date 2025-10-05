@@ -77,32 +77,33 @@ Centrifugo (WebSocket)
 Backend (Next.js)
 ```
 
-## Fluxo de Chamada
+## Fluxo de Chamada (Modelo de Sala)
 
-### 1. Iniciar Chamada
-1. Usuário clica em "Ligar" no chat
+### 1. Criar Sala de Chamada
+1. Usuário A clica em "🏠 Criar Sala" no chat
 2. Frontend chama `/api/start-call`
-3. Backend cria sala SFU na Cloudflare
-4. Backend gera tokens JWT para ambos os usuários
-5. Backend publica convite via Centrifugo
+3. Backend cria sessão no Cloudflare Realtime SFU
+4. Usuário A entra automaticamente na sala
+5. Sistema envia notificação para Usuário B: "Sala de Chamada Disponível"
 
-### 2. Aceitar Chamada
-1. Outro usuário recebe notificação via Centrifugo
-2. Frontend chama `/api/accept-call`
-3. Backend gera token JWT para o usuário
-4. Ambos conectam ao SFU com seus tokens
+### 2. Entrar na Sala
+1. Usuário B recebe notificação: "Usuário A criou uma sala de vídeo. Clique para entrar!"
+2. Usuário B clica em "🚪 Entrar na Sala"
+3. Frontend chama `/api/accept-call`
+4. Usuário B entra na sala existente
+5. Ambos os usuários estão conectados via WebRTC
 
-### 3. WebRTC Connection
-1. Cada peer cria `RTCPeerConnection`
-2. Captura áudio/vídeo via `getUserMedia()`
-3. Publica tracks no SFU
-4. SFU roteia mídia entre os peers
+### 3. Durante a Chamada
+1. Usuários podem mutar/desmutar áudio
+2. Usuários podem ligar/desligar vídeo
+3. Usuários podem compartilhar tela
+4. Sistema gerencia conexões WebRTC automaticamente
 
-### 4. Encerrar Chamada
-1. Qualquer usuário clica "Encerrar"
-2. Frontend chama `/api/end-call`
-3. Backend deleta sala SFU
-4. Notifica outros participantes via Centrifugo
+### 4. Vantagens do Modelo de Sala
+- ✅ **Sem spam**: Apenas uma notificação por sala criada
+- ✅ **Flexível**: Usuário B pode entrar quando quiser
+- ✅ **Intuitivo**: Interface clara de "criar sala" vs "entrar na sala"
+- ✅ **Persistente**: Sala fica disponível até ser fechada
 
 ## APIs Implementadas
 
