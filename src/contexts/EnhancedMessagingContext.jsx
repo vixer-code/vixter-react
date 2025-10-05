@@ -190,8 +190,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
   const typingTimeoutRef = useRef(null);
   
   // Call state
-  const [incomingCall, setIncomingCall] = useState(null);
-  const [callState, setCallState] = useState('idle'); // idle, calling, ringing, connected, ended
   const [activeRooms, setActiveRooms] = useState({}); // Track active call rooms by conversationId
   
   // Ref to access current selectedConversation in global subscription
@@ -1017,41 +1015,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
         console.log('🌐 Message data:', data.message);
         console.log('🌐 Conversation ID:', data.conversationId);
         
-        if (data.type === 'call_invite') {
-          console.log('📞 Received call room invitation:', data);
-          setIncomingCall(data);
-          setCallState('room_available');
-          
-          // Update active rooms state when receiving call invite
-          if (data.roomId && data.conversationId) {
-            setActiveRooms(prev => ({
-              ...prev,
-              [data.conversationId]: {
-                roomId: data.roomId,
-                conversationId: data.conversationId,
-                participants: [data.callerId, data.calleeId],
-                callType: data.callType,
-                createdAt: Date.now(),
-                status: 'active'
-              }
-            }));
-          }
-          
-          // Show notification for available call room
-          const callTypeText = data.callType === 'video' ? 'vídeo' : 'voz';
-          showInfo(
-            `${data.from} criou uma sala de ${callTypeText}. Clique para entrar!`,
-            'Sala de Chamada Disponível',
-            15000,
-            {
-              onClick: () => {
-                // Navigate to messages page and select conversation
-                window.location.href = `/messages`;
-              },
-              data: { conversationId: data.conversationId, callData: data }
-            }
-          );
-        } else if (data.type === 'room_state_update') {
+        if (data.type === 'room_state_update') {
           console.log('🏠 Received room state update:', data);
           // Update active rooms state when receiving room state update
           if (data.roomId && data.conversationId) {
@@ -2256,7 +2220,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
       }
 
       console.log('🏠 Creating new room for conversation:', conversationId);
-      setCallState('calling');
       
       const response = await fetch('https://vixter-react-llyd.vercel.app/api/start-call', {
         method: 'POST',
@@ -2311,7 +2274,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
       return callData;
     } catch (error) {
       console.error('Error starting call:', error);
-      setCallState('idle');
       showError('Erro ao iniciar chamada');
       return false;
     }
@@ -2323,7 +2285,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
 
     try {
       console.log('🚪 Joining existing room:', roomId);
-      setCallState('joining');
       
       const response = await fetch('https://vixter-react-llyd.vercel.app/api/accept-call', {
         method: 'POST',
@@ -2378,7 +2339,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
       return callData;
     } catch (error) {
       console.error('Error joining room:', error);
-      setCallState('idle');
       showError('Erro ao entrar na sala');
       return false;
     }
@@ -2388,8 +2348,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
     if (!currentUser?.uid || !roomId || !conversationId) return false;
 
     try {
-      setCallState('connecting');
-      
       const response = await fetch('https://vixter-react-llyd.vercel.app/api/accept-call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2421,7 +2379,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
       return callData;
     } catch (error) {
       console.error('Error accepting call:', error);
-      setCallState('idle');
       setIncomingCall(null);
       showError('Erro ao aceitar chamada');
       return false;
@@ -2485,7 +2442,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
       return true;
     } catch (error) {
       console.error('Error ending call:', error);
-      setCallState('idle');
       setIncomingCall(null);
       return false;
     }
@@ -2521,11 +2477,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [cleanupActiveRooms]);
-
-  const rejectCall = useCallback(() => {
-    setIncomingCall(null);
-    setCallState('idle');
-  }, []);
 
   // Create service conversation when order is accepted
   const createServiceConversation = useCallback(async (serviceOrder) => {
@@ -2736,8 +2687,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
     isTyping,
 
     // Call state
-    incomingCall,
-    callState,
     activeRooms,
 
     // Actions
@@ -2801,7 +2750,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
     startCall,
     acceptCall,
     endCall,
-    rejectCall,
     sendServiceNotification,
     sendPackNotification,
     createServiceConversation,

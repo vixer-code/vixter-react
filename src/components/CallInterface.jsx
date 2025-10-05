@@ -25,18 +25,13 @@ const CallInterface = ({ conversation, onClose }) => {
   } = useCall();
 
   const { 
-    incomingCall, 
-    callState, 
     activeRooms,
     startCall, 
     acceptCall, 
     endCall, 
-    rejectCall,
     getOtherParticipant: getOtherParticipantFromContext
   } = useEnhancedMessaging();
 
-  const [isIncomingCall, setIsIncomingCall] = useState(false);
-  const [incomingCallData, setIncomingCallData] = useState(null);
   const [otherUser, setOtherUser] = useState(null);
 
   // Get call type with fallback
@@ -56,14 +51,6 @@ const CallInterface = ({ conversation, onClose }) => {
       getOtherParticipantFromContext(conversation).then(setOtherUser);
     }
   }, [conversation, getOtherParticipantFromContext]);
-
-  // Handle incoming call from context
-  useEffect(() => {
-    if (incomingCall && incomingCall.conversationId === conversation?.id) {
-      setIncomingCallData(incomingCall);
-      setIsIncomingCall(true);
-    }
-  }, [incomingCall, conversation?.id]);
 
   // Sync call state when room exists
   useEffect(() => {
@@ -136,34 +123,6 @@ const CallInterface = ({ conversation, onClose }) => {
     }
   };
 
-  const handleJoinRoom = async () => {
-    if (!incomingCallData) return;
-    
-    try {
-      console.log('🚪 Joining call room:', incomingCallData);
-      const result = await acceptCall(incomingCallData.room, conversation.id);
-      
-      if (result) {
-        // Initialize WebRTC connection via the hook
-        console.log('🔌 Initializing WebRTC connection for join...');
-        await acceptCallHook(incomingCallData.room, conversation.id);
-        console.log('✅ WebRTC connection initialized for join');
-      }
-      
-      setIsIncomingCall(false);
-      setIncomingCallData(null);
-      console.log('✅ Successfully joined room');
-    } catch (error) {
-      console.error('❌ Error joining room:', error);
-    }
-  };
-
-  const handleRejectCall = () => {
-    rejectCall();
-    setIsIncomingCall(false);
-    setIncomingCallData(null);
-  };
-
   const handleEndCall = () => {
     // Get room info from active rooms or call data
     const roomId = existingRoom?.roomId || callData?.roomId;
@@ -180,59 +139,6 @@ const CallInterface = ({ conversation, onClose }) => {
     endCallHook();
     onClose?.();
   };
-
-  // Available call room modal
-  if (isIncomingCall) {
-    return (
-      <div className="call-modal-overlay">
-        <div className="call-modal incoming-call">
-        <div className="call-header">
-          <div className="call-user-info">
-            <div className="user-avatar">
-              {(otherUser?.photoURL || otherUser?.profilePictureURL) ? (
-                <img 
-                  src={otherUser.photoURL || otherUser.profilePictureURL} 
-                  alt={otherUser.displayName || otherUser.name}
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                  }}
-                />
-              ) : null}
-              <div 
-                className="default-avatar"
-                style={{ 
-                  display: (otherUser?.photoURL || otherUser?.profilePictureURL) ? 'none' : 'flex' 
-                }}
-              >
-                {(otherUser?.displayName || otherUser?.name || 'U').charAt(0).toUpperCase()}
-              </div>
-            </div>
-            <div className="user-details">
-              <h3>Sala de Chamada Disponível</h3>
-              <p>{otherUser?.displayName || otherUser?.name || 'Usuário'} criou uma sala de {callType === 'video' ? 'vídeo' : 'voz'}</p>
-            </div>
-          </div>
-        </div>
-          
-          <div className="call-actions">
-            <button 
-              className="call-button accept"
-              onClick={handleJoinRoom}
-            >
-              🚪 Entrar na Sala
-            </button>
-            <button 
-              className="call-button reject"
-              onClick={handleRejectCall}
-            >
-              ❌ Fechar
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Call interface (when in call)
   if (shouldShowCallInterface) {
