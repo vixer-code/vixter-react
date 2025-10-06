@@ -2270,7 +2270,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
         console.error('❌ Error sending room state update:', error);
       }
       
-      setCallState('room_created');
       return callData;
     } catch (error) {
       console.error('Error starting call:', error);
@@ -2335,7 +2334,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
         console.error('❌ Error sending room state update:', error);
       }
       
-      setCallState('joined');
       return callData;
     } catch (error) {
       console.error('Error joining room:', error);
@@ -2374,12 +2372,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
         }
       }));
       
-      setCallState('connected');
-      setIncomingCall(null);
       return callData;
     } catch (error) {
       console.error('Error accepting call:', error);
-      setIncomingCall(null);
       showError('Erro ao aceitar chamada');
       return false;
     }
@@ -2437,12 +2432,9 @@ export const EnhancedMessagingProvider = ({ children }) => {
         }
       }
       
-      setCallState('idle');
-      setIncomingCall(null);
       return true;
     } catch (error) {
       console.error('Error ending call:', error);
-      setIncomingCall(null);
       return false;
     }
   }, [currentUser?.uid]);

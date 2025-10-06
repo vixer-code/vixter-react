@@ -143,7 +143,7 @@ const CallInterface = ({ conversation, onClose }) => {
   // Call interface (when in call)
   if (shouldShowCallInterface) {
     return (
-      <div className="call-interface">
+      <div className="call-interface call-active">
         <div className="call-header">
           <div className="call-user-info">
             <div className="user-avatar">

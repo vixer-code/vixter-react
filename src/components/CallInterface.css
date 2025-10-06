@@ -13,6 +13,13 @@
   color: white;
   border-radius: 12px;
   overflow: hidden;
+  min-height: 100vh;
+  max-height: 100vh;
+}
+
+/* Active call interface */
+.call-interface.call-active {
+  background: linear-gradient(135deg, rgba(15, 15, 26, 0.98) 0%, rgba(25, 25, 40, 0.95) 100%);
 }
 
 /* Call Options Styles */
@@ -217,9 +224,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
+  padding: 12px 16px;
   background: rgba(0, 255, 202, 0.1);
   border-bottom: 1px solid rgba(0, 255, 202, 0.2);
+  min-height: 60px;
+  flex-shrink: 0;
 }
 
 .call-user-info {
@@ -300,8 +309,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 15px;
+  padding: 8px;
   min-height: 200px;
+  overflow: hidden;
 }
 
 .remote-video {
@@ -318,10 +328,10 @@
 
 .local-video {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  width: 120px;
-  height: 90px;
+  top: 8px;
+  right: 8px;
+  width: 100px;
+  height: 75px;
   border-radius: 8px;
   overflow: hidden;
   background: #000;
@@ -371,26 +381,30 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 15px;
-  padding: 20px;
+  gap: 12px;
+  padding: 16px 12px;
   background: rgba(0, 255, 202, 0.05);
   border-top: 1px solid rgba(0, 255, 202, 0.2);
+  flex-shrink: 0;
+  min-height: 80px;
 }
 
 .control-button {
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: none;
   background: rgba(0, 255, 202, 0.2);
   color: white;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
   backdrop-filter: blur(10px);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .control-button:hover {
@@ -413,7 +427,9 @@
 
 .control-button.end-call {
   background: #ff4757;
-  font-size: 1.8rem;
+  font-size: 1.4rem;
+  width: 56px;
+  height: 56px;
 }
 
 .control-button.end-call:hover {
@@ -529,35 +545,149 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .call-interface {
+    border-radius: 0;
+    min-height: 100vh;
+    max-height: 100vh;
+  }
+  
+  .call-header {
+    padding: 10px 12px;
+    min-height: 50px;
+  }
+  
+  .call-user-info {
+    gap: 8px;
+  }
+  
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .user-details h3 {
+    font-size: 1rem;
+  }
+  
+  .user-details p {
+    font-size: 0.8rem;
+  }
+  
+  .close-button {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  
+  .video-container {
+    padding: 4px;
+  }
+  
   .local-video {
-    width: 150px;
-    height: 112px;
-    top: 15px;
-    right: 15px;
+    width: 80px;
+    height: 60px;
+    top: 4px;
+    right: 4px;
   }
   
   .call-controls {
-    gap: 15px;
-    padding: 20px;
+    gap: 8px;
+    padding: 12px 8px;
+    min-height: 70px;
   }
   
   .control-button {
-    width: 50px;
-    height: 50px;
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+  }
+  
+  .control-button.end-call {
+    width: 52px;
+    height: 52px;
     font-size: 1.2rem;
   }
   
   .call-modal {
-    padding: 30px 20px;
+    padding: 20px 16px;
+    margin: 16px;
   }
   
   .call-actions {
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
   }
   
   .call-button {
     width: 100%;
+    padding: 12px 20px;
+  }
+  
+  .start-call-button {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .call-header {
+    padding: 8px 10px;
+    min-height: 45px;
+  }
+  
+  .call-user-info {
+    gap: 6px;
+  }
+  
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .user-details h3 {
+    font-size: 0.9rem;
+  }
+  
+  .user-details p {
+    font-size: 0.75rem;
+  }
+  
+  .close-button {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
+  }
+  
+  .local-video {
+    width: 70px;
+    height: 52px;
+  }
+  
+  .call-controls {
+    gap: 6px;
+    padding: 10px 6px;
+    min-height: 65px;
+  }
+  
+  .control-button {
+    width: 40px;
+    height: 40px;
+    font-size: 0.9rem;
+  }
+  
+  .control-button.end-call {
+    width: 48px;
+    height: 48px;
+    font-size: 1.1rem;
+  }
+  
+  .video-placeholder .avatar {
+    font-size: 3rem;
+  }
+  
+  .video-placeholder p {
+    font-size: 0.9rem;
   }
 }
 
