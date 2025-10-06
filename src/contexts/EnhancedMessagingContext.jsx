@@ -1041,12 +1041,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
               return updated;
             });
             
-            // Show notification about room end
-            showInfo(
-              'A sala de chamada foi encerrada',
-              'Chamada Encerrada',
-              5000
-            );
+            // No notification shown - rooms end silently
+            console.log('✅ Room ended silently');
           }
         } else if (data.type === 'new_message') {
           const { message, conversationId } = data;
@@ -2253,22 +2249,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
         [conversationId]: roomData
       }));
       
-      // Send room state update to other user
-      try {
-        const userChannel = `user:${otherUserId}`;
-        await publish(userChannel, {
-          type: 'room_state_update',
-          roomId: callData.roomId,
-          conversationId,
-          participants: [currentUser.uid, otherUserId],
-          callType,
-          createdAt: roomData.createdAt,
-          status: 'active'
-        });
-        console.log('✅ Room state update sent to:', otherUserId);
-      } catch (error) {
-        console.error('❌ Error sending room state update:', error);
-      }
+      // No need to send notifications - users can join existing rooms directly
+      console.log('✅ Room created successfully, waiting for other user to join');
       
       return callData;
     } catch (error) {
@@ -2314,25 +2296,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
         [conversationId]: updatedRoom
       }));
       
-      // Send room state update to other participants
-      try {
-        const otherParticipants = updatedRoom.participants.filter(id => id !== currentUser.uid);
-        for (const participantId of otherParticipants) {
-          const userChannel = `user:${participantId}`;
-          await publish(userChannel, {
-            type: 'room_state_update',
-            roomId,
-            conversationId,
-            participants: updatedRoom.participants,
-            callType,
-            createdAt: updatedRoom.createdAt,
-            status: 'active'
-          });
-          console.log('✅ Room state update sent to participant:', participantId);
-        }
-      } catch (error) {
-        console.error('❌ Error sending room state update:', error);
-      }
+      // Room joined successfully - no need to notify others
+      console.log('✅ Successfully joined existing room');
       
       return callData;
     } catch (error) {
@@ -2372,6 +2337,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
         }
       }));
       
+      console.log('✅ Call accepted and room updated');
+      
       return callData;
     } catch (error) {
       console.error('Error accepting call:', error);
@@ -2400,35 +2367,40 @@ export const EnhancedMessagingProvider = ({ children }) => {
         }
       }
 
-      // Clear active room state and notify other participants
+      // Update room state to remove current user
       if (conversationId) {
-        const roomToEnd = activeRooms[conversationId];
+        const roomToUpdate = activeRooms[conversationId];
         
-        // Clear local state
-        setActiveRooms(prev => {
-          const updated = { ...prev };
-          delete updated[conversationId];
-          return updated;
-        });
-        
-        // Notify other participants about room end
-        if (roomToEnd && roomToEnd.participants) {
-          try {
-            const otherParticipants = roomToEnd.participants.filter(id => id !== currentUser.uid);
-            for (const participantId of otherParticipants) {
-              const userChannel = `user:${participantId}`;
-              await publish(userChannel, {
-                type: 'room_ended',
-                roomId: roomToEnd.roomId,
-                conversationId,
-                endedBy: currentUser.uid,
-                timestamp: Date.now()
-              });
-              console.log('✅ Room end notification sent to participant:', participantId);
-            }
-          } catch (error) {
-            console.error('❌ Error sending room end notification:', error);
+        if (roomToUpdate && roomToUpdate.participants) {
+          // Remove current user from participants
+          const updatedParticipants = roomToUpdate.participants.filter(id => id !== currentUser.uid);
+          
+          if (updatedParticipants.length === 0) {
+            // No more participants - delete the room
+            setActiveRooms(prev => {
+              const updated = { ...prev };
+              delete updated[conversationId];
+              return updated;
+            });
+            console.log('✅ Room deleted - no more participants');
+          } else {
+            // Still has participants - update the room
+            setActiveRooms(prev => ({
+              ...prev,
+              [conversationId]: {
+                ...roomToUpdate,
+                participants: updatedParticipants
+              }
+            }));
+            console.log('✅ User left room, room still active with', updatedParticipants.length, 'participants');
           }
+        } else {
+          // Room doesn't exist or has no participants - just clear local state
+          setActiveRooms(prev => {
+            const updated = { ...prev };
+            delete updated[conversationId];
+            return updated;
+          });
         }
       }
       

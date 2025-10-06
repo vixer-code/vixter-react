@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateCloudflareSFUToken, createSFURoom, generateCallRoomId } from '../../../lib/cloudflare-sfu';
-import { publishToChannel } from '../../../lib/centrifugo';
+import { generateCloudflareSFUToken } from '../../../lib/cloudflare-sfu';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('📞 Start call API called');
-    const { conversationId, callerId, calleeId, callType = 'video' } = await request.json();
-    console.log('📞 Request data:', { conversationId, callerId, calleeId, callType });
+    console.log('🚪 Join call API called');
+    const { roomId, userId, conversationId } = await request.json();
+    console.log('🚪 Request data:', { roomId, userId, conversationId });
 
     // Get origin for CORS
     const origin = request.headers.get('origin') || 'https://vixter-react.vercel.app';
@@ -17,10 +16,10 @@ export async function POST(request: NextRequest) {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     };
 
-    if (!conversationId || !callerId || !calleeId) {
+    if (!roomId || !userId || !conversationId) {
       console.error('❌ Missing required parameters');
       return NextResponse.json(
-        { error: 'Missing required parameters: conversationId, callerId, calleeId' },
+        { error: 'Missing required parameters: roomId, userId, conversationId' },
         { 
           status: 400,
           headers: corsHeaders
@@ -28,52 +27,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate unique room ID for this call
-    const roomId = generateCallRoomId(conversationId);
-    console.log('📞 Generated room ID:', roomId);
-    
-    // Create SFU room
-    console.log('📞 Creating SFU room...');
-    await createSFURoom(roomId, [callerId, calleeId]);
-    console.log('✅ SFU room created');
-
-    // Generate JWT token for the caller
-    const callerToken = generateCloudflareSFUToken(callerId, roomId);
-    console.log('✅ Caller token generated');
-    
-    // Generate JWT token for the callee
-    const calleeToken = generateCloudflareSFUToken(calleeId, roomId);
-    console.log('✅ Callee token generated');
-
-    // Send call invitation via Centrifugo
-    console.log('📞 Sending invitation via Centrifugo...');
-    await publishToChannel(`user:${calleeId}`, {
-      type: 'call_invite',
-      room: roomId,
-      from: callerId,
-      conversationId: conversationId,
-      callType: callType,
-      timestamp: Date.now()
-    });
-    console.log('✅ Invitation sent');
+    // Generate JWT token for the user joining
+    const userToken = generateCloudflareSFUToken(userId, roomId);
+    console.log('✅ User token generated for joining');
 
     const response = {
       success: true,
       roomId,
-      token: callerToken.token, // RealtimeKit expects 'token' not 'callerToken'
-      callerToken: callerToken.token,
-      calleeToken: calleeToken.token,
-      expires: callerToken.expires,
-      callType
+      token: userToken.token,
+      expires: userToken.expires
     };
     
-    console.log('📞 Returning response:', { ...response, callerToken: '[REDACTED]', calleeToken: '[REDACTED]' });
+    console.log('🚪 Returning response:', { ...response, token: '[REDACTED]' });
     return NextResponse.json(response, {
       headers: corsHeaders
     });
 
   } catch (error) {
-    console.error('❌ Error starting call:', error);
+    console.error('❌ Error joining call:', error);
     const origin = request.headers.get('origin') || 'https://vixter-react.vercel.app';
     const allowedOrigins = ['https://vixter-react.vercel.app', 'https://vixter.com.br'];
     const corsHeaders = {
@@ -83,7 +54,7 @@ export async function POST(request: NextRequest) {
     };
     
     return NextResponse.json(
-      { error: 'Failed to start call', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to join call', details: error instanceof Error ? error.message : 'Unknown error' },
       { 
         status: 500,
         headers: corsHeaders

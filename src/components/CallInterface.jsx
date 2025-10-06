@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import useCall from '../hooks/useCall';
+import useRealtimeCall from '../hooks/useRealtimeCall';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useAuth } from '../contexts/AuthContext';
 import './CallInterface.css';
@@ -17,12 +17,12 @@ const CallInterface = ({ conversation, onClose }) => {
     localVideoRef,
     remoteVideoRef,
     startCall: startCallHook,
-    acceptCall: acceptCallHook,
+    joinCall: joinCallHook,
     endCall: endCallHook,
     toggleMute,
     toggleVideo,
     toggleScreenShare
-  } = useCall();
+  } = useRealtimeCall();
 
   const { 
     activeRooms,
@@ -39,11 +39,22 @@ const CallInterface = ({ conversation, onClose }) => {
   
   // Check if there's an active room for this conversation
   const existingRoom = activeRooms[conversation?.id];
-  const roomButtonText = existingRoom ? '🚪 Entrar na Sala' : '🏠 Criar Sala';
+  const roomButtonText = existingRoom ? '🚪 Entrar na Sala' : '📞 Iniciar Chamada';
   const roomButtonTitle = existingRoom ? 'Entrar na sala existente' : 'Criar nova sala de chamada';
   
   // Determine if we should show call interface
-  const shouldShowCallInterface = isInCall || (existingRoom && existingRoom.participants?.includes(currentUser?.uid));
+  // Show call interface if there's an active room for this conversation
+  const isInActiveRoom = existingRoom && existingRoom.participants?.includes(currentUser?.uid);
+  const shouldShowCallInterface = isInCall || isInActiveRoom;
+
+  // Debug logging
+  console.log('🔍 Call Interface Debug:', {
+    isInCall,
+    existingRoom: !!existingRoom,
+    isInActiveRoom,
+    shouldShowCallInterface,
+    conversationId: conversation?.id
+  });
 
   // Load other user data
   useEffect(() => {
@@ -54,12 +65,16 @@ const CallInterface = ({ conversation, onClose }) => {
 
   // Sync call state when room exists
   useEffect(() => {
-    if (existingRoom && existingRoom.participants?.includes(currentUser?.uid) && !isInCall) {
-      console.log('🔄 Syncing call state for existing room:', existingRoom);
-      // The room exists and user is a participant, but hook state is not synced
-      // This will be handled by the shouldShowCallInterface logic
+    if (existingRoom && existingRoom.participants?.includes(currentUser?.uid)) {
+      console.log('🔄 User is in active room:', existingRoom);
+      console.log('🔄 Current call state - isInCall:', isInCall, 'callData:', !!callData);
+      
+      // If user is in room but not showing call interface, we need to ensure it shows
+      if (!isInCall && !callData) {
+        console.log('🔄 User in room but no call state - interface should still show');
+      }
     }
-  }, [existingRoom, currentUser?.uid, isInCall]);
+  }, [existingRoom, currentUser?.uid, isInCall, callData]);
 
   // Get other participant info
   const getOtherParticipant = () => {
@@ -98,20 +113,17 @@ const CallInterface = ({ conversation, onClose }) => {
       if (otherUserId) {
         // Check if room already exists
         const existingRoom = activeRooms[conversation.id];
+        
         if (existingRoom) {
-          console.log('🏠 Room already exists, joining...');
+          console.log('🏠 Room already exists, joining with RealtimeKit...');
+          // Join existing room using RealtimeKit
+          await joinCallHook(existingRoom.roomId, conversation.id);
+          console.log('✅ Successfully joined existing room with RealtimeKit');
         } else {
-          console.log('🏠 Creating new room...');
-        }
-        
-        // This will either create a new room or join existing one
-        const result = await startCall(conversation.id, otherUserId, 'video');
-        
-        if (result) {
-          // Always initialize WebRTC connection via the hook
-          console.log('🔌 Initializing WebRTC connection...');
+          console.log('🏠 Creating new room with RealtimeKit...');
+          // Create new room using RealtimeKit
           await startCallHook(conversation.id, otherUserId, 'video');
-          console.log('✅ WebRTC connection initialized');
+          console.log('✅ Successfully created new room with RealtimeKit');
         }
         
         console.log('✅ Room operation completed successfully');
@@ -255,6 +267,7 @@ const CallInterface = ({ conversation, onClose }) => {
             📞
           </button>
         </div>
+        
       </div>
     );
   }
@@ -285,7 +298,7 @@ const CallInterface = ({ conversation, onClose }) => {
             </div>
           </div>
           <div className="user-details">
-            <h3>Iniciar Chamada</h3>
+            <h3>{existingRoom ? 'Sala Disponível' : 'Iniciar Chamada'}</h3>
             <p>{otherUser?.displayName || otherUser?.name || 'Usuário'}</p>
           </div>
         </div>
