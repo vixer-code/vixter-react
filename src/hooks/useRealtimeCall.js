@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { RealtimeKit } from '@cloudflare/realtimekit';
+import RealtimeKit from '@cloudflare/realtimekit';
 import { useAuth } from '../contexts/AuthContext';
 
 const useRealtimeCall = () => {
@@ -29,40 +29,21 @@ const useRealtimeCall = () => {
       console.log('🚀 Initializing RealtimeKit with token and room:', roomId);
       
       // Initialize RealtimeKit with the token
-      const realtimeKit = new RealtimeKit({
-        token: token,
-        roomId: roomId,
-        onParticipantJoined: (participant) => {
-          console.log('👤 Participant joined:', participant);
-          setIsCallActive(true);
-          setCallStatus('connected');
-        },
-        onParticipantLeft: (participant) => {
-          console.log('👤 Participant left:', participant);
-        },
-        onTrackAdded: (track, participant) => {
-          console.log('📹 Track added:', track, 'from participant:', participant);
-          if (track.kind === 'video' && remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = new MediaStream([track]);
-            setRemoteStream(new MediaStream([track]));
-          }
-        },
-        onTrackRemoved: (track, participant) => {
-          console.log('📹 Track removed:', track, 'from participant:', participant);
-        },
-        onError: (error) => {
-          console.error('❌ RealtimeKit error:', error);
-          setCallStatus('idle');
+      const meeting = await RealtimeKit.init({
+        authToken: token,
+        defaults: {
+          audio: true,
+          video: true,
         }
       });
 
-      realtimeKitRef.current = realtimeKit;
+      realtimeKitRef.current = meeting;
       
-      // Start the session
-      await realtimeKit.start();
-      console.log('✅ RealtimeKit started successfully');
+      // Join the room
+      await meeting.join();
+      console.log('✅ RealtimeKit started and joined room successfully');
       
-      return realtimeKit;
+      return meeting;
     } catch (error) {
       console.error('❌ Error initializing RealtimeKit:', error);
       throw error;
@@ -122,7 +103,7 @@ const useRealtimeCall = () => {
       const { roomId, callerToken } = await response.json();
       roomIdRef.current = roomId;
 
-      // Initialize RealtimeKit with the token
+      // Initialize RealtimeKitClient with the token
       await initializeRealtimeKit(callerToken, roomId);
 
       setIsInCall(true);
@@ -162,7 +143,7 @@ const useRealtimeCall = () => {
       // Get user media
       await getUserMedia();
 
-      // Initialize RealtimeKit with the token
+      // Initialize RealtimeKitClient with the token
       await initializeRealtimeKit(token, roomId);
 
       setIsInCall(true);
@@ -181,7 +162,7 @@ const useRealtimeCall = () => {
       console.log('🔚 Ending RealtimeKit call');
       
       if (realtimeKitRef.current) {
-        await realtimeKitRef.current.stop();
+        await realtimeKitRef.current.leave();
         realtimeKitRef.current = null;
       }
 
@@ -211,52 +192,44 @@ const useRealtimeCall = () => {
 
   // Toggle mute
   const toggleMute = useCallback(() => {
-    if (realtimeKitRef.current && localStream) {
-      const audioTrack = localStream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setIsMuted(!audioTrack.enabled);
-      }
+    if (realtimeKitRef.current) {
+      const meeting = realtimeKitRef.current;
+      const isCurrentlyMuted = meeting.self.audioEnabled;
+      meeting.self.setAudioEnabled(!isCurrentlyMuted);
+      setIsMuted(!isCurrentlyMuted);
     }
-  }, [localStream]);
+  }, []);
 
   // Toggle video
   const toggleVideo = useCallback(() => {
-    if (realtimeKitRef.current && localStream) {
-      const videoTrack = localStream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsVideoEnabled(videoTrack.enabled);
-      }
+    if (realtimeKitRef.current) {
+      const meeting = realtimeKitRef.current;
+      const isCurrentlyVideoEnabled = meeting.self.videoEnabled;
+      meeting.self.setVideoEnabled(!isCurrentlyVideoEnabled);
+      setIsVideoEnabled(!isCurrentlyVideoEnabled);
     }
-  }, [localStream]);
+  }, []);
 
   // Toggle screen share
   const toggleScreenShare = useCallback(async () => {
     try {
-      if (isScreenSharing) {
-        // Stop screen share and return to camera
-        await getUserMedia();
-        setIsScreenSharing(false);
-      } else {
-        // Start screen share
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
-          audio: true
-        });
+      if (realtimeKitRef.current) {
+        const meeting = realtimeKitRef.current;
         
-        // Replace video track in RealtimeKit
-        if (realtimeKitRef.current) {
-          const videoTrack = stream.getVideoTracks()[0];
-          // RealtimeKit will handle track replacement
-          setLocalStream(stream);
+        if (isScreenSharing) {
+          // Stop screen share
+          await meeting.self.setScreenShareEnabled(false);
+          setIsScreenSharing(false);
+        } else {
+          // Start screen share
+          await meeting.self.setScreenShareEnabled(true);
           setIsScreenSharing(true);
         }
       }
     } catch (error) {
       console.error('Error toggling screen share:', error);
     }
-  }, [isScreenSharing, getUserMedia]);
+  }, [isScreenSharing]);
 
   // Cleanup on unmount
   useEffect(() => {
