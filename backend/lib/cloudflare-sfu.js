@@ -100,7 +100,7 @@ async function addParticipantToMeeting(meetingId, userId, roomId, presetName = '
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      user_id: userId,
+      custom_participant_id: userId, // Use Firebase UID as custom participant ID
       preset_name: presetName
     })
   });
