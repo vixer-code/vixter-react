@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import useRealtimeCall from '../hooks/useRealtimeCall';
+import useRealtimeKitCall from '../hooks/useRealtimeKitCall';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useAuth } from '../contexts/AuthContext';
 import './CallInterface.css';
@@ -15,14 +15,14 @@ const CallInterface = ({ conversation, onClose }) => {
     callStatus,
     callData,
     localVideoRef,
-    remoteVideoRef,
+    remoteVideoRefs,
     startCall: startCallHook,
     joinCall: joinCallHook,
     endCall: endCallHook,
     toggleMute,
     toggleVideo,
     toggleScreenShare
-  } = useRealtimeCall();
+  } = useRealtimeKitCall();
 
   const { 
     activeRooms,
@@ -106,7 +106,7 @@ const CallInterface = ({ conversation, onClose }) => {
     }
     
     try {
-      console.log('🏠 Creating/joining room for conversation:', conversation.id);
+      console.log('🏠 Creating/joining RealtimeKit room for conversation:', conversation.id);
       const otherUserId = getOtherParticipant();
       console.log('Other user ID:', otherUserId);
       
@@ -115,23 +115,23 @@ const CallInterface = ({ conversation, onClose }) => {
         const existingRoom = activeRooms[conversation.id];
         
         if (existingRoom) {
-          console.log('🏠 Room already exists, joining with RealtimeKit...');
-          // Join existing room using RealtimeKit
+          console.log('🏠 Room already exists, joining RealtimeKit room...');
+          // Join existing RealtimeKit room
           await joinCallHook(existingRoom.roomId, conversation.id);
-          console.log('✅ Successfully joined existing room with RealtimeKit');
+          console.log('✅ Successfully joined existing RealtimeKit room');
         } else {
-          console.log('🏠 Creating new room with RealtimeKit...');
-          // Create new room using RealtimeKit
+          console.log('🏠 Creating new RealtimeKit room...');
+          // Create new RealtimeKit room
           await startCallHook(conversation.id, otherUserId, 'video');
-          console.log('✅ Successfully created new room with RealtimeKit');
+          console.log('✅ Successfully created new RealtimeKit room');
         }
         
-        console.log('✅ Room operation completed successfully');
+        console.log('✅ RealtimeKit room operation completed successfully');
       } else {
         console.error('Could not find other participant');
       }
     } catch (error) {
-      console.error('Error with room operation:', error);
+      console.error('Error with RealtimeKit room operation:', error);
     }
   };
 

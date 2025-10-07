@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import RealtimeKit from '@cloudflare/realtimekit';
 import { useAuth } from '../contexts/AuthContext';
 
-const useRealtimeCall = () => {
+const useRealtimeKitCall = () => {
   const { currentUser } = useAuth();
   
   // Call state
@@ -13,17 +13,17 @@ const useRealtimeCall = () => {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [callStatus, setCallStatus] = useState('idle'); // idle, calling, ringing, connected, ended
   const [callData, setCallData] = useState(null);
-  const [remoteStream, setRemoteStream] = useState(null);
+  const [remoteStreams, setRemoteStreams] = useState(new Map());
   const [localStream, setLocalStream] = useState(null);
   
   // RealtimeKit refs
-  const realtimeKitRef = useRef(null);
+  const meetingRef = useRef(null);
   const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
+  const remoteVideoRefs = useRef(new Map());
   const roomIdRef = useRef(null);
   const conversationIdRef = useRef(null);
 
-  // Initialize RealtimeKit
+  // Initialize RealtimeKit meeting
   const initializeRealtimeKit = useCallback(async (token, roomId) => {
     try {
       console.log('🚀 Initializing RealtimeKit with token and room:', roomId);
@@ -37,8 +37,58 @@ const useRealtimeCall = () => {
         }
       });
 
-      realtimeKitRef.current = meeting;
+      meetingRef.current = meeting;
       
+      // Set up event listeners
+      meeting.participants.on('participantJoined', (participant) => {
+        console.log('👤 Participant joined:', participant);
+        setIsCallActive(true);
+        setCallStatus('connected');
+      });
+
+      meeting.participants.on('participantLeft', (participant) => {
+        console.log('👤 Participant left:', participant);
+      });
+
+      meeting.self.on('streamEnabled', (stream) => {
+        console.log('📹 Stream enabled:', stream);
+        if (stream.kind === 'video' && localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+      });
+
+      meeting.participants.on('streamEnabled', (participant, stream) => {
+        console.log('📹 Remote stream enabled:', participant, stream);
+        const trackId = `${participant.id}_${stream.kind}`;
+        
+        setRemoteStreams(prev => {
+          const newMap = new Map(prev);
+          newMap.set(trackId, {
+            stream: stream,
+            participant: participant,
+            kind: stream.kind
+          });
+          return newMap;
+        });
+
+        // Attach to video element if available
+        const videoElement = remoteVideoRefs.current.get(trackId);
+        if (videoElement) {
+          videoElement.srcObject = stream;
+        }
+      });
+
+      meeting.participants.on('streamDisabled', (participant, stream) => {
+        console.log('📹 Remote stream disabled:', participant, stream);
+        const trackId = `${participant.id}_${stream.kind}`;
+        
+        setRemoteStreams(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(trackId);
+          return newMap;
+        });
+      });
+
       // Join the room
       await meeting.join();
       console.log('✅ RealtimeKit started and joined room successfully');
@@ -84,33 +134,35 @@ const useRealtimeCall = () => {
       
       await getUserMedia(constraints);
 
-      // Call backend to create SFU room and get token
-      const response = await fetch('https://vixter-react-llyd.vercel.app/api/start-call', {
+      // Generate room ID
+      const roomId = `call_${conversationId}_${Date.now()}`;
+      roomIdRef.current = roomId;
+
+      // Join room via RealtimeKit API
+      const response = await fetch(`https://vixter-react-llyd.vercel.app/api/rooms/${roomId}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          userId: currentUser.uid,
           conversationId,
-          callerId: currentUser.uid,
-          calleeId: otherUserId,
-          callType
+          role: 'participant'
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to start call');
+        throw new Error('Failed to join RealtimeKit room');
       }
 
-      const { roomId, callerToken } = await response.json();
-      roomIdRef.current = roomId;
+      const { token } = await response.json();
 
-      // Initialize RealtimeKitClient with the token
-      await initializeRealtimeKit(callerToken, roomId);
+      // Initialize RealtimeKit with the token
+      await initializeRealtimeKit(token, roomId);
 
       setIsInCall(true);
       setCallStatus('connected');
 
     } catch (error) {
-      console.error('Error starting call:', error);
+      console.error('Error starting RealtimeKit call:', error);
       setCallStatus('idle');
       throw error;
     }
@@ -123,34 +175,34 @@ const useRealtimeCall = () => {
       roomIdRef.current = roomId;
       conversationIdRef.current = conversationId;
 
-      // Get token for joining the room
-      const response = await fetch('https://vixter-react-llyd.vercel.app/api/join-call', {
+      // Get user media
+      await getUserMedia();
+
+      // Join room via RealtimeKit API
+      const response = await fetch(`https://vixter-react-llyd.vercel.app/api/rooms/${roomId}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          roomId,
           userId: currentUser.uid,
-          conversationId
+          conversationId,
+          role: 'participant'
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get join token');
+        throw new Error('Failed to join RealtimeKit room');
       }
 
       const { token } = await response.json();
 
-      // Get user media
-      await getUserMedia();
-
-      // Initialize RealtimeKitClient with the token
+      // Initialize RealtimeKit with the token
       await initializeRealtimeKit(token, roomId);
 
       setIsInCall(true);
       setCallStatus('connected');
 
     } catch (error) {
-      console.error('Error joining call:', error);
+      console.error('Error joining RealtimeKit call:', error);
       setCallStatus('idle');
       throw error;
     }
@@ -161,9 +213,9 @@ const useRealtimeCall = () => {
     try {
       console.log('🔚 Ending RealtimeKit call');
       
-      if (realtimeKitRef.current) {
-        await realtimeKitRef.current.leave();
-        realtimeKitRef.current = null;
+      if (meetingRef.current) {
+        await meetingRef.current.leave();
+        meetingRef.current = null;
       }
 
       // Stop local media
@@ -180,20 +232,20 @@ const useRealtimeCall = () => {
       setIsScreenSharing(false);
       setCallStatus('idle');
       setCallData(null);
-      setRemoteStream(null);
+      setRemoteStreams(new Map());
       roomIdRef.current = null;
       conversationIdRef.current = null;
 
-      console.log('✅ Call ended successfully');
+      console.log('✅ RealtimeKit call ended successfully');
     } catch (error) {
-      console.error('Error ending call:', error);
+      console.error('Error ending RealtimeKit call:', error);
     }
   }, [localStream]);
 
   // Toggle mute
   const toggleMute = useCallback(() => {
-    if (realtimeKitRef.current) {
-      const meeting = realtimeKitRef.current;
+    if (meetingRef.current) {
+      const meeting = meetingRef.current;
       const isCurrentlyMuted = meeting.self.audioEnabled;
       meeting.self.setAudioEnabled(!isCurrentlyMuted);
       setIsMuted(!isCurrentlyMuted);
@@ -202,8 +254,8 @@ const useRealtimeCall = () => {
 
   // Toggle video
   const toggleVideo = useCallback(() => {
-    if (realtimeKitRef.current) {
-      const meeting = realtimeKitRef.current;
+    if (meetingRef.current) {
+      const meeting = meetingRef.current;
       const isCurrentlyVideoEnabled = meeting.self.videoEnabled;
       meeting.self.setVideoEnabled(!isCurrentlyVideoEnabled);
       setIsVideoEnabled(!isCurrentlyVideoEnabled);
@@ -213,8 +265,8 @@ const useRealtimeCall = () => {
   // Toggle screen share
   const toggleScreenShare = useCallback(async () => {
     try {
-      if (realtimeKitRef.current) {
-        const meeting = realtimeKitRef.current;
+      if (meetingRef.current) {
+        const meeting = meetingRef.current;
         
         if (isScreenSharing) {
           // Stop screen share
@@ -247,12 +299,12 @@ const useRealtimeCall = () => {
     isScreenSharing,
     callStatus,
     callData,
-    remoteStream,
+    remoteStreams,
     localStream,
     
     // Refs for video elements
     localVideoRef,
-    remoteVideoRef,
+    remoteVideoRefs,
     
     // Actions
     startCall,
@@ -264,4 +316,4 @@ const useRealtimeCall = () => {
   };
 };
 
-export default useRealtimeCall;
+export default useRealtimeKitCall;
