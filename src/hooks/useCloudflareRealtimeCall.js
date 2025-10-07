@@ -289,12 +289,31 @@ const useCloudflareRealtimeCall = () => {
     }
   }, [meeting, isScreenSharing]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount - usando ref para evitar dependências
+  const isInCallRef = useRef(isInCall);
+  const meetingRef = useRef(meeting);
+  
+  useEffect(() => {
+    isInCallRef.current = isInCall;
+  }, [isInCall]);
+  
+  useEffect(() => {
+    meetingRef.current = meeting;
+  }, [meeting]);
+  
   useEffect(() => {
     return () => {
-      endCall();
+      // Only cleanup if component is truly unmounting and there's an active call
+      if (isInCallRef.current && meetingRef.current) {
+        console.log('🧹 Component unmounting, cleaning up call...');
+        try {
+          meetingRef.current.leave();
+        } catch (error) {
+          console.error('Error during cleanup:', error);
+        }
+      }
     };
-  }, [endCall]);
+  }, []); // Empty deps - only run on mount/unmount
 
   return {
     // State
