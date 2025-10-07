@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateCloudflareSFUToken, getSFURoom } from '../../../lib/cloudflare-sfu.js';
-import { publishToChannel } from '../../../lib/centrifugo.js';
+import { generateCloudflareSFUToken, getSFURoom } from '../../../../../lib/cloudflare-sfu.js';
+import { publishToChannel } from '../../../../../lib/centrifugo.js';
 
 export async function POST(request: NextRequest, { params }: { params: { roomId: string } }) {
   try {
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest, { params }: { params: { roomId:
       role,
       publishPermissions: capabilities,
       participants: room.participants || [],
-      createdAt: room.createdAt || new Date().toISOString()
+      createdAt: new Date().toISOString()
     };
 
     // Notify other participants about new user joining
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest, { params }: { params: { roomId:
       // SFU configuration
       sfuConfig: {
         appId: process.env.CLOUDFLARE_APP_ID,
-        sessionId: room.sessionId,
+        sessionId: roomId,
         iceServers: [
           { urls: 'stun:stun.cloudflare.com:3478' },
           { urls: 'stun:stun.l.google.com:19302' }
