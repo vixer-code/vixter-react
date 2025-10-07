@@ -50,13 +50,10 @@ function generateCloudflareSFUToken(userId, roomId, capabilities = ['publish', '
   const payload = {
     aud: 'realtime',
     type: 'realtime-token',
-    room: roomId,
-    user: { id: userId },
+    sub: userId,
     iss: CLOUDFLARE_APP_ID,
     exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour
-    iat: Math.floor(Date.now() / 1000),
-    // Add capabilities if needed
-    capabilities: capabilities
+    iat: Math.floor(Date.now() / 1000)
   };
 
   // Use the app secret as the signing key
@@ -64,10 +61,8 @@ function generateCloudflareSFUToken(userId, roomId, capabilities = ['publish', '
   
   return {
     token,
-    roomId,
-    userId,
+    sub: userId,
     expires: payload.exp * 1000,
-    capabilities,
     type: 'cloudflare-realtime'
   };
 }

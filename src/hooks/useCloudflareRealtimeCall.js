@@ -27,6 +27,8 @@ const useCloudflareRealtimeCall = () => {
   const getRealtimeKitToken = useCallback(async (roomId, conversationId) => {
     try {
       console.log('🔑 Getting RealtimeKit token for room:', roomId);
+      console.log('🔑 User ID:', currentUser.uid);
+      console.log('🔑 Conversation ID:', conversationId);
       
       const response = await fetch(`https://vixter-react-llyd.vercel.app/api/rooms/${roomId}/join`, {
         method: 'POST',
@@ -38,13 +40,21 @@ const useCloudflareRealtimeCall = () => {
         })
       });
 
+      console.log('🔑 Response status:', response.status);
+      console.log('🔑 Response ok:', response.ok);
+
       if (!response.ok) {
-        throw new Error('Failed to get RealtimeKit token');
+        const errorText = await response.text();
+        console.error('❌ Response error:', errorText);
+        throw new Error(`Failed to get RealtimeKit token: ${response.status} - ${errorText}`);
       }
 
-      const { token } = await response.json();
-      console.log('✅ RealtimeKit token received');
-      return token;
+      const data = await response.json();
+      console.log('🔑 Response data keys:', Object.keys(data));
+      console.log('🔑 Token length:', data.token ? data.token.length : 'no token');
+      console.log('🔑 Token preview:', data.token ? data.token.substring(0, 50) + '...' : 'no token');
+      
+      return data.token;
     } catch (error) {
       console.error('❌ Error getting RealtimeKit token:', error);
       throw error;
@@ -127,6 +137,8 @@ const useCloudflareRealtimeCall = () => {
   const initializeRealtimeKit = useCallback(async (token, roomId) => {
     try {
       console.log('🚀 Initializing RealtimeKit with token and room:', roomId);
+      console.log('🚀 Token length:', token ? token.length : 'no token');
+      console.log('🚀 Token preview:', token ? token.substring(0, 50) + '...' : 'no token');
       
       // Initialize RealtimeKit with the token
       await initMeeting({
@@ -142,6 +154,8 @@ const useCloudflareRealtimeCall = () => {
       return true;
     } catch (error) {
       console.error('❌ Error initializing RealtimeKit:', error);
+      console.error('❌ Error details:', error.message);
+      console.error('❌ Error stack:', error.stack);
       throw error;
     }
   }, [initMeeting]);
