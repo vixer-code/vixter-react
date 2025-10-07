@@ -139,8 +139,15 @@ const useCloudflareRealtimeCall = () => {
   const initializeRealtimeKit = useCallback(async (token, roomId) => {
     try {
       console.log('🚀 Initializing RealtimeKit with token and room:', roomId);
+      console.log('🚀 Token type:', typeof token);
+      console.log('🚀 Token value:', token);
       console.log('🚀 Token length:', token ? token.length : 'no token');
       console.log('🚀 Token preview:', token ? token.substring(0, 50) + '...' : 'no token');
+      
+      // Validate token
+      if (!token || typeof token !== 'string') {
+        throw new Error(`Invalid token: token is ${typeof token}, value: ${token}`);
+      }
       
       // Initialize RealtimeKit with the token
       await initMeeting({

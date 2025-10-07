@@ -139,12 +139,24 @@ async function getRealtimeAuthToken(userId, roomId, presetName = 'group_call_par
     // Step 2: Add participant and get authToken
     const participant = await addParticipantToMeeting(meetingId, userId, roomId, presetName);
     
+    console.log(`🔍 Participant response structure:`, JSON.stringify(participant, null, 2));
+    
     // Step 3: Return the authToken
-    const authToken = participant.data?.auth_token || participant.auth_token;
+    // Note: The API returns 'token', not 'auth_token'
+    const authToken = participant.data?.token || participant.token;
     
     console.log(`✅ AuthToken obtained successfully`);
+    console.log(`🔑 AuthToken type: ${typeof authToken}`);
+    console.log(`🔑 AuthToken value: ${authToken}`);
     console.log(`🔑 AuthToken length: ${authToken ? authToken.length : 'undefined'}`);
     console.log(`🔑 AuthToken preview: ${authToken ? authToken.substring(0, 50) + '...' : 'undefined'}`);
+    
+    if (!authToken) {
+      console.error('❌ AuthToken is undefined or null!');
+      console.error('❌ Participant data:', participant.data);
+      console.error('❌ Participant token:', participant.token);
+      throw new Error('Failed to extract authToken from participant response');
+    }
     
     return {
       token: authToken,
