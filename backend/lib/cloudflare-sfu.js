@@ -46,23 +46,34 @@ function generateCloudflareSFUToken(userId, roomId, capabilities = ['publish', '
   }
 
   console.log(`🔑 Generating Cloudflare Realtime token for user ${userId} in room ${roomId}`);
+  console.log(`🔑 Using APP_ID: ${CLOUDFLARE_APP_ID}`);
+  console.log(`🔑 Using APP_SECRET length: ${CLOUDFLARE_APP_SECRET ? CLOUDFLARE_APP_SECRET.length : 'undefined'}`);
   
   const payload = {
     aud: 'realtime',
-    type: 'realtime-token',
-    sub: userId,
     iss: CLOUDFLARE_APP_ID,
+    sub: userId,
     exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour
-    iat: Math.floor(Date.now() / 1000)
+    iat: Math.floor(Date.now() / 1000),
+    // Add room and capabilities
+    room: roomId,
+    capabilities: capabilities
   };
+
+  console.log(`🔑 JWT Payload:`, JSON.stringify(payload, null, 2));
 
   // Use the app secret as the signing key
   const token = jwt.sign(payload, CLOUDFLARE_APP_SECRET, { algorithm: 'HS256' });
   
+  console.log(`🔑 Generated token length: ${token.length}`);
+  console.log(`🔑 Token preview: ${token.substring(0, 50)}...`);
+  
   return {
     token,
-    sub: userId,
+    roomId,
+    userId,
     expires: payload.exp * 1000,
+    capabilities,
     type: 'cloudflare-realtime'
   };
 }
