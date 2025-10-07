@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import useRealtimeKitCall from '../hooks/useRealtimeKitCall';
+import useCloudflareRealtimeCall from '../hooks/useCloudflareRealtimeCall';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useAuth } from '../contexts/AuthContext';
 import './CallInterface.css';
@@ -22,7 +22,7 @@ const CallInterface = ({ conversation, onClose }) => {
     toggleMute,
     toggleVideo,
     toggleScreenShare
-  } = useRealtimeKitCall();
+  } = useCloudflareRealtimeCall();
 
   const { 
     activeRooms,

@@ -1,8 +1,11 @@
-# 🔧 Guia de Migração: Dyte SDK → Cloudflare Realtime
+# 🔧 Guia de Migração: Correção do RealtimeKit
 
 ## ❌ Problema Identificado
 
-Você estava usando o **Dyte SDK** (`@cloudflare/realtimekit`) mas gerando tokens para **Cloudflare Realtime** diretamente. Estes são dois serviços diferentes!
+Você estava usando o **RealtimeKit** (`@cloudflare/realtimekit`) mas com implementação incorreta. O erro ocorria porque:
+
+1. **Token inválido**: O backend estava gerando tokens para Cloudflare Realtime API, mas o frontend usava RealtimeKit SDK
+2. **Implementação incorreta**: Não estava seguindo a documentação oficial do RealtimeKit
 
 ### Erro:
 ```
@@ -11,33 +14,34 @@ DyteError: [ERR0004]: {DyteClient} Invalid auth token
 
 ## ✅ Solução Implementada
 
-### 1. **Novo Hook: `useCloudflareRealtimeCall`**
-- Substitui `useRealtimeKitCall`
-- Usa Cloudflare Realtime API diretamente
-- Implementação WebRTC nativa
+### 1. **Hook Corrigido: `useCloudflareRealtimeCall`**
+- Usa `useRealtimeKitClient` do `@cloudflare/realtimekit-react`
+- Segue a documentação oficial do RealtimeKit
+- Implementação correta de eventos e callbacks
 
-### 2. **Backend Atualizado**
-- Tokens corrigidos para Cloudflare Realtime
-- Estrutura JWT adequada
-- Comentários atualizados
+### 2. **Componente com RealtimeKitProvider**
+- Implementa `RealtimeKitProvider` conforme documentação
+- Usa `RtkMeeting` para UI completa
+- Integração correta com backend
 
 ## 🚀 Como Migrar
 
-### Passo 1: Instalar Dependências
+### Passo 1: Instalar Dependências Corretas
 ```bash
-# Remover Dyte SDK (se não usado em outros lugares)
-npm uninstall @cloudflare/realtimekit
+# Instalar RealtimeKit oficial
+npm install @cloudflare/realtimekit-react @cloudflare/realtimekit-react-ui
 
-# As dependências WebRTC já estão disponíveis no navegador
+# Remover dependências antigas se existirem
+npm uninstall @cloudflare/realtimekit
 ```
 
-### Passo 2: Atualizar Componentes
+### Passo 2: Usar Componente Correto
 ```jsx
-// ❌ Antes (Dyte SDK)
+// ❌ Antes (implementação incorreta)
 import useRealtimeKitCall from '../hooks/useRealtimeKitCall';
 
-// ✅ Depois (Cloudflare Realtime)
-import useCloudflareRealtimeCall from '../hooks/useCloudflareRealtimeCall';
+// ✅ Depois (implementação correta)
+import CloudflareRealtimeCall from '../components/CloudflareRealtimeCall';
 ```
 
 ### Passo 3: Verificar Variáveis de Ambiente
@@ -47,31 +51,37 @@ CLOUDFLARE_APP_ID=your_app_id
 CLOUDFLARE_APP_SECRET=your_app_secret
 ```
 
-### Passo 4: Testar a Implementação
-1. Use o componente `CallInterfaceExample.jsx` como referência
-2. Teste a criação de chamadas
-3. Verifique se os tokens são válidos
+### Passo 4: Usar o Componente Correto
+```jsx
+// Em vez de CallInterface, use:
+<CloudflareRealtimeCall 
+  conversation={conversation} 
+  onClose={handleClose} 
+/>
+```
 
 ## 🔍 Diferenças Principais
 
-### Dyte SDK (❌ Removido)
+### Implementação Incorreta (❌ Antes)
 ```jsx
+// Hook personalizado com implementação incorreta
 const meeting = await RealtimeKit.init({
-  authToken: token,  // Token específico do Dyte
+  authToken: token,  // Token inválido
   defaults: { audio: true, video: true }
 });
 ```
 
-### Cloudflare Realtime (✅ Implementado)
+### RealtimeKit Oficial (✅ Implementado)
 ```jsx
-// Cria sessão diretamente na API
-const session = await fetch(`https://rtc.live.cloudflare.com/v1/apps/${appId}/sessions/new`);
+// Usando hooks oficiais do RealtimeKit
+import { useRealtimeKitClient, RealtimeKitProvider } from '@cloudflare/realtimekit-react';
+import { RtkMeeting } from '@cloudflare/realtimekit-react-ui';
 
-// Usa WebRTC nativo
-const peerConnection = new RTCPeerConnection({
-  iceServers: [
-    { urls: 'stun:stun.cloudflare.com:3478' }
-  ]
+const [meeting, initMeeting] = useRealtimeKitClient();
+
+await initMeeting({
+  authToken: token,  // Token correto do backend
+  defaults: { audio: true, video: true }
 });
 ```
 

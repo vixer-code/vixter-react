@@ -1,11 +1,10 @@
-// Cloudflare Realtime SFU implementation
-// This replaces the Dyte SDK with direct Cloudflare Realtime API calls
-
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useRealtimeKitClient } from '@cloudflare/realtimekit-react';
 
 const useCloudflareRealtimeCall = () => {
   const { currentUser } = useAuth();
+  const [meeting, initMeeting] = useRealtimeKitClient();
   
   // Call state
   const [isInCall, setIsInCall] = useState(false);
@@ -13,277 +12,148 @@ const useCloudflareRealtimeCall = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [callStatus, setCallStatus] = useState('idle');
+  const [callStatus, setCallStatus] = useState('idle'); // idle, calling, ringing, connected, ended
   const [callData, setCallData] = useState(null);
   const [remoteStreams, setRemoteStreams] = useState(new Map());
   const [localStream, setLocalStream] = useState(null);
   
-  // Refs
-  const peerConnectionRef = useRef(null);
+  // Refs for video elements
   const localVideoRef = useRef(null);
   const remoteVideoRefs = useRef(new Map());
   const roomIdRef = useRef(null);
   const conversationIdRef = useRef(null);
-  const sessionIdRef = useRef(null);
-  const tracksRef = useRef(new Map());
 
-  // Initialize Cloudflare Realtime session
-  const initializeRealtimeSession = useCallback(async (appId, roomId) => {
+  // Get RealtimeKit token from backend
+  const getRealtimeKitToken = useCallback(async (roomId, conversationId) => {
     try {
-      console.log('🚀 Initializing Cloudflare Realtime session for room:', roomId);
+      console.log('🔑 Getting RealtimeKit token for room:', roomId);
       
-      // Create new session
-      const response = await fetch(`https://rtc.live.cloudflare.com/v1/apps/${appId}/sessions/new`, {
+      const response = await fetch(`https://vixter-react-llyd.vercel.app/api/rooms/${roomId}/join`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({})
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.uid,
+          conversationId: conversationId,
+          role: 'participant'
+        })
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to create session: ${response.statusText}`);
+        throw new Error('Failed to get RealtimeKit token');
       }
 
-      const sessionData = await response.json();
-      sessionIdRef.current = sessionData.sessionId;
-      
-      console.log('✅ Cloudflare Realtime session created:', sessionData.sessionId);
-      return sessionData;
+      const { token } = await response.json();
+      console.log('✅ RealtimeKit token received');
+      return token;
     } catch (error) {
-      console.error('❌ Error initializing Realtime session:', error);
+      console.error('❌ Error getting RealtimeKit token:', error);
       throw error;
     }
-  }, []);
+  }, [currentUser.uid]);
 
-  // Create WebRTC peer connection
-  const createPeerConnection = useCallback(async (appId) => {
+  // Initialize RealtimeKit meeting
+  const initializeRealtimeKit = useCallback(async (token, roomId) => {
     try {
-      console.log('🔗 Creating WebRTC peer connection');
+      console.log('🚀 Initializing RealtimeKit with token and room:', roomId);
       
-      const peerConnection = new RTCPeerConnection({
-        iceServers: [
-          { urls: 'stun:stun.cloudflare.com:3478' },
-          { urls: 'stun:stun.l.google.com:19302' }
-        ]
+      // Initialize RealtimeKit with the token
+      await initMeeting({
+        authToken: token,
+        defaults: {
+          audio: true,
+          video: true,
+        }
       });
 
-      // Handle ICE candidates
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          console.log('🧊 ICE candidate generated');
-          // Send ICE candidate to Cloudflare Realtime
-          sendIceCandidate(appId, sessionIdRef.current, event.candidate);
-        }
-      };
-
-      // Handle remote streams
-      peerConnection.ontrack = (event) => {
-        console.log('📹 Remote track received:', event.track);
-        const trackId = `${event.streams[0].id}_${event.track.kind}`;
-        
-        setRemoteStreams(prev => {
-          const newMap = new Map(prev);
-          newMap.set(trackId, {
-            stream: event.streams[0],
-            track: event.track,
-            kind: event.track.kind
-          });
-          return newMap;
+      // Set up event listeners
+      if (meeting) {
+        meeting.participants.on('participantJoined', (participant) => {
+          console.log('👤 Participant joined:', participant);
+          setIsCallActive(true);
+          setCallStatus('connected');
         });
 
-        // Attach to video element if available
-        const videoElement = remoteVideoRefs.current.get(trackId);
-        if (videoElement && event.track.kind === 'video') {
-          videoElement.srcObject = event.streams[0];
-        }
-      };
+        meeting.participants.on('participantLeft', (participant) => {
+          console.log('👤 Participant left:', participant);
+        });
 
-      peerConnectionRef.current = peerConnection;
-      return peerConnection;
-    } catch (error) {
-      console.error('❌ Error creating peer connection:', error);
-      throw error;
-    }
-  }, []);
+        meeting.self.on('streamEnabled', (stream) => {
+          console.log('📹 Stream enabled:', stream);
+          if (stream.kind === 'video' && localVideoRef.current) {
+            localVideoRef.current.srcObject = stream;
+          }
+        });
 
-  // Send ICE candidate to Cloudflare Realtime
-  const sendIceCandidate = useCallback(async (appId, sessionId, candidate) => {
-    try {
-      await fetch(`https://rtc.live.cloudflare.com/v1/apps/${appId}/sessions/${sessionId}/ice`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          candidate: candidate.candidate,
-          sdpMLineIndex: candidate.sdpMLineIndex,
-          sdpMid: candidate.sdpMid
-        })
-      });
-    } catch (error) {
-      console.error('❌ Error sending ICE candidate:', error);
-    }
-  }, []);
+        meeting.participants.on('streamEnabled', (participant, stream) => {
+          console.log('📹 Remote stream enabled:', participant, stream);
+          const trackId = `${participant.id}_${stream.kind}`;
+          
+          setRemoteStreams(prev => {
+            const newMap = new Map(prev);
+            newMap.set(trackId, {
+              stream: stream,
+              participant: participant,
+              kind: stream.kind
+            });
+            return newMap;
+          });
 
-  // Add local track to session
-  const addLocalTrack = useCallback(async (appId, sessionId, track) => {
-    try {
-      console.log('📹 Adding local track to session:', track.kind);
-      
-      // Add track to peer connection
-      const sender = peerConnectionRef.current.addTrack(track, localStream);
-      
-      // Create offer
-      const offer = await peerConnectionRef.current.createOffer();
-      await peerConnectionRef.current.setLocalDescription(offer);
-      
-      // Send track to Cloudflare Realtime
-      const response = await fetch(`https://rtc.live.cloudflare.com/v1/apps/${appId}/sessions/${sessionId}/tracks/new`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sdp: offer.sdp,
-          type: offer.type
-        })
-      });
+          // Attach to video element if available
+          const videoElement = remoteVideoRefs.current.get(trackId);
+          if (videoElement) {
+            videoElement.srcObject = stream;
+          }
+        });
 
-      if (!response.ok) {
-        throw new Error(`Failed to add track: ${response.statusText}`);
+        meeting.participants.on('streamDisabled', (participant, stream) => {
+          console.log('📹 Remote stream disabled:', participant, stream);
+          const trackId = `${participant.id}_${stream.kind}`;
+          
+          setRemoteStreams(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(trackId);
+            return newMap;
+          });
+        });
+
+        // Join the room
+        await meeting.join();
+        console.log('✅ RealtimeKit started and joined room successfully');
       }
-
-      const trackData = await response.json();
-      tracksRef.current.set(track.id, trackData.trackId);
       
-      console.log('✅ Local track added:', trackData.trackId);
-      return trackData;
+      return meeting;
     } catch (error) {
-      console.error('❌ Error adding local track:', error);
+      console.error('❌ Error initializing RealtimeKit:', error);
       throw error;
     }
-  }, [localStream]);
+  }, [initMeeting, meeting]);
 
-  // Subscribe to remote track
-  const subscribeToTrack = useCallback(async (appId, sessionId, trackId) => {
-    try {
-      console.log('👂 Subscribing to remote track:', trackId);
-      
-      const response = await fetch(`https://rtc.live.cloudflare.com/v1/apps/${appId}/sessions/${sessionId}/tracks/new`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          trackId: trackId
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to subscribe to track: ${response.statusText}`);
-      }
-
-      const trackData = await response.json();
-      
-      // Set remote description
-      await peerConnectionRef.current.setRemoteDescription({
-        type: trackData.type,
-        sdp: trackData.sdp
-      });
-      
-      console.log('✅ Subscribed to remote track');
-      return trackData;
-    } catch (error) {
-      console.error('❌ Error subscribing to track:', error);
-      throw error;
-    }
-  }, []);
-
-  // Get user media
-  const getUserMedia = useCallback(async (constraints = { video: true, audio: true }) => {
-    try {
-      console.log('🎥 Requesting user media with constraints:', constraints);
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('✅ User media obtained:', stream);
-      setLocalStream(stream);
-      
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-        console.log('✅ Video source set successfully');
-      }
-
-      return stream;
-    } catch (error) {
-      console.error('Error accessing media devices:', error);
-      throw error;
-    }
-  }, []);
-
-  // Start a call
+  // Start a call using RealtimeKit
   const startCall = useCallback(async (conversationId, otherUserId, callType = 'video') => {
     try {
       setCallStatus('calling');
       setCallData({ conversationId, otherUserId, callType });
       conversationIdRef.current = conversationId;
 
-      // Get user media based on call type
-      const constraints = callType === 'video' 
-        ? { video: true, audio: true }
-        : { video: false, audio: true };
-      
-      await getUserMedia(constraints);
-
       // Generate room ID
       const roomId = `call_${conversationId}_${Date.now()}`;
       roomIdRef.current = roomId;
 
-      // Get app ID from backend
-      const response = await fetch(`https://vixter-react-llyd.vercel.app/api/rooms/${roomId}/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: currentUser.uid,
-          conversationId,
-          role: 'participant'
-        })
-      });
+      // Get RealtimeKit token
+      const token = await getRealtimeKitToken(roomId, conversationId);
 
-      if (!response.ok) {
-        throw new Error('Failed to join room');
-      }
-
-      const { sfuConfig } = await response.json();
-      const appId = sfuConfig.appId;
-
-      // Initialize Cloudflare Realtime session
-      await initializeRealtimeSession(appId, roomId);
-
-      // Create peer connection
-      await createPeerConnection(appId);
-
-      // Add local tracks
-      if (localStream) {
-        const audioTrack = localStream.getAudioTracks()[0];
-        const videoTrack = localStream.getVideoTracks()[0];
-        
-        if (audioTrack) {
-          await addLocalTrack(appId, sessionIdRef.current, audioTrack);
-        }
-        if (videoTrack && callType === 'video') {
-          await addLocalTrack(appId, sessionIdRef.current, videoTrack);
-        }
-      }
+      // Initialize RealtimeKit with the token
+      await initializeRealtimeKit(token, roomId);
 
       setIsInCall(true);
       setCallStatus('connected');
 
     } catch (error) {
-      console.error('Error starting call:', error);
+      console.error('Error starting RealtimeKit call:', error);
       setCallStatus('idle');
       throw error;
     }
-  }, [currentUser.uid, getUserMedia, initializeRealtimeSession, createPeerConnection, addLocalTrack, localStream]);
+  }, [getRealtimeKitToken, initializeRealtimeKit]);
 
   // Join an existing call
   const joinCall = useCallback(async (roomId, conversationId) => {
@@ -292,72 +162,29 @@ const useCloudflareRealtimeCall = () => {
       roomIdRef.current = roomId;
       conversationIdRef.current = conversationId;
 
-      // Get user media
-      await getUserMedia();
+      // Get RealtimeKit token
+      const token = await getRealtimeKitToken(roomId, conversationId);
 
-      // Join room via API
-      const response = await fetch(`https://vixter-react-llyd.vercel.app/api/rooms/${roomId}/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: currentUser.uid,
-          conversationId,
-          role: 'participant'
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to join room');
-      }
-
-      const { sfuConfig } = await response.json();
-      const appId = sfuConfig.appId;
-
-      // Initialize Cloudflare Realtime session
-      await initializeRealtimeSession(appId, roomId);
-
-      // Create peer connection
-      await createPeerConnection(appId);
-
-      // Add local tracks
-      if (localStream) {
-        const audioTrack = localStream.getAudioTracks()[0];
-        const videoTrack = localStream.getVideoTracks()[0];
-        
-        if (audioTrack) {
-          await addLocalTrack(appId, sessionIdRef.current, audioTrack);
-        }
-        if (videoTrack) {
-          await addLocalTrack(appId, sessionIdRef.current, videoTrack);
-        }
-      }
+      // Initialize RealtimeKit with the token
+      await initializeRealtimeKit(token, roomId);
 
       setIsInCall(true);
       setCallStatus('connected');
 
     } catch (error) {
-      console.error('Error joining call:', error);
+      console.error('Error joining RealtimeKit call:', error);
       setCallStatus('idle');
       throw error;
     }
-  }, [currentUser.uid, getUserMedia, initializeRealtimeSession, createPeerConnection, addLocalTrack, localStream]);
+  }, [getRealtimeKitToken, initializeRealtimeKit]);
 
   // End call
   const endCall = useCallback(async () => {
     try {
-      console.log('🔚 Ending call');
+      console.log('🔚 Ending RealtimeKit call');
       
-      // Close tracks
-      if (sessionIdRef.current && tracksRef.current.size > 0) {
-        // Note: You would need the appId here to close tracks
-        // This is a simplified version
-        tracksRef.current.clear();
-      }
-
-      // Close peer connection
-      if (peerConnectionRef.current) {
-        peerConnectionRef.current.close();
-        peerConnectionRef.current = null;
+      if (meeting) {
+        await meeting.leave();
       }
 
       // Stop local media
@@ -377,35 +204,49 @@ const useCloudflareRealtimeCall = () => {
       setRemoteStreams(new Map());
       roomIdRef.current = null;
       conversationIdRef.current = null;
-      sessionIdRef.current = null;
 
-      console.log('✅ Call ended successfully');
+      console.log('✅ RealtimeKit call ended successfully');
     } catch (error) {
-      console.error('Error ending call:', error);
+      console.error('Error ending RealtimeKit call:', error);
     }
-  }, [localStream]);
+  }, [meeting, localStream]);
 
   // Toggle mute
   const toggleMute = useCallback(() => {
-    if (localStream) {
-      const audioTrack = localStream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setIsMuted(!audioTrack.enabled);
-      }
+    if (meeting) {
+      const isCurrentlyMuted = meeting.self.audioEnabled;
+      meeting.self.setAudioEnabled(!isCurrentlyMuted);
+      setIsMuted(!isCurrentlyMuted);
     }
-  }, [localStream]);
+  }, [meeting]);
 
   // Toggle video
   const toggleVideo = useCallback(() => {
-    if (localStream) {
-      const videoTrack = localStream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsVideoEnabled(videoTrack.enabled);
-      }
+    if (meeting) {
+      const isCurrentlyVideoEnabled = meeting.self.videoEnabled;
+      meeting.self.setVideoEnabled(!isCurrentlyVideoEnabled);
+      setIsVideoEnabled(!isCurrentlyVideoEnabled);
     }
-  }, [localStream]);
+  }, [meeting]);
+
+  // Toggle screen share
+  const toggleScreenShare = useCallback(async () => {
+    try {
+      if (meeting) {
+        if (isScreenSharing) {
+          // Stop screen share
+          await meeting.self.setScreenShareEnabled(false);
+          setIsScreenSharing(false);
+        } else {
+          // Start screen share
+          await meeting.self.setScreenShareEnabled(true);
+          setIsScreenSharing(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling screen share:', error);
+    }
+  }, [meeting, isScreenSharing]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -435,7 +276,11 @@ const useCloudflareRealtimeCall = () => {
     joinCall,
     endCall,
     toggleMute,
-    toggleVideo
+    toggleVideo,
+    toggleScreenShare,
+    
+    // RealtimeKit meeting object
+    meeting
   };
 };
 
