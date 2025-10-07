@@ -57,8 +57,12 @@ async function createRealtimeMeeting(roomId) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      name: roomId,
-      // Add any other meeting configuration here
+      title: roomId,
+      preferred_region: null,
+      persist_chat: true,
+      summarize_on_end: false,
+      record_on_start: false,
+      live_stream_on_start: false
     })
   });
 
