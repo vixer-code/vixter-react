@@ -58,7 +58,7 @@ async function createRealtimeMeeting(roomId) {
     },
     body: JSON.stringify({
       title: roomId,
-      preferred_region: null,
+      preferred_region: 'null',
       persist_chat: true,
       summarize_on_end: false,
       record_on_start: false,
