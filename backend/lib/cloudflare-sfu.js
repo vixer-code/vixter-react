@@ -54,8 +54,8 @@ function generateCloudflareSFUToken(userId, roomId, capabilities = ['publish', '
     exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiration
     iat: Math.floor(Date.now() / 1000),
     // RealtimeKit specific claims
-    aud: 'realtimekit',
-    type: 'realtimekit-token'
+    aud: 'realtime',
+    type: 'realtime-token'
   };
 
   // Use the app secret as the signing key
