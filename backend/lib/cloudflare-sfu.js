@@ -122,13 +122,16 @@ async function getRealtimeAuthToken(userId, roomId) {
     console.log(`🔑 Getting Realtime authToken for user ${userId} in room ${roomId}`);
 
     // Step 1: Create meeting
-    const meeting = await createRealtimeMeeting(roomId);
+    const meetingResponse = await createRealtimeMeeting(roomId);
+    const meetingId = meetingResponse.data.id;
+    
+    console.log(`🔑 Meeting ID: ${meetingId}`);
     
     // Step 2: Add participant and get authToken
-    const participant = await addParticipantToMeeting(meeting.id, userId, roomId);
+    const participant = await addParticipantToMeeting(meetingId, userId, roomId);
     
     // Step 3: Return the authToken
-    const authToken = participant.auth_token;
+    const authToken = participant.data?.auth_token || participant.auth_token;
     
     console.log(`✅ AuthToken obtained successfully`);
     console.log(`🔑 AuthToken length: ${authToken ? authToken.length : 'undefined'}`);
@@ -136,10 +139,10 @@ async function getRealtimeAuthToken(userId, roomId) {
     
     return {
       token: authToken,
-      meetingId: meeting.id,
+      meetingId: meetingId,
       roomId,
       userId,
-      expires: participant.expires_at,
+      expires: participant.data?.expires_at || participant.expires_at,
       type: 'realtime-api'
     };
     
