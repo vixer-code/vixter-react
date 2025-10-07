@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateCloudflareSFUToken, getSFURoom } from '../../../../../lib/cloudflare-sfu.js';
+import { generateCloudflareSFUToken, getSFURoom, getRealtimeAuthToken } from '../../../../../lib/cloudflare-sfu.js';
 import { publishToChannel } from '../../../../../lib/centrifugo.js';
 
 export async function POST(request: NextRequest, { params }: { params: { roomId: string } }) {
@@ -34,21 +34,19 @@ export async function POST(request: NextRequest, { params }: { params: { roomId:
     const room = await getSFURoom(roomId);
     console.log('🏠 Room info:', room);
 
-    // Generate SFU token for the user
-    const capabilities = role === 'moderator' 
-      ? ['publish', 'subscribe', 'moderate'] 
-      : ['publish', 'subscribe'];
-    
-    const userToken = generateCloudflareSFUToken(userId, roomId, capabilities);
-    console.log('✅ SFU token generated for user');
+    // Generate authToken using the correct Realtime API flow
+    console.log('🔑 Using Realtime API to get authToken...');
+    const authTokenData = await getRealtimeAuthToken(userId, roomId);
+    console.log('✅ Realtime authToken obtained successfully');
 
     // Prepare Centrifugo room metadata
     const roomMetadata = {
       roomId,
       role,
-      publishPermissions: capabilities,
+      publishPermissions: ['publish', 'subscribe'],
       participants: room.participants || [],
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      meetingId: authTokenData.meetingId
     };
 
     // Notify other participants about new user joining
@@ -63,15 +61,16 @@ export async function POST(request: NextRequest, { params }: { params: { roomId:
     const response = {
       success: true,
       roomId,
-      token: userToken.token,
-      expires: userToken.expires,
+      token: authTokenData.token,
+      expires: authTokenData.expires,
       role,
-      capabilities,
+      capabilities: ['publish', 'subscribe'],
       roomMetadata,
-      // SFU configuration
-      sfuConfig: {
-        appId: process.env.CLOUDFLARE_APP_ID,
-        sessionId: roomId,
+      meetingId: authTokenData.meetingId,
+      // Realtime configuration
+      realtimeConfig: {
+        meetingId: authTokenData.meetingId,
+        roomId: roomId,
         iceServers: [
           { urls: 'stun:stun.cloudflare.com:3478' },
           { urls: 'stun:stun.l.google.com:19302' }
@@ -82,7 +81,7 @@ export async function POST(request: NextRequest, { params }: { params: { roomId:
     console.log('🚪 Returning response:', { 
       ...response, 
       token: '[REDACTED]',
-      sfuConfig: { ...response.sfuConfig, appId: '[REDACTED]' }
+      realtimeConfig: { ...response.realtimeConfig }
     });
     
     return NextResponse.json(response, {

@@ -5,6 +5,11 @@ const CLOUDFLARE_APP_ID = process.env.CLOUDFLARE_APP_ID;
 const CLOUDFLARE_APP_SECRET = process.env.CLOUDFLARE_APP_SECRET;
 const CLOUDFLARE_RTC_URL = process.env.CLOUDFLARE_RTC_URL || 'https://rtc.live.cloudflare.com/v1';
 
+// Cloudflare Realtime API configuration
+const CLOUDFLARE_ORG_ID = process.env.CLOUDFLARE_ORG_ID;
+const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
+const REALTIME_API_BASE = 'https://api.realtime.cloudflare.com/v2';
+
 /**
  * Generate a valid SDP for Cloudflare Realtime SFU
  * Creates a minimal but valid SDP with required ICE parameters
@@ -33,6 +38,114 @@ a=mid:0\r
 a=sctp-port:5000\r
 a=max-message-size:262144\r
 `;
+}
+
+/**
+ * Create a meeting using Cloudflare Realtime REST API
+ * This is the correct way to create meetings according to the official docs
+ */
+async function createRealtimeMeeting(roomId) {
+  if (!CLOUDFLARE_ORG_ID || !CLOUDFLARE_API_TOKEN) {
+    throw new Error('Cloudflare Realtime API not configured. Missing CLOUDFLARE_ORG_ID or CLOUDFLARE_API_TOKEN');
+  }
+
+  console.log(`🏠 Creating Realtime meeting for room: ${roomId}`);
+
+  const response = await fetch(`${REALTIME_API_BASE}/meetings`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
+      'Content-Type': 'application/json',
+      'X-Org-ID': CLOUDFLARE_ORG_ID
+    },
+    body: JSON.stringify({
+      name: roomId,
+      // Add any other meeting configuration here
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`❌ Failed to create meeting: ${response.status} - ${errorText}`);
+    throw new Error(`Failed to create meeting: ${response.status} - ${errorText}`);
+  }
+
+  const meeting = await response.json();
+  console.log(`✅ Meeting created successfully:`, meeting);
+  return meeting;
+}
+
+/**
+ * Add a participant to a meeting and get authToken
+ * This returns the authToken needed for the frontend
+ */
+async function addParticipantToMeeting(meetingId, userId, roomId) {
+  if (!CLOUDFLARE_ORG_ID || !CLOUDFLARE_API_TOKEN) {
+    throw new Error('Cloudflare Realtime API not configured. Missing CLOUDFLARE_ORG_ID or CLOUDFLARE_API_TOKEN');
+  }
+
+  console.log(`👤 Adding participant ${userId} to meeting ${meetingId}`);
+
+  const response = await fetch(`${REALTIME_API_BASE}/meetings/${meetingId}/participants`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
+      'Content-Type': 'application/json',
+      'X-Org-ID': CLOUDFLARE_ORG_ID
+    },
+    body: JSON.stringify({
+      user_id: userId,
+      // Add any participant configuration here
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`❌ Failed to add participant: ${response.status} - ${errorText}`);
+    throw new Error(`Failed to add participant: ${response.status} - ${errorText}`);
+  }
+
+  const participant = await response.json();
+  console.log(`✅ Participant added successfully:`, participant);
+  return participant;
+}
+
+/**
+ * Get authToken using the correct Cloudflare Realtime API flow
+ * 1. Create meeting
+ * 2. Add participant
+ * 3. Return authToken
+ */
+async function getRealtimeAuthToken(userId, roomId) {
+  try {
+    console.log(`🔑 Getting Realtime authToken for user ${userId} in room ${roomId}`);
+
+    // Step 1: Create meeting
+    const meeting = await createRealtimeMeeting(roomId);
+    
+    // Step 2: Add participant and get authToken
+    const participant = await addParticipantToMeeting(meeting.id, userId, roomId);
+    
+    // Step 3: Return the authToken
+    const authToken = participant.auth_token;
+    
+    console.log(`✅ AuthToken obtained successfully`);
+    console.log(`🔑 AuthToken length: ${authToken ? authToken.length : 'undefined'}`);
+    console.log(`🔑 AuthToken preview: ${authToken ? authToken.substring(0, 50) + '...' : 'undefined'}`);
+    
+    return {
+      token: authToken,
+      meetingId: meeting.id,
+      roomId,
+      userId,
+      expires: participant.expires_at,
+      type: 'realtime-api'
+    };
+    
+  } catch (error) {
+    console.error('❌ Error getting Realtime authToken:', error);
+    throw error;
+  }
 }
 
 /**
@@ -160,6 +273,10 @@ module.exports = {
   getSFURoom,
   deleteSFURoom,
   generateCallRoomId,
+  // New Realtime API functions
+  createRealtimeMeeting,
+  addParticipantToMeeting,
+  getRealtimeAuthToken,
   CLOUDFLARE_APP_ID,
   CLOUDFLARE_APP_SECRET
 };
