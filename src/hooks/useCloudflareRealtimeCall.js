@@ -51,6 +51,78 @@ const useCloudflareRealtimeCall = () => {
     }
   }, [currentUser.uid]);
 
+  // Set up event listeners when meeting is available
+  useEffect(() => {
+    if (!meeting) return;
+
+    console.log('🎧 Setting up RealtimeKit event listeners');
+
+    const handleParticipantJoined = (participant) => {
+      console.log('👤 Participant joined:', participant);
+      setIsCallActive(true);
+      setCallStatus('connected');
+    };
+
+    const handleParticipantLeft = (participant) => {
+      console.log('👤 Participant left:', participant);
+    };
+
+    const handleStreamEnabled = (stream) => {
+      console.log('📹 Stream enabled:', stream);
+      if (stream.kind === 'video' && localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+    };
+
+    const handleRemoteStreamEnabled = (participant, stream) => {
+      console.log('📹 Remote stream enabled:', participant, stream);
+      const trackId = `${participant.id}_${stream.kind}`;
+      
+      setRemoteStreams(prev => {
+        const newMap = new Map(prev);
+        newMap.set(trackId, {
+          stream: stream,
+          participant: participant,
+          kind: stream.kind
+        });
+        return newMap;
+      });
+
+      // Attach to video element if available
+      const videoElement = remoteVideoRefs.current.get(trackId);
+      if (videoElement) {
+        videoElement.srcObject = stream;
+      }
+    };
+
+    const handleRemoteStreamDisabled = (participant, stream) => {
+      console.log('📹 Remote stream disabled:', participant, stream);
+      const trackId = `${participant.id}_${stream.kind}`;
+      
+      setRemoteStreams(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(trackId);
+        return newMap;
+      });
+    };
+
+    // Add event listeners
+    meeting.participants.on('participantJoined', handleParticipantJoined);
+    meeting.participants.on('participantLeft', handleParticipantLeft);
+    meeting.self.on('streamEnabled', handleStreamEnabled);
+    meeting.participants.on('streamEnabled', handleRemoteStreamEnabled);
+    meeting.participants.on('streamDisabled', handleRemoteStreamDisabled);
+
+    // Cleanup function
+    return () => {
+      meeting.participants.off('participantJoined', handleParticipantJoined);
+      meeting.participants.off('participantLeft', handleParticipantLeft);
+      meeting.self.off('streamEnabled', handleStreamEnabled);
+      meeting.participants.off('streamEnabled', handleRemoteStreamEnabled);
+      meeting.participants.off('streamDisabled', handleRemoteStreamDisabled);
+    };
+  }, [meeting]);
+
   // Initialize RealtimeKit meeting
   const initializeRealtimeKit = useCallback(async (token, roomId) => {
     try {
@@ -65,68 +137,14 @@ const useCloudflareRealtimeCall = () => {
         }
       });
 
-      // Set up event listeners
-      if (meeting) {
-        meeting.participants.on('participantJoined', (participant) => {
-          console.log('👤 Participant joined:', participant);
-          setIsCallActive(true);
-          setCallStatus('connected');
-        });
-
-        meeting.participants.on('participantLeft', (participant) => {
-          console.log('👤 Participant left:', participant);
-        });
-
-        meeting.self.on('streamEnabled', (stream) => {
-          console.log('📹 Stream enabled:', stream);
-          if (stream.kind === 'video' && localVideoRef.current) {
-            localVideoRef.current.srcObject = stream;
-          }
-        });
-
-        meeting.participants.on('streamEnabled', (participant, stream) => {
-          console.log('📹 Remote stream enabled:', participant, stream);
-          const trackId = `${participant.id}_${stream.kind}`;
-          
-          setRemoteStreams(prev => {
-            const newMap = new Map(prev);
-            newMap.set(trackId, {
-              stream: stream,
-              participant: participant,
-              kind: stream.kind
-            });
-            return newMap;
-          });
-
-          // Attach to video element if available
-          const videoElement = remoteVideoRefs.current.get(trackId);
-          if (videoElement) {
-            videoElement.srcObject = stream;
-          }
-        });
-
-        meeting.participants.on('streamDisabled', (participant, stream) => {
-          console.log('📹 Remote stream disabled:', participant, stream);
-          const trackId = `${participant.id}_${stream.kind}`;
-          
-          setRemoteStreams(prev => {
-            const newMap = new Map(prev);
-            newMap.delete(trackId);
-            return newMap;
-          });
-        });
-
-        // Join the room
-        await meeting.join();
-        console.log('✅ RealtimeKit started and joined room successfully');
-      }
+      console.log('✅ RealtimeKit initialized successfully');
       
-      return meeting;
+      return true;
     } catch (error) {
       console.error('❌ Error initializing RealtimeKit:', error);
       throw error;
     }
-  }, [initMeeting, meeting]);
+  }, [initMeeting]);
 
   // Start a call using RealtimeKit
   const startCall = useCallback(async (conversationId, otherUserId, callType = 'video') => {

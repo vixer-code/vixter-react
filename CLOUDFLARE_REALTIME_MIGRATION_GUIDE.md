@@ -116,9 +116,10 @@ echo $CLOUDFLARE_APP_SECRET
 
 ## 🆘 Troubleshooting
 
-### Token Inválido
-- Verificar se `CLOUDFLARE_APP_ID` e `CLOUDFLARE_APP_SECRET` estão corretos
-- Verificar se o token não expirou (1 hora de validade)
+### Token Inválido (RESOLVIDO ✅)
+- **Problema**: `DyteError: [ERR0004]: Invalid auth token`
+- **Causa**: Event listeners configurados antes do meeting estar disponível
+- **Solução**: Movido configuração de event listeners para useEffect que monitora o meeting
 
 ### Falha na Criação de Sessão
 - Verificar conectividade com `rtc.live.cloudflare.com`
