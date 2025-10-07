@@ -7,8 +7,8 @@ export async function POST(request: NextRequest, { params }: { params: { roomId:
     const { roomId } = params;
     console.log('🚪 Room join API called for room:', roomId);
     
-    const { userId, conversationId, role = 'participant' } = await request.json();
-    console.log('🚪 Request data:', { userId, conversationId, role });
+    const { userId, conversationId, role = 'participant', accountType } = await request.json();
+    console.log('🚪 Request data:', { userId, conversationId, role, accountType });
 
     // Get origin for CORS
     const origin = request.headers.get('origin') || 'https://vixter-react.vercel.app';
@@ -34,9 +34,14 @@ export async function POST(request: NextRequest, { params }: { params: { roomId:
     const room = await getSFURoom(roomId);
     console.log('🏠 Room info:', room);
 
+    // Determine preset based on accountType
+    // Provider = host, Client = participant
+    const presetName = accountType === 'provider' ? 'group_call_host' : 'group_call_participant';
+    console.log(`🎭 User preset: ${presetName} (accountType: ${accountType})`);
+
     // Generate authToken using the correct Realtime API flow
     console.log('🔑 Using Realtime API to get authToken...');
-    const authTokenData = await getRealtimeAuthToken(userId, roomId);
+    const authTokenData = await getRealtimeAuthToken(userId, roomId, presetName);
     console.log('✅ Realtime authToken obtained successfully');
 
     // Prepare Centrifugo room metadata

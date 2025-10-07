@@ -80,13 +80,18 @@ async function createRealtimeMeeting(roomId) {
 /**
  * Add a participant to a meeting and get authToken
  * This returns the authToken needed for the frontend
+ * 
+ * @param {string} meetingId - The meeting ID
+ * @param {string} userId - The user ID
+ * @param {string} roomId - The room ID
+ * @param {string} presetName - The preset name (group_call_host or group_call_participant)
  */
-async function addParticipantToMeeting(meetingId, userId, roomId) {
+async function addParticipantToMeeting(meetingId, userId, roomId, presetName = 'group_call_participant') {
   if (!CLOUDFLARE_REST_API_AUTH_HEADER) {
     throw new Error('Cloudflare Realtime API not configured. Missing CLOUDFLARE_REST_API_AUTH_HEADER');
   }
 
-  console.log(`👤 Adding participant ${userId} to meeting ${meetingId}`);
+  console.log(`👤 Adding participant ${userId} to meeting ${meetingId} with preset: ${presetName}`);
 
   const response = await fetch(`${REALTIME_API_BASE}/meetings/${meetingId}/participants`, {
     method: 'POST',
@@ -96,7 +101,7 @@ async function addParticipantToMeeting(meetingId, userId, roomId) {
     },
     body: JSON.stringify({
       user_id: userId,
-      // Add any participant configuration here
+      preset_name: presetName
     })
   });
 
@@ -116,10 +121,14 @@ async function addParticipantToMeeting(meetingId, userId, roomId) {
  * 1. Create meeting
  * 2. Add participant
  * 3. Return authToken
+ * 
+ * @param {string} userId - The user ID
+ * @param {string} roomId - The room ID
+ * @param {string} presetName - The preset name (group_call_host or group_call_participant)
  */
-async function getRealtimeAuthToken(userId, roomId) {
+async function getRealtimeAuthToken(userId, roomId, presetName = 'group_call_participant') {
   try {
-    console.log(`🔑 Getting Realtime authToken for user ${userId} in room ${roomId}`);
+    console.log(`🔑 Getting Realtime authToken for user ${userId} in room ${roomId} with preset: ${presetName}`);
 
     // Step 1: Create meeting
     const meetingResponse = await createRealtimeMeeting(roomId);
@@ -128,7 +137,7 @@ async function getRealtimeAuthToken(userId, roomId) {
     console.log(`🔑 Meeting ID: ${meetingId}`);
     
     // Step 2: Add participant and get authToken
-    const participant = await addParticipantToMeeting(meetingId, userId, roomId);
+    const participant = await addParticipantToMeeting(meetingId, userId, roomId, presetName);
     
     // Step 3: Return the authToken
     const authToken = participant.data?.auth_token || participant.auth_token;

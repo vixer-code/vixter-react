@@ -28,6 +28,7 @@ const useCloudflareRealtimeCall = () => {
     try {
       console.log('🔑 Getting RealtimeKit token for room:', roomId);
       console.log('🔑 User ID:', currentUser.uid);
+      console.log('🔑 User accountType:', currentUser.accountType);
       console.log('🔑 Conversation ID:', conversationId);
       
       const response = await fetch(`https://vixter-react-llyd.vercel.app/api/rooms/${roomId}/join`, {
@@ -36,7 +37,8 @@ const useCloudflareRealtimeCall = () => {
         body: JSON.stringify({
           userId: currentUser.uid,
           conversationId: conversationId,
-          role: 'participant'
+          role: 'participant',
+          accountType: currentUser.accountType || 'client' // Default to client if not specified
         })
       });
 
