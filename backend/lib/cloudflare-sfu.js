@@ -36,25 +36,25 @@ a=max-message-size:262144\r
 }
 
 /**
- * Generate JWT token for Cloudflare RealtimeKit
- * Creates a proper token for RealtimeKit sessions (which includes SFU internally)
+ * Generate JWT token for Cloudflare Realtime SFU
+ * Creates a proper token for Cloudflare Realtime API authentication
  */
 function generateCloudflareSFUToken(userId, roomId, capabilities = ['publish', 'subscribe']) {
   if (!CLOUDFLARE_APP_ID || !CLOUDFLARE_APP_SECRET) {
-    throw new Error('Cloudflare RealtimeKit not configured. Missing CLOUDFLARE_APP_ID or CLOUDFLARE_APP_SECRET');
+    throw new Error('Cloudflare Realtime not configured. Missing CLOUDFLARE_APP_ID or CLOUDFLARE_APP_SECRET');
   }
 
-  console.log(`🔑 Generating RealtimeKit token for user ${userId} in room ${roomId}`);
+  console.log(`🔑 Generating Cloudflare Realtime token for user ${userId} in room ${roomId}`);
   
   const payload = {
     aud: 'realtime',
-    type: 'realtime-token',
-    room: roomId,                     // ✅ Correct claim name
-    user: { id: userId },             // ✅ Expected structure
-    capabilities,                     // Optional custom field — harmless
     iss: CLOUDFLARE_APP_ID,
-    exp: Math.floor(Date.now() / 1000) + 3600,
+    sub: userId,
+    exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour
     iat: Math.floor(Date.now() / 1000),
+    // Custom claims for room and capabilities
+    room: roomId,
+    capabilities: capabilities
   };
 
   // Use the app secret as the signing key
@@ -66,55 +66,55 @@ function generateCloudflareSFUToken(userId, roomId, capabilities = ['publish', '
     userId,
     expires: payload.exp * 1000,
     capabilities,
-    type: 'realtime'
+    type: 'cloudflare-realtime'
   };
 }
 
 /**
- * Create a new Cloudflare RealtimeKit room
- * RealtimeKit manages rooms automatically when participants join
+ * Create a new Cloudflare Realtime room
+ * Realtime manages rooms automatically when participants join
  */
 async function createSFURoom(roomId, participants = []) {
   if (!CLOUDFLARE_APP_ID || !CLOUDFLARE_APP_SECRET) {
-    throw new Error('Cloudflare RealtimeKit not configured. Missing CLOUDFLARE_APP_ID or CLOUDFLARE_APP_SECRET');
+    throw new Error('Cloudflare Realtime not configured. Missing CLOUDFLARE_APP_ID or CLOUDFLARE_APP_SECRET');
   }
 
-  console.log(`🏠 Creating Cloudflare RealtimeKit room: ${roomId} with participants:`, participants);
+  console.log(`🏠 Creating Cloudflare Realtime room: ${roomId} with participants:`, participants);
 
   try {
-    // RealtimeKit creates rooms automatically when participants join
+    // Realtime creates rooms automatically when participants join
     // We just need to return room information
-    console.log('✅ RealtimeKit room ready for participants');
+    console.log('✅ Cloudflare Realtime room ready for participants');
     
     return {
       id: roomId,
       roomId: roomId,
       participants: participants,
       status: 'ready',
-      type: 'realtimekit',
+      type: 'cloudflare-realtime',
       createdAt: new Date().toISOString()
     };
   } catch (error) {
-    console.error('Error creating RealtimeKit room:', error);
+    console.error('Error creating Cloudflare Realtime room:', error);
     throw error;
   }
 }
 
 /**
- * Get Cloudflare RealtimeKit room information
- * RealtimeKit manages rooms automatically
+ * Get Cloudflare Realtime room information
+ * Realtime manages rooms automatically
  */
 async function getSFURoom(roomId) {
-  console.log(`🔍 Getting Cloudflare RealtimeKit room: ${roomId}`);
+  console.log(`🔍 Getting Cloudflare Realtime room: ${roomId}`);
   
-  // RealtimeKit manages rooms automatically
+  // Realtime manages rooms automatically
   // We'll return room info for compatibility
   
   return {
     id: roomId,
     roomId: roomId,
     status: 'active',
-    type: 'realtimekit',
+    type: 'cloudflare-realtime',
     participants: [],
     // Return room info for compatibility
     cloudflareData: {
@@ -125,16 +125,16 @@ async function getSFURoom(roomId) {
 }
 
 /**
- * Delete Cloudflare RealtimeKit room
- * RealtimeKit rooms are cleaned up automatically when empty
+ * Delete Cloudflare Realtime room
+ * Realtime rooms are cleaned up automatically when empty
  */
 async function deleteSFURoom(roomId) {
-  console.log(`🗑️ Deleting Cloudflare RealtimeKit room: ${roomId}`);
+  console.log(`🗑️ Deleting Cloudflare Realtime room: ${roomId}`);
   
-  // RealtimeKit rooms are automatically cleaned up when empty
+  // Realtime rooms are automatically cleaned up when empty
   // We'll just log the deletion for now
   
-  console.log('✅ Cloudflare RealtimeKit room cleanup completed');
+  console.log('✅ Cloudflare Realtime room cleanup completed');
   return true;
 }
 
