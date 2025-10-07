@@ -16,6 +16,7 @@ const CallInterface = ({ conversation, onClose }) => {
     callData,
     localVideoRef,
     remoteVideoRefs,
+    remoteStreams,
     startCall: startCallHook,
     joinCall: joinCallHook,
     endCall: endCallHook,
@@ -194,20 +195,40 @@ const CallInterface = ({ conversation, onClose }) => {
         </div>
 
         <div className="video-container">
-          {/* Remote video */}
+          {/* Remote videos */}
           <div className="remote-video">
-            <video
-              ref={remoteVideoRef}
-              autoPlay
-              playsInline
-              muted={false}
-              className="video-element"
-            />
-            {!isCallActive && (
-              <div className="video-placeholder">
-                <div className="avatar">👤</div>
-                <p>Aguardando conexão...</p>
-              </div>
+            {remoteStreams.size > 0 ? (
+              Array.from(remoteStreams.entries()).map(([streamId, streamData]) => (
+                <video
+                  key={streamId}
+                  ref={el => {
+                    if (el) {
+                      remoteVideoRefs.current.set(streamId, el);
+                      el.srcObject = streamData.stream;
+                    }
+                  }}
+                  autoPlay
+                  playsInline
+                  muted={false}
+                  className="video-element"
+                />
+              ))
+            ) : (
+              <>
+                <video
+                  style={{ display: 'none' }}
+                  autoPlay
+                  playsInline
+                  muted={false}
+                  className="video-element"
+                />
+                {!isCallActive && (
+                  <div className="video-placeholder">
+                    <div className="avatar">👤</div>
+                    <p>Aguardando conexão...</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
