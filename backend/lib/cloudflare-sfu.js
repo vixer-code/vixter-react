@@ -47,19 +47,18 @@ function generateCloudflareSFUToken(userId, roomId, capabilities = ['publish', '
   console.log(`🔑 Generating RealtimeKit token for user ${userId} in room ${roomId}`);
   
   const payload = {
-    sub: userId,
-    iss: CLOUDFLARE_APP_ID,
-    roomId: roomId,
-    capabilities: capabilities,
-    exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiration
-    iat: Math.floor(Date.now() / 1000),
-    // RealtimeKit specific claims
     aud: 'realtime',
-    type: 'realtime-token'
+    type: 'realtime-token',
+    room: roomId,                     // ✅ Correct claim name
+    user: { id: userId },             // ✅ Expected structure
+    capabilities,                     // Optional custom field — harmless
+    iss: CLOUDFLARE_APP_ID,
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    iat: Math.floor(Date.now() / 1000),
   };
 
   // Use the app secret as the signing key
-  const token = jwt.sign(payload, CLOUDFLARE_APP_SECRET);
+  const token = jwt.sign(payload, CLOUDFLARE_APP_SECRET, { algorithm: 'HS256' });
   
   return {
     token,
@@ -67,7 +66,7 @@ function generateCloudflareSFUToken(userId, roomId, capabilities = ['publish', '
     userId,
     expires: payload.exp * 1000,
     capabilities,
-    type: 'realtimekit'
+    type: 'realtime'
   };
 }
 
