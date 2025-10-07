@@ -6,8 +6,7 @@ const CLOUDFLARE_APP_SECRET = process.env.CLOUDFLARE_APP_SECRET;
 const CLOUDFLARE_RTC_URL = process.env.CLOUDFLARE_RTC_URL || 'https://rtc.live.cloudflare.com/v1';
 
 // Cloudflare Realtime API configuration
-const CLOUDFLARE_ORG_ID = process.env.CLOUDFLARE_ORG_ID;
-const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
+const CLOUDFLARE_REST_API_AUTH_HEADER = process.env.CLOUDFLARE_REST_API_AUTH_HEADER;
 const REALTIME_API_BASE = 'https://api.realtime.cloudflare.com/v2';
 
 /**
@@ -45,8 +44,8 @@ a=max-message-size:262144\r
  * This is the correct way to create meetings according to the official docs
  */
 async function createRealtimeMeeting(roomId) {
-  if (!CLOUDFLARE_ORG_ID || !CLOUDFLARE_API_TOKEN) {
-    throw new Error('Cloudflare Realtime API not configured. Missing CLOUDFLARE_ORG_ID or CLOUDFLARE_API_TOKEN');
+  if (!CLOUDFLARE_REST_API_AUTH_HEADER) {
+    throw new Error('Cloudflare Realtime API not configured. Missing CLOUDFLARE_REST_API_AUTH_HEADER');
   }
 
   console.log(`🏠 Creating Realtime meeting for room: ${roomId}`);
@@ -54,9 +53,8 @@ async function createRealtimeMeeting(roomId) {
   const response = await fetch(`${REALTIME_API_BASE}/meetings`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
-      'Content-Type': 'application/json',
-      'X-Org-ID': CLOUDFLARE_ORG_ID
+      'Authorization': CLOUDFLARE_REST_API_AUTH_HEADER,
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       name: roomId,
@@ -80,8 +78,8 @@ async function createRealtimeMeeting(roomId) {
  * This returns the authToken needed for the frontend
  */
 async function addParticipantToMeeting(meetingId, userId, roomId) {
-  if (!CLOUDFLARE_ORG_ID || !CLOUDFLARE_API_TOKEN) {
-    throw new Error('Cloudflare Realtime API not configured. Missing CLOUDFLARE_ORG_ID or CLOUDFLARE_API_TOKEN');
+  if (!CLOUDFLARE_REST_API_AUTH_HEADER) {
+    throw new Error('Cloudflare Realtime API not configured. Missing CLOUDFLARE_REST_API_AUTH_HEADER');
   }
 
   console.log(`👤 Adding participant ${userId} to meeting ${meetingId}`);
@@ -89,9 +87,8 @@ async function addParticipantToMeeting(meetingId, userId, roomId) {
   const response = await fetch(`${REALTIME_API_BASE}/meetings/${meetingId}/participants`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
-      'Content-Type': 'application/json',
-      'X-Org-ID': CLOUDFLARE_ORG_ID
+      'Authorization': CLOUDFLARE_REST_API_AUTH_HEADER,
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       user_id: userId,
