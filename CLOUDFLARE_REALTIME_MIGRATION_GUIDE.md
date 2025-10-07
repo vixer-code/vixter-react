@@ -85,6 +85,33 @@ await initMeeting({
 });
 ```
 
+## 🏗️ Arquitetura Correta
+
+### Entendendo a Diferença
+- **RealtimeKit** = SDK frontend (não tem credenciais próprias)
+- **Cloudflare Realtime App** = Infraestrutura backend + gerador de tokens
+
+### Fluxo de Autenticação
+1. **Backend**: Usa `CLOUDFLARE_APP_ID` + `CLOUDFLARE_APP_SECRET` para gerar JWT
+2. **Frontend**: Recebe JWT e usa com `initMeeting({ authToken })`
+3. **RealtimeKit**: Consome o JWT para conectar ao Cloudflare Realtime
+
+### Estrutura do JWT Correta
+```js
+// Backend (Node.js)
+const payload = {
+  aud: 'realtime',
+  type: 'realtime-token',
+  room: roomId,
+  user: { id: userId },
+  iss: CLOUDFLARE_APP_ID,
+  exp: Math.floor(Date.now() / 1000) + 3600,
+  iat: Math.floor(Date.now() / 1000),
+};
+
+const token = jwt.sign(payload, CLOUDFLARE_APP_SECRET, { algorithm: 'HS256' });
+```
+
 ## 🛠️ Próximos Passos
 
 ### 1. **Testar Localmente**
@@ -118,8 +145,21 @@ echo $CLOUDFLARE_APP_SECRET
 
 ### Token Inválido (RESOLVIDO ✅)
 - **Problema**: `DyteError: [ERR0004]: Invalid auth token`
-- **Causa**: Event listeners configurados antes do meeting estar disponível
-- **Solução**: Movido configuração de event listeners para useEffect que monitora o meeting
+- **Causa 1**: Event listeners configurados antes do meeting estar disponível
+- **Causa 2**: Estrutura incorreta do JWT no backend
+- **Solução 1**: Movido configuração de event listeners para useEffect que monitora o meeting
+- **Solução 2**: Corrigida estrutura do JWT para usar formato oficial do Cloudflare Realtime:
+  ```js
+  const payload = {
+    aud: 'realtime',
+    type: 'realtime-token',
+    room: roomId,
+    user: { id: userId },
+    iss: CLOUDFLARE_APP_ID,
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    iat: Math.floor(Date.now() / 1000),
+  };
+  ```
 
 ### Falha na Criação de Sessão
 - Verificar conectividade com `rtc.live.cloudflare.com`

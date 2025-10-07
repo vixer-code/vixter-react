@@ -38,6 +38,7 @@ a=max-message-size:262144\r
 /**
  * Generate JWT token for Cloudflare Realtime SFU
  * Creates a proper token for Cloudflare Realtime API authentication
+ * Based on official Cloudflare Realtime documentation
  */
 function generateCloudflareSFUToken(userId, roomId, capabilities = ['publish', 'subscribe']) {
   if (!CLOUDFLARE_APP_ID || !CLOUDFLARE_APP_SECRET) {
@@ -48,12 +49,13 @@ function generateCloudflareSFUToken(userId, roomId, capabilities = ['publish', '
   
   const payload = {
     aud: 'realtime',
+    type: 'realtime-token',
+    room: roomId,
+    user: { id: userId },
     iss: CLOUDFLARE_APP_ID,
-    sub: userId,
     exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour
     iat: Math.floor(Date.now() / 1000),
-    // Custom claims for room and capabilities
-    room: roomId,
+    // Add capabilities if needed
     capabilities: capabilities
   };
 
