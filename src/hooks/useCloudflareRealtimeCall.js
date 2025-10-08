@@ -85,16 +85,41 @@ const useCloudflareRealtimeCall = () => {
     if (!meeting) return;
 
     console.log('🎧 Setting up RealtimeKit event listeners');
+    console.log('🔍 Meeting object keys:', Object.keys(meeting));
+    console.log('🔍 Meeting.self:', meeting.self);
+    console.log('🔍 Meeting.self keys:', meeting.self ? Object.keys(meeting.self) : 'no self');
     
     // Enable audio and video when meeting becomes available
     const enableMedia = async () => {
       try {
         console.log('🎯 Meeting is now available, enabling audio and video...');
-        await meeting.self.setAudioEnabled(true);
-        await meeting.self.setVideoEnabled(true);
+        
+        // Try different methods to enable audio
+        if (meeting.self && typeof meeting.self.setAudioEnabled === 'function') {
+          await meeting.self.setAudioEnabled(true);
+          console.log('✅ Audio enabled via setAudioEnabled');
+        } else if (meeting.self && typeof meeting.self.enableAudio === 'function') {
+          await meeting.self.enableAudio();
+          console.log('✅ Audio enabled via enableAudio');
+        } else {
+          console.log('⚠️ No audio enable method found');
+        }
+        
+        // Try different methods to enable video
+        if (meeting.self && typeof meeting.self.setVideoEnabled === 'function') {
+          await meeting.self.setVideoEnabled(true);
+          console.log('✅ Video enabled via setVideoEnabled');
+        } else if (meeting.self && typeof meeting.self.enableVideo === 'function') {
+          await meeting.self.enableVideo();
+          console.log('✅ Video enabled via enableVideo');
+        } else {
+          console.log('⚠️ No video enable method found');
+        }
+        
         console.log('✅ Audio and video enabled for communication');
       } catch (error) {
         console.error('❌ Error enabling audio/video:', error);
+        console.log('⚠️ Continuing without enabling audio/video');
       }
     };
     
@@ -182,7 +207,7 @@ const useCloudflareRealtimeCall = () => {
       
       // Initialize RealtimeKit with the token
       console.log('🎯 Calling initMeeting...');
-      await initMeeting({
+      const meetingResult = await initMeeting({
         authToken: token,
         defaults: {
           audio: true,
@@ -191,17 +216,18 @@ const useCloudflareRealtimeCall = () => {
       });
 
       console.log('✅ RealtimeKit initialized successfully');
-      console.log('🔍 Meeting object after init:', meeting);
+      console.log('🔍 Meeting result from initMeeting:', meetingResult);
+      console.log('🔍 Current meeting object:', meeting);
       console.log('🔍 Meeting is null?', meeting === null);
       
-      return true;
+      return meetingResult;
     } catch (error) {
       console.error('❌ Error initializing RealtimeKit:', error);
       console.error('❌ Error details:', error.message);
       console.error('❌ Error stack:', error.stack);
       throw error;
     }
-  }, [initMeeting]);
+  }, [initMeeting, meeting]);
 
   // Start a call using RealtimeKit
   const startCall = useCallback(async (conversationId, otherUserId, callType = 'video') => {
@@ -224,28 +250,71 @@ const useCloudflareRealtimeCall = () => {
       const token = await getRealtimeKitToken(roomId, conversationId);
 
       // Initialize RealtimeKit with the token
-      await initializeRealtimeKit(token, roomId);
+      const meetingResult = await initializeRealtimeKit(token, roomId);
 
       // Start the communication session
       console.log('🎯 Starting communication session...');
       console.log('🎯 User is joining the live session of the meeting');
+      console.log('🔍 Meeting result received:', meetingResult);
       
-      // Wait a bit for the meeting object to be available
-      console.log('⏳ Waiting for meeting object to be available...');
+      // Wait for the meeting object to be available in state
+      console.log('⏳ Waiting for meeting object to be available in state...');
       let attempts = 0;
-      while (!meeting && attempts < 10) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-        console.log(`⏳ Attempt ${attempts}: meeting is ${meeting ? 'available' : 'null'}`);
+      let currentMeeting = meeting;
+      
+      // Check if we got the meeting directly from initMeeting
+      if (meetingResult && typeof meetingResult === 'object') {
+        console.log('✅ Meeting object received directly from initMeeting');
+        currentMeeting = meetingResult;
+      } else {
+        // Wait for meeting to be available in state
+        while (!currentMeeting && attempts < 20) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+          console.log(`⏳ Attempt ${attempts}: meeting is ${currentMeeting ? 'available' : 'null'}`);
+          // Re-check meeting from state
+          currentMeeting = meeting;
+        }
       }
       
-      if (meeting) {
+      if (currentMeeting) {
         console.log('✅ Meeting object is now available');
-        // Enable audio and video by default
-        await meeting.self.setAudioEnabled(true);
-        await meeting.self.setVideoEnabled(true);
-        console.log('✅ Audio and video enabled for communication');
-        console.log('✅ User is now active in the session');
+        console.log('🔍 Meeting object keys:', Object.keys(currentMeeting));
+        console.log('🔍 Meeting.self:', currentMeeting.self);
+        console.log('🔍 Meeting.self keys:', currentMeeting.self ? Object.keys(currentMeeting.self) : 'no self');
+        
+        // Try to enable audio and video
+        try {
+          if (currentMeeting.self && typeof currentMeeting.self.setAudioEnabled === 'function') {
+            await currentMeeting.self.setAudioEnabled(true);
+            console.log('✅ Audio enabled successfully');
+          } else {
+            console.log('⚠️ setAudioEnabled not available, trying alternative method');
+            // Try alternative methods
+            if (currentMeeting.self && typeof currentMeeting.self.enableAudio === 'function') {
+              await currentMeeting.self.enableAudio();
+              console.log('✅ Audio enabled via enableAudio');
+            }
+          }
+          
+          if (currentMeeting.self && typeof currentMeeting.self.setVideoEnabled === 'function') {
+            await currentMeeting.self.setVideoEnabled(true);
+            console.log('✅ Video enabled successfully');
+          } else {
+            console.log('⚠️ setVideoEnabled not available, trying alternative method');
+            // Try alternative methods
+            if (currentMeeting.self && typeof currentMeeting.self.enableVideo === 'function') {
+              await currentMeeting.self.enableVideo();
+              console.log('✅ Video enabled via enableVideo');
+            }
+          }
+          
+          console.log('✅ Audio and video enabled for communication');
+          console.log('✅ User is now active in the session');
+        } catch (mediaError) {
+          console.error('❌ Error enabling audio/video:', mediaError);
+          console.log('⚠️ Continuing without enabling audio/video');
+        }
       } else {
         console.log('⚠️ Meeting object is still null after waiting, audio/video will be enabled when meeting becomes available');
       }
