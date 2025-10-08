@@ -43,7 +43,8 @@ const useCloudflareRealtimeCall = () => {
           userId: currentUser.uid,
           conversationId: conversationId,
           role: 'participant',
-          accountType: userAccountType
+          accountType: userAccountType,
+          username: currentUser.displayName || currentUser.email || `User ${currentUser.uid.substring(0, 8)}`
         })
       });
 

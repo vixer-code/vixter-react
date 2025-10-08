@@ -7,8 +7,8 @@ export async function POST(request: NextRequest, { params }: { params: { roomId:
     const { roomId } = params;
     console.log('🚪 Room join API called for room:', roomId);
     
-    const { userId, conversationId, role = 'participant', accountType } = await request.json();
-    console.log('🚪 Request data:', { userId, conversationId, role, accountType });
+    const { userId, conversationId, role = 'participant', accountType, username } = await request.json();
+    console.log('🚪 Request data:', { userId, conversationId, role, accountType, username });
     
     // Debug accountType
     console.log('🔍 AccountType debug:');
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest, { params }: { params: { roomId:
 
     // Generate authToken using the correct Realtime API flow
     console.log('🔑 Using Realtime API to get authToken...');
-    const authTokenData = await getRealtimeAuthToken(userId, roomId, presetName);
+    const authTokenData = await getRealtimeAuthToken(userId, roomId, presetName, username);
     console.log('✅ Realtime authToken obtained successfully');
 
     // Prepare Centrifugo room metadata

@@ -77,128 +77,8 @@ async function createRealtimeMeeting(roomId) {
   return meeting;
 }
 
-/**
- * Join a participant to an active session
- * @param {string} meetingId - The meeting ID
- * @param {string} userId - The user ID
- * @param {string} authToken - The participant's auth token
- */
-async function joinParticipantToSession(meetingId, userId, authToken) {
-  if (!CLOUDFLARE_REST_API_AUTH_HEADER) {
-    throw new Error('Cloudflare Realtime API not configured. Missing CLOUDFLARE_REST_API_AUTH_HEADER');
-  }
-
-  console.log(`🎯 Joining participant ${userId} to active session of meeting ${meetingId}`);
-
-  try {
-    // Get active sessions for the meeting
-    const sessionsResponse = await fetch(`${REALTIME_API_BASE}/meetings/${meetingId}/sessions`, {
-      method: 'GET',
-      headers: {
-        'Authorization': CLOUDFLARE_REST_API_AUTH_HEADER,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!sessionsResponse.ok) {
-      const errorText = await sessionsResponse.text();
-      console.error(`❌ Failed to get sessions: ${sessionsResponse.status} - ${errorText}`);
-      throw new Error(`Failed to get sessions: ${sessionsResponse.status} - ${errorText}`);
-    }
-
-    const sessions = await sessionsResponse.json();
-    console.log(`🔍 Available sessions:`, sessions);
-    console.log(`🔍 Sessions data type:`, typeof sessions.data);
-    console.log(`🔍 Sessions data is array:`, Array.isArray(sessions.data));
-    console.log(`🔍 Sessions data length:`, sessions.data?.length);
-
-    // Find active session - handle different response structures
-    let activeSession = null;
-    
-    if (Array.isArray(sessions.data)) {
-      activeSession = sessions.data.find(session => session.status === 'LIVE' || session.status === 'ACTIVE');
-    } else if (Array.isArray(sessions)) {
-      // Sometimes the API returns sessions directly as an array
-      activeSession = sessions.find(session => session.status === 'LIVE' || session.status === 'ACTIVE');
-    } else if (sessions.data && typeof sessions.data === 'object') {
-      // Sometimes it might be a single session object
-      if (sessions.data.status === 'LIVE' || sessions.data.status === 'ACTIVE') {
-        activeSession = sessions.data;
-      }
-    }
-    
-    console.log(`🔍 Found active session:`, activeSession);
-    
-    if (!activeSession) {
-      console.log(`⚠️ No active session found, creating new session...`);
-      
-      // Create a new session for the meeting
-      const createSessionResponse = await fetch(`${REALTIME_API_BASE}/meetings/${meetingId}/sessions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': CLOUDFLARE_REST_API_AUTH_HEADER,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          title: `Session for ${meetingId}`,
-          // Add any session configuration here if needed
-        })
-      });
-
-      if (!createSessionResponse.ok) {
-        const errorText = await createSessionResponse.text();
-        console.error(`❌ Failed to create session: ${createSessionResponse.status} - ${errorText}`);
-        throw new Error(`Failed to create session: ${createSessionResponse.status} - ${errorText}`);
-      }
-
-      const newSession = await createSessionResponse.json();
-      console.log(`✅ New session created:`, newSession);
-      console.log(`✅ New session ID: ${newSession.data?.id || newSession.id}`);
-      
-      // Use the newly created session - handle different response structures
-      activeSession = newSession.data || newSession;
-    }
-
-    console.log(`🎯 Found active session: ${activeSession.id}, joining participant...`);
-
-    // Join the participant to the active session
-    console.log(`🎯 Joining participant ${userId} to session ${activeSession.id}...`);
-    const joinResponse = await fetch(`${REALTIME_API_BASE}/meetings/${meetingId}/sessions/${activeSession.id}/participants`, {
-      method: 'POST',
-      headers: {
-        'Authorization': CLOUDFLARE_REST_API_AUTH_HEADER,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        participant_id: userId,
-        auth_token: authToken
-      })
-    });
-
-    console.log(`🎯 Join response status: ${joinResponse.status}`);
-
-    if (!joinResponse.ok) {
-      const errorText = await joinResponse.text();
-      console.error(`❌ Failed to join session: ${joinResponse.status} - ${errorText}`);
-      console.error(`❌ Join request details:`, {
-        url: `${REALTIME_API_BASE}/meetings/${meetingId}/sessions/${activeSession.id}/participants`,
-        method: 'POST',
-        participant_id: userId,
-        auth_token: authToken ? `${authToken.substring(0, 20)}...` : 'undefined'
-      });
-      throw new Error(`Failed to join session: ${joinResponse.status} - ${errorText}`);
-    }
-
-    const joinResult = await joinResponse.json();
-    console.log(`✅ Participant joined session successfully:`, joinResult);
-    return joinResult;
-
-  } catch (error) {
-    console.error(`❌ Error joining participant to session:`, error);
-    // Don't throw - this is not critical for the auth token flow
-    console.log(`⚠️ Continuing without session join - participant will join when frontend connects`);
-  }
-}
+// Note: Session creation and participant joining is handled automatically by the Cloudflare Realtime API
+// when we add a participant to a meeting. No additional session management is needed.
 
 /**
  * Add a participant to a meeting and get authToken
@@ -208,8 +88,9 @@ async function joinParticipantToSession(meetingId, userId, authToken) {
  * @param {string} userId - The user ID
  * @param {string} roomId - The room ID
  * @param {string} presetName - The preset name (group_call_host or group_call_participant)
+ * @param {string} username - The user's display name/username
  */
-async function addParticipantToMeeting(meetingId, userId, roomId, presetName = 'group_call_participant') {
+async function addParticipantToMeeting(meetingId, userId, roomId, presetName = 'group_call_participant', username = null) {
   if (!CLOUDFLARE_REST_API_AUTH_HEADER) {
     throw new Error('Cloudflare Realtime API not configured. Missing CLOUDFLARE_REST_API_AUTH_HEADER');
   }
@@ -223,8 +104,10 @@ async function addParticipantToMeeting(meetingId, userId, roomId, presetName = '
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
+      name: username || `User ${userId.substring(0, 8)}`, // Use username or fallback to user ID
       custom_participant_id: userId, // Use Firebase UID as custom participant ID
       preset_name: presetName
+      // picture is optional - we can add it later if needed
     })
   });
 
@@ -329,8 +212,9 @@ function cacheMeeting(roomId, meetingId) {
  * @param {string} userId - The user ID
  * @param {string} roomId - The room ID
  * @param {string} presetName - The preset name (group_call_host or group_call_participant)
+ * @param {string} username - The user's display name/username
  */
-async function getRealtimeAuthToken(userId, roomId, presetName = 'group_call_participant') {
+async function getRealtimeAuthToken(userId, roomId, presetName = 'group_call_participant', username = null) {
   try {
     console.log(`🔑 Getting Realtime authToken for user ${userId} in room ${roomId} with preset: ${presetName}`);
 
@@ -359,13 +243,12 @@ async function getRealtimeAuthToken(userId, roomId, presetName = 'group_call_par
     
     // Step 3: Add participant to meeting (this grants access to join sessions)
     console.log(`👤 Adding participant to meeting ${meetingId}...`);
-    const participant = await addParticipantToMeeting(meetingId, userId, roomId, presetName);
+    const participant = await addParticipantToMeeting(meetingId, userId, roomId, presetName, username);
     
     console.log(`🔍 Participant response structure:`, JSON.stringify(participant, null, 2));
     
-    // Step 4: Join the active session (this actually puts participant in the live session)
-    console.log(`🎯 Joining participant to active session...`);
-    await joinParticipantToSession(meetingId, userId, participant.data?.token || participant.token);
+    // Step 4: Participant is automatically added to the session when added to meeting
+    console.log(`✅ Participant added to meeting - session will be created/joined automatically`);
     
     // Step 3: Return the authToken
     // Note: The API returns 'token', not 'auth_token'
