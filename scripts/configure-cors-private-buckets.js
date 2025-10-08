@@ -29,6 +29,8 @@ const corsConfiguration = {
       AllowedOrigins: [
         'https://vixter.com',
         'https://www.vixter.com',
+        'https://vixter.com.br',
+        'https://www.vixter.com.br',
         'https://vixter-react.vercel.app',
         'https://vixter-react.vercel.app/*',
         'https://vixter-react.vercel.app/vixies',

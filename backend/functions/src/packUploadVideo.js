@@ -45,11 +45,28 @@ const corsHandler = cors({
  */
 exports.packUploadVideo = onRequest({
   region: 'us-east1',
-  cors: true,
+  cors: [
+    'https://vixter-react.vercel.app',
+    'https://vixter.com.br',
+    'https://www.vixter.com.br',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
   invoker: 'public',
   memory: '2GiB',
   timeoutSeconds: 540
 }, async (req, res) => {
+  // Set CORS headers manually as backup
+  res.set('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.set('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   return corsHandler(req, res, async () => {
     let inputPath = null;
     let outputPath = null;

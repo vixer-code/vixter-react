@@ -11,7 +11,7 @@
     "start": "npm run preview"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.450.0",
+    "@aws-sdk/client-s3": "^3.906.0",
     "@aws-sdk/s3-request-presigner": "^3.450.0",
     "@cloudflare/realtimekit": "^1.1.7",
     "@cloudflare/realtimekit-react": "^1.1.7",
