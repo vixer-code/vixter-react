@@ -326,7 +326,8 @@ export const PacksProviderR2 = ({ children }) => {
             const file = packFiles[i];
             console.log(`Uploading pack file ${i + 1}:`, file.name, file.size);
             onProgress && onProgress(Math.round((uploadedFiles / totalFiles) * 100), `Enviando arquivo do pack ${i + 1}/${packFiles.length}...`);
-            const contentResult = await uploadPackContentMedia(file, packId);
+            // Pass vendorId (currentUser.uid) for video processing
+            const contentResult = await uploadPackContentMedia(file, packId, currentUser.uid);
             console.log('Pack file upload result:', contentResult);
             mediaData.packContent.push({
               key: contentResult.key,

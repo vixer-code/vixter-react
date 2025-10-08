@@ -386,25 +386,11 @@ async function generateWatermarkedMedia(contentItem, watermark, username, user, 
     const fileBuffer = Buffer.concat(chunks);
 
     if (contentItem.type.startsWith('video/')) {
-      try {
-        console.log(`Starting video watermarking for: ${contentItem.name}`);
-        console.log(`Video buffer size: ${fileBuffer.length} bytes`);
-        console.log(`User: ${user.username}, Vendor: ${vendorInfo?.username}`);
-        
-        const watermarkedBuffer = await addVideoWatermark(fileBuffer, watermark, username, contentItem, user, vendorInfo);
-        console.log(`Video watermarking completed successfully. Output size: ${watermarkedBuffer.length} bytes`);
-        return watermarkedBuffer;
-      } catch (videoError) {
-        console.error('Video watermarking failed, returning original video:', videoError);
-        console.error('Error details:', {
-          message: videoError.message,
-          stack: videoError.stack,
-          fileName: contentItem.name,
-          fileSize: fileBuffer.length
-        });
-        // Return original video if watermarking fails
-        return fileBuffer;
-      }
+      // Videos are already processed with vendor QR code during upload
+      // Just serve them directly without re-processing
+      console.log(`Serving pre-processed video: ${contentItem.name}`);
+      console.log(`Video buffer size: ${fileBuffer.length} bytes`);
+      return fileBuffer;
     } else if (contentItem.type === 'image/webp') {
       const isAnimatedWebP = await checkIfAnimatedWebP(fileBuffer);
       if (isAnimatedWebP) {
