@@ -1,17 +1,49 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRealtimeKitClient } from '@cloudflare/realtimekit-react';
 import { RtkMeeting } from '@cloudflare/realtimekit-react-ui';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useAuth } from '../contexts/AuthContext';
+import { db } from '../../config/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import './CallInterface.css';
 
 /**
  * Component to initialize RealtimeKit meeting and render RtkMeeting
+ * Now integrated into the messaging box (right side)
  */
-const RealtimeKitMeetingWrapper = ({ authToken, conversation, onClose }) => {
+const RealtimeKitMeetingWrapper = ({ authToken, conversation, otherUser, onClose, isNewMeeting }) => {
+  const { currentUser } = useAuth();
   const [meeting, initMeeting] = useRealtimeKitClient();
   const [isInitializing, setIsInitializing] = useState(false);
   const [initError, setInitError] = useState(null);
+  const [hasJoined, setHasJoined] = useState(false);
+
+  // Send "Chamada realizada" message when meeting is created (only for new meetings)
+  const sendCallMessage = useCallback(async () => {
+    if (!isNewMeeting || !conversation?.id || !currentUser) return;
+    
+    try {
+      console.log('📝 Sending "Chamada realizada" message...');
+      const messagesRef = collection(db, 'conversations', conversation.id, 'messages');
+      
+      await addDoc(messagesRef, {
+        text: '📞 Chamada realizada',
+        senderId: currentUser.uid,
+        senderName: currentUser.displayName || currentUser.email,
+        timestamp: serverTimestamp(),
+        type: 'call',
+        callMetadata: {
+          initiatedBy: currentUser.uid,
+          initiatedAt: new Date().toISOString(),
+          participants: [currentUser.uid]
+        }
+      });
+      
+      console.log('✅ Call message sent successfully');
+    } catch (error) {
+      console.error('❌ Error sending call message:', error);
+    }
+  }, [isNewMeeting, conversation?.id, currentUser]);
 
   useEffect(() => {
     if (authToken && !meeting && !isInitializing) {
@@ -29,26 +61,57 @@ const RealtimeKitMeetingWrapper = ({ authToken, conversation, onClose }) => {
       }).then(() => {
         console.log('✅ RealtimeKit meeting initialized successfully');
         setIsInitializing(false);
+        setHasJoined(true);
+        
+        // Send call message if this is a new meeting
+        if (isNewMeeting) {
+          sendCallMessage();
+        }
       }).catch((error) => {
         console.error('❌ Error initializing RealtimeKit:', error);
         setInitError(error.message);
         setIsInitializing(false);
       });
     }
-  }, [authToken, meeting, initMeeting, isInitializing]);
+  }, [authToken, meeting, initMeeting, isInitializing, isNewMeeting, sendCallMessage]);
 
   // Show loading state
   if (isInitializing || !meeting) {
     return (
-      <div className="call-interface call-active">
-        <div className="call-header">
-          <h3>Iniciando chamada...</h3>
-          <button className="close-button" onClick={onClose}>✕</button>
+      <div className="call-interface-inline">
+        <div className="call-header-inline">
+          <div className="call-user-info">
+            <div className="user-avatar-small">
+              {(otherUser?.photoURL || otherUser?.profilePictureURL) ? (
+                <img 
+                  src={otherUser.photoURL || otherUser.profilePictureURL} 
+                  alt={otherUser.displayName || otherUser.name}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div 
+                className="default-avatar-small"
+                style={{ 
+                  display: (otherUser?.photoURL || otherUser?.profilePictureURL) ? 'none' : 'flex' 
+                }}
+              >
+                {(otherUser?.displayName || otherUser?.name || 'U').charAt(0).toUpperCase()}
+              </div>
+            </div>
+            <div className="user-details-inline">
+              <h4>Iniciando chamada...</h4>
+              <p>{otherUser?.displayName || otherUser?.name || 'Usuário'}</p>
+            </div>
+          </div>
+          <button className="close-button-inline" onClick={onClose}>✕</button>
         </div>
-        <div className="video-container">
-          <div className="video-placeholder">
+        <div className="meeting-container-inline">
+          <div className="loading-placeholder">
             <div className="spinner">🔄</div>
-            <p>Conectando ao RealtimeKit...</p>
+            <p>Conectando...</p>
           </div>
         </div>
       </div>
@@ -58,16 +121,18 @@ const RealtimeKitMeetingWrapper = ({ authToken, conversation, onClose }) => {
   // Show error state
   if (initError) {
     return (
-      <div className="call-interface call-active">
-        <div className="call-header">
-          <h3>Erro ao iniciar chamada</h3>
-          <button className="close-button" onClick={onClose}>✕</button>
+      <div className="call-interface-inline">
+        <div className="call-header-inline">
+          <div className="call-user-info">
+            <h4>Erro ao iniciar chamada</h4>
+          </div>
+          <button className="close-button-inline" onClick={onClose}>✕</button>
         </div>
-        <div className="video-container">
-          <div className="video-placeholder">
-            <div className="error">❌</div>
+        <div className="meeting-container-inline">
+          <div className="error-placeholder">
+            <div className="error-icon">❌</div>
             <p>{initError}</p>
-            <button onClick={onClose}>Fechar</button>
+            <button onClick={onClose} className="close-error-btn">Fechar</button>
           </div>
         </div>
       </div>
@@ -78,25 +143,49 @@ const RealtimeKitMeetingWrapper = ({ authToken, conversation, onClose }) => {
   console.log('🔍 Meeting object:', meeting);
   console.log('🔍 Meeting keys:', Object.keys(meeting));
 
-  // Render the official RtkMeeting component
-  // Note: RtkMeeting manages its own context, no need for RealtimeKitProvider
+  // Render the official RtkMeeting component inline (in the messaging box)
   return (
-    <div style={{ 
-      width: '100%', 
-      height: '100vh', 
-      position: 'fixed', 
-      top: 0, 
-      left: 0, 
-      zIndex: 9999,
-      backgroundColor: '#000'
-    }}>
-      <RtkMeeting 
-        meeting={meeting}
-        mode="fill"
-        showSetupScreen={false}
-        leaveOnUnmount={true}
-        loadConfigFromPreset={true}
-      />
+    <div className="call-interface-inline">
+      <div className="call-header-inline">
+        <div className="call-user-info">
+          <div className="user-avatar-small">
+            {(otherUser?.photoURL || otherUser?.profilePictureURL) ? (
+              <img 
+                src={otherUser.photoURL || otherUser.profilePictureURL} 
+                alt={otherUser.displayName || otherUser.name}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div 
+              className="default-avatar-small"
+              style={{ 
+                display: (otherUser?.photoURL || otherUser?.profilePictureURL) ? 'none' : 'flex' 
+              }}
+            >
+              {(otherUser?.displayName || otherUser?.name || 'U').charAt(0).toUpperCase()}
+            </div>
+          </div>
+          <div className="user-details-inline">
+            <h4>Chamada em andamento</h4>
+            <p>{otherUser?.displayName || otherUser?.name || 'Usuário'}</p>
+          </div>
+        </div>
+        <button className="close-button-inline" onClick={onClose} title="Encerrar chamada">
+          ✕
+        </button>
+      </div>
+      <div className="meeting-container-inline">
+        <RtkMeeting 
+          meeting={meeting}
+          mode="fill"
+          showSetupScreen={false}
+          leaveOnUnmount={true}
+          loadConfigFromPreset={true}
+        />
+      </div>
     </div>
   );
 };
@@ -112,6 +201,7 @@ const CallInterface = ({ conversation, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [otherUser, setOtherUser] = useState(null);
   const [showMeeting, setShowMeeting] = useState(false);
+  const [isNewMeeting, setIsNewMeeting] = useState(false);
 
   // Check if there's an active room for this conversation
   const existingRoom = activeRooms[conversation?.id];
@@ -179,8 +269,10 @@ const CallInterface = ({ conversation, onClose }) => {
       console.log('🔍 Token length:', data.token?.length);
       console.log('🔍 Meeting ID:', data.meetingId);
       console.log('🔍 Is existing room:', data.existingRoom);
+      console.log('🔍 Is new meeting:', data.isNewMeeting);
       
       setAuthToken(data.token);
+      setIsNewMeeting(data.isNewMeeting || false);
       setShowMeeting(true);
     } catch (error) {
       console.error('❌ Error getting auth token:', error);
@@ -204,29 +296,35 @@ const CallInterface = ({ conversation, onClose }) => {
       endCall(roomId, conversation.id);
     }
     
-    // Reset state
+    // Reset state and return to messaging
     setAuthToken(null);
     setShowMeeting(false);
-    onClose?.();
+    setIsNewMeeting(false);
+    
+    // Don't close the CallInterface, just hide the meeting
+    // User stays in the messaging view
+    console.log('✅ Returned to messaging view');
   };
 
-  // If we have a token and should show meeting, render the meeting wrapper
+  // If we have a token and should show meeting, render the meeting wrapper inline
   if (showMeeting && authToken) {
     return (
       <RealtimeKitMeetingWrapper 
         authToken={authToken}
         conversation={conversation}
+        otherUser={otherUser}
         onClose={handleLeaveCall}
+        isNewMeeting={isNewMeeting}
       />
     );
   }
 
-  // Show call start screen
+  // Show call start screen (simplified for inline display)
   return (
-    <div className="call-interface">
-      <div className="call-header">
+    <div className="call-interface-inline call-start">
+      <div className="call-header-inline">
         <div className="call-user-info">
-          <div className="user-avatar">
+          <div className="user-avatar-small">
             {(otherUser?.photoURL || otherUser?.profilePictureURL) ? (
               <img 
                 src={otherUser.photoURL || otherUser.profilePictureURL} 
@@ -238,7 +336,7 @@ const CallInterface = ({ conversation, onClose }) => {
               />
             ) : null}
             <div 
-              className="default-avatar"
+              className="default-avatar-small"
               style={{ 
                 display: (otherUser?.photoURL || otherUser?.profilePictureURL) ? 'none' : 'flex' 
               }}
@@ -246,19 +344,32 @@ const CallInterface = ({ conversation, onClose }) => {
               {(otherUser?.displayName || otherUser?.name || 'U').charAt(0).toUpperCase()}
             </div>
           </div>
-          <div className="user-details">
-            <h3>{existingRoom ? 'Sala Disponível' : 'Iniciar Chamada'}</h3>
+          <div className="user-details-inline">
+            <h4>{existingRoom ? 'Sala Disponível' : 'Iniciar Chamada'}</h4>
             <p>{otherUser?.displayName || otherUser?.name || 'Usuário'}</p>
           </div>
         </div>
-        <button className="close-button" onClick={onClose}>
+        <button className="close-button-inline" onClick={onClose}>
           ✕
         </button>
       </div>
       
-      <div className="call-options-content">
+      <div className="call-start-content">
+        <div className="call-avatar-large">
+          {(otherUser?.photoURL || otherUser?.profilePictureURL) ? (
+            <img 
+              src={otherUser.photoURL || otherUser.profilePictureURL} 
+              alt={otherUser.displayName || otherUser.name}
+            />
+          ) : (
+            <div className="default-avatar-large">
+              {(otherUser?.displayName || otherUser?.name || 'U').charAt(0).toUpperCase()}
+            </div>
+          )}
+        </div>
+        <h3>{otherUser?.displayName || otherUser?.name || 'Usuário'}</h3>
         <button
-          className="start-call-button"
+          className="start-call-button-inline"
           onClick={handleStartCall}
           disabled={isLoading}
           title={existingRoom ? 'Entrar na sala existente' : 'Criar nova sala de chamada'}
