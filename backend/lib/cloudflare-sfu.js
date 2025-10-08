@@ -78,6 +78,78 @@ async function createRealtimeMeeting(roomId) {
 }
 
 /**
+ * Join a participant to an active session
+ * @param {string} meetingId - The meeting ID
+ * @param {string} userId - The user ID
+ * @param {string} authToken - The participant's auth token
+ */
+async function joinParticipantToSession(meetingId, userId, authToken) {
+  if (!CLOUDFLARE_REST_API_AUTH_HEADER) {
+    throw new Error('Cloudflare Realtime API not configured. Missing CLOUDFLARE_REST_API_AUTH_HEADER');
+  }
+
+  console.log(`🎯 Joining participant ${userId} to active session of meeting ${meetingId}`);
+
+  try {
+    // Get active sessions for the meeting
+    const sessionsResponse = await fetch(`${REALTIME_API_BASE}/meetings/${meetingId}/sessions`, {
+      method: 'GET',
+      headers: {
+        'Authorization': CLOUDFLARE_REST_API_AUTH_HEADER,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!sessionsResponse.ok) {
+      const errorText = await sessionsResponse.text();
+      console.error(`❌ Failed to get sessions: ${sessionsResponse.status} - ${errorText}`);
+      throw new Error(`Failed to get sessions: ${sessionsResponse.status} - ${errorText}`);
+    }
+
+    const sessions = await sessionsResponse.json();
+    console.log(`🔍 Available sessions:`, sessions);
+
+    // Find active session
+    const activeSession = sessions.data?.find(session => session.status === 'LIVE' || session.status === 'ACTIVE');
+    
+    if (!activeSession) {
+      console.log(`⚠️ No active session found, participant will join when session starts`);
+      return; // Participant will automatically join when session becomes active
+    }
+
+    console.log(`🎯 Found active session: ${activeSession.id}, joining participant...`);
+
+    // Join the participant to the active session
+    const joinResponse = await fetch(`${REALTIME_API_BASE}/meetings/${meetingId}/sessions/${activeSession.id}/participants`, {
+      method: 'POST',
+      headers: {
+        'Authorization': CLOUDFLARE_REST_API_AUTH_HEADER,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        participant_id: userId,
+        auth_token: authToken
+      })
+    });
+
+    if (!joinResponse.ok) {
+      const errorText = await joinResponse.text();
+      console.error(`❌ Failed to join session: ${joinResponse.status} - ${errorText}`);
+      throw new Error(`Failed to join session: ${joinResponse.status} - ${errorText}`);
+    }
+
+    const joinResult = await joinResponse.json();
+    console.log(`✅ Participant joined session successfully:`, joinResult);
+    return joinResult;
+
+  } catch (error) {
+    console.error(`❌ Error joining participant to session:`, error);
+    // Don't throw - this is not critical for the auth token flow
+    console.log(`⚠️ Continuing without session join - participant will join when frontend connects`);
+  }
+}
+
+/**
  * Add a participant to a meeting and get authToken
  * This returns the authToken needed for the frontend
  * 
@@ -201,6 +273,10 @@ async function getRealtimeAuthToken(userId, roomId, presetName = 'group_call_par
     const participant = await addParticipantToMeeting(meetingId, userId, roomId, presetName);
     
     console.log(`🔍 Participant response structure:`, JSON.stringify(participant, null, 2));
+    
+    // Step 4: Join the active session (this actually puts participant in the live session)
+    console.log(`🎯 Joining participant to active session...`);
+    await joinParticipantToSession(meetingId, userId, participant.data?.token || participant.token);
     
     // Step 3: Return the authToken
     // Note: The API returns 'token', not 'auth_token'
