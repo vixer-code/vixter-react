@@ -116,11 +116,55 @@ async function addParticipantToMeeting(meetingId, userId, roomId, presetName = '
   return participant;
 }
 
+// Simple in-memory cache for active meetings
+// In production, use Redis or database
+const activeMeetings = new Map();
+
+/**
+ * Check if a meeting exists for the given roomId
+ * @param {string} roomId - The room ID to check
+ * @returns {Object|null} - Meeting data if exists, null otherwise
+ */
+async function checkExistingMeeting(roomId) {
+  try {
+    console.log(`🔍 Checking for existing meeting with roomId: ${roomId}`);
+    
+    // Check our cache first
+    const cachedMeeting = activeMeetings.get(roomId);
+    if (cachedMeeting) {
+      console.log(`🔍 Found cached meeting: ${cachedMeeting.id}`);
+      return cachedMeeting;
+    }
+    
+    // If not in cache, assume no meeting exists
+    console.log(`🔍 No cached meeting found for roomId: ${roomId}`);
+    return null;
+  } catch (error) {
+    console.log(`🔍 Error checking existing meeting: ${error.message}`);
+    return null;
+  }
+}
+
+/**
+ * Cache a meeting for future lookups
+ * @param {string} roomId - The room ID
+ * @param {string} meetingId - The meeting ID
+ */
+function cacheMeeting(roomId, meetingId) {
+  activeMeetings.set(roomId, {
+    id: meetingId,
+    roomId: roomId,
+    createdAt: new Date().toISOString()
+  });
+  console.log(`💾 Cached meeting ${meetingId} for roomId: ${roomId}`);
+}
+
 /**
  * Get authToken using the correct Cloudflare Realtime API flow
- * 1. Create meeting
- * 2. Add participant
- * 3. Return authToken
+ * 1. Check for existing meeting
+ * 2. Create meeting if needed
+ * 3. Add participant
+ * 4. Return authToken
  * 
  * @param {string} userId - The user ID
  * @param {string} roomId - The room ID
@@ -130,13 +174,25 @@ async function getRealtimeAuthToken(userId, roomId, presetName = 'group_call_par
   try {
     console.log(`🔑 Getting Realtime authToken for user ${userId} in room ${roomId} with preset: ${presetName}`);
 
-    // Step 1: Create meeting
-    const meetingResponse = await createRealtimeMeeting(roomId);
-    const meetingId = meetingResponse.data.id;
+    // Step 1: Check for existing meeting
+    let meetingId;
+    const existingMeeting = await checkExistingMeeting(roomId);
     
-    console.log(`🔑 Meeting ID: ${meetingId}`);
+    if (existingMeeting) {
+      console.log(`🔍 Found existing meeting: ${existingMeeting.id}`);
+      meetingId = existingMeeting.id;
+    } else {
+      console.log(`🔍 No existing meeting found, creating new one...`);
+      // Step 2: Create meeting
+      const meetingResponse = await createRealtimeMeeting(roomId);
+      meetingId = meetingResponse.data.id;
+      console.log(`🔑 New Meeting ID: ${meetingId}`);
+      
+      // Cache the new meeting
+      cacheMeeting(roomId, meetingId);
+    }
     
-    // Step 2: Add participant and get authToken
+    // Step 3: Add participant and get authToken
     const participant = await addParticipantToMeeting(meetingId, userId, roomId, presetName);
     
     console.log(`🔍 Participant response structure:`, JSON.stringify(participant, null, 2));

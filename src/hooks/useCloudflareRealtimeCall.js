@@ -56,6 +56,11 @@ const useCloudflareRealtimeCall = () => {
       console.log('🔑 Token length:', data.token ? data.token.length : 'no token');
       console.log('🔑 Token preview:', data.token ? data.token.substring(0, 50) + '...' : 'no token');
       
+      // Check if this is an existing room based on meetingId
+      const isExistingRoom = data.meetingId && data.meetingId !== 'new';
+      console.log('🔍 Is existing room:', isExistingRoom);
+      console.log('🔍 Meeting ID:', data.meetingId);
+      
       return data.token;
     } catch (error) {
       console.error('❌ Error getting RealtimeKit token:', error);
@@ -176,15 +181,27 @@ const useCloudflareRealtimeCall = () => {
       setCallData({ conversationId, otherUserId, callType });
       conversationIdRef.current = conversationId;
 
-      // Generate room ID
-      const roomId = `call_${conversationId}_${Date.now()}`;
+      // Generate consistent room ID (without timestamp for same conversation)
+      const roomId = `call_${conversationId}`;
       roomIdRef.current = roomId;
+
+      console.log('🚀 Creating/joining RealtimeKit room for conversation', conversationId);
+      console.log('🚀 Room ID:', roomId);
 
       // Get RealtimeKit token
       const token = await getRealtimeKitToken(roomId, conversationId);
 
       // Initialize RealtimeKit with the token
       await initializeRealtimeKit(token, roomId);
+
+      // Start the communication session
+      console.log('🎯 Starting communication session...');
+      if (meeting) {
+        // Enable audio and video by default
+        await meeting.self.setAudioEnabled(true);
+        await meeting.self.setVideoEnabled(true);
+        console.log('✅ Audio and video enabled for communication');
+      }
 
       setIsInCall(true);
       setCallStatus('connected');
