@@ -85,6 +85,20 @@ const useCloudflareRealtimeCall = () => {
     if (!meeting) return;
 
     console.log('🎧 Setting up RealtimeKit event listeners');
+    
+    // Enable audio and video when meeting becomes available
+    const enableMedia = async () => {
+      try {
+        console.log('🎯 Meeting is now available, enabling audio and video...');
+        await meeting.self.setAudioEnabled(true);
+        await meeting.self.setVideoEnabled(true);
+        console.log('✅ Audio and video enabled for communication');
+      } catch (error) {
+        console.error('❌ Error enabling audio/video:', error);
+      }
+    };
+    
+    enableMedia();
 
     const handleParticipantJoined = (participant) => {
       console.log('👤 Participant joined:', participant);
@@ -167,6 +181,7 @@ const useCloudflareRealtimeCall = () => {
       }
       
       // Initialize RealtimeKit with the token
+      console.log('🎯 Calling initMeeting...');
       await initMeeting({
         authToken: token,
         defaults: {
@@ -176,6 +191,8 @@ const useCloudflareRealtimeCall = () => {
       });
 
       console.log('✅ RealtimeKit initialized successfully');
+      console.log('🔍 Meeting object after init:', meeting);
+      console.log('🔍 Meeting is null?', meeting === null);
       
       return true;
     } catch (error) {
@@ -212,12 +229,25 @@ const useCloudflareRealtimeCall = () => {
       // Start the communication session
       console.log('🎯 Starting communication session...');
       console.log('🎯 User is joining the live session of the meeting');
+      
+      // Wait a bit for the meeting object to be available
+      console.log('⏳ Waiting for meeting object to be available...');
+      let attempts = 0;
+      while (!meeting && attempts < 10) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+        console.log(`⏳ Attempt ${attempts}: meeting is ${meeting ? 'available' : 'null'}`);
+      }
+      
       if (meeting) {
+        console.log('✅ Meeting object is now available');
         // Enable audio and video by default
         await meeting.self.setAudioEnabled(true);
         await meeting.self.setVideoEnabled(true);
         console.log('✅ Audio and video enabled for communication');
         console.log('✅ User is now active in the session');
+      } else {
+        console.log('⚠️ Meeting object is still null after waiting, audio/video will be enabled when meeting becomes available');
       }
 
       setIsInCall(true);
