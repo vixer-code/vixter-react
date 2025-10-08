@@ -9,6 +9,14 @@ export async function POST(request: NextRequest, { params }: { params: { roomId:
     
     const { userId, conversationId, role = 'participant', accountType } = await request.json();
     console.log('🚪 Request data:', { userId, conversationId, role, accountType });
+    
+    // Debug accountType
+    console.log('🔍 AccountType debug:');
+    console.log('  - Raw accountType:', accountType);
+    console.log('  - Type of accountType:', typeof accountType);
+    console.log('  - Is undefined:', accountType === undefined);
+    console.log('  - Is null:', accountType === null);
+    console.log('  - Is empty string:', accountType === '');
 
     // Get origin for CORS
     const origin = request.headers.get('origin') || 'https://vixter-react.vercel.app';
@@ -34,10 +42,32 @@ export async function POST(request: NextRequest, { params }: { params: { roomId:
     const room = await getSFURoom(roomId);
     console.log('🏠 Room info:', room);
 
-    // Determine preset based on accountType
+    // Determine preset based on accountType with robust fallback logic
     // Provider = host, Client = participant
-    const presetName = accountType === 'provider' ? 'group_call_host' : 'group_call_participant';
-    console.log(`🎭 User preset: ${presetName} (accountType: ${accountType})`);
+    let finalAccountType = accountType;
+    
+    // Handle undefined/null/empty accountType
+    if (!finalAccountType || finalAccountType === 'undefined' || finalAccountType === 'null') {
+      console.log('⚠️ AccountType is undefined/null/empty, using smart default logic');
+      
+      // Smart logic: Check if this is the first participant in the room
+      const isFirstParticipant = !room.participants || room.participants.length === 0;
+      
+      if (isFirstParticipant) {
+        // First participant becomes the host
+        finalAccountType = 'provider';
+        console.log('🔧 First participant detected, setting as provider (host)');
+      } else {
+        // Subsequent participants are clients
+        finalAccountType = 'client';
+        console.log('🔧 Subsequent participant detected, setting as client');
+      }
+      
+      console.log('🔧 Using smart default accountType:', finalAccountType);
+    }
+    
+    const presetName = finalAccountType === 'provider' ? 'group_call_host' : 'group_call_participant';
+    console.log(`🎭 User preset: ${presetName} (finalAccountType: ${finalAccountType})`);
 
     // Generate authToken using the correct Realtime API flow
     console.log('🔑 Using Realtime API to get authToken...');

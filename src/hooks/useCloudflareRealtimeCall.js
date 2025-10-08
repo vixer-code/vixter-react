@@ -29,7 +29,12 @@ const useCloudflareRealtimeCall = () => {
       console.log('🔑 Getting RealtimeKit token for room:', roomId);
       console.log('🔑 User ID:', currentUser.uid);
       console.log('🔑 User accountType:', currentUser.accountType);
+      console.log('🔑 User object keys:', Object.keys(currentUser));
       console.log('🔑 Conversation ID:', conversationId);
+      
+      // Determine accountType with fallback
+      const userAccountType = currentUser.accountType || currentUser.type || 'client';
+      console.log('🔑 Final accountType to send:', userAccountType);
       
       const response = await fetch(`https://vixter-react-llyd.vercel.app/api/rooms/${roomId}/join`, {
         method: 'POST',
@@ -38,7 +43,7 @@ const useCloudflareRealtimeCall = () => {
           userId: currentUser.uid,
           conversationId: conversationId,
           role: 'participant',
-          accountType: currentUser.accountType || 'client' // Default to client if not specified
+          accountType: userAccountType
         })
       });
 
