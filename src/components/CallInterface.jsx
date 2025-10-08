@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useRealtimeKitClient, RealtimeKitProvider } from '@cloudflare/realtimekit-react';
+import { useRealtimeKitClient } from '@cloudflare/realtimekit-react';
 import { RtkMeeting } from '@cloudflare/realtimekit-react-ui';
-import '@cloudflare/realtimekit-react-ui/dist/index.css';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useAuth } from '../contexts/AuthContext';
 import './CallInterface.css';
@@ -80,23 +79,25 @@ const RealtimeKitMeetingWrapper = ({ authToken, conversation, onClose }) => {
   console.log('🔍 Meeting keys:', Object.keys(meeting));
 
   // Render the official RtkMeeting component
+  // Note: RtkMeeting manages its own context, no need for RealtimeKitProvider
   return (
-    <RealtimeKitProvider value={meeting}>
-      <div style={{ 
-        width: '100%', 
-        height: '100vh', 
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        zIndex: 9999,
-        backgroundColor: '#000'
-      }}>
-        <RtkMeeting 
-          mode="fill"
-          onLeave={onClose}
-        />
-      </div>
-    </RealtimeKitProvider>
+    <div style={{ 
+      width: '100%', 
+      height: '100vh', 
+      position: 'fixed', 
+      top: 0, 
+      left: 0, 
+      zIndex: 9999,
+      backgroundColor: '#000'
+    }}>
+      <RtkMeeting 
+        meeting={meeting}
+        mode="fill"
+        showSetupScreen={false}
+        leaveOnUnmount={true}
+        loadConfigFromPreset={true}
+      />
+    </div>
   );
 };
 
