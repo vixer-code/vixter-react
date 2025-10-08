@@ -108,9 +108,26 @@ async function joinParticipantToSession(meetingId, userId, authToken) {
 
     const sessions = await sessionsResponse.json();
     console.log(`🔍 Available sessions:`, sessions);
+    console.log(`🔍 Sessions data type:`, typeof sessions.data);
+    console.log(`🔍 Sessions data is array:`, Array.isArray(sessions.data));
+    console.log(`🔍 Sessions data length:`, sessions.data?.length);
 
-    // Find active session
-    let activeSession = sessions.data?.find(session => session.status === 'LIVE' || session.status === 'ACTIVE');
+    // Find active session - handle different response structures
+    let activeSession = null;
+    
+    if (Array.isArray(sessions.data)) {
+      activeSession = sessions.data.find(session => session.status === 'LIVE' || session.status === 'ACTIVE');
+    } else if (Array.isArray(sessions)) {
+      // Sometimes the API returns sessions directly as an array
+      activeSession = sessions.find(session => session.status === 'LIVE' || session.status === 'ACTIVE');
+    } else if (sessions.data && typeof sessions.data === 'object') {
+      // Sometimes it might be a single session object
+      if (sessions.data.status === 'LIVE' || sessions.data.status === 'ACTIVE') {
+        activeSession = sessions.data;
+      }
+    }
+    
+    console.log(`🔍 Found active session:`, activeSession);
     
     if (!activeSession) {
       console.log(`⚠️ No active session found, creating new session...`);
@@ -135,15 +152,17 @@ async function joinParticipantToSession(meetingId, userId, authToken) {
       }
 
       const newSession = await createSessionResponse.json();
-      console.log(`✅ New session created: ${newSession.data?.id}`);
+      console.log(`✅ New session created:`, newSession);
+      console.log(`✅ New session ID: ${newSession.data?.id || newSession.id}`);
       
-      // Use the newly created session
-      activeSession = newSession.data;
+      // Use the newly created session - handle different response structures
+      activeSession = newSession.data || newSession;
     }
 
     console.log(`🎯 Found active session: ${activeSession.id}, joining participant...`);
 
     // Join the participant to the active session
+    console.log(`🎯 Joining participant ${userId} to session ${activeSession.id}...`);
     const joinResponse = await fetch(`${REALTIME_API_BASE}/meetings/${meetingId}/sessions/${activeSession.id}/participants`, {
       method: 'POST',
       headers: {
@@ -156,9 +175,17 @@ async function joinParticipantToSession(meetingId, userId, authToken) {
       })
     });
 
+    console.log(`🎯 Join response status: ${joinResponse.status}`);
+
     if (!joinResponse.ok) {
       const errorText = await joinResponse.text();
       console.error(`❌ Failed to join session: ${joinResponse.status} - ${errorText}`);
+      console.error(`❌ Join request details:`, {
+        url: `${REALTIME_API_BASE}/meetings/${meetingId}/sessions/${activeSession.id}/participants`,
+        method: 'POST',
+        participant_id: userId,
+        auth_token: authToken ? `${authToken.substring(0, 20)}...` : 'undefined'
+      });
       throw new Error(`Failed to join session: ${joinResponse.status} - ${errorText}`);
     }
 
