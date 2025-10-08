@@ -110,11 +110,35 @@ async function joinParticipantToSession(meetingId, userId, authToken) {
     console.log(`🔍 Available sessions:`, sessions);
 
     // Find active session
-    const activeSession = sessions.data?.find(session => session.status === 'LIVE' || session.status === 'ACTIVE');
+    let activeSession = sessions.data?.find(session => session.status === 'LIVE' || session.status === 'ACTIVE');
     
     if (!activeSession) {
-      console.log(`⚠️ No active session found, participant will join when session starts`);
-      return; // Participant will automatically join when session becomes active
+      console.log(`⚠️ No active session found, creating new session...`);
+      
+      // Create a new session for the meeting
+      const createSessionResponse = await fetch(`${REALTIME_API_BASE}/meetings/${meetingId}/sessions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': CLOUDFLARE_REST_API_AUTH_HEADER,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: `Session for ${meetingId}`,
+          // Add any session configuration here if needed
+        })
+      });
+
+      if (!createSessionResponse.ok) {
+        const errorText = await createSessionResponse.text();
+        console.error(`❌ Failed to create session: ${createSessionResponse.status} - ${errorText}`);
+        throw new Error(`Failed to create session: ${createSessionResponse.status} - ${errorText}`);
+      }
+
+      const newSession = await createSessionResponse.json();
+      console.log(`✅ New session created: ${newSession.data?.id}`);
+      
+      // Use the newly created session
+      activeSession = newSession.data;
     }
 
     console.log(`🎯 Found active session: ${activeSession.id}, joining participant...`);
@@ -201,15 +225,53 @@ async function checkExistingMeeting(roomId) {
   try {
     console.log(`🔍 Checking for existing meeting with roomId: ${roomId}`);
     
-    // Check our cache first
+    // Check our cache first (for same server instance)
     const cachedMeeting = activeMeetings.get(roomId);
     if (cachedMeeting) {
       console.log(`🔍 Found cached meeting: ${cachedMeeting.id}`);
       return cachedMeeting;
     }
     
-    // If not in cache, assume no meeting exists
-    console.log(`🔍 No cached meeting found for roomId: ${roomId}`);
+    // Also check Cloudflare API for existing meetings
+    console.log(`🔍 Checking Cloudflare API for existing meetings...`);
+    try {
+      const meetingsResponse = await fetch(`${REALTIME_API_BASE}/meetings`, {
+        method: 'GET',
+        headers: {
+          'Authorization': CLOUDFLARE_REST_API_AUTH_HEADER,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (meetingsResponse.ok) {
+        const meetings = await meetingsResponse.json();
+        console.log(`🔍 Found ${meetings.data?.length || 0} meetings in Cloudflare`);
+        
+        // Look for meeting with matching title (roomId)
+        const existingMeeting = meetings.data?.find(meeting => 
+          meeting.title && meeting.title.includes(roomId)
+        );
+        
+        if (existingMeeting) {
+          console.log(`🔍 Found existing meeting in Cloudflare: ${existingMeeting.id}`);
+          console.log(`🔍 Meeting title: ${existingMeeting.title}`);
+          
+          // Cache it for future requests
+          cacheMeeting(roomId, existingMeeting.id);
+          
+          return {
+            id: existingMeeting.id,
+            roomId: roomId,
+            title: existingMeeting.title,
+            status: existingMeeting.status
+          };
+        }
+      }
+    } catch (apiError) {
+      console.log(`🔍 Error checking Cloudflare API: ${apiError.message}`);
+    }
+    
+    console.log(`🔍 No existing meeting found for roomId: ${roomId}`);
     return null;
   } catch (error) {
     console.log(`🔍 Error checking existing meeting: ${error.message}`);
