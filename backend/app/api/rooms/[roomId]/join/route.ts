@@ -72,6 +72,10 @@ export async function POST(request: NextRequest, { params }: { params: { roomId:
       capabilities: ['publish', 'subscribe'],
       roomMetadata,
       meetingId: authTokenData.meetingId,
+      // Meeting/Session info
+      isNewMeeting: authTokenData.isNewMeeting,
+      sessionType: authTokenData.sessionType,
+      existingRoom: !authTokenData.isNewMeeting, // For frontend compatibility
       // Realtime configuration
       realtimeConfig: {
         meetingId: authTokenData.meetingId,

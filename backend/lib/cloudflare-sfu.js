@@ -161,10 +161,9 @@ function cacheMeeting(roomId, meetingId) {
 
 /**
  * Get authToken using the correct Cloudflare Realtime API flow
- * 1. Check for existing meeting
- * 2. Create meeting if needed
- * 3. Add participant
- * 4. Return authToken
+ * Implements Meeting/Session concept:
+ * - Meeting: Persistent container (created once per conversation)
+ * - Session: Live instance (shared by all participants)
  * 
  * @param {string} userId - The user ID
  * @param {string} roomId - The room ID
@@ -174,25 +173,31 @@ async function getRealtimeAuthToken(userId, roomId, presetName = 'group_call_par
   try {
     console.log(`🔑 Getting Realtime authToken for user ${userId} in room ${roomId} with preset: ${presetName}`);
 
-    // Step 1: Check for existing meeting
+    // Step 1: Check for existing meeting (persistent container)
     let meetingId;
+    let isNewMeeting = false;
     const existingMeeting = await checkExistingMeeting(roomId);
     
     if (existingMeeting) {
-      console.log(`🔍 Found existing meeting: ${existingMeeting.id}`);
+      console.log(`🔍 Found existing MEETING: ${existingMeeting.id}`);
+      console.log(`🎯 User will join existing SESSION in this meeting`);
       meetingId = existingMeeting.id;
     } else {
-      console.log(`🔍 No existing meeting found, creating new one...`);
-      // Step 2: Create meeting
+      console.log(`🔍 No existing meeting found, creating new MEETING...`);
+      console.log(`🎯 User will be the first participant in new SESSION`);
+      
+      // Step 2: Create meeting (persistent container)
       const meetingResponse = await createRealtimeMeeting(roomId);
       meetingId = meetingResponse.data.id;
-      console.log(`🔑 New Meeting ID: ${meetingId}`);
+      console.log(`🔑 New MEETING ID: ${meetingId}`);
       
       // Cache the new meeting
       cacheMeeting(roomId, meetingId);
+      isNewMeeting = true;
     }
     
-    // Step 3: Add participant and get authToken
+    // Step 3: Add participant to meeting (this grants access to join sessions)
+    console.log(`👤 Adding participant to meeting ${meetingId}...`);
     const participant = await addParticipantToMeeting(meetingId, userId, roomId, presetName);
     
     console.log(`🔍 Participant response structure:`, JSON.stringify(participant, null, 2));
@@ -220,7 +225,10 @@ async function getRealtimeAuthToken(userId, roomId, presetName = 'group_call_par
       roomId,
       userId,
       expires: participant.data?.expires_at || participant.expires_at,
-      type: 'realtime-api'
+      type: 'realtime-api',
+      // Meeting/Session info
+      isNewMeeting: isNewMeeting,
+      sessionType: isNewMeeting ? 'host' : 'participant'
     };
     
   } catch (error) {

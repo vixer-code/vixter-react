@@ -56,10 +56,16 @@ const useCloudflareRealtimeCall = () => {
       console.log('🔑 Token length:', data.token ? data.token.length : 'no token');
       console.log('🔑 Token preview:', data.token ? data.token.substring(0, 50) + '...' : 'no token');
       
-      // Check if this is an existing room based on meetingId
-      const isExistingRoom = data.meetingId && data.meetingId !== 'new';
-      console.log('🔍 Is existing room:', isExistingRoom);
-      console.log('🔍 Meeting ID:', data.meetingId);
+      // Check if this is an existing room based on backend response
+      const isExistingRoom = data.existingRoom || false;
+      const isNewMeeting = data.isNewMeeting || false;
+      const sessionType = data.sessionType || 'participant';
+      
+      console.log('🔍 Meeting/Session Info:');
+      console.log('  - Is existing room:', isExistingRoom);
+      console.log('  - Is new meeting:', isNewMeeting);
+      console.log('  - Session type:', sessionType);
+      console.log('  - Meeting ID:', data.meetingId);
       
       return data.token;
     } catch (error) {
@@ -187,6 +193,9 @@ const useCloudflareRealtimeCall = () => {
 
       console.log('🚀 Creating/joining RealtimeKit room for conversation', conversationId);
       console.log('🚀 Room ID:', roomId);
+      console.log('📋 Meeting/Session Concept:');
+      console.log('  - Meeting: Persistent container for this conversation');
+      console.log('  - Session: Live communication instance (shared by all participants)');
 
       // Get RealtimeKit token
       const token = await getRealtimeKitToken(roomId, conversationId);
@@ -196,11 +205,13 @@ const useCloudflareRealtimeCall = () => {
 
       // Start the communication session
       console.log('🎯 Starting communication session...');
+      console.log('🎯 User is joining the live session of the meeting');
       if (meeting) {
         // Enable audio and video by default
         await meeting.self.setAudioEnabled(true);
         await meeting.self.setVideoEnabled(true);
         console.log('✅ Audio and video enabled for communication');
+        console.log('✅ User is now active in the session');
       }
 
       setIsInCall(true);
