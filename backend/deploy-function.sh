@@ -1,22 +1,13 @@
 #!/bin/bash
 
-# Deploy the packUploadVideo function to Google Cloud Functions
-echo "Deploying packUploadVideo function..."
+# Deploy the packUploadVideo function using Firebase CLI
+echo "Deploying packUploadVideo function using Firebase CLI..."
 
-cd functions
+# Navigate to the backend directory
+cd backend
 
-# Deploy the function
-gcloud functions deploy packUploadVideo \
-  --runtime nodejs20 \
-  --trigger-http \
-  --allow-unauthenticated \
-  --memory 8GiB \
-  --timeout 540s \
-  --max-instances 10 \
-  --min-instances 0 \
-  --region us-east1 \
-  --source . \
-  --entry-point packUploadVideo
+# Deploy only the functions
+firebase deploy --only functions
 
 echo "Deployment completed!"
-echo "Function URL: https://us-east1-YOUR_PROJECT_ID.cloudfunctions.net/packUploadVideo"
+echo "Check the Firebase Console for the function URL"

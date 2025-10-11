@@ -43,22 +43,20 @@ exports.packUploadVideo = onRequest({
 ./deploy-function.sh
 
 # Ou manualmente
-gcloud functions deploy packUploadVideo \
-  --runtime nodejs20 \
-  --trigger-http \
-  --allow-unauthenticated \
-  --memory 8GiB \
-  --timeout 540s \
-  --max-instances 10 \
-  --min-instances 0 \
-  --region us-east1 \
-  --source functions \
-  --entry-point packUploadVideo
+cd backend
+firebase deploy --only functions
+
+# Para deploy específico de uma função
+firebase deploy --only functions:packUploadVideo
 ```
 
 ### 6. Logs e Debug
 Para verificar logs da função:
 ```bash
+# Usando Firebase CLI
+firebase functions:log
+
+# Ou usando gcloud (se preferir)
 gcloud functions logs read packUploadVideo --region us-east1 --limit 50
 ```
 
