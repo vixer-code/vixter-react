@@ -37,7 +37,11 @@ const corsHandler = cors({
     'http://localhost:3000',
     'http://localhost:5173'
   ],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'X-Requested-With'],
+  maxAge: 86400 // 24 hours
 });
 
 /**
@@ -47,10 +51,23 @@ exports.packUploadVideo = onRequest({
   region: 'us-east1',
   cors: true,
   invoker: 'public',
-  memory: '2GiB',
-  timeoutSeconds: 540
+  memory: '8GiB',
+  timeoutSeconds: 540,
+  maxInstances: 10,
+  minInstances: 0
 }, async (req, res) => {
   return corsHandler(req, res, async () => {
+    // Set CORS headers manually as backup
+    res.set('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+    
     let inputPath = null;
     let outputPath = null;
     let vendorQRPath = null;
@@ -112,8 +129,16 @@ exports.packUploadVideo = onRequest({
       
       const vendorUsername = userDoc.data().username;
       
-      // Parse multipart form data
-      const busboy = Busboy({ headers: req.headers });
+      // Parse multipart form data with increased limits
+      const busboy = Busboy({ 
+        headers: req.headers,
+        limits: {
+          fileSize: 100 * 1024 * 1024, // 100MB
+          files: 1,
+          fields: 10,
+          fieldSize: 1024 * 1024 // 1MB for text fields
+        }
+      });
       const formData = {};
       let videoFile = null;
       let videoFilename = null;
@@ -154,7 +179,12 @@ exports.packUploadVideo = onRequest({
         });
         
         busboy.on('error', (error) => {
-          reject(error);
+          console.error('Busboy error:', error);
+          if (error.code === 'LIMIT_FILE_SIZE') {
+            reject(new Error('File too large: ' + error.message));
+          } else {
+            reject(error);
+          }
         });
       });
       
@@ -177,6 +207,27 @@ exports.packUploadVideo = onRequest({
           error: 'No video file uploaded'
         });
       }
+      
+      // Check file size (limit to 100MB)
+      const fileStats = fs.statSync(inputPath);
+      const maxSize = 100 * 1024 * 1024; // 100MB
+      
+      if (fileStats.size > maxSize) {
+        cleanup();
+        return res.status(413).json({
+          error: 'File too large',
+          details: `File size ${Math.round(fileStats.size / 1024 / 1024)}MB exceeds maximum allowed size of 100MB`
+        });
+      }
+      
+      if (fileStats.size === 0) {
+        cleanup();
+        return res.status(400).json({
+          error: 'Empty file uploaded'
+        });
+      }
+      
+      console.log(`Video file size: ${Math.round(fileStats.size / 1024 / 1024)}MB`);
       
       console.log(`Processing video for vendor: ${vendorUsername}`);
       
@@ -306,10 +357,28 @@ exports.packUploadVideo = onRequest({
       
     } catch (error) {
       console.error('Error in packUploadVideo:', error);
+      console.error('Error stack:', error.stack);
       cleanup();
+      
+      // Handle specific error types
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({
+          error: 'File too large',
+          details: 'The uploaded file exceeds the maximum allowed size'
+        });
+      }
+      
+      if (error.message && error.message.includes('413')) {
+        return res.status(413).json({
+          error: 'Request entity too large',
+          details: 'The request payload is too large for the server to process'
+        });
+      }
+      
       return res.status(500).json({
         error: 'Internal server error',
-        details: error.message
+        details: error.message,
+        timestamp: new Date().toISOString()
       });
     }
   });
