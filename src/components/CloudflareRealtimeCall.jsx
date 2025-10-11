@@ -15,7 +15,18 @@ const RealtimeKitCallProvider = ({ children, authToken }) => {
         authToken: authToken,
         defaults: {
           audio: true,
-          video: true,
+          video: {
+            width: 1280,
+            height: 720,
+            frameRate: 30,
+            maxBitrate: 2500
+          },
+          screen: {
+            width: 1280,
+            height: 720,
+            framerate: 30,
+            maxBitrate: 2500
+          }
         },
       });
     }
