@@ -51,7 +51,7 @@ exports.packUploadVideo = onRequest({
   region: 'us-east1',
   cors: true,
   invoker: 'public',
-  memory: '4GiB',
+  memory: '8GiB',
   timeoutSeconds: 540,
   maxInstances: 10,
   minInstances: 0
@@ -133,7 +133,7 @@ exports.packUploadVideo = onRequest({
       const busboy = Busboy({ 
         headers: req.headers,
         limits: {
-          fileSize: 50 * 1024 * 1024, // 50MB
+          fileSize: 100 * 1024 * 1024, // 100MB
           files: 1,
           fields: 10,
           fieldSize: 1024 * 1024 // 1MB for text fields
@@ -208,15 +208,15 @@ exports.packUploadVideo = onRequest({
         });
       }
       
-      // Check file size (limit to 50MB to be safe)
+      // Check file size (limit to 100MB)
       const fileStats = fs.statSync(inputPath);
-      const maxSize = 50 * 1024 * 1024; // 50MB
+      const maxSize = 100 * 1024 * 1024; // 100MB
       
       if (fileStats.size > maxSize) {
         cleanup();
         return res.status(413).json({
           error: 'File too large',
-          details: `File size ${Math.round(fileStats.size / 1024 / 1024)}MB exceeds maximum allowed size of 50MB`
+          details: `File size ${Math.round(fileStats.size / 1024 / 1024)}MB exceeds maximum allowed size of 100MB`
         });
       }
       

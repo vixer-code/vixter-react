@@ -14,8 +14,8 @@
 **Sintoma**: `POST https://... net::ERR_FAILED 413 (Content Too Large)`
 
 **Soluções aplicadas**:
-- Aumento da memória da função para 4GiB
-- Configuração de limites no Busboy (50MB)
+- Aumento da memória da função para 8GiB
+- Configuração de limites no Busboy (100MB)
 - Validação de tamanho de arquivo antes do processamento
 - Timeout aumentado para 540 segundos
 
@@ -25,7 +25,7 @@ exports.packUploadVideo = onRequest({
   region: 'us-east1',
   cors: true,
   invoker: 'public',
-  memory: '4GiB',        // Aumentado de 2GiB
+  memory: '8GiB',        // Aumentado para suportar vídeos de 100MB
   timeoutSeconds: 540,   // 9 minutos
   maxInstances: 10,
   minInstances: 0
@@ -33,7 +33,7 @@ exports.packUploadVideo = onRequest({
 ```
 
 ### 4. Limites de Upload
-- **Tamanho máximo**: 50MB por arquivo
+- **Tamanho máximo**: 100MB por arquivo
 - **Tipos suportados**: video/mp4, video/quicktime, etc.
 - **Validação**: Verificação de tamanho antes do processamento
 
@@ -47,7 +47,7 @@ gcloud functions deploy packUploadVideo \
   --runtime nodejs20 \
   --trigger-http \
   --allow-unauthenticated \
-  --memory 4GiB \
+  --memory 8GiB \
   --timeout 540s \
   --max-instances 10 \
   --min-instances 0 \

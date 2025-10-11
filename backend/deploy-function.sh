@@ -10,7 +10,7 @@ gcloud functions deploy packUploadVideo \
   --runtime nodejs20 \
   --trigger-http \
   --allow-unauthenticated \
-  --memory 4GiB \
+  --memory 8GiB \
   --timeout 540s \
   --max-instances 10 \
   --min-instances 0 \
