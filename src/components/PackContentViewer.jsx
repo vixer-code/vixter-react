@@ -32,6 +32,7 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
       
       console.log('=== LOADING AUTHENTICATED MEDIA ===');
       console.log('Content item:', contentItem.name);
+      console.log('Content type:', contentItem.type);
       console.log('Secure URL:', contentItem.secureUrl);
       console.log('JWT token length:', contentItem.jwtToken?.length);
       console.log('JWT token start:', contentItem.jwtToken?.substring(0, 50));
@@ -51,6 +52,21 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
+      // For videos: backend returns JSON with signedUrl
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const jsonResponse = await response.json();
+        console.log('Received JSON response for video:', jsonResponse);
+        
+        if (jsonResponse.success && jsonResponse.signedUrl) {
+          // Return the signed URL directly - no need to fetch again
+          console.log('✅ Using signed URL for video:', jsonResponse.name);
+          setMediaBlobUrls(prev => ({ ...prev, [cacheKey]: jsonResponse.signedUrl }));
+          return jsonResponse.signedUrl;
+        }
+      }
+
+      // For images: backend returns the binary data
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       

@@ -38,22 +38,20 @@ export const useSecurePackContent = () => {
       // Use Cloud Function for secure pack content access with watermark
       const cloudFunctionUrl = 'https://packcontentaccess-6twxbx5ima-ue.a.run.app';
       
-      // Build query parameters
-      const params = new URLSearchParams({
-        packId,
-        orderId,
-        contentKey,
-        username: watermark || userProfile?.username || userProfile?.displayName || currentUser.email?.split('@')[0] || 'user',
-        token: token
-      });
+      const username = watermark || userProfile?.username || userProfile?.displayName || currentUser.email?.split('@')[0] || 'user';
       
-      const secureUrl = `${cloudFunctionUrl}?${params.toString()}`;
+      // For videos: the function will redirect to a signed URL
+      // For images: the function will return the watermarked image
+      // We pass the token in Authorization header as the function expects
+      const secureUrl = `${cloudFunctionUrl}?packId=${packId}&orderId=${orderId}&contentKey=${contentKey}&username=${username}`;
       
-      // Return the secure URL directly (the Cloud Function will handle watermarking)
+      // Return the URL with token header instruction
       return {
         url: secureUrl,
-        watermark: watermark || userProfile?.username || userProfile?.displayName || currentUser.email?.split('@')[0] || 'user',
-        downloadUrl: secureUrl
+        token: token, // Token to be used in Authorization header
+        watermark: username,
+        downloadUrl: secureUrl,
+        requiresAuth: true
       };
 
     } catch (err) {

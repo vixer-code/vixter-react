@@ -1,4 +1,5 @@
 const { onDocumentUpdated } = require('firebase-functions/v2/firestore');
+const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const ffmpeg = require('fluent-ffmpeg');
 const { S3Client, GetObjectCommand, PutObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
@@ -7,6 +8,12 @@ const fs = require('fs');
 const os = require('os');
 const QRCode = require('qrcode');
 
+// Define secrets from Secret Manager
+const r2AccountId = defineSecret('R2_ACCOUNT_ID');
+const r2AccessKeyId = defineSecret('R2_ACCESS_KEY_ID');
+const r2SecretAccessKey = defineSecret('R2_SECRET_ACCESS_KEY');
+const r2BucketName = defineSecret('R2_PACK_CONTENT_BUCKET_NAME');
+
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -14,19 +21,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-/**
- * Get R2 client instance (initialized on demand to access runtime env vars)
- */
-function getR2Client() {
-  return new S3Client({
-    region: 'auto',
-    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId: process.env.R2_ACCESS_KEY_ID,
-      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-    },
-  });
-}
+// R2 client and bucket name are initialized inside the function with access to secrets
 
 /**
  * Cloud Function triggered when pack documents are updated
@@ -38,19 +33,43 @@ exports.packContentVideoReprocessor = onDocumentUpdated({
   memory: '4GiB',
   timeoutSeconds: 540,
   maxInstances: 10,
-  minInstances: 0
+  minInstances: 0,
+  secrets: [r2AccountId, r2AccessKeyId, r2SecretAccessKey, r2BucketName]
 }, async (event) => {
-  // Initialize R2 client within function execution context
-  const r2Client = getR2Client();
-  const PACK_CONTENT_BUCKET_NAME = process.env.R2_PACK_CONTENT_BUCKET_NAME || 'vixter-pack-content-private';
+  // Initialize R2 client and bucket name within function execution context using secrets
+  let r2Client;
+  let PACK_CONTENT_BUCKET_NAME;
   
-  // Log credentials for debugging (first 5 chars only)
-  console.log('R2 Config:', {
-    accountId: process.env.R2_ACCOUNT_ID?.substring(0, 5) + '...',
-    hasAccessKey: !!process.env.R2_ACCESS_KEY_ID,
-    hasSecretKey: !!process.env.R2_SECRET_ACCESS_KEY,
-    bucket: PACK_CONTENT_BUCKET_NAME
-  });
+  try {
+    const accountId = r2AccountId.value();
+    const accessKeyId = r2AccessKeyId.value();
+    const secretAccessKey = r2SecretAccessKey.value();
+    PACK_CONTENT_BUCKET_NAME = r2BucketName.value();
+    
+    console.log('✅ R2 Secrets loaded from Secret Manager');
+    console.log('   Account ID:', accountId.substring(0, 5) + '...');
+    console.log('   Bucket:', PACK_CONTENT_BUCKET_NAME);
+    console.log('   Endpoint:', `https://${accountId}.r2.cloudflarestorage.com`);
+    
+    r2Client = new S3Client({
+      region: 'auto',
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: accessKeyId,
+        secretAccessKey: secretAccessKey,
+      },
+    });
+    
+    console.log('✅ R2 Client initialized successfully with Secret Manager credentials');
+  } catch (error) {
+    console.error('❌ Failed to initialize R2 client:', error.message);
+    console.error('   Check if secrets are configured in Secret Manager:');
+    console.error('   - R2_ACCOUNT_ID');
+    console.error('   - R2_ACCESS_KEY_ID');
+    console.error('   - R2_SECRET_ACCESS_KEY');
+    console.error('   - R2_PACK_CONTENT_BUCKET_NAME');
+    return;
+  }
   const { before, after } = event.data;
   
   if (!before || !after) {
@@ -70,11 +89,12 @@ exports.packContentVideoReprocessor = onDocumentUpdated({
     const videoChanges = detectVideoChanges(beforeData, afterData);
     
     if (videoChanges.length === 0) {
-      console.log('No video changes detected');
+      console.log('No video changes detected - packContent array unchanged');
       return;
     }
 
     console.log(`Found ${videoChanges.length} video changes to process`);
+    console.log('IMPORTANT: Processing videos in-place with same filenames. PackContent array will NOT be modified.');
 
     // Get vendor information (authorId is the vendor/seller ID)
     const vendorId = afterData.authorId;
@@ -101,20 +121,35 @@ exports.packContentVideoReprocessor = onDocumentUpdated({
     const results = await Promise.allSettled(processingPromises);
     
     // Log results
+    const successCount = results.filter(r => r.status === 'fulfilled').length;
+    const failureCount = results.filter(r => r.status === 'rejected').length;
+    
+    console.log(`\n=== VIDEO PROCESSING SUMMARY ===`);
+    console.log(`Total videos: ${results.length}`);
+    console.log(`Successful: ${successCount}`);
+    console.log(`Failed: ${failureCount}`);
+    console.log(`PackContent array: UNCHANGED (videos processed in-place)`);
+    console.log(`================================\n`);
+    
     results.forEach((result, index) => {
+      const change = videoChanges[index];
       if (result.status === 'fulfilled') {
-        console.log(`Video ${index + 1} processed successfully:`, result.value);
+        console.log(`✅ Video ${index + 1} (${change.item.name}): Processed successfully`);
+        console.log(`   Key: ${change.item.key}`);
+        console.log(`   New size: ${result.value.size} bytes`);
       } else {
-        console.error(`Video ${index + 1} processing failed:`, result.reason);
+        console.error(`❌ Video ${index + 1} (${change.item.name}): Processing failed`);
+        console.error(`   Key: ${change.item.key}`);
+        console.error(`   Error: ${result.reason?.message || 'Unknown error'}`);
+        console.error(`   IMPORTANT: Original video remains unchanged in R2`);
       }
     });
 
-    // Update packContent with processing status
-    await updatePackContentStatus(event.params.packId, videoChanges, results);
-
   } catch (error) {
-    console.error('Error in packContentVideoReprocessor:', error);
+    console.error('❌ CRITICAL ERROR in packContentVideoReprocessor:', error);
     console.error('Error stack:', error.stack);
+    console.error('IMPORTANT: If error occurred, packContent array should remain unchanged');
+    // Don't throw - let the function complete gracefully without affecting the pack
   }
 });
 
@@ -132,7 +167,7 @@ function detectVideoChanges(beforeData, afterData) {
   const beforeContent = beforeData.packContent || [];
   const afterContent = afterData.packContent || [];
 
-  // Find new or modified videos
+  // Find new or modified videos ONLY
   afterContent.forEach((item, index) => {
     // Check if item is a video (supports both 'video' string and MIME types like 'video/mp4')
     const isVideo = item.type && (item.type === 'video' || item.type.startsWith('video/'));
@@ -140,21 +175,30 @@ function detectVideoChanges(beforeData, afterData) {
     if (isVideo && item.key) {
       const beforeItem = beforeContent[index];
       
-      // Check if it's a new video or modified
+      // Only process if it's TRULY new (key doesn't exist in before state)
+      // This prevents reprocessing the same video multiple times
       const isNew = !beforeItem || beforeItem.key !== item.key;
-      const isModified = beforeItem && (
-        beforeItem.key !== item.key ||
-        beforeItem.processed !== item.processed ||
-        beforeItem.size !== item.size
+      
+      // Mark as already processed if it has QR codes (to prevent reprocessing)
+      const alreadyProcessed = item.name && (
+        item.name.includes('_qr') || 
+        item.name.includes('_processed') ||
+        item.key.includes('_qr') ||
+        item.key.includes('_processed')
       );
 
-      if (isNew || isModified) {
+      if (isNew && !alreadyProcessed) {
+        console.log(`New video detected: ${item.name} (${item.key})`);
         changes.push({
           index,
           item,
-          type: isNew ? 'new' : 'modified',
+          type: 'new',
           beforeItem
         });
+      } else if (alreadyProcessed) {
+        console.log(`Skipping already processed video: ${item.name}`);
+      } else {
+        console.log(`Skipping unchanged video: ${item.name}`);
       }
     }
   });
@@ -280,7 +324,10 @@ async function processVideoChange(change, vendorUsername, packId, r2Client, buck
     const processedVideoBuffer = fs.readFileSync(outputPath);
     console.log(`Processed video size: ${processedVideoBuffer.length} bytes`);
 
-    // Upload processed video back to R2 with the same key
+    // Upload processed video back to R2 with the EXACT SAME KEY
+    // This ensures the packContent array doesn't need to be updated
+    // The video file is replaced in-place with the QR-coded version
+    console.log(`Uploading processed video with SAME KEY: ${item.key}`);
     const uploadResult = await uploadToR2(item.key, processedVideoBuffer, 'video/mp4', r2Client, bucketName);
     
     cleanup();
@@ -296,12 +343,21 @@ async function processVideoChange(change, vendorUsername, packId, r2Client, buck
     };
 
   } catch (error) {
-    console.error(`Error processing video ${item.key}:`, error);
     cleanup();
+    
+    console.error(`\n❌ ERROR PROCESSING VIDEO`);
+    console.error(`   Index: ${index}`);
+    console.error(`   Key: ${item.key}`);
+    console.error(`   Name: ${item.name}`);
+    console.error(`   Error: ${error.message}`);
+    console.error(`   ⚠️  IMPORTANT: Original video in R2 remains UNCHANGED`);
+    console.error(`   ⚠️  IMPORTANT: packContent array remains UNCHANGED\n`);
     
     return {
       success: false,
       key: item.key,
+      name: item.name,
+      index: index,
       error: error.message,
       type: 'error'
     };
@@ -356,34 +412,14 @@ async function uploadToR2(key, buffer, contentType, r2Client, bucketName) {
 }
 
 /**
- * Update packContent with processing status
+ * REMOVED: updatePackContentStatus
+ * 
+ * We don't update the packContent array in Firestore because:
+ * 1. Videos are processed in-place with the SAME key/filename
+ * 2. The array structure remains unchanged
+ * 3. Only the video file in R2 is updated with QR codes
+ * 4. This prevents accidentally corrupting or deleting the array
  */
-async function updatePackContentStatus(packId, changes, results) {
-  try {
-    const updateData = {};
-    
-    results.forEach((result, index) => {
-      const change = changes[index];
-      const contentPath = `packContent.${change.index}`;
-      
-      if (result.status === 'fulfilled' && result.value.success) {
-        updateData[`${contentPath}.processed`] = true;
-        updateData[`${contentPath}.size`] = result.value.size;
-        updateData[`${contentPath}.lastProcessed`] = admin.firestore.FieldValue.serverTimestamp();
-      } else {
-        updateData[`${contentPath}.processingError`] = result.reason?.message || 'Unknown error';
-        updateData[`${contentPath}.lastProcessed`] = admin.firestore.FieldValue.serverTimestamp();
-      }
-    });
-
-    if (Object.keys(updateData).length > 0) {
-      await db.collection('packs').doc(packId).update(updateData);
-      console.log('Pack packContent status updated:', updateData);
-    }
-  } catch (error) {
-    console.error('Error updating pack packContent status:', error);
-  }
-}
 
 /**
  * Generate QR code for video watermarking

@@ -178,6 +178,11 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       for (const contentItem of packData.packContent) {
         if (contentItem.key) {
           try {
+            // For videos: longer expiration (2 hours) to allow full playback
+            // For images: shorter expiration (10 minutes)
+            const isVideo = contentItem.type && contentItem.type.startsWith('video/');
+            const expirationMinutes = isVideo ? 120 : 10;
+            
             const jwtToken = await generateSignedUrl(
               user.uid,
               username,
@@ -186,7 +191,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
               contentItem.key,
               vendorInfo.vendorId || '',
               vendorInfo.vendorUsername,
-              2 // 2 minutes expiration
+              expirationMinutes
             );
             
             contentWithUrls.push({
@@ -213,6 +218,11 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
       for (const contentItem of packData.content) {
         if (contentItem.key) {
           try {
+            // For videos: longer expiration (2 hours) to allow full playback
+            // For images: shorter expiration (10 minutes)
+            const isVideo = contentItem.type && contentItem.type.startsWith('video/');
+            const expirationMinutes = isVideo ? 120 : 10;
+            
             const jwtToken = await generateSignedUrl(
               user.uid,
               username,
@@ -221,7 +231,7 @@ export const POST = requireAuth(async (request: NextRequest, user: Authenticated
               contentItem.key,
               vendorInfo.vendorId || '',
               vendorInfo.vendorUsername,
-              2 // 2 minutes expiration
+              expirationMinutes
             );
             
             contentWithUrls.push({

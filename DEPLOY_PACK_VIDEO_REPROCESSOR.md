@@ -13,6 +13,16 @@ A função `packContentVideoReprocessor` não estava funcionando devido a 6 prob
 
 ## Como Fazer o Deploy
 
+### IMPORTANTE: Secrets Já Configurados ✅
+
+Os secrets do R2 já estão configurados no Secret Manager:
+- ✅ R2_ACCOUNT_ID
+- ✅ R2_ACCESS_KEY_ID  
+- ✅ R2_SECRET_ACCESS_KEY
+- ✅ R2_PACK_CONTENT_BUCKET_NAME
+
+A função está configurada para usar esses secrets automaticamente.
+
 ### 1. Navegue até o diretório das funções:
 ```bash
 cd /home/enzo/Documentos/git/zpessoal/vixter-react/backend/functions
@@ -23,7 +33,7 @@ cd /home/enzo/Documentos/git/zpessoal/vixter-react/backend/functions
 npm install
 ```
 
-### 3. Faça o deploy apenas da função corrigida:
+### 3. Faça o deploy da função:
 ```bash
 firebase deploy --only functions:packContentVideoReprocessor
 ```
@@ -53,34 +63,46 @@ firebase functions:log --only packContentVideoReprocessor
 Quando um vídeo for adicionado ao `packContent`, você verá logs como:
 
 ```
+✅ R2 Secrets loaded from Secret Manager
+   Account ID: 569b3...
+   Bucket: vixter-pack-content-private
+   Endpoint: https://569b3...r2.cloudflarestorage.com
+✅ R2 Client initialized successfully with Secret Manager credentials
+
 PackContent document updated: {packId}
 Found 1 video changes to process
+IMPORTANT: Processing videos in-place with same filenames. PackContent array will NOT be modified.
+
 Processing videos for vendor: {username}
-Processing new video at index 0: pack-content/...
-Downloading video from R2: pack-content/...
+New video detected: video.mp4 (pack-content/...)
+Downloading from R2: pack-content/...
 Generating QR code for video watermarking...
 Processing video with FFmpeg...
-Video processed successfully
-Uploading processed video to R2...
-Pack packContent status updated
+Uploading processed video with SAME KEY: pack-content/...
+
+=== VIDEO PROCESSING SUMMARY ===
+Total videos: 1
+Successful: 1
+Failed: 0
+PackContent array: UNCHANGED (videos processed in-place)
+================================
 ```
 
-## Variáveis de Ambiente Necessárias
+## Secrets Configurados (Secret Manager)
 
-Certifique-se de que estas variáveis estão configuradas no Firebase Functions:
+A função usa **Secret Manager** para armazenar credenciais de forma segura:
 
+✅ **R2_ACCOUNT_ID** - Configurado
+✅ **R2_ACCESS_KEY_ID** - Configurado
+✅ **R2_SECRET_ACCESS_KEY** - Configurado
+✅ **R2_PACK_CONTENT_BUCKET_NAME** - Configurado
+
+Para verificar os secrets:
 ```bash
-firebase functions:config:set \
-  r2.account_id="YOUR_R2_ACCOUNT_ID" \
-  r2.access_key_id="YOUR_R2_ACCESS_KEY" \
-  r2.secret_access_key="YOUR_R2_SECRET_KEY" \
-  r2.pack_content_bucket_name="vixter-pack-content-private"
+firebase functions:secrets:access R2_ACCOUNT_ID
 ```
 
-Para verificar as configurações atuais:
-```bash
-firebase functions:config:get
-```
+**Ver documentação completa**: `/backend/CONFIGURE_SECRETS.md`
 
 ## Estrutura Esperada do packContent
 
@@ -125,21 +147,33 @@ A função agora processa corretamente vídeos com esta estrutura:
    ```
 
 ### Erros de permissão ou "Resolved credential object is not valid":
-Este erro ocorre quando as credenciais do R2 não estão disponíveis. Soluções:
-1. Verifique se as variáveis de ambiente do R2 estão configuradas no Firebase:
+Este erro ocorre quando os secrets do R2 não estão acessíveis. Soluções:
+
+1. **Verifique se os secrets existem:**
    ```bash
-   firebase functions:config:get
+   firebase functions:secrets:access R2_ACCOUNT_ID
    ```
-2. Se não estiverem configuradas, configure-as:
+
+2. **Se o secret não existir, crie:**
    ```bash
-   firebase functions:config:set \
-     r2.account_id="YOUR_ACCOUNT_ID" \
-     r2.access_key_id="YOUR_ACCESS_KEY" \
-     r2.secret_access_key="YOUR_SECRET_KEY"
+   firebase functions:secrets:set R2_ACCOUNT_ID
+   # Cole o valor quando solicitado
    ```
-3. Confirme que o bucket `vixter-pack-content-private` existe
-4. Verifique as permissões de acesso ao R2
-5. Após configurar, faça redeploy da função
+
+3. **Verifique as permissões:**
+   - A função precisa ter acesso ao Secret Manager
+   - Verifique no Console do Firebase > Functions > Permissions
+
+4. **Confirme o bucket existe:**
+   - Bucket: `vixter-pack-content-private`
+   - Verifique no Cloudflare R2 Dashboard
+
+5. **Após configurar, faça redeploy:**
+   ```bash
+   firebase deploy --only functions:packContentVideoReprocessor
+   ```
+
+**Documentação completa**: `/backend/CONFIGURE_SECRETS.md`
 
 ## Recursos Utilizados
 

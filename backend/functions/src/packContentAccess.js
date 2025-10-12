@@ -3,6 +3,7 @@ const admin = require('firebase-admin');
 const sharp = require('sharp');
 const ffmpeg = require('fluent-ffmpeg');
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
@@ -116,6 +117,40 @@ exports.packContentAccess = onRequest({
       };
       console.log('Using JWT vendor info:', vendorInfo);
       
+      // For videos: generate signed URL and return in JSON (no watermarking/processing)
+      // Videos are already processed with QR codes by packContentVideoReprocessor
+      if (packContent.type && packContent.type.startsWith('video/')) {
+        console.log(`Generating signed URL for video: ${packContent.name}`);
+        
+        const command = new GetObjectCommand({
+          Bucket: PACK_CONTENT_BUCKET_NAME,
+          Key: packContent.key,
+        });
+        
+        // Generate signed URL valid for 2 hours (long enough for video playback)
+        const signedUrl = await getSignedUrl(r2Client, command, { 
+          expiresIn: 7200 // 2 hours
+        });
+        
+        console.log(`✅ Signed URL generated for video, valid for 2 hours`);
+        console.log(`   Video: ${packContent.name}`);
+        console.log(`   Size: ${packContent.size} bytes`);
+        console.log(`   User: ${username}`);
+        
+        // Return signed URL in JSON instead of redirecting
+        // This allows CORS to work properly
+        return res.status(200).json({
+          success: true,
+          signedUrl: signedUrl,
+          type: 'video',
+          name: packContent.name,
+          size: packContent.size,
+          watermark: username
+        });
+      }
+      
+      // For images: continue with watermarking
+      console.log(`Processing image with watermark: ${packContent.name}`);
       const watermarkedBuffer = await generateWatermarkedMedia(
         packContent,
         watermark,
@@ -386,8 +421,10 @@ async function generateWatermarkedMedia(contentItem, watermark, username, user, 
     const fileBuffer = Buffer.concat(chunks);
 
     if (contentItem.type.startsWith('video/')) {
-      // Videos are already processed with vendor QR code during upload
-      // Just serve them directly without re-processing
+      // NOTE: This code path should never be reached for videos
+      // Videos now use signed URLs (see above in packContentAccess function)
+      // This is kept as fallback only
+      console.warn(`WARNING: Video reached generateWatermarkedMedia - should use signed URL instead`);
       console.log(`Serving pre-processed video: ${contentItem.name}`);
       console.log(`Video buffer size: ${fileBuffer.length} bytes`);
       return fileBuffer;
