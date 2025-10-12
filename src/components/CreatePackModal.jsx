@@ -99,7 +99,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
               coverImage: freshPackData.coverImage || null,
               sampleImages: freshPackData.sampleImages || [],
               sampleVideos: freshPackData.sampleVideos || [],
-              packContent: freshPackData.packContent || []
+              packContent: Array.isArray(freshPackData.packContent) ? freshPackData.packContent : []
             });
             setCoverImagePreview(freshPackData.coverImage?.publicUrl || freshPackData.coverImage || '');
           } else {
@@ -117,7 +117,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
               coverImage: editingPack.coverImage || null,
               sampleImages: editingPack.sampleImages || [],
               sampleVideos: editingPack.sampleVideos || [],
-              packContent: editingPack.packContent || []
+              packContent: Array.isArray(editingPack.packContent) ? editingPack.packContent : []
             });
             setCoverImagePreview(editingPack.coverImage?.publicUrl || editingPack.coverImage || '');
           }
@@ -137,7 +137,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
             coverImage: editingPack.coverImage || null,
             sampleImages: editingPack.sampleImages || [],
             sampleVideos: editingPack.sampleVideos || [],
-            packContent: editingPack.packContent || []
+            packContent: Array.isArray(editingPack.packContent) ? editingPack.packContent : []
           });
           setCoverImagePreview(editingPack.coverImage?.publicUrl || editingPack.coverImage || '');
         }
@@ -718,7 +718,8 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
       // Remove from formData and update database immediately
       let updatedPackContent;
       setFormData(prev => {
-        updatedPackContent = prev.packContent.filter((_, i) => i !== index);
+        const currentPackContent = Array.isArray(prev.packContent) ? prev.packContent : [];
+        updatedPackContent = currentPackContent.filter((_, i) => i !== index);
         return {
           ...prev,
           packContent: updatedPackContent
@@ -1131,7 +1132,18 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
             if (newPackContent.length > 0) {
               // Get current pack data to merge with existing pack content
               const currentPack = await getPackById(packId);
-              const existingPackContent = currentPack?.packContent || [];
+              
+              // Ensure existingPackContent is always an array
+              let existingPackContent = [];
+              if (currentPack?.packContent) {
+                if (Array.isArray(currentPack.packContent)) {
+                  existingPackContent = currentPack.packContent;
+                } else {
+                  console.warn('packContent is not an array, resetting to empty array:', currentPack.packContent);
+                  existingPackContent = [];
+                }
+              }
+              
               const updatedPackContent = [...existingPackContent, ...newPackContent];
               await updatePack(packId, { packContent: updatedPackContent }, false);
             }
@@ -1807,7 +1819,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                 )}
 
                 {/* Conteúdo do Pack (Visualização) */}
-                {(packFilePreviews.length > 0 || formData.packContent.length > 0) && (
+                {(packFilePreviews.length > 0 || (Array.isArray(formData.packContent) && formData.packContent.length > 0)) && (
                   <div className="preview-pack-content-section">
                     <h3>Conteúdo do Pack (Visualização)</h3>
                     <p className="preview-section-description">
@@ -1841,7 +1853,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
                       </div>
                     )}
                     
-                    {formData.packContent.length > 0 && (
+                    {Array.isArray(formData.packContent) && formData.packContent.length > 0 && (
                       <div className="preview-pack-files">
                         <h4>Conteúdo do Pack Existentes ({formData.packContent.length})</h4>
                         <div className="showcase-grid">
