@@ -35,37 +35,25 @@ export const useSecurePackContent = () => {
       // Get Firebase ID token for authentication (force refresh)
       const token = await getIdToken();
 
-      // Use the backend API for secure pack content access with watermark
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://vixter-react-llyd.vercel.app';
+      // Use Cloud Function for secure pack content access with watermark
+      const cloudFunctionUrl = 'https://packcontentaccess-6twxbx5ima-ue.a.run.app';
       
-      const response = await fetch(`${backendUrl}/api/pack-content/download`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          key: contentKey,
-          userId: currentUser.uid,
-          packId,
-          orderId,
-          watermarked: true,
-          expiresIn: 3600, // 1 hour
-        }),
+      // Build query parameters
+      const params = new URLSearchParams({
+        packId,
+        orderId,
+        contentKey,
+        username: watermark || userProfile?.username || userProfile?.displayName || currentUser.email?.split('@')[0] || 'user',
+        token: token
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to generate secure pack content URL');
-      }
-
-      const result = await response.json();
       
-      // Return the secure URL with watermark
+      const secureUrl = `${cloudFunctionUrl}?${params.toString()}`;
+      
+      // Return the secure URL directly (the Cloud Function will handle watermarking)
       return {
-        url: result.data.downloadUrl,
+        url: secureUrl,
         watermark: watermark || userProfile?.username || userProfile?.displayName || currentUser.email?.split('@')[0] || 'user',
-        downloadUrl: result.data.downloadUrl
+        downloadUrl: secureUrl
       };
 
     } catch (err) {
