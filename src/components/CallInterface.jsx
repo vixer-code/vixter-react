@@ -198,7 +198,7 @@ const CallInterface = ({ conversation, onClose }) => {
   const { activeRooms, endCall } = useEnhancedMessaging();
   
   const [authToken, setAuthToken] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start loading immediately
   const [otherUser, setOtherUser] = useState(null);
   const [showMeeting, setShowMeeting] = useState(false);
   const [isNewMeeting, setIsNewMeeting] = useState(false);
@@ -226,6 +226,13 @@ const CallInterface = ({ conversation, onClose }) => {
       }
     }
   }, [conversation]);
+
+  // Auto-start call when component mounts
+  useEffect(() => {
+    if (conversation && currentUser && !authToken) {
+      getAuthToken();
+    }
+  }, [conversation, currentUser]);
 
   // Get auth token from backend
   const getAuthToken = async () => {
@@ -282,11 +289,6 @@ const CallInterface = ({ conversation, onClose }) => {
     }
   };
 
-  const handleStartCall = () => {
-    console.log('🏠 Starting RealtimeKit call...');
-    getAuthToken();
-  };
-
   const handleLeaveCall = () => {
     console.log('🔚 Leaving RealtimeKit call');
     
@@ -319,9 +321,9 @@ const CallInterface = ({ conversation, onClose }) => {
     );
   }
 
-  // Show call start screen (simplified for inline display)
+  // Show loading screen while connecting
   return (
-    <div className="call-interface-inline call-start">
+    <div className="call-interface-inline call-connecting">
       <div className="call-header-inline">
         <div className="call-user-info">
           <div className="user-avatar-small">
@@ -345,7 +347,7 @@ const CallInterface = ({ conversation, onClose }) => {
             </div>
           </div>
           <div className="user-details-inline">
-            <h4>{existingRoom ? 'Sala Disponível' : 'Iniciar Chamada'}</h4>
+            <h4>Conectando...</h4>
             <p>{otherUser?.displayName || otherUser?.name || 'Usuário'}</p>
           </div>
         </div>
@@ -354,7 +356,7 @@ const CallInterface = ({ conversation, onClose }) => {
         </button>
       </div>
       
-      <div className="call-start-content">
+      <div className="call-connecting-content">
         <div className="call-avatar-large">
           {(otherUser?.photoURL || otherUser?.profilePictureURL) ? (
             <img 
@@ -367,15 +369,9 @@ const CallInterface = ({ conversation, onClose }) => {
             </div>
           )}
         </div>
-        <h3>{otherUser?.displayName || otherUser?.name || 'Usuário'}</h3>
-        <button
-          className="start-call-button-inline"
-          onClick={handleStartCall}
-          disabled={isLoading}
-          title={existingRoom ? 'Entrar na sala existente' : 'Criar nova sala de chamada'}
-        >
-          {isLoading ? '⏳ Carregando...' : (existingRoom ? '🚪 Entrar na Sala' : '📞 Iniciar Chamada')}
-        </button>
+        <div className="spinner-large">🔄</div>
+        <h3>Iniciando chamada com {otherUser?.displayName || otherUser?.name || 'usuário'}...</h3>
+        <p className="connecting-message">Aguarde um momento</p>
       </div>
     </div>
   );
