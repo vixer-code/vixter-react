@@ -116,20 +116,11 @@ export const useR2Media = () => {
 
   /**
    * Upload de conteúdo de pack (bucket privado)
-   * Vídeos são processados com QR code durante o upload
-   * Imagens são enviadas diretamente e processadas no acesso
+   * Vídeos e imagens usam o mesmo sistema de upload R2
    */
   const uploadPackContentMedia = useCallback(async (file, packId, vendorId) => {
-    // Check if file is a video
-    const isVideo = file.type.startsWith('video/');
-    
-    if (isVideo) {
-      // Use the specialized video upload endpoint that processes with QR code
-      return await mediaService.uploadPackContentVideo(file, packId, vendorId);
-    } else {
-      // Images are uploaded directly and processed on access
-      return await uploadFile(file, 'pack-content', packId);
-    }
+    // All files (videos and images) use the standard R2 upload
+    return await uploadFile(file, 'pack-content', packId);
   }, [uploadFile]);
 
   /**

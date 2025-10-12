@@ -231,50 +231,12 @@ class MediaService {
   }
 
   /**
-   * Upload pack content video with QR code processing
+   * Upload pack content video using standard R2 upload
    */
   async uploadPackContentVideo(file, packId, vendorId) {
-    try {
-      const token = await this.getAuthToken();
-      
-      // Generate the key that will be used in R2
-      const timestamp = Date.now();
-      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const key = `users/${vendorId}/packs/${packId}/${timestamp}_${sanitizedName}`;
-      
-      // Create form data
-      const formData = new FormData();
-      formData.append('video', file);
-      formData.append('packId', packId);
-      formData.append('key', key);
-      
-      // Call the Cloud Function
-      const cloudFunctionUrl = 'https://packuploadvideo-6twxbx5ima-ue.a.run.app';
-      
-      const response = await fetch(cloudFunctionUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to upload video');
-      }
-      
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error('Video upload failed');
-      }
-      
-      return result.data;
-    } catch (error) {
-      console.error('Error uploading pack content video:', error);
-      throw error;
-    }
+    // Use the standard upload method for videos, same as images
+    // vendorId is kept for API compatibility but not used in R2 upload
+    return await this.uploadFile(file, 'pack-content', packId);
   }
 
   /**

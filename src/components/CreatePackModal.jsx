@@ -1122,7 +1122,7 @@ const CreatePackModal = ({ isOpen, onClose, onPackCreated, editingPack = null })
             const newPackContent = [];
             for (const file of packFiles) {
               console.log('Uploading pack content:', file.name);
-              const result = await uploadPackContentMedia(file, packId);
+              const result = await uploadPackContentMedia(file, packId, currentUser.uid);
               console.log('Pack content upload result:', result);
               if (result && result.key) {
                 newPackContent.push(result);
