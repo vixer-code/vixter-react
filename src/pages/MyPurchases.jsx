@@ -54,9 +54,13 @@ const MyPurchases = () => {
     const packIds = [...new Set(packs.map(pack => pack.packId).filter(Boolean))];
     const packDataMap = {};
     
+    console.log('Loading pack data for packIds:', packIds);
+    
     for (const packId of packIds) {
       try {
         const pack = await getPackById(packId);
+        console.log(`Pack ${packId} data:`, pack);
+        
         if (pack) {
           packDataMap[packId] = {
             title: pack.title || 'Pack',
@@ -67,8 +71,10 @@ const MyPurchases = () => {
             content: pack.content || [],
             isAvailable: true
           };
+          console.log(`Pack ${packId} marked as available`);
         } else {
           // Pack não existe mais - marcado como indisponível
+          console.log(`Pack ${packId} not found in database`);
           packDataMap[packId] = {
             title: 'Pack Indisponível',
             coverImage: null,
@@ -94,6 +100,7 @@ const MyPurchases = () => {
       }
     }
     
+    console.log('Final packDataMap:', packDataMap);
     setPackData(packDataMap);
   }, [getPackById]);
 
@@ -711,6 +718,17 @@ const MyPurchases = () => {
             const isService = purchase.type === 'service';
             const isPack = purchase.type === 'pack';
             const isPackUnavailable = isPack && packData[purchase.packId] && !packData[purchase.packId].isAvailable;
+            
+            // Debug logging for pack availability
+            if (isPack) {
+              console.log(`Pack ${purchase.packId} availability check:`, {
+                packId: purchase.packId,
+                packDataExists: !!packData[purchase.packId],
+                packData: packData[purchase.packId],
+                isAvailable: packData[purchase.packId]?.isAvailable,
+                isPackUnavailable
+              });
+            }
 
             const isCompleted = purchase.status === 'CONFIRMED' || purchase.status === 'COMPLETED' || purchase.status === 'AUTO_RELEASED';
             
