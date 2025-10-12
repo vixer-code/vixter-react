@@ -10,6 +10,11 @@ footer {
   margin-top: auto;
 }
 
+/* Hide footer when in call */
+body.in-call footer {
+  display: none !important;
+}
+
 footer p {
   margin: 0;
 } 

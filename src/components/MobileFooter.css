@@ -3,6 +3,11 @@
   display: none; /* Escondido por padrão (desktop) */
 }
 
+/* Hide footer when in call */
+body.in-call .mobile-footer {
+  display: none !important;
+}
+
 /* Mostrar apenas em mobile */
 @media (max-width: 768px) {
   .mobile-footer {

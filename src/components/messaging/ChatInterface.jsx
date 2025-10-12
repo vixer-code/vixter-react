@@ -56,6 +56,20 @@ const ChatInterface = ({ conversation, onClose }) => {
     }
   }, [conversation, getOtherParticipant]);
 
+  // Manage body class when in call to hide footer globally
+  useEffect(() => {
+    if (showCallInterface) {
+      document.body.classList.add('in-call');
+    } else {
+      document.body.classList.remove('in-call');
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('in-call');
+    };
+  }, [showCallInterface]);
+
   // Handle profile navigation
   const handleProfileClick = () => {
     if (otherUser && otherUser.id) {
@@ -315,7 +329,7 @@ const ChatInterface = ({ conversation, onClose }) => {
 
   return (
     <div 
-      className={`chat-interface ${isServiceCompleted ? 'completed-service' : ''} ${isKeyboardVisible ? 'keyboard-visible' : ''}`}
+      className={`chat-interface ${isServiceCompleted ? 'completed-service' : ''} ${isKeyboardVisible ? 'keyboard-visible' : ''} ${showCallInterface ? 'in-call' : ''}`}
       style={{
         '--keyboard-height': `${keyboardHeight}px`
       }}

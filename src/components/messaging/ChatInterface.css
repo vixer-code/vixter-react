@@ -1066,3 +1066,12 @@ input.message-input {
   margin-left: 4px;
   opacity: 0.8;
 }
+
+/* Hide elements during call */
+.chat-interface.in-call .messages-container {
+  display: none;
+}
+
+.chat-interface.in-call .message-input-container {
+  display: none;
+}
