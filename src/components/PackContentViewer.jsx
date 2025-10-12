@@ -52,23 +52,28 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // Check if response is JSON (videos with signed URLs)
+      // Check if response is JSON (videos with signed URLs) vs binary (images)
       const contentType = response.headers.get('content-type');
+      
       if (contentType && contentType.includes('application/json')) {
+        // Response is JSON - parse it
         const jsonResponse = await response.json();
         console.log('Received JSON response:', jsonResponse);
         
         if (jsonResponse.type === 'signedUrl' && jsonResponse.signedUrl) {
           // Signed URL from R2 - use directly (no need for additional fetch)
-          // The URL is already signed and doesn't need Authorization header
           console.log(`✅ Using signed URL for video: ${jsonResponse.name} (${jsonResponse.size} bytes)`);
           console.log(`   Signed URL (R2): ${jsonResponse.signedUrl.substring(0, 100)}...`);
           setMediaBlobUrls(prev => ({ ...prev, [cacheKey]: jsonResponse.signedUrl }));
-          return jsonResponse.signedUrl;
+          return jsonResponse.signedUrl; // RETURN HERE - don't continue to blob()
         }
+        
+        // Unknown JSON format
+        console.error('Unknown JSON response format:', jsonResponse);
+        return null;
       }
 
-      // For images and small videos: backend returns binary data
+      // For images and other binary data: create blob URL
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       
