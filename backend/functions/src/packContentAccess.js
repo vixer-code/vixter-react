@@ -421,10 +421,8 @@ async function generateWatermarkedMedia(contentItem, watermark, username, user, 
     const fileBuffer = Buffer.concat(chunks);
 
     if (contentItem.type.startsWith('video/')) {
-      // NOTE: This code path should never be reached for videos
-      // Videos now use signed URLs (see above in packContentAccess function)
-      // This is kept as fallback only
-      console.warn(`WARNING: Video reached generateWatermarkedMedia - should use signed URL instead`);
+      // Videos are already processed with QR codes by packContentVideoReprocessor
+      // Just serve them directly without re-processing
       console.log(`Serving pre-processed video: ${contentItem.name}`);
       console.log(`Video buffer size: ${fileBuffer.length} bytes`);
       return fileBuffer;

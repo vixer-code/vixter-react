@@ -223,6 +223,17 @@ async function processVideoChange(change, vendorUsername, packId, r2Client, buck
       if (inputPath && fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
       if (outputPath && fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
       if (vendorQRPath && fs.existsSync(vendorQRPath)) fs.unlinkSync(vendorQRPath);
+      
+      // Clean up all QR grid files
+      const tempDir = os.tmpdir();
+      const qrFiles = fs.readdirSync(tempDir).filter(file => file.startsWith('qr_') && file.endsWith('.png'));
+      qrFiles.forEach(file => {
+        try {
+          fs.unlinkSync(path.join(tempDir, file));
+        } catch (err) {
+          console.warn(`Could not delete QR file ${file}:`, err);
+        }
+      });
     } catch (cleanupError) {
       console.error('Error cleaning up temp files:', cleanupError);
     }
@@ -273,48 +284,116 @@ async function processVideoChange(change, vendorUsername, packId, r2Client, buck
     outputPath = path.join(tempDir, `output_${timestamp}.mp4`);
     const vendorText = escapeFFmpegText(`vixter.com.br/${vendorUsername}`);
 
-    await new Promise((resolve, reject) => {
-      const videoFilters = [];
-      
-      // Build text overlay filter
-      const textFilters = [
-        `drawtext=text='${vendorText}':fontsize=12:fontcolor=white@0.3:x=20:y=20`
-      ];
-      videoFilters.push(textFilters.join(','));
+    // Add timeout for video processing
+    let ffmpegTimeoutId = setTimeout(() => {
+      console.error('Video processing timeout');
+      throw new Error('Video processing timeout');
+    }, 240000);
 
-      console.log('FFmpeg video filters:', videoFilters);
-
-      ffmpeg(inputPath)
-        .videoCodec('libx264')
-        .audioCodec('aac')
-        .outputOptions([
-          '-preset superfast',
-          '-crf 23',
-          '-movflags +faststart',
-          '-pix_fmt yuv420p',
-          '-maxrate 3M',
-          '-bufsize 6M',
-          '-threads 0'
-        ])
-        .videoFilters(videoFilters)
-        .on('start', (commandLine) => {
-          console.log('FFmpeg process started:', commandLine);
-        })
-        .on('progress', (progress) => {
-          if (progress.percent) {
-            console.log('Video processing: ' + Math.round(progress.percent) + '% done');
+    try {
+      await new Promise(async (resolve, reject) => {
+        const videoFilters = [];
+        
+        // Try QR code GRID approach (full logic from packContentAccess), fallback to text only
+        if (qrPattern.buyerQR && qrPattern.vendorQR) {
+          console.log('Attempting QR code grid watermarking...');
+          
+          try {
+            // Generate QR code grid for full video coverage
+            const qrOverlays = await generateVideoQRGrid(qrPattern, videoDimensions.width, videoDimensions.height);
+            
+            if (qrOverlays.length > 0) {
+              console.log(`Generated ${qrOverlays.length} QR code overlays for grid coverage`);
+              
+              // Build complex filter chain for multiple QR overlays
+              const filterChain = [];
+              let currentInput = '[0:v]';
+              
+              // Add each QR code overlay
+              qrOverlays.forEach((overlay, index) => {
+                const nextInput = index === qrOverlays.length - 1 ? '[final]' : `[qr${index}]`;
+                filterChain.push(`movie=${overlay.path}[qr${index}_img]`);
+                filterChain.push(`${currentInput}[qr${index}_img]overlay=${overlay.x}:${overlay.y}${nextInput}`);
+                currentInput = nextInput;
+              });
+              
+              // Add text watermark at the end (only vendor for reprocessor)
+              filterChain.push(`[final]drawtext=text='${vendorText}':fontsize=12:fontcolor=white@0.3:x=20:y=20[final_text]`);
+              
+              videoFilters.push(filterChain.join(','));
+              console.log('QR code grid filters applied');
+              
+              // Store QR paths for cleanup
+              qrOverlays.forEach(overlay => {
+                if (overlay.path && fs.existsSync(overlay.path)) {
+                  if (!vendorQRPath) vendorQRPath = overlay.path;
+                }
+              });
+              
+            } else {
+              throw new Error('No QR overlays generated');
+            }
+          } catch (qrError) {
+            console.warn('QR code grid watermarking failed, falling back to text only:', qrError);
+            // Fallback to text only
+            const textFilters = [
+              `drawtext=text='${vendorText}':fontsize=12:fontcolor=white@0.3:x=20:y=20`
+            ];
+            videoFilters.push(textFilters.join(','));
           }
-        })
-        .on('end', () => {
-          console.log('Video processing completed');
-          resolve();
-        })
-        .on('error', (error) => {
-          console.error('FFmpeg error:', error);
-          reject(error);
-        })
-        .save(outputPath);
-    });
+        } else {
+          console.log('QR code files not available, using text watermarks only');
+          // Fallback to text only
+          const textFilters = [
+            `drawtext=text='${vendorText}':fontsize=12:fontcolor=white@0.3:x=20:y=20`
+          ];
+          videoFilters.push(textFilters.join(','));
+        }
+
+        console.log('FFmpeg video filters:', videoFilters);
+
+        ffmpeg(inputPath)
+          .videoCodec('libx264')
+          .audioCodec('aac')
+          .outputOptions([
+            '-preset superfast',
+            '-crf 23',
+            '-movflags +faststart',
+            '-pix_fmt yuv420p',
+            '-maxrate 3M',
+            '-bufsize 6M',
+            '-threads 0'
+          ])
+          .videoFilters(videoFilters)
+          .on('start', (commandLine) => {
+            console.log('FFmpeg process started:', commandLine);
+          })
+          .on('progress', (progress) => {
+            if (progress.percent) {
+              console.log('Video processing: ' + Math.round(progress.percent) + '% done');
+            }
+          })
+          .on('stderr', (stderrLine) => {
+            console.log('FFmpeg stderr:', stderrLine);
+          })
+          .on('end', () => {
+            console.log('Video processing completed');
+            clearTimeout(ffmpegTimeoutId);
+            resolve();
+          })
+          .on('error', (error) => {
+            console.error('FFmpeg error:', error);
+            clearTimeout(ffmpegTimeoutId);
+            reject(error);
+          })
+          .save(outputPath);
+      });
+      
+      clearTimeout(ffmpegTimeoutId);
+    } catch (processingError) {
+      clearTimeout(ffmpegTimeoutId);
+      throw processingError;
+    }
 
     // Verify output file
     if (!fs.existsSync(outputPath)) {
@@ -584,4 +663,66 @@ function escapeFFmpegText(text) {
     .replace(/;/g, '\\;')
     .replace(/'/g, "\\'")
     .replace(/"/g, '\\"');
+}
+
+/**
+ * Generate multiple QR code overlays for full video coverage
+ */
+async function generateVideoQRGrid(qrPattern, videoWidth, videoHeight) {
+  const qrSize = qrPattern.size;
+  const spacing = Math.max(qrSize * 2, 100); // Reduced spacing for tighter grid
+  
+  // Calculate grid dimensions
+  const cols = Math.ceil(videoWidth / spacing);
+  const rows = Math.ceil(videoHeight / spacing);
+  
+  console.log(`Generating QR grid: ${rows}x${cols} (${rows * cols} total QR codes) for video ${videoWidth}x${videoHeight}`);
+  
+  const qrOverlays = [];
+  
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const x = col * spacing + (spacing - qrSize) / 2;
+      const y = row * spacing + (spacing - qrSize) / 2;
+      
+      // Skip if QR code would go outside video bounds
+      if (x + qrSize > videoWidth || y + qrSize > videoHeight) continue;
+      
+      // Alternate between buyer and vendor QR codes
+      const useBuyerQR = (row + col) % 2 === 0;
+      const qrBuffer = useBuyerQR ? qrPattern.buyerQR : qrPattern.vendorQR;
+      
+      if (qrBuffer) {
+        const qrPath = path.join(os.tmpdir(), `qr_${row}_${col}_${Date.now()}.png`);
+        fs.writeFileSync(qrPath, qrBuffer);
+        
+        qrOverlays.push({
+          path: qrPath,
+          x: Math.round(x),
+          y: Math.round(y),
+          isBuyer: useBuyerQR
+        });
+      }
+    }
+  }
+  
+  return qrOverlays;
+}
+
+/**
+ * Get file extension from MIME type
+ */
+function getFileExtension(mimeType) {
+  const extensions = {
+    'video/mp4': 'mp4',
+    'video/avi': 'avi',
+    'video/mov': 'mov',
+    'video/wmv': 'wmv',
+    'video/flv': 'flv',
+    'video/webm': 'webm',
+    'video/mkv': 'mkv',
+    'video/m4v': 'm4v'
+  };
+  
+  return extensions[mimeType] || 'mp4';
 }
