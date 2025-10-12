@@ -69,6 +69,9 @@ const SecureMediaLightbox = ({
           setMediaBlobUrls(prev => ({ ...prev, [cacheKey]: jsonResponse.signedUrl }));
           return jsonResponse.signedUrl;
         }
+        
+        // If JSON but not signedUrl, don't try to read stream again
+        throw new Error('Unexpected JSON response format');
       }
 
       // For images: create blob URL from binary data
