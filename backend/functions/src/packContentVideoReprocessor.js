@@ -27,13 +27,13 @@ const r2Client = new S3Client({
 const PACK_CONTENT_BUCKET_NAME = process.env.R2_PACK_CONTENT_BUCKET_NAME || 'vixter-pack-content-private';
 
 /**
- * Cloud Function triggered when packContent documents are updated
- * Automatically reprocesses videos when they are inserted or modified
+ * Cloud Function triggered when pack documents are updated
+ * Automatically reprocesses videos when they are inserted or modified in packContent field
  */
 exports.packContentVideoReprocessor = onDocumentUpdated({
-  document: 'packContent/{packId}',
+  document: 'packs/{packId}',
   region: 'us-east1',
-  memory: '8GiB',
+  memory: '4GiB',
   timeoutSeconds: 540,
   maxInstances: 10,
   minInstances: 0
@@ -63,10 +63,10 @@ exports.packContentVideoReprocessor = onDocumentUpdated({
 
     console.log(`Found ${videoChanges.length} video changes to process`);
 
-    // Get vendor information
-    const vendorId = afterData.vendorId;
+    // Get vendor information (authorId is the vendor/seller ID)
+    const vendorId = afterData.authorId;
     if (!vendorId) {
-      console.log('No vendorId found in packContent');
+      console.log('No authorId found in pack document');
       return;
     }
 
@@ -111,17 +111,20 @@ exports.packContentVideoReprocessor = onDocumentUpdated({
 function detectVideoChanges(beforeData, afterData) {
   const changes = [];
   
-  // Check if content array exists and has videos
-  if (!afterData.content || !Array.isArray(afterData.content)) {
+  // Check if packContent array exists and has videos
+  if (!afterData.packContent || !Array.isArray(afterData.packContent)) {
     return changes;
   }
 
-  const beforeContent = beforeData.content || [];
-  const afterContent = afterData.content || [];
+  const beforeContent = beforeData.packContent || [];
+  const afterContent = afterData.packContent || [];
 
   // Find new or modified videos
   afterContent.forEach((item, index) => {
-    if (item.type === 'video' && item.key) {
+    // Check if item is a video (supports both 'video' string and MIME types like 'video/mp4')
+    const isVideo = item.type && (item.type === 'video' || item.type.startsWith('video/'));
+    
+    if (isVideo && item.key) {
       const beforeItem = beforeContent[index];
       
       // Check if it's a new video or modified
@@ -346,7 +349,7 @@ async function updatePackContentStatus(packId, changes, results) {
     
     results.forEach((result, index) => {
       const change = changes[index];
-      const contentPath = `content.${change.index}`;
+      const contentPath = `packContent.${change.index}`;
       
       if (result.status === 'fulfilled' && result.value.success) {
         updateData[`${contentPath}.processed`] = true;
@@ -359,11 +362,11 @@ async function updatePackContentStatus(packId, changes, results) {
     });
 
     if (Object.keys(updateData).length > 0) {
-      await db.collection('packContent').doc(packId).update(updateData);
-      console.log('PackContent status updated:', updateData);
+      await db.collection('packs').doc(packId).update(updateData);
+      console.log('Pack packContent status updated:', updateData);
     }
   } catch (error) {
-    console.error('Error updating packContent status:', error);
+    console.error('Error updating pack packContent status:', error);
   }
 }
 
