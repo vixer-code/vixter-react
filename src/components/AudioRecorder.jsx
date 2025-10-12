@@ -22,7 +22,7 @@ const AudioRecorder = ({ onAudioRecorded, onCancel }) => {
       .catch(() => setHasPermission(false));
 
     return () => {
-      // Cleanup
+      // Cleanup trigger pipe
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
