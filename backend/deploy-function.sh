@@ -1,13 +1,25 @@
 #!/bin/bash
 
-# Deploy the packUploadVideo function using Firebase CLI
-echo "Deploying packUploadVideo function using Firebase CLI..."
+# Deploy the packUploadVideo function using Cloud Run
+echo "Deploying packUploadVideo function using Cloud Run..."
 
-# Navigate to the backend directory
-cd backend
+# Navigate to the functions directory
+cd functions
 
-# Deploy only the functions
-firebase deploy --only functions
+# Deploy to Cloud Run
+gcloud run deploy packuploadvideo \
+  --source . \
+  --platform managed \
+  --region us-east1 \
+  --allow-unauthenticated \
+  --memory 8Gi \
+  --cpu 4 \
+  --timeout 540 \
+  --max-instances 10 \
+  --min-instances 0 \
+  --concurrency 1 \
+  --port 8080 \
+  --set-env-vars NODE_ENV=production
 
 echo "Deployment completed!"
-echo "Check the Firebase Console for the function URL"
+echo "Service URL will be displayed above"

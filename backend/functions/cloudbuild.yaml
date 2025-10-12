@@ -1,0 +1,17 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: [
+      'run', 'deploy', 'packuploadvideo',
+      '--source', '.',
+      '--platform', 'managed',
+      '--region', 'us-east1',
+      '--allow-unauthenticated',
+      '--memory', '8Gi',
+      '--cpu', '4',
+      '--timeout', '540',
+      '--max-instances', '10',
+      '--min-instances', '0',
+      '--concurrency', '1',
+      '--port', '8080',
+      '--set-env-vars', 'NODE_ENV=production'
+    ]

@@ -68,6 +68,19 @@ exports.packUploadVideo = onRequest({
       return res.status(200).end();
     }
     
+    // Check Content-Length header
+    const contentLength = parseInt(req.headers['content-length'] || '0');
+    const maxContentLength = 100 * 1024 * 1024; // 100MB
+    
+    if (contentLength > maxContentLength) {
+      return res.status(413).json({
+        error: 'Request entity too large',
+        details: `Content-Length ${Math.round(contentLength / 1024 / 1024)}MB exceeds maximum allowed size of 100MB`
+      });
+    }
+    
+    console.log(`Request Content-Length: ${Math.round(contentLength / 1024 / 1024)}MB`);
+    
     let inputPath = null;
     let outputPath = null;
     let vendorQRPath = null;
@@ -136,8 +149,10 @@ exports.packUploadVideo = onRequest({
           fileSize: 100 * 1024 * 1024, // 100MB
           files: 1,
           fields: 10,
-          fieldSize: 1024 * 1024 // 1MB for text fields
-        }
+          fieldSize: 1024 * 1024, // 1MB for text fields
+          parts: 20 // Increase parts limit
+        },
+        preservePath: false
       });
       const formData = {};
       let videoFile = null;

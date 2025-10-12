@@ -39,15 +39,27 @@ exports.packUploadVideo = onRequest({
 
 ### 5. Deploy da Função
 ```bash
-# Usar o script de deploy
+# Usar o script de deploy (Cloud Run)
 ./deploy-function.sh
 
-# Ou manualmente
+# Ou manualmente (Cloud Run)
+cd functions
+gcloud run deploy packuploadvideo \
+  --source . \
+  --platform managed \
+  --region us-east1 \
+  --allow-unauthenticated \
+  --memory 8Gi \
+  --cpu 4 \
+  --timeout 540 \
+  --max-instances 10 \
+  --min-instances 0 \
+  --concurrency 1 \
+  --port 8080
+
+# Para Firebase Functions (alternativo)
 cd backend
 firebase deploy --only functions
-
-# Para deploy específico de uma função
-firebase deploy --only functions:packUploadVideo
 ```
 
 ### 6. Logs e Debug
