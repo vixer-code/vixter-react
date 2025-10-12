@@ -231,46 +231,14 @@ class MediaService {
   }
 
   /**
-   * Upload pack content video with QR code processing
+   * Upload pack content video directly to R2
+   * QR code processing will be handled asynchronously by the backend
    */
   async uploadPackContentVideo(file, packId, vendorId) {
     try {
-      const token = await this.getAuthToken();
-      
-      // Generate the key that will be used in R2
-      const timestamp = Date.now();
-      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const key = `users/${vendorId}/packs/${packId}/${timestamp}_${sanitizedName}`;
-      
-      // Create form data
-      const formData = new FormData();
-      formData.append('video', file);
-      formData.append('packId', packId);
-      formData.append('key', key);
-      
-      // Call the Cloud Function
-      const cloudFunctionUrl = 'https://packuploadvideo-6twxbx5ima-ue.a.run.app';
-      
-      const response = await fetch(cloudFunctionUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to upload video');
-      }
-      
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error('Video upload failed');
-      }
-      
-      return result.data;
+      // Use the existing uploadFile method with type 'pack-content'
+      // This will upload directly to R2 and the backend will handle QR processing asynchronously
+      return await this.uploadFile(file, 'pack-content', packId);
     } catch (error) {
       console.error('Error uploading pack content video:', error);
       throw error;
