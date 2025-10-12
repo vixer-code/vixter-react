@@ -38,6 +38,14 @@ const SecureMediaLightbox = ({
     try {
       setLoading(prev => ({ ...prev, [cacheKey]: true }));
       
+      // Check if URL is already a signed URL from R2 (for large videos)
+      if (mediaItem.url && mediaItem.url.includes('r2.cloudflarestorage.com')) {
+        console.log('✅ Using pre-signed R2 URL directly (no fetch needed):', mediaItem.name);
+        // Signed URLs from R2 can be used directly - no need to fetch
+        setMediaBlobUrls(prev => ({ ...prev, [cacheKey]: mediaItem.url }));
+        return mediaItem.url;
+      }
+      
       const response = await fetch(mediaItem.url, {
         headers: {
           'Authorization': `Bearer ${mediaItem.jwtToken}`
@@ -49,6 +57,21 @@ const SecureMediaLightbox = ({
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
+      // Check if response is JSON (videos with signed URLs)
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const jsonResponse = await response.json();
+        console.log('Received JSON response for video:', jsonResponse);
+        
+        if (jsonResponse.type === 'signedUrl' && jsonResponse.signedUrl) {
+          // Use the signed URL directly
+          console.log(`✅ Using signed URL for video: ${jsonResponse.name}`);
+          setMediaBlobUrls(prev => ({ ...prev, [cacheKey]: jsonResponse.signedUrl }));
+          return jsonResponse.signedUrl;
+        }
+      }
+
+      // For images: create blob URL from binary data
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       

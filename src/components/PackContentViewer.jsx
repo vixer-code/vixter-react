@@ -59,8 +59,10 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
         console.log('Received JSON response:', jsonResponse);
         
         if (jsonResponse.type === 'signedUrl' && jsonResponse.signedUrl) {
-          // Return the signed URL directly for large videos
+          // Signed URL from R2 - use directly (no need for additional fetch)
+          // The URL is already signed and doesn't need Authorization header
           console.log(`✅ Using signed URL for video: ${jsonResponse.name} (${jsonResponse.size} bytes)`);
+          console.log(`   Signed URL (R2): ${jsonResponse.signedUrl.substring(0, 100)}...`);
           setMediaBlobUrls(prev => ({ ...prev, [cacheKey]: jsonResponse.signedUrl }));
           return jsonResponse.signedUrl;
         }

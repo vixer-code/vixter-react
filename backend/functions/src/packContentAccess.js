@@ -53,9 +53,17 @@ exports.packContentAccess = onRequest({
 }, async (req, res) => {
   return corsHandler(req, res, async () => {
     try {
+      console.log(`Request: ${req.method} ${req.url}`);
+      console.log(`Headers available:`, Object.keys(req.headers));
+      
       const authHeader = req.headers.authorization;
       
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.warn(`❌ 401 - Missing Authorization header`);
+        console.warn(`   Method: ${req.method}`);
+        console.warn(`   URL: ${req.url}`);
+        console.warn(`   Auth header: ${authHeader || 'missing'}`);
+        console.warn(`   All headers:`, JSON.stringify(req.headers, null, 2));
         return res.status(401).json({
           error: 'Authorization header with Bearer token required'
         });
