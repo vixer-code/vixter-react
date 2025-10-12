@@ -56,7 +56,7 @@ const RealtimeKitMeetingWrapper = ({ authToken, conversation, otherUser, onClose
         authToken: authToken,
         defaults: {
           audio: true,
-          video: true,
+          video: false,
         },
       }).then(() => {
         console.log('✅ RealtimeKit meeting initialized successfully');
