@@ -52,21 +52,21 @@ const PackContentViewer = ({ pack, orderId, vendorInfo, onClose }) => {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // For videos: backend returns JSON with signedUrl
+      // Check if response is JSON (videos with signed URLs)
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const jsonResponse = await response.json();
-        console.log('Received JSON response for video:', jsonResponse);
+        console.log('Received JSON response:', jsonResponse);
         
-        if (jsonResponse.success && jsonResponse.signedUrl) {
-          // Return the signed URL directly - no need to fetch again
-          console.log('✅ Using signed URL for video:', jsonResponse.name);
+        if (jsonResponse.type === 'signedUrl' && jsonResponse.signedUrl) {
+          // Return the signed URL directly for large videos
+          console.log(`✅ Using signed URL for video: ${jsonResponse.name} (${jsonResponse.size} bytes)`);
           setMediaBlobUrls(prev => ({ ...prev, [cacheKey]: jsonResponse.signedUrl }));
           return jsonResponse.signedUrl;
         }
       }
 
-      // For images: backend returns the binary data
+      // For images and small videos: backend returns binary data
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       

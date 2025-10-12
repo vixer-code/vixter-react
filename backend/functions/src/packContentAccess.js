@@ -151,7 +151,7 @@ exports.packContentAccess = onRequest({
       
       // For images: continue with watermarking
       console.log(`Processing image with watermark: ${packContent.name}`);
-      const watermarkedBuffer = await generateWatermarkedMedia(
+      const result = await generateWatermarkedMedia(
         packContent,
         watermark,
         username,
@@ -159,6 +159,18 @@ exports.packContentAccess = onRequest({
         vendorInfo
       );
 
+      // Check if result is JSON (for videos with signed URLs)
+      try {
+        const parsed = JSON.parse(result.toString());
+        if (parsed.type === 'signedUrl') {
+          // Return JSON with signed URL
+          return res.status(200).json(parsed);
+        }
+      } catch (e) {
+        // Not JSON, continue with binary response
+      }
+
+      // Return binary data (images and processed content)
       res.set({
         'Content-Type': packContent.type,
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -171,7 +183,7 @@ exports.packContentAccess = onRequest({
         'X-Username': username
       });
 
-      res.send(watermarkedBuffer);
+      res.send(result);
 
     } catch (error) {
       console.error('Error in packContentAccess:', error);
@@ -368,6 +380,33 @@ async function generateVideoQRCodePattern(user, vendorInfo, videoWidth = 1920, v
  */
 async function generateWatermarkedMedia(contentItem, watermark, username, user, vendorInfo) {
   try {
+    // For videos: generate signed URL directly (no download needed)
+    if (contentItem.type.startsWith('video/')) {
+      console.log(`Generating signed URL for video: ${contentItem.name}`);
+      
+      const command = new GetObjectCommand({
+        Bucket: PACK_CONTENT_BUCKET_NAME,
+        Key: contentItem.key,
+      });
+      
+      const signedUrl = await getSignedUrl(r2Client, command, { 
+        expiresIn: 7200 // 2 hours
+      });
+      
+      console.log(`✅ Signed URL generated for video`);
+      console.log(`   Video: ${contentItem.name}`);
+      console.log(`   Size: ${contentItem.size} bytes`);
+      
+      // Return JSON with signed URL (requires R2 CORS configuration)
+      return Buffer.from(JSON.stringify({
+        type: 'signedUrl',
+        signedUrl: signedUrl,
+        name: contentItem.name,
+        size: contentItem.size
+      }));
+    }
+
+    // For images: download and process with watermark
     const fileName = contentItem.key;
     
     const command = new GetObjectCommand({
@@ -420,13 +459,8 @@ async function generateWatermarkedMedia(contentItem, watermark, username, user, 
     
     const fileBuffer = Buffer.concat(chunks);
 
-    if (contentItem.type.startsWith('video/')) {
-      // Videos are already processed with QR codes by packContentVideoReprocessor
-      // Just serve them directly without re-processing
-      console.log(`Serving pre-processed video: ${contentItem.name}`);
-      console.log(`Video buffer size: ${fileBuffer.length} bytes`);
-      return fileBuffer;
-    } else if (contentItem.type === 'image/webp') {
+    // Process images with watermark
+    if (contentItem.type === 'image/webp') {
       const isAnimatedWebP = await checkIfAnimatedWebP(fileBuffer);
       if (isAnimatedWebP) {
         return await addVideoWatermark(fileBuffer, watermark, username, contentItem, user, vendorInfo);
