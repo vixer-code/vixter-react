@@ -2,13 +2,14 @@
 
 ## Problemas Identificados e Corrigidos
 
-A função `packContentVideoReprocessor` não estava sendo invocada devido a 5 problemas críticos:
+A função `packContentVideoReprocessor` não estava funcionando devido a 6 problemas críticos:
 
 1. **Trigger na coleção errada**: estava monitorando `packContent/{packId}` ao invés de `packs/{packId}`
 2. **Campo array incorreto**: buscava `content` ao invés de `packContent`
 3. **Tipo de vídeo**: não detectava MIME types como `video/mp4`
 4. **Campo do vendedor**: buscava `vendorId` ao invés de `authorId`
 5. **Atualização no Firestore**: tentava atualizar coleção inexistente `packContent`
+6. **Credenciais R2 inválidas**: R2 client inicializado fora da função (antes das env vars estarem disponíveis)
 
 ## Como Fazer o Deploy
 
@@ -113,19 +114,42 @@ A função agora processa corretamente vídeos com esta estrutura:
 1. Verifique se o campo `type` contém `video/` (ex: `video/mp4`)
 2. Confirme que o campo `key` existe e é válido
 3. Verifique as credenciais do R2
+4. Confirme nos logs se as credenciais estão sendo carregadas:
+   ```
+   R2 Config: {
+     accountId: 'xxxxx...',
+     hasAccessKey: true,
+     hasSecretKey: true,
+     bucket: 'vixter-pack-content-private'
+   }
+   ```
 
-### Erros de permissão:
-1. Verifique se as variáveis de ambiente do R2 estão configuradas
-2. Confirme que o bucket `vixter-pack-content-private` existe
-3. Verifique as permissões de acesso ao R2
+### Erros de permissão ou "Resolved credential object is not valid":
+Este erro ocorre quando as credenciais do R2 não estão disponíveis. Soluções:
+1. Verifique se as variáveis de ambiente do R2 estão configuradas no Firebase:
+   ```bash
+   firebase functions:config:get
+   ```
+2. Se não estiverem configuradas, configure-as:
+   ```bash
+   firebase functions:config:set \
+     r2.account_id="YOUR_ACCOUNT_ID" \
+     r2.access_key_id="YOUR_ACCESS_KEY" \
+     r2.secret_access_key="YOUR_SECRET_KEY"
+   ```
+3. Confirme que o bucket `vixter-pack-content-private` existe
+4. Verifique as permissões de acesso ao R2
+5. Após configurar, faça redeploy da função
 
 ## Recursos Utilizados
 
 A função utiliza:
-- **Memória**: 8GiB (necessário para processar vídeos grandes)
+- **Memória**: 4GiB (suficiente para processar a maioria dos vídeos)
 - **Timeout**: 540 segundos (9 minutos)
 - **Região**: us-east1
 - **Max Instances**: 10 (processamento paralelo)
+
+> **Nota**: Se encontrar erros de memória insuficiente para vídeos muito grandes, você pode aumentar para 8GiB editando a configuração da função.
 
 ## Monitoramento
 

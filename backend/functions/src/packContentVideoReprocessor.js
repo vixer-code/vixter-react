@@ -14,17 +14,19 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// Initialize R2 client
-const r2Client = new S3Client({
-  region: 'auto',
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-  },
-});
-
-const PACK_CONTENT_BUCKET_NAME = process.env.R2_PACK_CONTENT_BUCKET_NAME || 'vixter-pack-content-private';
+/**
+ * Get R2 client instance (initialized on demand to access runtime env vars)
+ */
+function getR2Client() {
+  return new S3Client({
+    region: 'auto',
+    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+    },
+  });
+}
 
 /**
  * Cloud Function triggered when pack documents are updated
@@ -38,6 +40,17 @@ exports.packContentVideoReprocessor = onDocumentUpdated({
   maxInstances: 10,
   minInstances: 0
 }, async (event) => {
+  // Initialize R2 client within function execution context
+  const r2Client = getR2Client();
+  const PACK_CONTENT_BUCKET_NAME = process.env.R2_PACK_CONTENT_BUCKET_NAME || 'vixter-pack-content-private';
+  
+  // Log credentials for debugging (first 5 chars only)
+  console.log('R2 Config:', {
+    accountId: process.env.R2_ACCOUNT_ID?.substring(0, 5) + '...',
+    hasAccessKey: !!process.env.R2_ACCESS_KEY_ID,
+    hasSecretKey: !!process.env.R2_SECRET_ACCESS_KEY,
+    bucket: PACK_CONTENT_BUCKET_NAME
+  });
   const { before, after } = event.data;
   
   if (!before || !after) {
@@ -81,7 +94,7 @@ exports.packContentVideoReprocessor = onDocumentUpdated({
 
     // Process each video change asynchronously
     const processingPromises = videoChanges.map(change => 
-      processVideoChange(change, vendorUsername, event.params.packId)
+      processVideoChange(change, vendorUsername, event.params.packId, r2Client, PACK_CONTENT_BUCKET_NAME)
     );
 
     // Wait for all processing to complete
@@ -152,7 +165,7 @@ function detectVideoChanges(beforeData, afterData) {
 /**
  * Process a single video change
  */
-async function processVideoChange(change, vendorUsername, packId) {
+async function processVideoChange(change, vendorUsername, packId, r2Client, bucketName) {
   const { item, index, type } = change;
   
   console.log(`Processing ${type} video at index ${index}:`, item.key);
@@ -174,7 +187,7 @@ async function processVideoChange(change, vendorUsername, packId) {
   try {
     // Download video from R2
     console.log('Downloading video from R2:', item.key);
-    const videoBuffer = await downloadFromR2(item.key);
+    const videoBuffer = await downloadFromR2(item.key, r2Client, bucketName);
     
     if (!videoBuffer) {
       throw new Error('Failed to download video from R2');
@@ -268,7 +281,7 @@ async function processVideoChange(change, vendorUsername, packId) {
     console.log(`Processed video size: ${processedVideoBuffer.length} bytes`);
 
     // Upload processed video back to R2 with the same key
-    const uploadResult = await uploadToR2(item.key, processedVideoBuffer, 'video/mp4');
+    const uploadResult = await uploadToR2(item.key, processedVideoBuffer, 'video/mp4', r2Client, bucketName);
     
     cleanup();
 
@@ -298,10 +311,11 @@ async function processVideoChange(change, vendorUsername, packId) {
 /**
  * Download video from R2
  */
-async function downloadFromR2(key) {
+async function downloadFromR2(key, r2Client, bucketName) {
   try {
+    console.log('Downloading from R2:', { key, bucket: bucketName });
     const command = new GetObjectCommand({
-      Bucket: PACK_CONTENT_BUCKET_NAME,
+      Bucket: bucketName,
       Key: key,
     });
     
@@ -323,9 +337,10 @@ async function downloadFromR2(key) {
 /**
  * Upload processed video to R2
  */
-async function uploadToR2(key, buffer, contentType) {
+async function uploadToR2(key, buffer, contentType, r2Client, bucketName) {
+  console.log('Uploading to R2:', { key, bucket: bucketName, size: buffer.length, contentType });
   const command = new PutObjectCommand({
-    Bucket: PACK_CONTENT_BUCKET_NAME,
+    Bucket: bucketName,
     Key: key,
     Body: buffer,
     ContentType: contentType,
