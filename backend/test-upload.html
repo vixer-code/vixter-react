@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Upload</title>
+</head>
+<body>
+    <h1>Test Video Upload</h1>
+    <input type="file" id="videoFile" accept="video/*">
+    <button onclick="testUpload()">Test Upload</button>
+    <div id="result"></div>
+
+    <script>
+        async function testUpload() {
+            const fileInput = document.getElementById('videoFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            console.log('File selected:', file.name, 'Size:', Math.round(file.size / 1024 / 1024) + 'MB');
+
+            const formData = new FormData();
+            formData.append('video', file);
+            formData.append('packId', 'test-pack-123');
+            formData.append('key', 'test-key-123');
+
+            try {
+                const response = await fetch('https://packuploadvideo-6twxbx5ima-ue.a.run.app/', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer test-token' // This will fail auth but should show CORS
+                    },
+                    body: formData
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                const result = await response.text();
+                console.log('Response body:', result);
+                
+                document.getElementById('result').innerHTML = `
+                    <h3>Response Status: ${response.status}</h3>
+                    <h4>Headers:</h4>
+                    <pre>${[...response.headers.entries()].map(([k,v]) => `${k}: ${v}`).join('\n')}</pre>
+                    <h4>Body:</h4>
+                    <pre>${result}</pre>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `<h3>Error: ${error.message}</h3>`;
+            }
+        }
+    </script>
+</body>
+</html>

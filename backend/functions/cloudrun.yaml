@@ -1,0 +1,42 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: packuploadvideo
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/execution-environment: gen2
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/cpu-throttling: "false"
+        run.googleapis.com/memory: "8Gi"
+        run.googleapis.com/cpu: "4"
+        run.googleapis.com/timeout: "540s"
+        run.googleapis.com/max-instances: "10"
+        run.googleapis.com/min-instances: "0"
+        run.googleapis.com/concurrency: "1"
+        run.googleapis.com/max-request-size: "104857600"
+        run.googleapis.com/max-file-size: "104857600"
+    spec:
+      containerConcurrency: 1
+      timeoutSeconds: 540
+      containers:
+      - image: gcr.io/PROJECT_ID/packuploadvideo
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: MAX_REQUEST_SIZE
+          value: "104857600"
+        - name: MAX_FILE_SIZE
+          value: "104857600"
+        resources:
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+          requests:
+            cpu: "2"
+            memory: "4Gi"

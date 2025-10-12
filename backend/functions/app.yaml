@@ -1,0 +1,20 @@
+runtime: nodejs20
+service: packuploadvideo
+
+env_variables:
+  NODE_ENV: production
+  MAX_REQUEST_SIZE: "104857600"
+  MAX_FILE_SIZE: "104857600"
+
+automatic_scaling:
+  min_instances: 0
+  max_instances: 10
+
+resources:
+  cpu: 4
+  memory_gb: 8
+
+handlers:
+  - url: /.*
+    script: auto
+    secure: always

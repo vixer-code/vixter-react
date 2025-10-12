@@ -72,14 +72,16 @@ exports.packUploadVideo = onRequest({
     const contentLength = parseInt(req.headers['content-length'] || '0');
     const maxContentLength = 100 * 1024 * 1024; // 100MB
     
+    console.log(`Request Content-Length: ${Math.round(contentLength / 1024 / 1024)}MB`);
+    console.log(`Request Headers:`, JSON.stringify(req.headers, null, 2));
+    
     if (contentLength > maxContentLength) {
+      console.log(`Content-Length ${Math.round(contentLength / 1024 / 1024)}MB exceeds maximum allowed size of 100MB`);
       return res.status(413).json({
         error: 'Request entity too large',
         details: `Content-Length ${Math.round(contentLength / 1024 / 1024)}MB exceeds maximum allowed size of 100MB`
       });
     }
-    
-    console.log(`Request Content-Length: ${Math.round(contentLength / 1024 / 1024)}MB`);
     
     let inputPath = null;
     let outputPath = null;

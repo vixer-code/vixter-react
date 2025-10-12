@@ -13,5 +13,7 @@ steps:
       '--min-instances', '0',
       '--concurrency', '1',
       '--port', '8080',
-      '--set-env-vars', 'NODE_ENV=production'
+      '--set-env-vars', 'NODE_ENV=production',
+      '--set-env-vars', 'MAX_REQUEST_SIZE=104857600',
+      '--set-env-vars', 'MAX_FILE_SIZE=104857600'
     ]
