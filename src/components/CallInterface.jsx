@@ -87,7 +87,7 @@ const RealtimeKitMeetingWrapper = ({ authToken, conversation, otherUser, onClose
         </div>
         <div className="meeting-container-inline">
           <div className="loading-placeholder">
-            <div className="spinner">🔄</div>
+            <div className="spinner"></div>
             <p>Conectando...</p>
           </div>
         </div>
@@ -288,19 +288,7 @@ const CallInterface = ({ conversation, onClose }) => {
       </div>
       
       <div className="call-connecting-content">
-        <div className="call-avatar-large">
-          {(otherUser?.photoURL || otherUser?.profilePictureURL) ? (
-            <img 
-              src={otherUser.photoURL || otherUser.profilePictureURL} 
-              alt={otherUser.displayName || otherUser.name}
-            />
-          ) : (
-            <div className="default-avatar-large">
-              {(otherUser?.displayName || otherUser?.name || 'U').charAt(0).toUpperCase()}
-            </div>
-          )}
-        </div>
-        <div className="spinner-large">🔄</div>
+        <div className="spinner-large"></div>
         <h3>Iniciando chamada com {otherUser?.displayName || otherUser?.name || 'usuário'}...</h3>
         <p className="connecting-message">Aguarde um momento</p>
       </div>
