@@ -63,15 +63,15 @@ const SecureMediaLightbox = ({
         const jsonResponse = await response.json();
         console.log('Received JSON response for video:', jsonResponse);
         
-        if (jsonResponse.type === 'signedUrl' && jsonResponse.signedUrl) {
-          // Use the signed URL directly
-          console.log(`✅ Using signed URL for video: ${jsonResponse.name}`);
+        // If response contains signedUrl, use it directly
+        if (jsonResponse.signedUrl) {
+          console.log(`✅ Using signed URL for video: ${jsonResponse.name || 'video'}`);
           setMediaBlobUrls(prev => ({ ...prev, [cacheKey]: jsonResponse.signedUrl }));
           return jsonResponse.signedUrl;
         }
         
-        // If JSON but not signedUrl, don't try to read stream again
-        throw new Error('Unexpected JSON response format');
+        // If JSON but no signedUrl, it's an error response
+        throw new Error(jsonResponse.error || 'Unexpected JSON response format');
       }
 
       // For images: create blob URL from binary data
