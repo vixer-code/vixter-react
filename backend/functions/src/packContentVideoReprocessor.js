@@ -294,16 +294,16 @@ async function processVideoChange(change, vendorUsername, packId, r2Client, buck
       await new Promise(async (resolve, reject) => {
         const videoFilters = [];
         
-        // Try QR code GRID approach (full logic from packContentAccess), fallback to text only
-        if (qrPattern.buyerQR && qrPattern.vendorQR) {
-          console.log('Attempting QR code grid watermarking...');
+        // Try QR code GRID approach (only vendor QR since we don't know buyers yet)
+        if (qrPattern.vendorQR) {
+          console.log('Attempting QR code grid watermarking with vendor QR...');
           
           try {
-            // Generate QR code grid for full video coverage
+            // Generate QR code grid for full video coverage (vendor QR only)
             const qrOverlays = await generateVideoQRGrid(qrPattern, videoDimensions.width, videoDimensions.height);
             
             if (qrOverlays.length > 0) {
-              console.log(`Generated ${qrOverlays.length} QR code overlays for grid coverage`);
+              console.log(`Generated ${qrOverlays.length} vendor QR code overlays for grid coverage`);
               
               // Build complex filter chain for multiple QR overlays
               const filterChain = [];
@@ -688,19 +688,18 @@ async function generateVideoQRGrid(qrPattern, videoWidth, videoHeight) {
       // Skip if QR code would go outside video bounds
       if (x + qrSize > videoWidth || y + qrSize > videoHeight) continue;
       
-      // Alternate between buyer and vendor QR codes
-      const useBuyerQR = (row + col) % 2 === 0;
-      const qrBuffer = useBuyerQR ? qrPattern.buyerQR : qrPattern.vendorQR;
+      // Use only vendor QR (buyer QR will be added by packContentAccess when accessed)
+      const qrBuffer = qrPattern.vendorQR;
       
       if (qrBuffer) {
-        const qrPath = path.join(os.tmpdir(), `qr_${row}_${col}_${Date.now()}.png`);
+        const qrPath = path.join(os.tmpdir(), `qr_vendor_${row}_${col}_${Date.now()}.png`);
         fs.writeFileSync(qrPath, qrBuffer);
         
         qrOverlays.push({
           path: qrPath,
           x: Math.round(x),
           y: Math.round(y),
-          isBuyer: useBuyerQR
+          isVendor: true
         });
       }
     }
