@@ -757,6 +757,48 @@
   flex-shrink: 0;
 }
 
+/* Compact header style */
+.call-header-inline.call-header-compact {
+  padding: 8px 16px;
+  min-height: 40px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 255, 202, 0.3);
+}
+
+.call-status-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: white;
+}
+
+.status-indicator {
+  font-size: 0.6rem;
+  color: #00FFCA;
+  animation: pulse-indicator 2s ease-in-out infinite;
+}
+
+.status-indicator.status-connecting {
+  color: #FFA500;
+}
+
+.status-indicator.status-error {
+  color: #FF4757;
+  animation: none;
+}
+
+.call-status-error {
+  color: #FF4757;
+}
+
+@keyframes pulse-indicator {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .call-header-inline .call-user-info {
   display: flex;
   align-items: center;
@@ -1016,6 +1058,19 @@
     min-height: 55px;
   }
   
+  .call-header-inline.call-header-compact {
+    padding: 6px 12px;
+    min-height: 36px;
+  }
+  
+  .call-status-text {
+    font-size: 0.9rem;
+  }
+  
+  .status-indicator {
+    font-size: 0.55rem;
+  }
+  
   .user-avatar-small {
     width: 36px;
     height: 36px;
@@ -1080,6 +1135,19 @@
   .call-header-inline {
     padding: 8px 10px;
     min-height: 50px;
+  }
+  
+  .call-header-inline.call-header-compact {
+    padding: 5px 10px;
+    min-height: 32px;
+  }
+  
+  .call-status-text {
+    font-size: 0.85rem;
+  }
+  
+  .status-indicator {
+    font-size: 0.5rem;
   }
   
   .user-avatar-small {

@@ -79,32 +79,9 @@ const RealtimeKitMeetingWrapper = ({ authToken, conversation, otherUser, onClose
   if (isInitializing || !meeting) {
     return (
       <div className="call-interface-inline">
-        <div className="call-header-inline">
-          <div className="call-user-info">
-            <div className="user-avatar-small">
-              {(otherUser?.photoURL || otherUser?.profilePictureURL) ? (
-                <img 
-                  src={otherUser.photoURL || otherUser.profilePictureURL} 
-                  alt={otherUser.displayName || otherUser.name}
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                  }}
-                />
-              ) : null}
-              <div 
-                className="default-avatar-small"
-                style={{ 
-                  display: (otherUser?.photoURL || otherUser?.profilePictureURL) ? 'none' : 'flex' 
-                }}
-              >
-                {(otherUser?.displayName || otherUser?.name || 'U').charAt(0).toUpperCase()}
-              </div>
-            </div>
-            <div className="user-details-inline">
-              <h4>Iniciando chamada...</h4>
-              <p>{otherUser?.displayName || otherUser?.name || 'Usuário'}</p>
-            </div>
+        <div className="call-header-inline call-header-compact">
+          <div className="call-status-text">
+            <span className="status-indicator status-connecting">●</span> Iniciando chamada...
           </div>
           <button className="close-button-inline" onClick={onClose}>✕</button>
         </div>
@@ -122,9 +99,9 @@ const RealtimeKitMeetingWrapper = ({ authToken, conversation, otherUser, onClose
   if (initError) {
     return (
       <div className="call-interface-inline">
-        <div className="call-header-inline">
-          <div className="call-user-info">
-            <h4>Erro ao iniciar chamada</h4>
+        <div className="call-header-inline call-header-compact">
+          <div className="call-status-text call-status-error">
+            <span className="status-indicator status-error">●</span> Erro ao iniciar chamada
           </div>
           <button className="close-button-inline" onClick={onClose}>✕</button>
         </div>
@@ -146,32 +123,9 @@ const RealtimeKitMeetingWrapper = ({ authToken, conversation, otherUser, onClose
   // Render the official RtkMeeting component inline (in the messaging box)
   return (
     <div className="call-interface-inline">
-      <div className="call-header-inline">
-        <div className="call-user-info">
-          <div className="user-avatar-small">
-            {(otherUser?.photoURL || otherUser?.profilePictureURL) ? (
-              <img 
-                src={otherUser.photoURL || otherUser.profilePictureURL} 
-                alt={otherUser.displayName || otherUser.name}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-            ) : null}
-            <div 
-              className="default-avatar-small"
-              style={{ 
-                display: (otherUser?.photoURL || otherUser?.profilePictureURL) ? 'none' : 'flex' 
-              }}
-            >
-              {(otherUser?.displayName || otherUser?.name || 'U').charAt(0).toUpperCase()}
-            </div>
-          </div>
-          <div className="user-details-inline">
-            <h4>Chamada em andamento</h4>
-            <p>{otherUser?.displayName || otherUser?.name || 'Usuário'}</p>
-          </div>
+      <div className="call-header-inline call-header-compact">
+        <div className="call-status-text">
+          <span className="status-indicator">●</span> Chamada em andamento
         </div>
         <button className="close-button-inline" onClick={onClose} title="Encerrar chamada">
           ✕
@@ -324,32 +278,9 @@ const CallInterface = ({ conversation, onClose }) => {
   // Show loading screen while connecting
   return (
     <div className="call-interface-inline call-connecting">
-      <div className="call-header-inline">
-        <div className="call-user-info">
-          <div className="user-avatar-small">
-            {(otherUser?.photoURL || otherUser?.profilePictureURL) ? (
-              <img 
-                src={otherUser.photoURL || otherUser.profilePictureURL} 
-                alt={otherUser.displayName || otherUser.name}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-            ) : null}
-            <div 
-              className="default-avatar-small"
-              style={{ 
-                display: (otherUser?.photoURL || otherUser?.profilePictureURL) ? 'none' : 'flex' 
-              }}
-            >
-              {(otherUser?.displayName || otherUser?.name || 'U').charAt(0).toUpperCase()}
-            </div>
-          </div>
-          <div className="user-details-inline">
-            <h4>Conectando...</h4>
-            <p>{otherUser?.displayName || otherUser?.name || 'Usuário'}</p>
-          </div>
+      <div className="call-header-inline call-header-compact">
+        <div className="call-status-text">
+          <span className="status-indicator status-connecting">●</span> Conectando...
         </div>
         <button className="close-button-inline" onClick={onClose}>
           ✕
