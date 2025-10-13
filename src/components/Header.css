@@ -54,8 +54,8 @@ nav {
 }
 
 .logo-icon {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   filter: drop-shadow(0 0 8px rgba(138, 43, 226, 0.6));
   transition: all 0.3s ease;
 }
@@ -881,8 +881,8 @@ header .vp-balance .vp-icon svg,
   }
   
   .logo-icon {
-    width: 28px;
-    height: 28px;
+    width: 42px;
+    height: 42px;
   }
   
   /* Mobile logo hover - mais sutil */
@@ -1004,8 +1004,8 @@ header .vp-balance .vp-icon svg,
   }
   
   .logo-icon {
-    width: 24px;
-    height: 24px;
+    width: 36px;
+    height: 36px;
   }
   
   /* Mobile logo hover - mais sutil para telas menores */
