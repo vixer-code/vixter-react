@@ -1816,6 +1816,13 @@ export const EnhancedMessagingProvider = ({ children }) => {
   const uploadMediaFile = useCallback(async (file, type) => {
     if (!file || !selectedConversation || !currentUser?.uid) return null;
 
+    // Check if there's a block between users before uploading
+    const otherUserId = Object.keys(selectedConversation.participants || {}).find(id => id !== currentUser.uid);
+    if (otherUserId && hasBlockBetween(otherUserId)) {
+      showError('Não foi possível fazer upload do arquivo. Você ou este usuário bloqueou o outro.');
+      return null;
+    }
+
     try {
       setUploadingMedia(true);
 
@@ -1848,6 +1855,13 @@ export const EnhancedMessagingProvider = ({ children }) => {
   // Send media message
   const sendMediaMessage = useCallback(async (file, type, caption = '') => {
     if (!file || !selectedConversation || !currentUser?.uid) return false;
+
+    // Check if there's a block between users
+    const otherUserId = Object.keys(selectedConversation.participants || {}).find(id => id !== currentUser.uid);
+    if (otherUserId && hasBlockBetween(otherUserId)) {
+      showError('Não foi possível enviar o arquivo. Você ou este usuário bloqueou o outro.');
+      return false;
+    }
 
     try {
       setSending(true);
