@@ -208,6 +208,13 @@ const PackDetail = () => {
       if (packSnap.exists()) {
         const packData = packSnap.data();
         
+        // Check if there's a block between users
+        if (currentUser && packData.authorId && hasBlockBetween(packData.authorId)) {
+          showError('Este pack não está disponível.');
+          navigate('/feed');
+          return;
+        }
+        
         // Load provider information
         let providerData = {};
         console.log('Pack data providerId:', packData.providerId);

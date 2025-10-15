@@ -17,6 +17,7 @@ import {
 import { db } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
+import { useBlock } from './BlockContext';
 
 const ReviewContext = createContext({});
 
@@ -31,6 +32,7 @@ export const useReview = () => {
 export const ReviewProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showInfo } = useNotification();
+  const { hasBlockBetween } = useBlock();
   
   // State
   const [reviews, setReviews] = useState([]);
@@ -187,6 +189,13 @@ export const ReviewProvider = ({ children }) => {
         return false;
       }
 
+      // Check if there's a block between users
+      const sellerId = orderData.sellerId || orderData.providerId;
+      if (sellerId && hasBlockBetween(sellerId)) {
+        showError('Não é possível avaliar um usuário bloqueado');
+        return false;
+      }
+
       // Check if order is completed
       if (!['CONFIRMED', 'COMPLETED', 'AUTO_RELEASED'].includes(orderData.status)) {
         showError('Apenas pedidos finalizados podem ser avaliados');
@@ -240,7 +249,7 @@ export const ReviewProvider = ({ children }) => {
     } finally {
       setProcessing(false);
     }
-  }, [currentUser, showSuccess, showError]);
+  }, [currentUser, showSuccess, showError, hasBlockBetween]);
 
   // Create a behavior review (seller evaluating buyer or buyer evaluating seller)
   const createBehaviorReview = useCallback(async (targetUserId, rating, comment, userType = 'seller') => {
@@ -261,6 +270,12 @@ export const ReviewProvider = ({ children }) => {
 
     if (comment.length > 200) {
       showError('Comentário deve ter no máximo 200 caracteres');
+      return false;
+    }
+
+    // Check if there's a block between users
+    if (hasBlockBetween(targetUserId)) {
+      showError('Não é possível avaliar um usuário bloqueado');
       return false;
     }
 
@@ -346,7 +361,7 @@ export const ReviewProvider = ({ children }) => {
     } finally {
       setProcessing(false);
     }
-  }, [currentUser, showSuccess, showError]);
+  }, [currentUser, showSuccess, showError, hasBlockBetween]);
 
   // Update a review
   const updateReview = useCallback(async (reviewId, rating, comment) => {

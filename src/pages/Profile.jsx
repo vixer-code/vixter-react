@@ -199,7 +199,7 @@ const Profile = () => {
             displayName: profile.displayName || profile.name
           });
           showSuccess(`${profile.displayName || profile.username} foi bloqueado`);
-          navigate('/'); // Redirect to home after blocking
+          navigate('/feed'); // Redirect to feed after blocking
         }
       }
     } catch (error) {

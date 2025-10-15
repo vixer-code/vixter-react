@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
+import { useBlock } from '../contexts/BlockContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
 import { useServiceOrder } from '../contexts/ServiceOrderContext';
@@ -18,6 +19,7 @@ import './MyPurchases.css';
 const MyPurchases = () => {
   const { currentUser } = useAuth();
   const { userProfile, getUserById } = useUser();
+  const { hasBlockBetween } = useBlock();
   const { showError } = useNotification();
   const { createOrGetConversation } = useEnhancedMessaging();
   const { confirmServiceDelivery, processing } = useServiceOrder();
@@ -408,6 +410,12 @@ const MyPurchases = () => {
   const handleViewService = async (serviceOrder) => {
     if (!currentUser || !serviceOrder.sellerId) return;
     
+    // Check if there's a block between users
+    if (hasBlockBetween(serviceOrder.sellerId)) {
+      showError('Este serviço não está mais disponível.');
+      return;
+    }
+    
     try {
       // Create or get conversation with the service provider, passing the service order ID
       const conversation = await createOrGetConversation(serviceOrder.sellerId, serviceOrder.id);
@@ -456,6 +464,12 @@ const MyPurchases = () => {
     // Check if pack is still pending acceptance
     if (pack.status === 'PENDING_ACCEPTANCE') {
       showError('Você só poderá visualizar as mídias após a vendedora aceitar o pedido. Aguarde a aprovação!', 'Aguardando Aprovação');
+      return;
+    }
+    
+    // Check if there's a block between users
+    if (pack.sellerId && hasBlockBetween(pack.sellerId)) {
+      showError('Este conteúdo não está mais disponível.');
       return;
     }
     
@@ -519,6 +533,12 @@ const MyPurchases = () => {
   };
 
   const handleOpenServicePackReview = (order) => {
+    // Check if there's a block between users
+    if (order.sellerId && hasBlockBetween(order.sellerId)) {
+      showError('Não é possível avaliar um usuário bloqueado.');
+      return;
+    }
+    
     // Pre-load necessary data for the modal
     const orderData = {
       ...order,
