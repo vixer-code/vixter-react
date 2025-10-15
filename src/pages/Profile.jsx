@@ -178,6 +178,36 @@ const Profile = () => {
     }
   };
 
+  // Handle block/unblock user
+  const handleBlockToggle = async () => {
+    if (!currentUser || !profile) return;
+    
+    try {
+      const blocked = isUserBlocked(profile.id);
+      
+      if (blocked) {
+        // Unblock user
+        if (window.confirm(`Deseja desbloquear ${profile.displayName || profile.username}?`)) {
+          await unblockUser(profile.id);
+          showSuccess(`${profile.displayName || profile.username} foi desbloqueado`);
+        }
+      } else {
+        // Block user
+        if (window.confirm(`Deseja bloquear ${profile.displayName || profile.username}? Você não poderá ver posts, perfil ou interagir com este usuário.`)) {
+          await blockUser(profile.id, {
+            username: profile.username,
+            displayName: profile.displayName || profile.name
+          });
+          showSuccess(`${profile.displayName || profile.username} foi bloqueado`);
+          navigate('/'); // Redirect to home after blocking
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling block:', error);
+      showError(error.message || 'Erro ao processar bloqueio');
+    }
+  };
+
   // Load profile from UserContext or Firestore
   useEffect(() => {
     const loadProfileData = async () => {
