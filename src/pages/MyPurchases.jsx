@@ -195,8 +195,8 @@ const MyPurchases = () => {
         const seller = await getUserById(sellerId);
         if (seller) {
           sellerDataMap[sellerId] = {
-            name: seller.displayName || seller.username || seller.name || 'Vendedor',
-            username: seller.username || seller.displayName?.toLowerCase().replace(/\s+/g, '') || 'vendedor',
+            name: seller.displayName || seller.username || seller.name || 'Criador',
+            username: seller.username || seller.displayName?.toLowerCase().replace(/\s+/g, '') || 'criador',
             profilePicture: seller.profilePictureURL || null
           };
         }
@@ -463,7 +463,7 @@ const MyPurchases = () => {
   const handleViewPackContent = async (pack) => {
     // Check if pack is still pending acceptance
     if (pack.status === 'PENDING_ACCEPTANCE') {
-      showError('Você só poderá visualizar as mídias após a vendedora aceitar o pedido. Aguarde a aprovação!', 'Aguardando Aprovação');
+      showError('Você só poderá visualizar as mídias após a criadora aceitar o pedido. Aguarde a aprovação!', 'Aguardando Aprovação');
       return;
     }
     
@@ -545,7 +545,7 @@ const MyPurchases = () => {
       itemName: order.type === 'service' 
         ? (order.metadata?.serviceName || 'Serviço')
         : (packData[order.packId]?.title || order.metadata?.packName || 'Pack'),
-      sellerName: sellerData[order.sellerId]?.name || 'Vendedor',
+      sellerName: sellerData[order.sellerId]?.name || 'Criador',
       sellerPhotoURL: sellerData[order.sellerId]?.profilePicture
     };
     
@@ -795,7 +795,7 @@ const MyPurchases = () => {
                       <i className="fas fa-exclamation-triangle"></i>
                       <div className="warning-content">
                         <strong>Pack Indisponível</strong>
-                        <p>Este pack foi removido pelo vendedor e não está mais disponível.</p>
+                        <p>Este pack foi removido pelo criador e não está mais disponível.</p>
                       </div>
                     </div>
                   )}
@@ -824,14 +824,14 @@ const MyPurchases = () => {
 
                   <div className="purchase-details">
                     <div className="purchase-seller">
-                      <strong>Vendedor:</strong> {sellerData[purchase.sellerId]?.name || purchase.sellerName || 'Provedor'}
+                      <strong>Criador:</strong> {sellerData[purchase.sellerId]?.name || purchase.sellerName || 'Provedor'}
                       {sellerData[purchase.sellerId]?.username && (
                         <span className="seller-username">(@{sellerData[purchase.sellerId].username})</span>
                       )}
                     </div>
                     {isService && (
                       <div className="purchase-seller-username">
-                        <strong>Username:</strong> @{sellerData[purchase.sellerId]?.username || purchase.sellerUsername || purchase.sellerName?.toLowerCase().replace(/\s+/g, '') || 'vendedor'}
+                        <strong>Username:</strong> @{sellerData[purchase.sellerId]?.username || purchase.sellerUsername || purchase.sellerName?.toLowerCase().replace(/\s+/g, '') || 'criador'}
                       </div>
                     )}
                     <div className="purchase-amount">
@@ -917,8 +917,8 @@ const MyPurchases = () => {
                           <i className="fas fa-exclamation-triangle"></i>
                           <div className="warning-content">
                             <strong>Pack pendente de aprovação</strong>
-                            <p>A vendedora tem até 24h para aceitar seu pedido. Você só poderá visualizar as mídias após a aprovação.</p>
-                            <p><strong>Política de Reembolso:</strong> Caso a vendedora recuse o pedido, você receberá reembolso automático.</p>
+                            <p>A criadora tem até 24h para aceitar seu pedido. Você só poderá visualizar as mídias após a aprovação.</p>
+                            <p><strong>Política de Reembolso:</strong> Caso a criadora recuse o pedido, você receberá reembolso automático.</p>
                           </div>
                         </div>
                       )}
@@ -1003,10 +1003,10 @@ const MyPurchases = () => {
             </div>
             <div className="modal-body">
               <p>
-                O vendedor marcou o serviço <strong>"{confirmingOrder.metadata?.serviceName || 'Serviço'}"</strong> como entregue.
+                O criador marcou o serviço <strong>"{confirmingOrder.metadata?.serviceName || 'Serviço'}"</strong> como entregue.
               </p>
               <p>
-                Confirme que você recebeu o serviço conforme combinado para liberar o pagamento ao vendedor.
+                Confirme que você recebeu o serviço conforme combinado para liberar o pagamento ao criador.
               </p>
               <div className="form-group">
                 <label htmlFor="feedback">Feedback (opcional):</label>
@@ -1058,7 +1058,7 @@ const MyPurchases = () => {
           orderId={reviewingOrder.id}
           orderType={reviewingOrder.type}
           itemName={reviewingOrder.itemName || 'Item'}
-          sellerName={reviewingOrder.sellerName || 'Vendedor'}
+          sellerName={reviewingOrder.sellerName || 'Criador'}
           sellerPhotoURL={reviewingOrder.sellerPhotoURL}
           onReviewSubmitted={handleReviewSubmitted}
         />

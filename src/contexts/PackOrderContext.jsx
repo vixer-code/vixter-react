@@ -191,7 +191,7 @@ export const PackOrderProvider = ({ children }) => {
             await sendPackAcceptedNotification(
               order.buyerId,
               order.sellerId,
-              currentUser.displayName || 'Vendedor',
+              currentUser.displayName || 'Criador',
               order.packId,
               order.metadata?.packName || order.packName,
               orderId

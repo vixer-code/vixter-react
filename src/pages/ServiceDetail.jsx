@@ -548,7 +548,7 @@ const ServiceDetail = () => {
           )}
 
           <div className="service-provider">
-            <h3>Vendedor(a)</h3>
+            <h3>Criador(a)</h3>
             <div className="provider-info">
               <CachedImage
                 src={service.providerAvatar || service.providerPhotoURL}

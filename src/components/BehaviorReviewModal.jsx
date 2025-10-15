@@ -54,7 +54,7 @@ const BehaviorReviewModal = ({
       
       if (!canReviewResult) {
         if (userType === 'buyer') {
-          showError('Você só pode avaliar vendedoras que prestaram serviços/packs para você');
+          showError('Você só pode avaliar criadoras que prestaram serviços/packs para você');
         } else {
           showError('Você já avaliou este usuário');
         }
@@ -133,7 +133,7 @@ const BehaviorReviewModal = ({
               </div>
               <div className="buyer-details">
                 <h4>{buyerName}</h4>
-                <p>{userType === 'seller' ? 'Comprador' : 'Vendedora'}</p>
+                <p>{userType === 'seller' ? 'Comprador' : 'Criadora'}</p>
               </div>
             </div>
 
@@ -166,7 +166,7 @@ const BehaviorReviewModal = ({
                   id="comment"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  placeholder={`Descreva como foi a experiência com este ${userType === 'seller' ? 'comprador' : 'vendedor'}...`}
+                  placeholder={`Descreva como foi a experiência com este ${userType === 'seller' ? 'comprador' : 'criador'}...`}
                   maxLength="200"
                   rows="4"
                 />

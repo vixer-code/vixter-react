@@ -229,7 +229,7 @@ export const ReviewProvider = ({ children }) => {
         reviewerUsername: reviewerData.username || currentUser.displayName || 'Usuário',
         reviewerPhotoURL: reviewerData.profilePictureURL || currentUser.photoURL || null,
         targetUserId: orderData.sellerId,
-        targetUsername: orderData.sellerUsername || 'Vendedor',
+        targetUsername: orderData.sellerUsername || 'Criador',
         rating: rating,
         comment: comment.trim(),
         itemId: orderType === 'service' ? orderData.serviceId : orderData.packId,
@@ -304,7 +304,7 @@ export const ReviewProvider = ({ children }) => {
         ]);
 
         if (serviceSnapshot.empty && packSnapshot.empty) {
-          showError('Você só pode avaliar vendedoras que prestaram serviços/packs para você');
+          showError('Você só pode avaliar criadoras que prestaram serviços/packs para você');
           return false;
         }
       }

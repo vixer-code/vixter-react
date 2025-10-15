@@ -13,7 +13,7 @@ const sendServiceStatusEmail = httpsCallable(functions, 'sendServiceStatusEmail'
  * @param {string} emailData.status - Status do serviço (ACCEPTED, DELIVERED, CONFIRMED, CANCELLED)
  * @param {string} emailData.recipientEmail - E-mail do destinatário
  * @param {string} emailData.recipientName - Nome do destinatário
- * @param {string} emailData.sellerName - Nome do vendedor
+ * @param {string} emailData.sellerName - Nome do criador
  * @param {string} emailData.buyerName - Nome do comprador
  * @param {number} emailData.vpAmount - Valor em VP
  * @param {Object} emailData.additionalInfo - Informações adicionais (opcional)
@@ -32,7 +32,7 @@ export const sendServiceStatusEmailNotification = async (emailData) => {
 /**
  * Envia e-mail de notificação quando serviço é aceito
  * @param {Object} serviceOrder - Dados do pedido de serviço
- * @param {Object} sellerData - Dados do vendedor
+ * @param {Object} sellerData - Dados do criador
  * @param {Object} buyerData - Dados do comprador
  */
 export const sendServiceAcceptedEmail = async (serviceOrder, sellerData, buyerData) => {
@@ -42,7 +42,7 @@ export const sendServiceAcceptedEmail = async (serviceOrder, sellerData, buyerDa
     status: 'ACCEPTED',
     recipientEmail: buyerData.email,
     recipientName: buyerData.displayName || buyerData.name || 'Cliente',
-    sellerName: sellerData.displayName || sellerData.name || 'Vendedor',
+    sellerName: sellerData.displayName || sellerData.name || 'Criador',
     buyerName: buyerData.displayName || buyerData.name || 'Cliente',
     vpAmount: serviceOrder.vpAmount
   };
@@ -53,7 +53,7 @@ export const sendServiceAcceptedEmail = async (serviceOrder, sellerData, buyerDa
 /**
  * Envia e-mail de notificação quando serviço é entregue
  * @param {Object} serviceOrder - Dados do pedido de serviço
- * @param {Object} sellerData - Dados do vendedor
+ * @param {Object} sellerData - Dados do criador
  * @param {Object} buyerData - Dados do comprador
  */
 export const sendServiceDeliveredEmail = async (serviceOrder, sellerData, buyerData) => {
@@ -63,7 +63,7 @@ export const sendServiceDeliveredEmail = async (serviceOrder, sellerData, buyerD
     status: 'DELIVERED',
     recipientEmail: buyerData.email,
     recipientName: buyerData.displayName || buyerData.name || 'Cliente',
-    sellerName: sellerData.displayName || sellerData.name || 'Vendedor',
+    sellerName: sellerData.displayName || sellerData.name || 'Criador',
     buyerName: buyerData.displayName || buyerData.name || 'Cliente',
     vpAmount: serviceOrder.vpAmount
   };
@@ -74,7 +74,7 @@ export const sendServiceDeliveredEmail = async (serviceOrder, sellerData, buyerD
 /**
  * Envia e-mail de notificação quando serviço é concluído
  * @param {Object} serviceOrder - Dados do pedido de serviço
- * @param {Object} sellerData - Dados do vendedor
+ * @param {Object} sellerData - Dados do criador
  * @param {Object} buyerData - Dados do comprador
  */
 export const sendServiceCompletedEmail = async (serviceOrder, sellerData, buyerData) => {
@@ -84,7 +84,7 @@ export const sendServiceCompletedEmail = async (serviceOrder, sellerData, buyerD
     status: 'CONFIRMED',
     recipientEmail: buyerData.email,
     recipientName: buyerData.displayName || buyerData.name || 'Cliente',
-    sellerName: sellerData.displayName || sellerData.name || 'Vendedor',
+    sellerName: sellerData.displayName || sellerData.name || 'Criador',
     buyerName: buyerData.displayName || buyerData.name || 'Cliente',
     vpAmount: serviceOrder.vpAmount
   };
@@ -95,7 +95,7 @@ export const sendServiceCompletedEmail = async (serviceOrder, sellerData, buyerD
 /**
  * Envia e-mail de notificação quando serviço é cancelado
  * @param {Object} serviceOrder - Dados do pedido de serviço
- * @param {Object} sellerData - Dados do vendedor
+ * @param {Object} sellerData - Dados do criador
  * @param {Object} buyerData - Dados do comprador
  * @param {string} reason - Motivo do cancelamento
  */
@@ -106,7 +106,7 @@ export const sendServiceCancelledEmail = async (serviceOrder, sellerData, buyerD
     status: 'CANCELLED',
     recipientEmail: buyerData.email,
     recipientName: buyerData.displayName || buyerData.name || 'Cliente',
-    sellerName: sellerData.displayName || sellerData.name || 'Vendedor',
+    sellerName: sellerData.displayName || sellerData.name || 'Criador',
     buyerName: buyerData.displayName || buyerData.name || 'Cliente',
     vpAmount: serviceOrder.vpAmount,
     additionalInfo: { reason }

@@ -74,7 +74,7 @@ const PrivacyPolicy = () => (
       <h4>2.2 Informações Financeiras</h4>
       <ul>
         <li>Saldo e histórico de transações de moedas virtuais (VP, VC, VBP)</li>
-        <li>Informações bancárias para saques (em caso de usuário ser vendedor(a) de serviços ou pack)</li>
+        <li>Informações bancárias para saques (em caso de usuário ser criador(a) de serviços ou pack)</li>
         <li>Histórico de compras e vendas de packs/serviços</li>
       </ul>
 
@@ -220,7 +220,7 @@ const TermsOfService = () => (
 
     <section>
       <h3>2. Descrição do Serviço</h3>
-      <p>A Vixter é uma plataforma inovadora que conecta usuários e vendedores(as) de conteúdo através de:</p>
+      <p>A Vixter é uma plataforma inovadora que conecta usuários e criadores(as) de conteúdo através de:</p>
       <ul>
         <li><strong>Feeds Sociais:</strong> Vixies e Vixink para descoberta de conteúdo e conexões</li>
         <li><strong>Marketplace de Serviços:</strong> Profissionais que oferecem serviços diversos</li>
@@ -256,9 +256,9 @@ const TermsOfService = () => (
       <h4>4.2 Tipos de Conta</h4>
       <ul>
         <li><strong>Conta Usuário:</strong> Acesso para utilizar a plataforma como rede social e adquirir serviços e packs destinado ao público geral.</li>
-        <li><strong>Conta Vendedor(a):</strong> Acesso para utilizar a plataforma como rede social e criar serviços e packs destinado ao público geral.</li>
+        <li><strong>Conta Criador(a):</strong> Acesso para utilizar a plataforma como rede social e criar serviços e packs destinado ao público geral.</li>
         <li><strong>Conta Usuário KYC:</strong> Habilitada a partir da verificação KYC, para acesso a conteúdo adulto e restrito.</li>
-        <li><strong>Conta Vendedor(a) KYC:</strong> Habilitada a partir da verificação KYC, para acesso a criação de conteúdo em categorias adulto e restrito, além da funcionalidade de payout.</li>
+        <li><strong>Conta Criador(a) KYC:</strong> Habilitada a partir da verificação KYC, para acesso a criação de conteúdo em categorias adulto e restrito, além da funcionalidade de payout.</li>
       </ul>
     </section>
 
@@ -270,7 +270,7 @@ const TermsOfService = () => (
         <li><strong>VBP (Vixter Bonus Points):</strong> Moeda de bônus obtida através de compras</li>
         <li><strong>Conversão:</strong> 1 VC = 1.5 VP (arredondado para cima)</li>
         <li><strong>Aquisição:</strong> VP podem ser comprados com cartão de crédito via Stripe por contas de tipo usuário.</li>
-        <li><strong>Uso:</strong> VP são utilizados para contratar serviços, comprar packs e enviar gorjetas para contas de tipo vendedor(a).</li>
+        <li><strong>Uso:</strong> VP são utilizados para contratar serviços, comprar packs e enviar gorjetas para contas de tipo criador(a).</li>
       </ul>
 
       <h4>5.2 Política de Reembolso</h4>
@@ -294,7 +294,7 @@ const TermsOfService = () => (
         <li>Interferir no funcionamento da plataforma</li>
         <li>Usar contas falsas ou múltiplas</li>
         <li>Publicar conteúdo inadequado nos feeds Vixies/Vixink/Feed</li>
-        <li>Utilizar a plataforma para importunação dos usuários e(ou) vendedores(as)</li>
+        <li>Utilizar a plataforma para importunação dos usuários e(ou) criadores(as)</li>
         <li>Usar a plataforma para atividades não relacionadas ao entretenimento</li>
         <li>Manipular o sistema de gorjetas (Vixtip) de forma fraudulenta</li>
         <li>Compartilhar conteúdo de packs sem autorização prévia do autor</li>
@@ -452,7 +452,7 @@ const AboutUs = () => (
         </div>
         <div className="feature">
           <h4>🛠️ Marketplace de Serviços</h4>
-          <p>Contrate serviços diversos dos seus vendedores(as) de conteúdo preferidos</p>
+          <p>Contrate serviços diversos dos seus criadores(as) de conteúdo preferidos</p>
         </div>
         <div className="feature">
           <h4>🔒 Verificação KYC</h4>

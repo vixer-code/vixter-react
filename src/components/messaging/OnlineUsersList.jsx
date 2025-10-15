@@ -132,7 +132,7 @@ const OnlineUsersList = ({ onUserSelect, currentUser }) => {
     
     switch (user.accountType) {
       case 'provider':
-        return <span className="account-badge provider">Vendedor</span>;
+        return <span className="account-badge provider">Criador</span>;
       case 'client':
         return <span className="account-badge client">Cliente</span>;
       case 'both':

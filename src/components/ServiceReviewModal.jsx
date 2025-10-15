@@ -103,7 +103,7 @@ const ServiceReviewModal = ({
         <div className="modal-body">
           <div className="review-item-info">
             <h4>{itemName}</h4>
-            <p>Vendedor: {sellerName}</p>
+            <p>Criador: {sellerName}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="review-form">

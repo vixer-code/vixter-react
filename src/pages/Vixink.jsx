@@ -451,7 +451,7 @@ const Vixink = () => {
                     <i className="fas fa-eye"></i>
                   </div>
                   <div className="feed-only-text">
-                    <p>Essa área é de divulgação de conteúdo de serviços e packs. Portanto, somente vendedores podem publicar.</p>
+                    <p>Essa área é de divulgação de conteúdo de serviços e packs. Portanto, somente criadores podem publicar.</p>
                     <small>Conheça novos serviços e apoie seus criadores favoritos.</small>
                   </div>
                 </div>

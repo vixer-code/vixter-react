@@ -350,7 +350,7 @@ export const WalletProvider = ({ children }) => {
 
       if (result.data.success) {
         showSuccess(
-          `Serviço adquirido! ${vpAmount} VP foram debitados. O vendedor receberá VC após a confirmação.`,
+          `Serviço adquirido! ${vpAmount} VP foram debitados. O criador receberá VC após a confirmação.`,
           'Compra Realizada',
           7000,
           {
@@ -409,7 +409,7 @@ export const WalletProvider = ({ children }) => {
         );
 
         showSuccess(
-          `Pedido de pack enviado! A vendedora tem 24h para aprovar.`,
+          `Pedido de pack enviado! A criadora tem 24h para aprovar.`,
           'Pedido Enviado',
           7000,
           {

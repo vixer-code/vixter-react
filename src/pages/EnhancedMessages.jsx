@@ -178,7 +178,7 @@ const EnhancedMessages = () => {
     
     switch (user.accountType) {
       case 'provider':
-        return <span className="account-badge provider">Vendedor</span>;
+        return <span className="account-badge provider">Criador</span>;
       case 'client':
         return <span className="account-badge client">Cliente</span>;
       case 'both':
@@ -267,7 +267,7 @@ const EnhancedMessages = () => {
           if (!serviceStatus) return null;
           
           const statusMessages = {
-            'Aguardando Aceitação': '🛠️ Conversa de serviço - Aguardando aceitação do vendedor',
+            'Aguardando Aceitação': '🛠️ Conversa de serviço - Aguardando aceitação do criador',
             'Aceito': '🛠️ Conversa de serviço - Serviço aceito',
             'Entregue': '🛠️ Conversa de serviço - Serviço entregue',
             'Confirmado': '🛠️ Conversa de serviço - Serviço confirmado',
@@ -437,7 +437,7 @@ const EnhancedMessages = () => {
                   
                   // Determine if current user is seller or buyer
                   const isCurrentUserSeller = conversation.sellerId === currentUser?.uid;
-                  const participantRole = isCurrentUserSeller ? 'Comprador' : 'Vendedor';
+                  const participantRole = isCurrentUserSeller ? 'Comprador' : 'Criador';
                   
                   return (
                     <div

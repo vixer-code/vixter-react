@@ -1951,7 +1951,7 @@ const Profile = () => {
                 {isClient && (
                   <div className="account-restriction-notice">
                     <i className="fas fa-info-circle"></i>
-                    <span>Apenas vendedores podem criar serviços.</span>
+                    <span>Apenas criadores podem criar serviços.</span>
                   </div>
                 )}
               </>
@@ -2092,7 +2092,7 @@ const Profile = () => {
                 {isClient && (
                   <div className="account-restriction-notice">
                     <i className="fas fa-info-circle"></i>
-                    <span>Apenas vendedores podem criar packs.</span>
+                    <span>Apenas criadores podem criar packs.</span>
                   </div>
                 )}
               </>

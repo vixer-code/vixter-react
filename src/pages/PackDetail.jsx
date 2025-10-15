@@ -288,13 +288,13 @@ const PackDetail = () => {
           // Add provider ID (this is crucial for purchases)
           providerId: providerId,
           // Add provider information with better fallbacks
-          providerName: providerData.displayName || providerData.name || packData.providerName || packData.sellerName || 'Vendedor',
+          providerName: providerData.displayName || providerData.name || packData.providerName || packData.sellerName || 'Criador',
           providerUsername: providerData.username || packData.providerUsername || packData.sellerUsername || 'usuario',
           providerAvatar: providerData.profilePictureURL || providerData.avatar || packData.providerAvatar || packData.sellerAvatar || null,
           providerRating: providerData.rating || providerData.averageRating || packData.providerRating || packData.sellerRating || 0,
           providerCompletedOrders: providerData.completedOrders || providerData.totalSales || packData.providerCompletedOrders || packData.sellerCompletedOrders || 0,
           // Also add legacy fields for compatibility
-          sellerName: providerData.displayName || providerData.name || packData.sellerName || 'Vendedor',
+          sellerName: providerData.displayName || providerData.name || packData.sellerName || 'Criador',
           sellerUsername: providerData.username || packData.sellerUsername || 'usuario',
           sellerAvatar: providerData.profilePictureURL || providerData.avatar || packData.sellerAvatar || null,
           sellerRating: providerData.rating || providerData.averageRating || packData.sellerRating || 0,
@@ -667,17 +667,17 @@ const PackDetail = () => {
           )}
 
           <div className="pack-provider">
-            <h3>Vendedor(a)</h3>
+            <h3>Criador(a)</h3>
             <div className="provider-info">
               <CachedImage
                 src={pack.providerAvatar || pack.providerPhotoURL || pack.sellerAvatar || pack.sellerPhotoURL}
                 defaultType="PROFILE_1"
-                alt={pack.providerName || pack.sellerName || 'Vendedor'}
+                alt={pack.providerName || pack.sellerName || 'Criador'}
                 className="provider-avatar"
                 showLoading={false}
               />
               <div className="provider-details">
-                <h4>{pack.providerName || pack.sellerName || 'Vendedor'}</h4>
+                <h4>{pack.providerName || pack.sellerName || 'Criador'}</h4>
                 <p>@{pack.providerUsername || pack.sellerUsername || 'usuario'}</p>
                 <div className="provider-stats">
                   <span>
@@ -807,7 +807,7 @@ const PackDetail = () => {
               <div className="purchase-terms">
                 <p>
                   <i className="fas fa-info-circle"></i>
-                  Ao confirmar, o valor será reservado e o vendedor será notificado.
+                  Ao confirmar, o valor será reservado e o criador será notificado.
                 </p>
               </div>
             </div>

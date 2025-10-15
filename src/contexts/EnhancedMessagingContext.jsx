@@ -263,7 +263,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       return {
         ...conversation,
         buyerUsername: buyerData?.username || buyerData?.displayName || 'Comprador',
-        sellerUsername: sellerData?.username || sellerData?.displayName || 'Vendedor',
+        sellerUsername: sellerData?.username || sellerData?.displayName || 'Criador',
         buyerPhotoURL: buyerData?.photoURL || buyerData?.profilePictureURL,
         sellerPhotoURL: sellerData?.photoURL || sellerData?.profilePictureURL
       };
@@ -1750,7 +1750,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
           
           // If the service order is pending acceptance, the conversation is on hold
           if (status === 'PENDING_ACCEPTANCE') {
-            showError('Esta conversa está em espera. O vendedor ainda não aceitou o pedido.');
+            showError('Esta conversa está em espera. O criador ainda não aceitou o pedido.');
             return false;
           }
         }
@@ -2203,7 +2203,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
         description: packData.status === 'PENDING_ACCEPTANCE' ? 
           'Você recebeu um novo pedido de pack' :
           packData.status === 'ACCEPTED' ? 
-          'Seu pedido foi aceito pelo(a) vendedor(a)' :
+          'Seu pedido foi aceito pelo(a) criador(a)' :
           packData.status === 'CONFIRMED' ? 
           `${packData.metadata?.packName || packData.packName || 'O pack'} foi concluído, avalie o conteúdo!` :
           packData.status === 'CANCELLED' ? 
@@ -2505,7 +2505,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       }
       
       const buyerUsername = buyerUser?.username || buyerUser?.displayName || buyerUser?.name || 'Comprador';
-      const sellerUsername = sellerUser?.username || sellerUser?.displayName || sellerUser?.name || 'Vendedor';
+      const sellerUsername = sellerUser?.username || sellerUser?.displayName || sellerUser?.name || 'Criador';
       const serviceName = serviceOrder.metadata?.serviceName || 'Serviço';
       
       // Create conversation data
@@ -2602,7 +2602,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
       }
 
       const buyerUsername = buyerUser?.username || buyerUser?.displayName || buyerUser?.name || 'Comprador';
-      const sellerUsername = sellerUser?.username || sellerUser?.displayName || sellerUser?.name || 'Vendedor';
+      const sellerUsername = sellerUser?.username || sellerUser?.displayName || sellerUser?.name || 'Criador';
       
       // Get service order data to get service name
       const serviceOrderRef = ref(database, `serviceOrders/${conversation.serviceOrderId}`);

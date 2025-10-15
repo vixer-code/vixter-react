@@ -360,7 +360,7 @@ const CreateServiceModal = ({ isOpen, onClose, onServiceCreated, editingService 
   const getSellerEarningsValidationError = () => {
     const effectivePriceValue = effectivePrice();
     if (effectivePriceValue < 10) {
-      return `O valor final para a vendedora deve ser pelo menos 10,00 VC. Valor atual: ${formatVC(effectivePriceValue)}`;
+      return `O valor final para a criadora deve ser pelo menos 10,00 VC. Valor atual: ${formatVC(effectivePriceValue)}`;
     }
     return null;
   };
