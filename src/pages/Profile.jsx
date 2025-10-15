@@ -16,6 +16,7 @@ import { sendPostInteractionNotification } from '../services/notificationService
 import { getDefaultImage } from '../utils/defaultImages';
 import { getProfileUrl } from '../utils/profileUrls';
 import { useEmailVerification } from '../hooks/useEmailVerification';
+import useKycStatus from '../hooks/useKycStatus';
 const CreateServiceModal = lazy(() => import('../components/CreateServiceModal'));
 const CreatePackModal = lazy(() => import('../components/CreatePackModal'));
 import CachedImage from '../components/CachedImage';
@@ -36,6 +37,7 @@ const Profile = () => {
   const { currentUser } = useAuth();
   const { userProfile, getUserById, getUserByUsername, updateUserProfile, formatUserDisplayName, getUserAvatarUrl, loading: userLoading } = useUser();
   const { getAverageRating, reviews: userReviews, loadUserReviews } = useReview();
+  const { isKycVerified } = useKycStatus();
   
   // Get account type from user profile
   const accountType = userProfile?.accountType || 'client';
@@ -1601,7 +1603,15 @@ const Profile = () => {
             
             <div className="posts-container">
               {posts.length > 0 ? (
-                posts.map((post) => {
+                posts
+                  .filter(post => {
+                    // Filter out adult content if user doesn't have KYC verified
+                    if (post.isAdultContent && !isKycVerified) {
+                      return false; // Hide adult content for non-KYC users
+                    }
+                    return true;
+                  })
+                  .map((post) => {
                   // Get media array for display
                   const mediaArray = post.media || (post.imageUrl ? [{ type: 'image', url: post.imageUrl }] : []);
                   const contentText = post.content || post.text || '';
@@ -1621,7 +1631,15 @@ const Profile = () => {
                             onError={(e) => { e.target.src = '/images/defpfp1.png'; }}
                           />
                           <div className="author-info">
-                            <div className="author-name">{post.authorName}</div>
+                            <div className="author-name-container">
+                              <div className="author-name">{post.authorName}</div>
+                              {post.isAdultContent && isKycVerified && (
+                                <span className="adult-content-badge">
+                                  <i className="fas fa-exclamation-triangle"></i>
+                                  +18
+                                </span>
+                              )}
+                            </div>
                             <div className="post-time">
                               {formatTimeAgo(post.timestamp)}
                             </div>

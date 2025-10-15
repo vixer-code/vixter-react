@@ -574,26 +574,28 @@ const PostCreator = ({
         </button>
       </div>
 
-      {/* Adult Content Checkbox */}
-      <div className="adult-content-option">
-        <label className="adult-content-checkbox">
-          <input
-            type="checkbox"
-            checked={isAdultContent}
-            onChange={(e) => setIsAdultContent(e.target.checked)}
-          />
-          <span className="checkbox-label">
-            <i className="fas fa-exclamation-triangle"></i>
-            Post tendencioso +18
-          </span>
-        </label>
-        {isAdultContent && (
-          <div className="adult-content-warning">
-            <i className="fas fa-info-circle"></i>
-            Este post só será visível para usuários com KYC ativo
-          </div>
-        )}
-      </div>
+      {/* Adult Content Checkbox - Only show for general_feed mode */}
+      {mode === 'general_feed' && (
+        <div className="adult-content-option">
+          <label className="adult-content-checkbox">
+            <input
+              type="checkbox"
+              checked={isAdultContent}
+              onChange={(e) => setIsAdultContent(e.target.checked)}
+            />
+            <span className="checkbox-label">
+              <i className="fas fa-exclamation-triangle"></i>
+              Post tendencioso +18
+            </span>
+          </label>
+          {isAdultContent && (
+            <div className="adult-content-warning">
+              <i className="fas fa-info-circle"></i>
+              Este post só será visível para usuários com KYC ativo
+            </div>
+          )}
+        </div>
+      )}
       
       {/* Mobile publish button - shown below image and attach service on mobile */}
       <div className="mobile-publish-section">
