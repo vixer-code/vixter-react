@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
+import { useBlock } from '../contexts/BlockContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { sendPostInteractionNotification } from '../services/notificationService';
 import { getProfileUrlById } from '../utils/profileUrls';
@@ -15,6 +16,7 @@ import './Feed.css';
 const Feed = () => {
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
+  const { hasBlockBetween } = useBlock();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const [posts, setPosts] = useState([]);
   const [users, setUsers] = useState({});
@@ -339,6 +341,17 @@ const Feed = () => {
 
   const addComment = useCallback(async (postId, parentId = null) => {
     if (!currentUser) return;
+    
+    // Check if post author is blocked
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+      const authorId = post.userId || post.authorId;
+      if (authorId && hasBlockBetween(authorId)) {
+        showError('Não é possível comentar em posts de usuários bloqueados');
+        return;
+      }
+    }
+    
     const key = parentId ? `${postId}:${parentId}` : postId;
     const text = (commentInputs[key] || '').trim();
     if (!text) return;
@@ -430,13 +443,21 @@ const Feed = () => {
   };
 
   const getFilteredPosts = () => {
+    let filtered = posts;
+    
+    // Filter out posts from blocked users
+    filtered = filtered.filter(post => {
+      const authorId = post.userId || post.authorId;
+      return authorId && !hasBlockBetween(authorId);
+    });
+    
     if (activeTab === 'following') {
-      return posts.filter(post => following.includes(post.userId || post.authorId));
+      return filtered.filter(post => following.includes(post.userId || post.authorId));
     }
     if (activeTab === 'myposts') {
-      return posts.filter(post => (post.userId || post.authorId) === currentUser?.uid);
+      return filtered.filter(post => (post.userId || post.authorId) === currentUser?.uid);
     }
-    return posts;
+    return filtered;
   };
 
   const buildCommentTree = (items) => {

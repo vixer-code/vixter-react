@@ -33,6 +33,7 @@ import { useNotification } from './NotificationContext';
 import { useUser } from './UserContext';
 import { useCentrifugo } from './CentrifugoContext';
 import { useStatus } from './StatusContext';
+import { useBlock } from './BlockContext';
 // Conversation service removed - using RTDB only
 import { sendMessageNotification } from '../services/notificationService';
 import { 
@@ -74,6 +75,7 @@ export const EnhancedMessagingProvider = ({ children }) => {
   const { getUserById } = useUser();
   const { subscribe, unsubscribe, publish, isConnected } = useCentrifugo();
   const { userStatus, selectedStatus } = useStatus();
+  const { hasBlockBetween } = useBlock();
   
   // Fallback for when Centrifugo is not available
   const [centrifugoAvailable, setCentrifugoAvailable] = useState(true);
@@ -1373,6 +1375,12 @@ export const EnhancedMessagingProvider = ({ children }) => {
       return null;
     }
 
+    // Check if there's a block between users
+    if (hasBlockBetween(otherUserId)) {
+      showError('Não é possível iniciar uma conversa. Você ou este usuário bloqueou o outro.');
+      return null;
+    }
+
     try {
       // Generate deterministic conversation ID
       const sorted = [currentUser.uid, otherUserId].sort();
@@ -1718,6 +1726,13 @@ export const EnhancedMessagingProvider = ({ children }) => {
   // Send text message (main function)
   const sendMessage = useCallback(async (text, replyToId = null) => {
     if (!text.trim() || !selectedConversation || !currentUser?.uid) return false;
+
+    // Check if there's a block between users
+    const otherUserId = Object.keys(selectedConversation.participants || {}).find(id => id !== currentUser.uid);
+    if (otherUserId && hasBlockBetween(otherUserId)) {
+      showError('Não foi possível enviar a mensagem. Você ou este usuário bloqueou o outro.');
+      return false;
+    }
 
     // Check if this is a service conversation and if it's on hold
     if (selectedConversation.type === 'service' && selectedConversation.serviceOrderId) {

@@ -421,6 +421,35 @@ service cloud.firestore {
     }
 
     // =====================================================
+    // BLOCKS COLLECTION RULES
+    // =====================================================
+    
+    match /blocks/{blockId} {
+      // Users can read their own blocks (to check if they blocked someone)
+      allow read: if isAuthenticated() && 
+                    (isOwner(resource.data.blockerId) || 
+                     isOwner(resource.data.blockedId));
+      
+      // Users can create blocks (blocking someone)
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.blockerId) &&
+                      isValidBlock(request.resource.data);
+      
+      // Users can delete their own blocks (unblocking someone)
+      allow delete: if isAuthenticated() && 
+                      isOwner(resource.data.blockerId);
+      
+      // Admin access
+      allow read, write: if isAdmin();
+    }
+    
+    // Helper function for block validation
+    function isValidBlock(data) {
+      return data.keys().hasAll(['blockerId', 'blockedId', 'timestamp']) &&
+             data.blockerId != data.blockedId; // Can't block yourself
+    }
+
+    // =====================================================
     // DEFAULT DENY RULE
     // =====================================================
     

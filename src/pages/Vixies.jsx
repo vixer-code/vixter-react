@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
+import { useBlock } from '../contexts/BlockContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { getProfileUrlById } from '../utils/profileUrls';
 import { database } from '../../config/firebase';
@@ -77,6 +78,7 @@ const AttachmentDisplay = ({ attachment, checkAttachmentExists, getImageUrl }) =
 const Vixies = () => {
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
+  const { hasBlockBetween } = useBlock();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const [posts, setPosts] = useState([]);
   const [users, setUsers] = useState({});
@@ -369,6 +371,11 @@ const Vixies = () => {
   };
 
   const filteredPosts = posts.filter(post => {
+    // Filter out blocked users
+    if (post.authorId && hasBlockBetween(post.authorId)) {
+      return false;
+    }
+    
     // Following filter
     if (activeTab === 'following') {
       return following.includes(post.authorId);

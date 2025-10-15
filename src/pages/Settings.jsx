@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useUser } from '../contexts/UserContext';
+import { useBlock } from '../contexts/BlockContext';
 import { database, db } from '../../config/firebase';
 import { ref, set, get, update } from 'firebase/database';
 import { doc, setDoc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
@@ -14,8 +15,9 @@ import './Settings.css';
 const Settings = () => {
   const { currentUser } = useAuth();
   const userContext = useUser();
-  const { userProfile } = userContext || {};
+  const { userProfile, getUserById } = userContext || {};
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
+  const { blockedUsers, unblockUser, loading: blockLoading } = useBlock();
   const [loading, setLoading] = useState(false);
   const [userSettings, setUserSettings] = useState({
     displayName: '',
@@ -1069,9 +1071,111 @@ const Settings = () => {
           )}
         </div>
 
-
+        {/* Blocked Users Management Section */}
+        <div className="settings-section">
+          <h2><i className="fas fa-ban"></i> Usuários Bloqueados</h2>
+          <p style={{ color: '#a8a8b3', marginBottom: '20px' }}>
+            Gerencie sua lista de usuários bloqueados. Usuários bloqueados não podem ver seu perfil, interagir com seus posts ou enviar mensagens para você.
+          </p>
+          
+          {blockLoading ? (
+            <div className="loading-container" style={{ padding: '20px' }}>
+              <PurpleSpinner />
+              <p>Carregando lista de bloqueios...</p>
+            </div>
+          ) : blockedUsers.length === 0 ? (
+            <div className="blocked-users-empty">
+              <i className="fas fa-user-check" style={{ fontSize: '3rem', color: '#4c1d95', marginBottom: '10px' }}></i>
+              <p>Você não bloqueou nenhum usuário</p>
+            </div>
+          ) : (
+            <div className="blocked-users-list">
+              {blockedUsers.map((block) => (
+                <BlockedUserItem
+                  key={block.id}
+                  block={block}
+                  onUnblock={async () => {
+                    try {
+                      if (window.confirm(`Deseja desbloquear ${block.blockedDisplayName || block.blockedUsername}?`)) {
+                        await unblockUser(block.blockedId);
+                        showSuccess(`${block.blockedDisplayName || block.blockedUsername} foi desbloqueado`);
+                      }
+                    } catch (error) {
+                      showError('Erro ao desbloquear usuário');
+                    }
+                  }}
+                  getUserById={getUserById}
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
       </div>
+    </div>
+  );
+};
+
+// Component for blocked user item
+const BlockedUserItem = ({ block, onUnblock, getUserById }) => {
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        if (getUserById) {
+          const data = await getUserById(block.blockedId);
+          setUserData(data);
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, [block.blockedId, getUserById]);
+
+  const displayName = userData?.displayName || block.blockedDisplayName || 'Usuário';
+  const username = userData?.username || block.blockedUsername || '';
+  const photoURL = userData?.profilePictureURL || userData?.photoURL || '/images/defpfp1.png';
+
+  if (loading) {
+    return (
+      <div className="blocked-user-item">
+        <div className="blocked-user-info">
+          <div className="blocked-user-skeleton"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="blocked-user-item">
+      <div className="blocked-user-info">
+        <img 
+          src={photoURL} 
+          alt={displayName}
+          className="blocked-user-avatar"
+          onError={(e) => { e.target.src = '/images/defpfp1.png'; }}
+        />
+        <div className="blocked-user-details">
+          <div className="blocked-user-name">{displayName}</div>
+          {username && <div className="blocked-user-username">@{username}</div>}
+          <div className="blocked-date">
+            Bloqueado em {new Date(block.timestamp?.toDate?.() || block.timestamp).toLocaleDateString('pt-BR')}
+          </div>
+        </div>
+      </div>
+      <button 
+        className="unblock-btn"
+        onClick={onUnblock}
+        title="Desbloquear usuário"
+      >
+        <i className="fas fa-unlock"></i> Desbloquear
+      </button>
     </div>
   );
 };

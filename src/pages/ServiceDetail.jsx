@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useWallet } from '../contexts/WalletContext';
 import { useServiceOrder } from '../contexts/ServiceOrderContext';
+import { useBlock } from '../contexts/BlockContext';
 import { useNotification } from '../contexts/NotificationContext';
 import useKycStatus from '../hooks/useKycStatus';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -19,6 +20,7 @@ const ServiceDetail = () => {
   const { userProfile } = useUser();
   const { vpBalance } = useWallet();
   const { createServiceOrder, processing } = useServiceOrder();
+  const { hasBlockBetween } = useBlock();
   const { showSuccess, showError, showWarning } = useNotification();
   const { kycState, isKycVerified, kycLoading } = useKycStatus();
 
@@ -276,6 +278,12 @@ const ServiceDetail = () => {
 
     if (service.providerId === currentUser.uid) {
       showWarning('Você não pode comprar seu próprio serviço');
+      return;
+    }
+
+    // Check if there's a block between users
+    if (hasBlockBetween(service.providerId)) {
+      showError('Não é possível comprar de um usuário bloqueado ou que bloqueou você');
       return;
     }
 

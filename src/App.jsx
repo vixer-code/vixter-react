@@ -12,6 +12,7 @@ import { EnhancedMessagingProvider as MessagingProvider } from './contexts/Enhan
 import { ServiceOrderProvider } from './contexts/ServiceOrderContext';
 import { PackOrderProvider } from './contexts/PackOrderContext';
 import { ReviewProvider } from './contexts/ReviewContext';
+import { BlockProvider } from './contexts/BlockContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import MobileFooter from './components/MobileFooter';
@@ -125,23 +126,25 @@ function App() {
       <StatusProvider>
         <NotificationProvider>
           <UserProvider>
-            <WalletProvider>
-              <PacksProvider>
-                <ServicesProvider>
-                  <CentrifugoProvider>
-                    <MessagingProvider>
-                      <ServiceOrderProvider>
-                        <PackOrderProvider>
-                          <ReviewProvider>
-                            <AppContent />
-                          </ReviewProvider>
-                        </PackOrderProvider>
-                      </ServiceOrderProvider>
-                    </MessagingProvider>
-                  </CentrifugoProvider>
-                </ServicesProvider>
-              </PacksProvider>
-            </WalletProvider>
+            <BlockProvider>
+              <WalletProvider>
+                <PacksProvider>
+                  <ServicesProvider>
+                    <CentrifugoProvider>
+                      <MessagingProvider>
+                        <ServiceOrderProvider>
+                          <PackOrderProvider>
+                            <ReviewProvider>
+                              <AppContent />
+                            </ReviewProvider>
+                          </PackOrderProvider>
+                        </ServiceOrderProvider>
+                      </MessagingProvider>
+                    </CentrifugoProvider>
+                  </ServicesProvider>
+                </PacksProvider>
+              </WalletProvider>
+            </BlockProvider>
           </UserProvider>
         </NotificationProvider>
       </StatusProvider>

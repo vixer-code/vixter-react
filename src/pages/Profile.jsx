@@ -11,6 +11,7 @@ import { useReview } from '../contexts/ReviewContext';
 import { useServicesR2 as useServices } from '../contexts/ServicesContextR2';
 import { useNotification } from '../contexts/NotificationContext';
 import { useEnhancedMessaging } from '../contexts/EnhancedMessagingContext';
+import { useBlock } from '../contexts/BlockContext';
 import { sendPostInteractionNotification } from '../services/notificationService';
 import { getDefaultImage } from '../utils/defaultImages';
 import { getProfileUrl } from '../utils/profileUrls';
@@ -46,6 +47,7 @@ const Profile = () => {
   const { emailVerified: isVerified, loading: isChecking } = useEmailVerification();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const { createOrGetConversation } = useEnhancedMessaging();
+  const { isUserBlocked, blockUser, unblockUser, hasBlockBetween } = useBlock();
   
   // All useState hooks must be at the top before any other logic
   const [profile, setProfile] = useState(null);
@@ -199,6 +201,12 @@ const Profile = () => {
         try {
           const userData = await getUserByUsername(username);
           if (userData) {
+            // Check if there's a block between users
+            if (currentUser && hasBlockBetween(userData.id)) {
+              showError('Este perfil não está disponível.', 'Erro');
+              navigate('/');
+              return;
+            }
             setProfile(userData);
             // Load followers for the found user
             loadFollowers(userData.id);
@@ -216,7 +224,7 @@ const Profile = () => {
     };
 
     loadProfileData();
-  }, [username, currentUser, userProfile, getUserByUsername, showError, navigate]);
+  }, [username, currentUser, userProfile, getUserByUsername, showError, navigate, hasBlockBetween]);
 
   // Initialize form data when profile changes
   useEffect(() => {
@@ -1426,6 +1434,14 @@ const Profile = () => {
                   </button>
                   <button className="message-btn" onClick={handleMessageClick}>
                     <i className="fa-solid fa-envelope"></i> Mensagem
+                  </button>
+                  <button 
+                    className={`block-btn ${isUserBlocked(profile.id) ? 'blocked' : ''}`}
+                    onClick={handleBlockToggle}
+                    title={isUserBlocked(profile.id) ? 'Desbloquear usuário' : 'Bloquear usuário'}
+                  >
+                    <i className={`fa-solid ${isUserBlocked(profile.id) ? 'fa-unlock' : 'fa-ban'}`}></i>
+                    {isUserBlocked(profile.id) ? 'Desbloquear' : 'Bloquear'}
                   </button>
                 </div>
               )

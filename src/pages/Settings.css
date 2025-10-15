@@ -1215,4 +1215,141 @@
 /* Verification Description Styling */
 .verification-description {
   color: #d0d0d0 !important;
+}
+
+/* Blocked Users Section Styles */
+.blocked-users-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: #a8a8b3;
+  background: rgba(26, 26, 46, 0.3);
+  border-radius: 12px;
+}
+
+.blocked-users-empty p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.blocked-users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.blocked-user-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: rgba(26, 26, 46, 0.3);
+  border-radius: 12px;
+  border: 1px solid #2a2a3e;
+  transition: all 0.2s ease;
+}
+
+.blocked-user-item:hover {
+  background: rgba(26, 26, 46, 0.5);
+  border-color: #4c1d95;
+}
+
+.blocked-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.blocked-user-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #4c1d95;
+}
+
+.blocked-user-skeleton {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #2a2a3e 25%, #3a3a4e 50%, #2a2a3e 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.blocked-user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.blocked-user-name {
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 1rem;
+}
+
+.blocked-user-username {
+  color: #a8a8b3;
+  font-size: 0.9rem;
+}
+
+.blocked-date {
+  color: #7a7a8a;
+  font-size: 0.85rem;
+}
+
+.unblock-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: #059669;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.unblock-btn:hover {
+  background: #047857;
+  transform: translateY(-2px);
+}
+
+.unblock-btn:active {
+  transform: translateY(0);
+}
+
+/* Mobile Responsiveness for Blocked Users */
+@media (max-width: 768px) {
+  .blocked-user-item {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .blocked-user-info {
+    width: 100%;
+  }
+  
+  .unblock-btn {
+    width: 100%;
+    justify-content: center;
+  }
 } 

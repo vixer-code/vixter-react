@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useWallet } from '../contexts/WalletContext';
+import { useBlock } from '../contexts/BlockContext';
 import { useNotification } from '../contexts/NotificationContext';
 import useKycStatus from '../hooks/useKycStatus';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -33,6 +34,7 @@ const PackDetail = () => {
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
   const { vpBalance, createPackOrder } = useWallet();
+  const { hasBlockBetween } = useBlock();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const { kycState, isKycVerified, kycLoading } = useKycStatus();
 
@@ -334,6 +336,12 @@ const PackDetail = () => {
 
     if (pack.authorId === currentUser.uid) {
       showWarning('Você não pode comprar seu próprio pack');
+      return;
+    }
+
+    // Check if there's a block between users
+    if (hasBlockBetween(pack.authorId)) {
+      showError('Não é possível comprar de um usuário bloqueado ou que bloqueou você');
       return;
     }
 

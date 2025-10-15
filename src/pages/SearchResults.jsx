@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
+import { useBlock } from '../contexts/BlockContext';
 import { database, db } from '../../config/firebase';
 import { getProfileUrl } from '../utils/profileUrls';
 import { ref, query, orderByChild, startAt, endAt, get } from 'firebase/database';
@@ -11,6 +12,7 @@ import './SearchResults.css';
 const SearchResults = () => {
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
+  const { hasBlockBetween } = useBlock();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState({
     users: [],
@@ -45,7 +47,10 @@ const SearchResults = () => {
       
       usernameSnapshot.forEach((doc) => {
         const userData = doc.data();
-        if (userData.username && userData.username.toLowerCase().includes(term.toLowerCase())) {
+        // Filter out blocked users
+        if (userData.username && 
+            userData.username.toLowerCase().includes(term.toLowerCase()) &&
+            !hasBlockBetween(doc.id)) {
           users.push({
             id: doc.id,
             ...userData
@@ -63,7 +68,10 @@ const SearchResults = () => {
       const displaySnapshot = await getDocs(displayNameQuery);
       displaySnapshot.forEach((doc) => {
         const userData = doc.data();
-        if (userData.displayName && userData.displayName.toLowerCase().includes(term.toLowerCase())) {
+        // Filter out blocked users
+        if (userData.displayName && 
+            userData.displayName.toLowerCase().includes(term.toLowerCase()) &&
+            !hasBlockBetween(doc.id)) {
           const existingUser = users.find(u => u.id === doc.id);
           if (!existingUser) {
             users.push({

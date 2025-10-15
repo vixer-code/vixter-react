@@ -1091,7 +1091,8 @@
 
 .follow-btn,
 .message-btn,
-.visitor-menu-btn {
+.visitor-menu-btn,
+.block-btn {
   background: #8A2BE2;
   color: white;
   border: none;
@@ -1107,7 +1108,8 @@
 
 .follow-btn:hover,
 .message-btn:hover,
-.visitor-menu-btn:hover {
+.visitor-menu-btn:hover,
+.block-btn:hover {
   transform: translateY(-2px);
 }
 
@@ -1127,6 +1129,22 @@
 
 .message-btn:hover {
   background: #333;
+}
+
+.block-btn {
+  background: #dc2626;
+}
+
+.block-btn:hover {
+  background: #b91c1c;
+}
+
+.block-btn.blocked {
+  background: #059669;
+}
+
+.block-btn.blocked:hover {
+  background: #047857;
 }
 
 .visitor-menu-btn {
@@ -2376,7 +2394,8 @@
   
   .follow-btn,
   .message-btn,
-  .visitor-menu-btn {
+  .visitor-menu-btn,
+  .block-btn {
     width: 100%;
     justify-content: center;
     padding: 12px 20px;
@@ -2584,7 +2603,8 @@
   
   .follow-btn,
   .message-btn,
-  .visitor-menu-btn {
+  .visitor-menu-btn,
+  .block-btn {
     padding: 10px 15px;
     font-size: 0.85rem;
   }
