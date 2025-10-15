@@ -5,6 +5,7 @@ import { useBlock } from '../contexts/BlockContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { sendPostInteractionNotification } from '../services/notificationService';
 import { getProfileUrlById } from '../utils/profileUrls';
+import useKycStatus from '../hooks/useKycStatus';
 import { database, firestore } from '../../config/firebase';
 import { ref, onValue, off, query, orderByChild, set, update, push, get, remove } from 'firebase/database';
 import { doc, getDoc, setDoc, deleteDoc, writeBatch, increment, collection, getDocs } from 'firebase/firestore';
@@ -18,6 +19,7 @@ const Feed = () => {
   const { userProfile } = useUser();
   const { hasBlockBetween } = useBlock();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
+  const { isKycVerified } = useKycStatus();
   const [posts, setPosts] = useState([]);
   const [users, setUsers] = useState({});
   const [following, setFollowing] = useState([]);
@@ -451,6 +453,14 @@ const Feed = () => {
       return authorId && !hasBlockBetween(authorId);
     });
     
+    // Filter out adult content if user doesn't have KYC verified
+    filtered = filtered.filter(post => {
+      if (post.isAdultContent && !isKycVerified) {
+        return false; // Hide adult content for non-KYC users
+      }
+      return true;
+    });
+    
     if (activeTab === 'following') {
       return filtered.filter(post => following.includes(post.userId || post.authorId));
     }
@@ -585,9 +595,17 @@ const Feed = () => {
               onError={(e) => { e.target.src = '/images/defpfp1.png'; }}
             />
             <div className="author-info">
-              <Link to={isOwnPost ? '/profile' : getProfileUrlById(post.userId || post.authorId, post.authorUsername)} className="author-name">
-                {post.authorName || user?.displayName || user?.email}
-              </Link>
+              <div className="author-name-container">
+                <Link to={isOwnPost ? '/profile' : getProfileUrlById(post.userId || post.authorId, post.authorUsername)} className="author-name">
+                  {post.authorName || user?.displayName || user?.email}
+                </Link>
+                {post.isAdultContent && isKycVerified && (
+                  <span className="adult-content-badge">
+                    <i className="fas fa-exclamation-triangle"></i>
+                    +18
+                  </span>
+                )}
+              </div>
               <span className="post-time">{formatTimeAgo(post.timestamp)}</span>
             </div>
           </div>
@@ -672,7 +690,7 @@ const Feed = () => {
       <div className="vixies-container">
       <div className="vixies-header">
         <div className="vixies-title">
-          <h1 data-text="Feed">Feed</h1>
+          <h1 data-text="Lobby">Lobby</h1>
         </div>
       </div>
 

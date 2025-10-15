@@ -1060,6 +1060,45 @@
 .delete-btn:hover { background: rgba(255, 71, 87, 0.1); color: #ff4757; }
 .follow-btn { background: rgba(138, 43, 226, 0.2); border: 1px solid rgba(138, 43, 226, 0.3); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
 .follow-btn:hover { background: rgba(138, 43, 226, 0.3); }
+
+/* Adult Content Badge Styles */
+.author-name-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adult-content-badge {
+  background: rgba(255, 107, 107, 0.2);
+  border: 1px solid rgba(255, 107, 107, 0.4);
+  color: #FF6B6B;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  animation: pulse 2s infinite;
+}
+
+.adult-content-badge i {
+  font-size: 0.6rem;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
 .follow-btn.following { background: rgba(0, 255, 202, 0.2); border-color: rgba(0, 255, 202, 0.3); color: #00ffca; }
 .tab-btn::before { background: linear-gradient(135deg, var(--accent-color), #00ffca); opacity: 0; }
 .tab-btn::before { opacity: 0.1; }

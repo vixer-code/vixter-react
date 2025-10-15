@@ -186,7 +186,7 @@ const ServiceDetail = () => {
         // Check if there's a block between users
         if (currentUser && serviceData.providerId && hasBlockBetween(serviceData.providerId)) {
           showError('Este serviço não está disponível.');
-          navigate('/feed');
+          navigate('/lobby');
           return;
         }
         

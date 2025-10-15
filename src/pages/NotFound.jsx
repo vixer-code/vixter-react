@@ -43,7 +43,7 @@ const NotFound = () => {
             <i className="fas fa-home"></i>
             Voltar ao Início
           </Link>
-          <Link to="/feed" className="not-found-btn secondary">
+          <Link to="/lobby" className="not-found-btn secondary">
             <i className="fas fa-stream"></i>
             Ir para o Feed
           </Link>
@@ -53,7 +53,7 @@ const NotFound = () => {
           <p>Páginas disponíveis:</p>
           <div className="available-pages">
             <Link to="/">Início</Link>
-            <Link to="/feed">Feed</Link>
+            <Link to="/lobby">Lobby</Link>
             <Link to="/profile">Perfil</Link>
             <Link to="/wallet">Carteira</Link>
             <Link to="/login">Login</Link>

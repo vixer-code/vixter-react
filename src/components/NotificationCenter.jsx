@@ -86,7 +86,7 @@ const NotificationCenter = () => {
       } else if (notification.postId.includes('vixink')) {
         navigate('/vixink');
       } else {
-        navigate('/feed');
+        navigate('/lobby');
       }
     } else if (notification.type === 'message' && notification.conversationId) {
       // Navigate to messages

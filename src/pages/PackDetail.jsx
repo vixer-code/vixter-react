@@ -211,7 +211,7 @@ const PackDetail = () => {
         // Check if there's a block between users
         if (currentUser && packData.authorId && hasBlockBetween(packData.authorId)) {
           showError('Este pack não está disponível.');
-          navigate('/feed');
+          navigate('/lobby');
           return;
         }
         

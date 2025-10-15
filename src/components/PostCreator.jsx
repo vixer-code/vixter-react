@@ -30,6 +30,7 @@ const PostCreator = ({
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [attachment, setAttachment] = useState(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isAdultContent, setIsAdultContent] = useState(false);
   
   // Attachment modal state
   const [showAttachmentModal, setShowAttachmentModal] = useState(false);
@@ -360,6 +361,7 @@ const PostCreator = ({
         timestamp: baseTimestamp,
         media: mediaData,
         attachment: isGeneralFeed ? null : (attachment || null),
+        isAdultContent: isAdultContent,
         // Compatibility fields for /posts consumed by Profile.jsx
         ...(isGeneralFeed ? {
           userId: currentUser.uid,
@@ -391,6 +393,7 @@ const PostCreator = ({
       setMediaFile(null);
       setAttachment(null);
       setSelectedCategory('all');
+      setIsAdultContent(false);
       
       showSuccess('Post criado com sucesso!');
       onPostCreated();
@@ -569,6 +572,27 @@ const PostCreator = ({
         >
           {isPublishing ? 'Publicando...' : 'Publicar'}
         </button>
+      </div>
+
+      {/* Adult Content Checkbox */}
+      <div className="adult-content-option">
+        <label className="adult-content-checkbox">
+          <input
+            type="checkbox"
+            checked={isAdultContent}
+            onChange={(e) => setIsAdultContent(e.target.checked)}
+          />
+          <span className="checkbox-label">
+            <i className="fas fa-exclamation-triangle"></i>
+            Post tendencioso +18
+          </span>
+        </label>
+        {isAdultContent && (
+          <div className="adult-content-warning">
+            <i className="fas fa-info-circle"></i>
+            Este post só será visível para usuários com KYC ativo
+          </div>
+        )}
       </div>
       
       {/* Mobile publish button - shown below image and attach service on mobile */}

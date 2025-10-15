@@ -17,7 +17,7 @@ const Home = () => {
   // Redirect logged in users to feed
   useEffect(() => {
     if (currentUser) {
-      navigate('/feed');
+      navigate('/lobby');
     }
   }, [currentUser, navigate]);
 

@@ -95,7 +95,7 @@ const Header = () => {
       <header>
         <nav>
           <div className="header-left">
-            <Link to={currentUser ? "/feed" : "/"} className="logo">
+            <Link to={currentUser ? "/lobby" : "/"} className="logo">
               <img src="/images/Flor-Colorida.png" alt="Vixter logo" className="logo-icon" fetchpriority="high" />
               <span>Vixter</span>
             </Link>
@@ -414,7 +414,7 @@ const Header = () => {
         }}
       >
         <div className="mobile-nav-header">
-          <Link to={currentUser ? "/feed" : "/"} className="logo" onClick={() => setTimeout(closeMobileMenu, 100)}>
+          <Link to={currentUser ? "/lobby" : "/"} className="logo" onClick={() => setTimeout(closeMobileMenu, 100)}>
             <img src="/images/Flor-Colorida.png" alt="Vixter logo" className="logo-icon" />
             <span>Vixter</span>
           </Link>

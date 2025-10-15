@@ -256,6 +256,9 @@
         },
         "likedBy": {
           ".validate": "newData.hasChildren() || newData.val() == null"
+        },
+        "isAdultContent": {
+          ".validate": "newData.isBoolean()"
         }
       }
     },
@@ -303,6 +306,9 @@
         },
         "likedBy": {
           ".validate": "newData.hasChildren() || newData.val() == null"
+        },
+        "isAdultContent": {
+          ".validate": "newData.isBoolean()"
         }
       }
     },
@@ -382,6 +388,9 @@
         },
         "likeCount": {
           ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "isAdultContent": {
+          ".validate": "newData.isBoolean()"
         }
       }
     },
