@@ -95,17 +95,19 @@ const AnnouncementsTab = ({ feedType }) => {
   const renderAnnouncement = (announcement) => {
     const author = users[announcement.authorId];
     const authorName = author?.name || announcement.authorName || 'Administrador';
-    const authorPhoto = author?.profilePictureURL || author?.photoURL;
+    const authorPhoto = author?.profilePictureURL || author?.photoURL || '/images/admin.png';
 
     return (
       <div key={announcement.id} className="post-card announcement-card">
         <div className="post-header">
           <div className="post-author">
             <img
-              src={authorPhoto || '/images/defpfp1.png'}
+              src={authorPhoto}
               alt={authorName}
               className="author-avatar"
-              onError={(e) => { e.target.src = '/images/defpfp1.png'; }}
+              onError={(e) => { 
+                e.target.src = '/images/defpfp1.png';
+              }}
             />
             <div className="author-info">
               <div className="author-name-container">
