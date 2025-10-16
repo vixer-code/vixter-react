@@ -61,6 +61,7 @@ Foi implementado um sistema de avisos oficiais para os feeds do Vixter React. Os
 - **Notificações específicas** - "Novo aviso no [FeedName]"
 - **Ícone diferenciado** - megafone para avisos no centro de notificações
 - **Cor diferenciada** - dourado para avisos nas notificações
+- **Exibição de conteúdo corrigida** - avisos agora mostram o texto correto
 
 ## Arquivos Criados/Modificados
 

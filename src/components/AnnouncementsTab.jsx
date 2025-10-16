@@ -122,8 +122,8 @@ const AnnouncementsTab = ({ feedType }) => {
         </div>
         
         <div className="post-content">
-          {announcement.text && (
-            <p>{announcement.text}</p>
+          {(announcement.content || announcement.text) && (
+            <p>{announcement.content || announcement.text}</p>
           )}
           
           {announcement.media && announcement.media.length > 0 && (
