@@ -134,10 +134,15 @@ export const AuthProvider = ({ children }) => {
           const { database } = await import('../../config/firebase');
           const userStatusRef = ref(database, `status/${currentUser.uid}`);
           
-          // Set offline status with a small delay to ensure it completes before signOut
+          // Get current status to preserve manual flag
+          const { get } = await import('firebase/database');
+          const currentStatusSnapshot = await get(userStatusRef);
+          const currentStatus = currentStatusSnapshot.val();
+          
+          // Set offline status but preserve manual flag
           await set(userStatusRef, {
             state: 'offline',
-            manual: false,
+            manual: currentStatus?.manual || false,
             last_changed: serverTimestamp()
           });
           
