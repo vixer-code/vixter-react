@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ref, onValue, off, query, orderByChild, push, set } from 'firebase/database';
-import { database } from '../../config/firebase';
+import { collection, addDoc, onSnapshot, orderBy, query, Timestamp } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useAdminStatus } from '../hooks/useAdminStatus';
 import { useNotification } from '../contexts/NotificationContext';
@@ -18,16 +18,16 @@ const AnnouncementsTab = ({ feedType }) => {
   const [loading, setLoading] = useState(true);
   const [showPostCreator, setShowPostCreator] = useState(false);
 
-  // Determina o caminho no banco de dados baseado no tipo de feed
-  const getAnnouncementsPath = () => {
+  // Determina a coleção no Firestore baseado no tipo de feed
+  const getAnnouncementsCollection = () => {
     switch (feedType) {
       case 'vixies':
-        return 'vixies_announcements';
+        return 'announcements_vixies';
       case 'vixink':
-        return 'vixink_announcements';
+        return 'announcements_vixink';
       case 'lobby':
       default:
-        return 'announcements';
+        return 'announcements_lobby';
     }
   };
 
@@ -44,24 +44,22 @@ const AnnouncementsTab = ({ feedType }) => {
   };
 
   useEffect(() => {
-    const announcementsPath = getAnnouncementsPath();
+    const announcementsCollection = getAnnouncementsCollection();
     
-    // Carrega avisos
-    const announcementsRef = ref(database, announcementsPath);
-    const announcementsQuery = query(announcementsRef, orderByChild('timestamp'));
+    // Carrega avisos do Firestore
+    const announcementsRef = collection(db, announcementsCollection);
+    const announcementsQuery = query(announcementsRef, orderBy('createdAt', 'desc'));
     
-    const announcementsUnsubscribe = onValue(announcementsQuery, (snapshot) => {
+    const announcementsUnsubscribe = onSnapshot(announcementsQuery, (snapshot) => {
       const announcementsData = [];
-      snapshot.forEach((childSnapshot) => {
+      snapshot.forEach((doc) => {
         const announcement = {
-          id: childSnapshot.key,
-          ...childSnapshot.val()
+          id: doc.id,
+          ...doc.data()
         };
         announcementsData.push(announcement);
       });
       
-      // Ordena por timestamp (mais recentes primeiro)
-      announcementsData.sort((a, b) => b.timestamp - a.timestamp);
       setAnnouncements(announcementsData);
       setLoading(false);
     }, (error) => {
@@ -69,19 +67,8 @@ const AnnouncementsTab = ({ feedType }) => {
       setLoading(false);
     });
 
-    // Carrega dados dos usuários
-    const usersRef = ref(database, 'users');
-    const usersUnsubscribe = onValue(usersRef, (snapshot) => {
-      const usersData = {};
-      snapshot.forEach((childSnapshot) => {
-        usersData[childSnapshot.key] = childSnapshot.val();
-      });
-      setUsers(usersData);
-    });
-
     return () => {
       announcementsUnsubscribe();
-      usersUnsubscribe();
     };
   }, [feedType]);
 
@@ -92,24 +79,24 @@ const AnnouncementsTab = ({ feedType }) => {
     }
 
     try {
-      const announcementsPath = getAnnouncementsPath();
-      const announcementsRef = ref(database, announcementsPath);
+      const announcementsCollection = getAnnouncementsCollection();
+      const announcementsRef = collection(db, announcementsCollection);
       
       const announcementData = {
         ...postData,
         authorId: currentUser.uid,
         authorName: currentUser.displayName || 'Administrador',
-        timestamp: Date.now(),
+        createdAt: Timestamp.now(),
         type: 'announcement',
         feedType: feedType
       };
 
-      const newAnnouncementRef = await push(announcementsRef, announcementData);
+      const newAnnouncementRef = await addDoc(announcementsRef, announcementData);
       
       // Enviar notificação para todos os usuários
       await sendAnnouncementNotification(
         feedType,
-        newAnnouncementRef.key,
+        newAnnouncementRef.id,
         postData.text || '',
         currentUser.uid,
         currentUser.displayName || 'Administrador'
@@ -124,7 +111,8 @@ const AnnouncementsTab = ({ feedType }) => {
   };
 
   const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp);
+    // Se for um Timestamp do Firestore, converter para Date
+    const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
     return date.toLocaleString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
@@ -159,7 +147,7 @@ const AnnouncementsTab = ({ feedType }) => {
             </div>
           </div>
           <span className="announcement-timestamp">
-            {formatTimestamp(announcement.timestamp)}
+            {formatTimestamp(announcement.createdAt)}
           </span>
         </div>
         
@@ -247,6 +235,14 @@ const AnnouncementsTab = ({ feedType }) => {
               showLocation={false}
               maxLength={500}
             />
+            <div className="modal-footer">
+              <button 
+                className="cancel-btn"
+                onClick={() => setShowPostCreator(false)}
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         </div>
       )}

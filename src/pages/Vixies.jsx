@@ -493,39 +493,41 @@ const Vixies = () => {
           )}
         </div>
 
-        {/* PostCreator moved to top of feed */}
-        <div className="create-post-section">
-          {currentUser ? (
-            userProfile && userProfile.accountType === 'client' ? (
-              <div className="client-feed-only">
-                <div className="feed-only-content">
-                  <div className="feed-only-icon">
-                    <i className="fas fa-eye"></i>
-                  </div>
-                  <div className="feed-only-text">
-                    <p>Essa área é de divulgação de conteúdo de serviços e packs. Portanto, somente criadores podem publicar.</p>
-                    <small>Conheça novos serviços e apoie seus criadores favoritos.</small>
+        {/* PostCreator moved to top of feed - ocultar na tab de avisos */}
+        {activeTab !== 'announcements' && (
+          <div className="create-post-section">
+            {currentUser ? (
+              userProfile && userProfile.accountType === 'client' ? (
+                <div className="client-feed-only">
+                  <div className="feed-only-content">
+                    <div className="feed-only-icon">
+                      <i className="fas fa-eye"></i>
+                    </div>
+                    <div className="feed-only-text">
+                      <p>Essa área é de divulgação de conteúdo de serviços e packs. Portanto, somente criadores podem publicar.</p>
+                      <small>Conheça novos serviços e apoie seus criadores favoritos.</small>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <PostCreator
+                  mode="vixies"
+                  onPostCreated={handlePostCreated}
+                  placeholder="O que você está pensando?"
+                  showAttachment={true}
+                />
+              )
             ) : (
-              <PostCreator
-                mode="vixies"
-                onPostCreated={handlePostCreated}
-                placeholder="O que você está pensando?"
-                showAttachment={true}
-              />
-            )
-          ) : (
-            <div className="login-prompt">
-              <h3>Faça login para compartilhar</h3>
-              <p>Entre na sua conta para criar posts e interagir com a comunidade</p>
-              <Link to="/login" className="login-btn">
-                Entrar
-              </Link>
-            </div>
-          )}
-        </div>
+              <div className="login-prompt">
+                <h3>Faça login para compartilhar</h3>
+                <p>Entre na sua conta para criar posts e interagir com a comunidade</p>
+                <Link to="/login" className="login-btn">
+                  Entrar
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="vixies-feed">
           {activeTab === 'announcements' ? (

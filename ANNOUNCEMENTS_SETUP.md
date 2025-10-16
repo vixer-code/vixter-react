@@ -21,9 +21,10 @@ Foi implementado um sistema de avisos oficiais para os feeds do Vixter React. Os
 - Notificações aparecem no centro de notificações com ícone de megafone dourado
 
 ### 4. Armazenamento de Dados
-- Avisos do Lobby: `announcements` no Realtime Database
-- Avisos do Vixies: `vixies_announcements` no Realtime Database  
-- Avisos do Vixink: `vixink_announcements` no Realtime Database
+- Avisos do Lobby: `announcements_lobby` no Firestore
+- Avisos do Vixies: `announcements_vixies` no Firestore  
+- Avisos do Vixink: `announcements_vixink` no Firestore
+- **IMPORTANTE**: Os avisos são completamente separados dos feeds normais
 
 ## Como Configurar um Usuário como Admin
 
@@ -79,11 +80,13 @@ Foi implementado um sistema de avisos oficiais para os feeds do Vixter React. Os
 ## Características Técnicas
 
 - **Responsivo**: Funciona em desktop e mobile
-- **Real-time**: Atualizações em tempo real via Firebase
+- **Real-time**: Atualizações em tempo real via Firestore
 - **Seguro**: Apenas admins podem criar avisos
 - **Notificações**: Sistema integrado com notificações existentes
 - **Mídia**: Suporte a imagens e vídeos nos avisos
 - **Design**: Visual consistente com o tema do projeto
+- **Separação**: Avisos completamente separados dos feeds normais
+- **Interface Limpa**: PostCreator oculto na tab de Avisos
 
 ## Notas Importantes
 
@@ -92,3 +95,6 @@ Foi implementado um sistema de avisos oficiais para os feeds do Vixter React. Os
 3. Avisos são separados por feed (cada feed tem seus próprios avisos)
 4. Notificações são enviadas para TODOS os usuários quando um aviso é criado
 5. O sistema usa o mesmo PostCreator existente, mas com validações especiais para admins
+6. **Avisos não aparecem nos feeds normais** - são armazenados em coleções separadas
+7. **PostCreator é ocultado** quando o usuário está na tab de Avisos
+8. **Modal de criar aviso** tem botão de cancelar para sair

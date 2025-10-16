@@ -739,25 +739,27 @@ const Feed = () => {
           )}
         </div>
 
-        {/* PostCreator moved to top of feed */}
-        <div className="create-post-section">
-          {currentUser ? (
-            <PostCreator
-              mode="general_feed"
-              onPostCreated={() => {}}
-              placeholder="O que você está pensando?"
-              showAttachment={false}
-            />
-          ) : (
-            <div className="login-prompt">
-              <h3>Faça login para compartilhar</h3>
-              <p>Entre na sua conta para criar posts e interagir com a comunidade</p>
-              <Link to="/login" className="login-btn">
-                Entrar
-              </Link>
-            </div>
-          )}
-        </div>
+        {/* PostCreator moved to top of feed - ocultar na tab de avisos */}
+        {activeTab !== 'announcements' && (
+          <div className="create-post-section">
+            {currentUser ? (
+              <PostCreator
+                mode="general_feed"
+                onPostCreated={() => {}}
+                placeholder="O que você está pensando?"
+                showAttachment={false}
+              />
+            ) : (
+              <div className="login-prompt">
+                <h3>Faça login para compartilhar</h3>
+                <p>Entre na sua conta para criar posts e interagir com a comunidade</p>
+                <Link to="/login" className="login-btn">
+                  Entrar
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="vixies-feed">
           {activeTab === 'announcements' ? (
