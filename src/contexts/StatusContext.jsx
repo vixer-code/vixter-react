@@ -30,6 +30,7 @@ export const StatusProvider = ({ children }) => {
     }
 
     const uid = currentUser.uid;
+    let statusUnsubscribe = null; // Store unsubscribe function
     
     // EARLY VALIDATION: Check if user has manual status and skip all refresh logic
     const checkInitialManualStatus = async () => {
@@ -68,33 +69,37 @@ export const StatusProvider = ({ children }) => {
       }
     };
     
-    // Listen for user's own status changes (works for both manual and automatic)
-    const userStatusRef = ref(database, `status/${uid}`);
-    const unsubscribeStatus = onValue(userStatusRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        console.log('📊 StatusContext - User status changed:', {
-          uid: uid.slice(0, 8),
-          state: data.state,
-          manual: data.manual,
-          last_changed: data.last_changed,
-          timestamp: new Date().toISOString()
-        });
-        setUserStatus(data.state || 'offline');
-      } else {
-        console.log('📊 StatusContext - No status data found for user:', uid.slice(0, 8));
-        setUserStatus('offline');
-      }
-    });
-
-    // Check manual status first
+    // Check manual status first, then set up listeners
     checkInitialManualStatus().then(hasManualStatus => {
+      // Set up status listener AFTER validation (works for both manual and automatic)
+      const userStatusRef = ref(database, `status/${uid}`);
+      const unsubscribeStatus = onValue(userStatusRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          console.log('📊 StatusContext - User status changed:', {
+            uid: uid.slice(0, 8),
+            state: data.state,
+            manual: data.manual,
+            last_changed: data.last_changed,
+            timestamp: new Date().toISOString()
+          });
+          setUserStatus(data.state || 'offline');
+        } else {
+          console.log('📊 StatusContext - No status data found for user:', uid.slice(0, 8));
+          setUserStatus('offline');
+        }
+      });
+      
       if (hasManualStatus) {
         console.log('🚫 SKIPPING ALL REFRESH LOGIC - User has manual status');
+        // Store unsubscribeStatus for cleanup
+        window._manualStatusUnsubscribe = unsubscribeStatus;
         return; // Exit early, don't run any refresh logic
       }
       
       console.log('▶️ PROCEEDING WITH NORMAL REFRESH LOGIC');
+      // Store unsubscribeStatus for cleanup in normal logic
+      window._normalStatusUnsubscribe = unsubscribeStatus;
       runNormalRefreshLogic();
     });
     
@@ -149,10 +154,14 @@ export const StatusProvider = ({ children }) => {
       } else {
         // If disconnected, set user as offline immediately
         const userStatusRef = ref(database, `status/${uid}`);
+        // Check current status to preserve manual flag
+        const currentStatusSnapshot = await get(userStatusRef);
+        const currentStatus = currentStatusSnapshot.val();
+        
         set(userStatusRef, {
           state: 'offline',
           last_changed: serverTimestamp(),
-          manual: false // Reset manual flag when automatically setting offline
+          manual: currentStatus?.manual || false // Preserve manual flag if it exists
         });
         console.log('📴 User disconnected - set to offline:', uid);
       }
@@ -168,13 +177,21 @@ export const StatusProvider = ({ children }) => {
       const userStatusRef = ref(database, `status/${uid}`);
       
       if (document.hidden) {
-        // Page is hidden, set user as offline
-        set(userStatusRef, {
-          state: 'offline',
-          last_changed: serverTimestamp(),
-          manual: false // Reset manual flag when automatically setting offline
-        });
-        console.log('📱 Page hidden - User set to offline:', uid);
+        // Page is hidden, check if user has manual status
+        const currentStatusSnapshot = await get(userStatusRef);
+        const currentStatus = currentStatusSnapshot.val();
+        
+        // Only set to offline if user doesn't have manual status
+        if (!currentStatus || currentStatus.manual !== true) {
+          set(userStatusRef, {
+            state: 'offline',
+            last_changed: serverTimestamp(),
+            manual: false // Keep manual flag as false for automatic setting
+          });
+          console.log('📱 Page hidden - User set to offline (automatic):', uid);
+        } else {
+          console.log('📱 Page hidden - User has manual status, not changing:', currentStatus.state);
+        }
       } else {
         // Page is visible again, check if user manually set themselves to offline
         const currentStatusSnapshot = await get(userStatusRef);
@@ -314,7 +331,15 @@ export const StatusProvider = ({ children }) => {
     
     // Return cleanup function for the main useEffect
     return () => {
-      unsubscribeStatus();
+      // Cleanup based on which path was taken
+      if (window._manualStatusUnsubscribe) {
+        window._manualStatusUnsubscribe();
+        delete window._manualStatusUnsubscribe;
+      }
+      if (window._normalStatusUnsubscribe) {
+        window._normalStatusUnsubscribe();
+        delete window._normalStatusUnsubscribe;
+      }
     };
   }, [currentUser]);
 
