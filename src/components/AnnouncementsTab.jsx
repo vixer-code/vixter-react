@@ -98,43 +98,41 @@ const AnnouncementsTab = ({ feedType }) => {
     const authorPhoto = author?.profilePictureURL || author?.photoURL;
 
     return (
-      <div key={announcement.id} className="announcement-card">
-        <div className="announcement-header">
-          <div className="announcement-author">
-            {authorPhoto && (
-              <img 
-                src={authorPhoto} 
-                alt={authorName}
-                className="announcement-author-photo"
-                onError={(e) => { e.target.style.display = 'none'; }}
-              />
-            )}
-            <div className="announcement-author-info">
-              <span className="announcement-author-name">{authorName}</span>
-              <span className="announcement-admin-badge">
-                <i className="fas fa-crown"></i> Administrador
-              </span>
+      <div key={announcement.id} className="post-card announcement-card">
+        <div className="post-header">
+          <div className="post-author">
+            <img
+              src={authorPhoto || '/images/defpfp1.png'}
+              alt={authorName}
+              className="author-avatar"
+              onError={(e) => { e.target.src = '/images/defpfp1.png'; }}
+            />
+            <div className="author-info">
+              <div className="author-name-container">
+                <span className="author-name">{authorName}</span>
+                <span className="announcement-admin-badge">
+                  <i className="fas fa-crown"></i> Administrador
+                </span>
+              </div>
+              <span className="post-time">{formatTimestamp(announcement.createdAt)}</span>
             </div>
           </div>
-          <span className="announcement-timestamp">
-            {formatTimestamp(announcement.createdAt)}
-          </span>
         </div>
         
-        <div className="announcement-content">
+        <div className="post-content">
           {announcement.text && (
-            <p className="announcement-text">{announcement.text}</p>
+            <p>{announcement.text}</p>
           )}
           
           {announcement.media && announcement.media.length > 0 && (
-            <div className="announcement-media">
+            <div className="post-media">
               {announcement.media.map((m, index) => (
                 <React.Fragment key={index}>
                   {m.type === 'image' && (
                     <img
                       src={m.url}
                       alt="Mídia do aviso"
-                      className="announcement-image"
+                      className="post-image"
                       onError={(e) => { e.target.style.display = 'none'; }}
                     />
                   )}
@@ -142,7 +140,7 @@ const AnnouncementsTab = ({ feedType }) => {
                     <video
                       src={m.url}
                       controls
-                      className="announcement-video"
+                      className="post-video"
                       onError={(e) => { e.target.style.display = 'none'; }}
                     />
                   )}

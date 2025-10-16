@@ -171,12 +171,8 @@
 
 /* ===== ANNOUNCEMENT CARD ===== */
 .announcement-card {
-  background: var(--bg-primary);
-  border: 2px solid #FFD700;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.1);
-  transition: all 0.3s ease;
+  border: 2px solid #FFD700 !important;
+  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.1) !important;
   position: relative;
 }
 
@@ -194,43 +190,12 @@
 }
 
 .announcement-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(255, 215, 0, 0.2);
+  transform: translateY(-8px) !important;
+  box-shadow: 0 15px 35px rgba(255, 215, 0, 0.3) !important;
+  border-color: rgba(255, 215, 0, 0.8) !important;
 }
 
-.announcement-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-
-.announcement-author {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.announcement-author-photo {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #FFD700;
-}
-
-.announcement-author-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.announcement-author-name {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 16px;
-}
-
+/* Estilos específicos para avisos - usando layout dos posts normais */
 .announcement-admin-badge {
   display: flex;
   align-items: center;
@@ -240,44 +205,11 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  margin-left: 8px;
 }
 
 .announcement-admin-badge i {
   font-size: 14px;
-}
-
-.announcement-timestamp {
-  color: var(--text-secondary);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.announcement-content {
-  margin-bottom: 16px;
-}
-
-.announcement-text {
-  color: var(--text-primary);
-  font-size: 16px;
-  line-height: 1.6;
-  margin: 0 0 16px 0;
-  word-wrap: break-word;
-}
-
-.announcement-media {
-  margin-top: 16px;
-}
-
-.announcement-image {
-  max-width: 100%;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.announcement-video {
-  max-width: 100%;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .announcement-footer {

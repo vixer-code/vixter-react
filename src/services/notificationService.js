@@ -416,7 +416,7 @@ export const sendAnnouncementNotification = async (
 
     // Get all users from database to send notification
     const usersRef = ref(database, 'users');
-    const usersSnapshot = await get(usersRef);
+    const usersSnapshot = await rtdbGet(usersRef);
     
     if (usersSnapshot.exists()) {
       const notificationsPromises = [];

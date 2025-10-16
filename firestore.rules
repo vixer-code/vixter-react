@@ -21,6 +21,13 @@ service cloud.firestore {
       return request.auth.uid in ['admin_uid_1', 'admin_uid_2']; // Replace with actual admin UIDs
     }
     
+    // Check if user is admin based on user document
+    function isAdminByProfile() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin == true;
+    }
+    
     // Check if request is from Cloud Functions (for watermarking)
     function isCloudFunction() {
       return request.auth != null && request.auth.token.firebase.sign_in_provider == 'custom';
@@ -447,6 +454,63 @@ service cloud.firestore {
     function isValidBlock(data) {
       return data.keys().hasAll(['blockerId', 'blockedId', 'timestamp']) &&
              data.blockerId != data.blockedId; // Can't block yourself
+    }
+
+    // =====================================================
+    // ANNOUNCEMENTS COLLECTIONS RULES
+    // =====================================================
+    
+    // Announcements for Lobby
+    match /announcements_lobby/{announcementId} {
+      // Anyone authenticated can read announcements
+      allow read: if isAuthenticated();
+      
+      // Only admins can create announcements
+      allow create: if isAdminByProfile() && isValidAnnouncement(request.resource.data);
+      
+      // Only admins can update/delete announcements
+      allow update, delete: if isAdminByProfile();
+      
+      // Legacy admin access (if UIDs are defined)
+      allow read, write: if isAdmin();
+    }
+    
+    // Announcements for Vixies
+    match /announcements_vixies/{announcementId} {
+      // Anyone authenticated can read announcements
+      allow read: if isAuthenticated();
+      
+      // Only admins can create announcements
+      allow create: if isAdminByProfile() && isValidAnnouncement(request.resource.data);
+      
+      // Only admins can update/delete announcements
+      allow update, delete: if isAdminByProfile();
+      
+      // Legacy admin access (if UIDs are defined)
+      allow read, write: if isAdmin();
+    }
+    
+    // Announcements for Vixink
+    match /announcements_vixink/{announcementId} {
+      // Anyone authenticated can read announcements
+      allow read: if isAuthenticated();
+      
+      // Only admins can create announcements
+      allow create: if isAdminByProfile() && isValidAnnouncement(request.resource.data);
+      
+      // Only admins can update/delete announcements
+      allow update, delete: if isAdminByProfile();
+      
+      // Legacy admin access (if UIDs are defined)
+      allow read, write: if isAdmin();
+    }
+    
+    // Helper function for announcement validation
+    function isValidAnnouncement(data) {
+      return data.keys().hasAll(['authorId', 'authorName', 'createdAt', 'type', 'feedType']) &&
+             data.type == 'announcement' &&
+             data.authorId == request.auth.uid &&
+             (data.feedType == 'lobby' || data.feedType == 'vixies' || data.feedType == 'vixink');
     }
 
     // =====================================================
