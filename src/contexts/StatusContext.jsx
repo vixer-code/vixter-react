@@ -149,13 +149,20 @@ export const StatusProvider = ({ children }) => {
             isManual: currentStatus?.manual === true
           });
           
-          // Set up disconnect handler
+          // Set up disconnect handler (only for automatic users)
           const userStatusRef = ref(database, `status/${uid}`);
-          onDisconnect(userStatusRef).set({
-            state: 'offline',
-            last_changed: serverTimestamp(),
-            manual: false
-          });
+          
+          // Only set up disconnect handler if user is not manual
+          if (currentStatus.manual !== true) {
+            onDisconnect(userStatusRef).set({
+              state: 'offline',
+              last_changed: serverTimestamp(),
+              manual: false
+            });
+            console.log('🔧 Disconnect handler configured for automatic user');
+          } else {
+            console.log('🔧 No disconnect handler - user has manual status');
+          }
           
           // If user has manual status, don't change it
           if (currentStatus.manual === true) {
