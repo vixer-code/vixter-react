@@ -44,12 +44,11 @@ export const StatusProvider = ({ children }) => {
           currentStatus,
           hasData: !!currentStatus,
           state: currentStatus?.state,
-          manual: currentStatus?.manual,
-          manualType: typeof currentStatus?.manual
+          manual: currentStatus?.manual
         });
         
         // If user has manual status, skip all refresh logic
-        if (currentStatus && currentStatus.manual === true) {
+        if (currentStatus.manual === true) {
           console.log('🔒 MANUAL STATUS FOUND - Skipping all refresh logic, respecting:', currentStatus.state);
           console.log('🔒 MANUAL STATUS DETAILS:', {
             state: currentStatus.state,
@@ -166,7 +165,7 @@ export const StatusProvider = ({ children }) => {
         });
         
         // SIMPLIFIED LOGIC: If manual flag exists and is true, respect the current state
-        if (currentStatus && currentStatus.manual === true) {
+        if (currentStatus.manual === true) {
           console.log('🔒 MANUAL STATUS DETECTED - Respecting current status:', currentStatus.state);
           // Don't change anything, just respect the manual setting
         } else {
@@ -174,6 +173,7 @@ export const StatusProvider = ({ children }) => {
           // User has no manual status set, set to online automatically
           await set(userStatusRef, {
             state: 'online',
+            manual: false,
             last_changed: serverTimestamp(),
           });
           console.log('✅ User status set to: online (automatic) for user:', uid);
@@ -227,7 +227,7 @@ export const StatusProvider = ({ children }) => {
         const currentStatus = currentStatusSnapshot.val();
         
         // SIMPLIFIED LOGIC: If manual flag exists and is true, respect the current state
-        if (currentStatus && currentStatus.manual === true) {
+        if (currentStatus.manual === true) {
           console.log('🔒 MANUAL STATUS DETECTED - Respecting current status:', currentStatus.state);
           // Don't change anything, just respect the manual setting
         } else {
@@ -235,6 +235,7 @@ export const StatusProvider = ({ children }) => {
           // User has no manual status set, set to online automatically
           set(userStatusRef, {
             state: 'online',
+            manual: false,
             last_changed: serverTimestamp()
           });
           console.log('📱 Page visible - User set to online (automatic):', uid);
@@ -328,6 +329,7 @@ export const StatusProvider = ({ children }) => {
           // User has no manual status set, set to online automatically
           await set(userStatusRef, {
             state: 'online',
+            manual: false,
             last_changed: serverTimestamp()
           });
           console.log('✅ Initial status set to online (automatic)');
