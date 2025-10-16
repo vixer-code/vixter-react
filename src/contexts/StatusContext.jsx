@@ -52,6 +52,14 @@ export const StatusProvider = ({ children }) => {
         const currentStatusSnapshot = await get(userStatusRef);
         const currentStatus = currentStatusSnapshot.val();
         
+        console.log('🔍 Connection handler - Current status check:', {
+          uid: uid.slice(0, 8),
+          currentStatus,
+          hasData: !!currentStatus,
+          state: currentStatus?.state,
+          manual: currentStatus?.manual
+        });
+        
         // Only set to online if user hasn't manually set themselves to offline
         if (currentStatus?.manual && currentStatus?.state === 'offline') {
           console.log('🔒 User manually set to offline, keeping offline status');
@@ -140,6 +148,7 @@ export const StatusProvider = ({ children }) => {
         console.log('📊 StatusContext - User status changed:', {
           uid: uid.slice(0, 8),
           state: data.state,
+          manual: data.manual,
           last_changed: data.last_changed,
           timestamp: new Date().toISOString()
         });
@@ -178,6 +187,14 @@ export const StatusProvider = ({ children }) => {
         // Check if user has manually set their status
         const currentStatusSnapshot = await get(userStatusRef);
         const currentStatus = currentStatusSnapshot.val();
+        
+        console.log('🔍 setupInitialStatus - Current status check:', {
+          uid: uid.slice(0, 8),
+          currentStatus,
+          hasData: !!currentStatus,
+          state: currentStatus?.state,
+          manual: currentStatus?.manual
+        });
         
         // If user has manually set themselves to offline, respect that choice
         if (currentStatus?.manual && currentStatus?.state === 'offline') {
