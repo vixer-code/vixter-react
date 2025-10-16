@@ -283,7 +283,7 @@ export const StatusProvider = ({ children }) => {
         });
         
         // SIMPLIFIED LOGIC: If manual flag exists and is true, respect the current state
-        if (currentStatus && currentStatus.manual === true) {
+        if (currentStatus.manual === true) {
           console.log('🔒 MANUAL STATUS DETECTED - Respecting current status:', currentStatus.state);
           // Don't change anything, just respect the manual setting
         } else {
@@ -378,18 +378,23 @@ export const StatusProvider = ({ children }) => {
     try {
       const uid = currentUser.uid;
       
+      // LÓGICA CORRETA DO BOTÃO:
+      // - offline → manual: true (usuário quer ficar offline, não tocar no status)
+      // - online → manual: false (usuário quer voltar ao automático)
+      const isManual = status === 'offline';
+      
       // Update the current status and save the manual selection
       await Promise.all([
         set(ref(database, `status/${uid}`), {
           state: status,
           last_changed: serverTimestamp(),
-          manual: true // Flag to indicate this is a manual status change
+          manual: isManual
         }),
         set(ref(database, `users/${uid}/selectedStatus`), status)
       ]);
       
       setSelectedStatus(status);
-      console.log(`✅ Status updated to: ${status} (manual)`);
+      console.log(`✅ Status updated to: ${status} (manual: ${isManual})`);
       return true;
     } catch (error) {
       console.error('Error updating user status:', error);
