@@ -150,6 +150,7 @@ export const StatusProvider = ({ children }) => {
         const isOfflineForDatabase = {
           state: 'offline',
           last_changed: serverTimestamp(),
+          // For disconnect handler, we don't preserve manual flag - user is truly offline
           manual: false
         };
         
@@ -179,7 +180,7 @@ export const StatusProvider = ({ children }) => {
           // User has no manual status set, set to online automatically
           await set(userStatusRef, {
             state: 'online',
-            manual: false,
+            manual: currentStatus?.manual || false,
             last_changed: serverTimestamp(),
           });
           console.log('✅ User status set to: online (automatic) for user:', uid);
@@ -194,7 +195,7 @@ export const StatusProvider = ({ children }) => {
         if (!currentStatus || currentStatus.manual !== true) {
           set(userStatusRef, {
             state: 'offline',
-            manual: false,
+            manual: currentStatus?.manual || false,
             last_changed: serverTimestamp(),
           });
           console.log('📴 User disconnected - set to offline (automatic):', uid);
@@ -223,7 +224,7 @@ export const StatusProvider = ({ children }) => {
           await set(userStatusRef, {
             state: 'offline',
             last_changed: serverTimestamp(),
-            manual: false
+            manual: currentStatus?.manual || false
           });
           console.log('📱 Page hidden - User set to offline (automatic):', uid);
         } else {
@@ -243,7 +244,7 @@ export const StatusProvider = ({ children }) => {
           // User has no manual status set, set to online automatically
           set(userStatusRef, {
             state: 'online',
-            manual: false,
+            manual: currentStatus?.manual || false,
             last_changed: serverTimestamp()
           });
           console.log('📱 Page visible - User set to online (automatic):', uid);
@@ -267,7 +268,7 @@ export const StatusProvider = ({ children }) => {
         await set(userStatusRef, {
           state: 'offline',
           last_changed: serverTimestamp(),
-          manual: false
+          manual: currentStatus?.manual || false
         });
         console.log('🚪 Page unloading - User set to offline (automatic):', uid);
       } else {
@@ -336,7 +337,7 @@ export const StatusProvider = ({ children }) => {
           // User has no manual status set, set to online automatically
           await set(userStatusRef, {
             state: 'online',
-            manual: false,
+            manual: currentStatus.manual,
             last_changed: serverTimestamp()
           });
           console.log('✅ Initial status set to online (automatic)');
@@ -346,6 +347,8 @@ export const StatusProvider = ({ children }) => {
         const isOfflineForDatabase = {
           state: 'offline',
           last_changed: serverTimestamp(),
+          // For disconnect handler, we don't preserve manual flag - user is truly offline
+          manual: false
         };
         onDisconnect(userStatusRef).set(isOfflineForDatabase);
         console.log('🔧 Disconnect handler configured');
@@ -367,10 +370,12 @@ export const StatusProvider = ({ children }) => {
           const currentStatus = snapshot.val();
           
           // Only set to offline if user doesn't have manual status
-          if (!currentStatus || currentStatus.manual !== true) {
+          if (currentStatus.manual !== true) {
             set(userStatusRef, {
               state: 'offline',
-              last_changed: serverTimestamp()
+              last_changed: serverTimestamp(),
+              // For cleanup, we don't preserve manual flag - user is truly offline
+              manual: false
             }).catch(error => {
               console.error('❌ Error setting offline status during cleanup:', error);
             });
