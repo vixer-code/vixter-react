@@ -54,6 +54,16 @@ export const StatusProvider = ({ children }) => {
     try {
       const snapshot = await get(ref(database, `status/${uid}`));
       const data = snapshot.val();
+      
+      console.log('🔍 getCurrentStatus - Raw data from DB:', {
+        uid: uid.slice(0, 8),
+        data,
+        hasData: !!data,
+        state: data?.state,
+        manual: data?.manual,
+        manualType: typeof data?.manual
+      });
+      
       return data || { state: 'offline', manual: false };
     } catch (error) {
       console.error('Error getting current status:', error);
@@ -131,6 +141,14 @@ export const StatusProvider = ({ children }) => {
           // Get current status to check if manual
           const currentStatus = await getCurrentStatus(uid);
           
+          console.log('🔍 CONNECTION CHECK - Current status:', {
+            uid: uid.slice(0, 8),
+            currentStatus,
+            manual: currentStatus?.manual,
+            manualType: typeof currentStatus?.manual,
+            isManual: currentStatus?.manual === true
+          });
+          
           // Set up disconnect handler
           const userStatusRef = ref(database, `status/${uid}`);
           onDisconnect(userStatusRef).set({
@@ -142,6 +160,7 @@ export const StatusProvider = ({ children }) => {
           // If user has manual status, don't change it
           if (currentStatus.manual === true) {
             console.log('🔒 Manual status detected, respecting:', currentStatus.state);
+            console.log('🚫 SKIPPING AUTOMATIC ONLINE - User has manual status');
           } else {
             // Set to online automatically
             await set(userStatusRef, {
@@ -150,6 +169,7 @@ export const StatusProvider = ({ children }) => {
               manual: false
             });
             console.log('✅ Set to online automatically');
+            console.log('🔄 PRESENCE DYNAMIC - User is now online and being tracked');
           }
         } else {
           console.log('📴 User disconnected');
