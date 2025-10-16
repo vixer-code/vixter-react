@@ -137,6 +137,7 @@ export const AuthProvider = ({ children }) => {
           // Set offline status with a small delay to ensure it completes before signOut
           await set(userStatusRef, {
             state: 'offline',
+            manual: false,
             last_changed: serverTimestamp()
           });
           
