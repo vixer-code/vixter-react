@@ -101,23 +101,10 @@ const AnnouncementsTab = ({ feedType }) => {
         <div className="post-header">
           <div className="post-author">
             <img
-              src={(() => {
-                const photoURL = author?.profilePictureURL || author?.photoURL;
-                // Validate URL before using it (same logic as regular posts)
-                if (photoURL && typeof photoURL === 'string' && photoURL.trim()) {
-                  try {
-                    // Test if URL is valid
-                    new URL(photoURL);
-                    return photoURL;
-                  } catch (urlError) {
-                    console.warn('Invalid author photo URL in announcement:', photoURL, urlError);
-                  }
-                }
-                return '/images/defpfp1.png';
-              })()}
+              src={announcement.authorPhotoURL || '/images/defpfp1.png'}
               alt={authorName}
               className="author-avatar"
-              onError={(e) => { 
+              onError={(e) => {
                 e.target.src = '/images/defpfp1.png';
               }}
             />
