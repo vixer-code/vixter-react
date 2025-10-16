@@ -183,7 +183,7 @@
           ".validate": "newData.isString()"
         },
         "status": {
-          ".validate": "newData.isString() && (newData.val() == 'online' || newData.val() == 'offline')"
+          ".validate": "newData.isString() && (newData.val() == 'online' || newData.val() == 'offline' || newData.val() == 'ausente' || newData.val() == 'ocupado')"
         },
         "lastSeen": {
           ".validate": "newData.isNumber()"
@@ -195,7 +195,7 @@
           ".validate": "newData.isBoolean()"
         },
         "selectedStatus": {
-          ".validate": "newData.isString() && (newData.val() == 'online' || newData.val() == 'offline' || newData.val() == 'ausente' || newData.val() == 'invisivel')"
+          ".validate": "newData.isString() && (newData.val() == 'online' || newData.val() == 'offline' || newData.val() == 'ausente' || newData.val() == 'ocupado' || newData.val() == 'invisivel')"
         }
       }
     },
@@ -205,7 +205,7 @@
         ".read": "auth != null",
         ".write": "$userId == auth.uid",
         "state": {
-          ".validate": "newData.isString() && (newData.val() == 'online' || newData.val() == 'offline' || newData.val() == 'ausente' || newData.val() == 'invisivel')"
+          ".validate": "newData.isString() && (newData.val() == 'online' || newData.val() == 'offline' || newData.val() == 'ausente' || newData.val() == 'ocupado' || newData.val() == 'invisivel')"
         },
         "last_changed": {
           ".validate": "newData.isNumber() || newData.val() == '.sv' && newData.child('.sv').val() == 'timestamp'"
