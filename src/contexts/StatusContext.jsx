@@ -34,14 +34,14 @@ export const StatusProvider = ({ children }) => {
       // Get current status to preserve manual flag
       const currentStatus = await getCurrentStatus(uid);
       
-      // Logic: offline = manual, online = automatic (but preserve existing manual if needed)
-      const isManual = status === 'offline';
+      // Preserve the existing manual flag - don't force it based on status
+      const isManual = currentStatus?.manual || false;
       
       console.log('🔧 updateUserStatus called:', {
         uid: uid.slice(0, 8),
         status,
         isManual,
-        currentManual: currentStatus.manual,
+        currentManual: currentStatus?.manual,
         timestamp: new Date().toISOString()
       });
       
@@ -347,4 +347,4 @@ export const StatusProvider = ({ children }) => {
       {children}
     </StatusContext.Provider>
   );
-};
+}; 
