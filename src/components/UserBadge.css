@@ -7,16 +7,11 @@
 .badge-icon {
   width: 20px;
   height: 20px;
-  border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  opacity: 0; /* Make icon invisible but keep space */
 }
 
 .admin-badge .badge-icon {
-  border-color: #FFD700;
-  box-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+  /* Admin badge styling - keeping it clean without borders */
 }
 
 /* Profile page specific styling */
