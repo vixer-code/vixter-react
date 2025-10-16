@@ -51,6 +51,11 @@ export const StatusProvider = ({ children }) => {
         // If user has manual status, skip all refresh logic
         if (currentStatus && currentStatus.manual === true) {
           console.log('🔒 MANUAL STATUS FOUND - Skipping all refresh logic, respecting:', currentStatus.state);
+          console.log('🔒 MANUAL STATUS DETAILS:', {
+            state: currentStatus.state,
+            manual: currentStatus.manual,
+            last_changed: currentStatus.last_changed
+          });
           // Just set up disconnect handler and return early
           const isOfflineForDatabase = {
             state: 'offline',
@@ -71,12 +76,43 @@ export const StatusProvider = ({ children }) => {
     
     // Check manual status first, then set up listeners
     checkInitialManualStatus().then(hasManualStatus => {
-      // Set up status listener AFTER validation (works for both manual and automatic)
+      console.log('🔍 VALIDATION RESULT:', hasManualStatus ? 'MANUAL STATUS - SKIPPING REFRESH' : 'NO MANUAL STATUS - PROCEEDING WITH REFRESH');
+      
+      if (hasManualStatus) {
+        console.log('🚫 SKIPPING ALL REFRESH LOGIC - User has manual status');
+        
+        // Set up status listener ONLY for manual users (no refresh logic)
+        const userStatusRef = ref(database, `status/${uid}`);
+        const unsubscribeStatus = onValue(userStatusRef, (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            console.log('📊 MANUAL USER - Status changed:', {
+              uid: uid.slice(0, 8),
+              state: data.state,
+              manual: data.manual,
+              last_changed: data.last_changed,
+              timestamp: new Date().toISOString()
+            });
+            setUserStatus(data.state || 'offline');
+          } else {
+            console.log('📊 MANUAL USER - No status data found for user:', uid.slice(0, 8));
+            setUserStatus('offline');
+          }
+        });
+        
+        // Store unsubscribeStatus for cleanup
+        window._manualStatusUnsubscribe = unsubscribeStatus;
+        return; // Exit early, don't run any refresh logic
+      }
+      
+      console.log('▶️ PROCEEDING WITH NORMAL REFRESH LOGIC');
+      
+      // Set up status listener for automatic users (with refresh logic)
       const userStatusRef = ref(database, `status/${uid}`);
       const unsubscribeStatus = onValue(userStatusRef, (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.val();
-          console.log('📊 StatusContext - User status changed:', {
+          console.log('📊 AUTOMATIC USER - Status changed:', {
             uid: uid.slice(0, 8),
             state: data.state,
             manual: data.manual,
@@ -85,19 +121,11 @@ export const StatusProvider = ({ children }) => {
           });
           setUserStatus(data.state || 'offline');
         } else {
-          console.log('📊 StatusContext - No status data found for user:', uid.slice(0, 8));
+          console.log('📊 AUTOMATIC USER - No status data found for user:', uid.slice(0, 8));
           setUserStatus('offline');
         }
       });
       
-      if (hasManualStatus) {
-        console.log('🚫 SKIPPING ALL REFRESH LOGIC - User has manual status');
-        // Store unsubscribeStatus for cleanup
-        window._manualStatusUnsubscribe = unsubscribeStatus;
-        return; // Exit early, don't run any refresh logic
-      }
-      
-      console.log('▶️ PROCEEDING WITH NORMAL REFRESH LOGIC');
       // Store unsubscribeStatus for cleanup in normal logic
       window._normalStatusUnsubscribe = unsubscribeStatus;
       runNormalRefreshLogic();
@@ -243,7 +271,7 @@ export const StatusProvider = ({ children }) => {
     window.addEventListener('pagehide', handleBeforeUnload);
 
 
-    // Load user's selected status with fallback
+    // Load user's selected status from RTDB status collection
     const loadSelectedStatus = async () => {
       if (!uid) {
         setSelectedStatus('online');
@@ -251,8 +279,17 @@ export const StatusProvider = ({ children }) => {
       }
       
       try {
-        const status = await getUserSelectedStatus(uid);
-        setSelectedStatus(status);
+        const userStatusRef = ref(database, `status/${uid}`);
+        const snapshot = await get(userStatusRef);
+        const statusData = snapshot.val();
+        
+        if (statusData && statusData.state) {
+          setSelectedStatus(statusData.state);
+          console.log('📊 Loaded selected status from RTDB:', statusData.state);
+        } else {
+          setSelectedStatus('online');
+          console.log('📊 No status found, using default: online');
+        }
       } catch (error) {
         console.error('Error loading selected status, using default:', error);
         setSelectedStatus('online');
@@ -383,15 +420,12 @@ export const StatusProvider = ({ children }) => {
       // - online → manual: false (usuário quer voltar ao automático)
       const isManual = status === 'offline';
       
-      // Update the current status and save the manual selection
-      await Promise.all([
-        set(ref(database, `status/${uid}`), {
-          state: status,
-          last_changed: serverTimestamp(),
-          manual: isManual
-        }),
-        set(ref(database, `users/${uid}/selectedStatus`), status)
-      ]);
+      // Update the current status in RTDB status collection only
+      await set(ref(database, `status/${uid}`), {
+        state: status,
+        last_changed: serverTimestamp(),
+        manual: isManual
+      });
       
       setSelectedStatus(status);
       console.log(`✅ Status updated to: ${status} (manual: ${isManual})`);
@@ -402,32 +436,6 @@ export const StatusProvider = ({ children }) => {
     }
   }, [currentUser]);
 
-  const getUserSelectedStatus = useCallback(async (uid) => {
-    if (!uid) return 'online';
-    
-    try {
-      const snapshot = await get(ref(database, `users/${uid}/selectedStatus`));
-      const status = snapshot.val();
-      
-      // If no selectedStatus exists, create it with default value
-      if (!status) {
-        const defaultStatus = 'online';
-        try {
-          await set(ref(database, `users/${uid}/selectedStatus`), defaultStatus);
-          return defaultStatus;
-        } catch (writeError) {
-          console.error('Error creating default selectedStatus:', writeError);
-          return defaultStatus;
-        }
-      }
-      
-      return status;
-    } catch (error) {
-      console.error('Error getting selected status:', error);
-      // Return default without trying to write (to avoid permission issues)
-      return 'online';
-    }
-  }, []);
 
   const getCurrentStatus = useCallback(async (uid) => {
     try {
@@ -499,7 +507,6 @@ export const StatusProvider = ({ children }) => {
     lastActivity,
     currentPage,
     updateUserStatus,
-    getUserSelectedStatus,
     getCurrentStatus,
     debugStatus,
     // Status options (simplified)
@@ -507,7 +514,7 @@ export const StatusProvider = ({ children }) => {
       { value: 'online', label: 'Online', color: '#22c55e', emoji: '🟢' },
       { value: 'offline', label: 'Offline', color: '#ef4444', emoji: '🔴' }
     ]
-  }), [userStatus, selectedStatus, isConnected, lastActivity, currentPage, updateUserStatus, getUserSelectedStatus, getCurrentStatus, debugStatus]);
+  }), [userStatus, selectedStatus, isConnected, lastActivity, currentPage, updateUserStatus, getCurrentStatus, debugStatus]);
 
   return (
     <StatusContext.Provider value={value}>
