@@ -31,16 +31,16 @@ export const StatusProvider = ({ children }) => {
     try {
       const uid = currentUser.uid;
       
-      // Logic: offline = manual, online = automatic
+      // Logic: offline/ausente/ocupado = manual, online = automatic
       // This is called only when user manually clicks buttons
       await set(ref(database, `status/${uid}`), {
         state: status,
         last_changed: serverTimestamp(),
-        manual: status === 'offline'
+        manual: status !== 'online'
       });
       
       setSelectedStatus(status);
-      console.log(`✅ Status updated to: ${status} (manual: ${status === 'offline'})`);
+      console.log(`✅ Status updated to: ${status} (manual: ${status !== 'online'})`);
       return true;
     } catch (error) {
       console.error('Error updating user status:', error);
@@ -164,7 +164,7 @@ export const StatusProvider = ({ children }) => {
             console.log('🔧 No disconnect handler - user has manual status');
           }
           
-          // If user has manual status, don't change it
+          // If user has manual status (offline/ausente/ocupado), don't change it
           if (currentStatus.manual === true) {
             console.log('🔒 Manual status detected, respecting:', currentStatus.state);
             console.log('🚫 SKIPPING AUTOMATIC ONLINE - User has manual status');
@@ -189,7 +189,7 @@ export const StatusProvider = ({ children }) => {
           // Get current status to check if manual
           const currentStatus = await getCurrentStatus(uid);
           
-          // If user has manual status, don't change it
+          // If user has manual status (offline/ausente/ocupado), don't change it
           if (currentStatus.manual === true) {
             console.log('🔒 Manual status detected, respecting:', currentStatus.state);
           } else {

@@ -197,18 +197,37 @@ const EnhancedMessages = () => {
     return null;
   };
 
-  // Handle presence toggle
+  // Handle presence toggle - cycle through 4 statuses
   const handlePresenceToggle = async () => {
     if (!currentUser?.uid) return;
     
-    const newStatus = selectedStatus === 'online' ? 'offline' : 'online';
+    // Cycle through: online -> ausente -> ocupado -> offline -> online
+    const statusCycle = {
+      'online': 'ausente',
+      'ausente': 'ocupado', 
+      'ocupado': 'offline',
+      'offline': 'online'
+    };
+    
+    const newStatus = statusCycle[selectedStatus] || 'online';
     const success = await updateUserStatus(newStatus);
     
     if (success) {
-      showInfo(
-        newStatus === 'online' ? 'Você está online agora' : 'Você está offline',
-        newStatus === 'online' ? 'Online' : 'Offline'
-      );
+      const statusMessages = {
+        'online': 'Você está online agora',
+        'ausente': 'Você está ausente',
+        'ocupado': 'Você está ocupado',
+        'offline': 'Você está offline'
+      };
+      
+      const statusTitles = {
+        'online': 'Online',
+        'ausente': 'Ausente', 
+        'ocupado': 'Ocupado',
+        'offline': 'Offline'
+      };
+      
+      showInfo(statusMessages[newStatus], statusTitles[newStatus]);
     } else {
       showInfo('Erro ao alterar status de presença', 'error');
     }
@@ -306,13 +325,15 @@ const EnhancedMessages = () => {
               <button
                 className={`presence-toggle ${selectedStatus}`}
                 onClick={handlePresenceToggle}
-                title={selectedStatus === 'online' ? 'Clique para ficar offline' : 'Clique para ficar online'}
+                title={`Status atual: ${selectedStatus}. Clique para alterar.`}
               >
                 <div className="presence-indicator">
                   <div className={`status-dot ${selectedStatus}`}></div>
                 </div>
                 <span className="presence-text">
-                  {selectedStatus === 'online' ? 'Online' : 'Offline'}
+                  {selectedStatus === 'online' ? 'Online' : 
+                   selectedStatus === 'ausente' ? 'Ausente' :
+                   selectedStatus === 'ocupado' ? 'Ocupado' : 'Offline'}
                 </span>
               </button>
             </div>
@@ -335,7 +356,7 @@ const EnhancedMessages = () => {
               className={`tab ${activeTab === 'online' ? 'active' : ''}`}
               onClick={() => setActiveTab('online')}
             >
-              Online agora
+              Disponíveis
             </button>
           </div>
 
@@ -347,13 +368,13 @@ const EnhancedMessages = () => {
                   <div className="empty-icon">💬</div>
                   <p>Nenhuma conversa ainda</p>
                   <p style={{ fontSize: '12px', color: '#666' }}>
-                    Use a aba "Online agora" para iniciar uma conversa
+                    Use a aba "Disponíveis" para iniciar uma conversa
                   </p>
                   <button
                     className="start-conversation-button"
                     onClick={() => setActiveTab('online')}
                   >
-                    Ver usuários online
+                    Ver usuários disponíveis
                   </button>
                 </div>
               ) : (

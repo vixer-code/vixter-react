@@ -46,7 +46,7 @@ const OnlineUsersList = ({ onUserSelect, currentUser }) => {
         
         const onlineUserIds = [];
 
-        // Get all users with 'online' status (simplified - no threshold logic)
+        // Get all users with status (online, ausente, ocupado) - exclude offline
         Object.keys(statusData).forEach(userId => {
           const userStatus = statusData[userId];
           
@@ -56,7 +56,10 @@ const OnlineUsersList = ({ onUserSelect, currentUser }) => {
             isCurrentUser: userId === currentUser.uid
           });
           
-          if (userId !== currentUser.uid && userStatus?.state === 'online') {
+          if (userId !== currentUser.uid && 
+              (userStatus?.state === 'online' || 
+               userStatus?.state === 'ausente' || 
+               userStatus?.state === 'ocupado')) {
             onlineUserIds.push(userId);
           }
         });
