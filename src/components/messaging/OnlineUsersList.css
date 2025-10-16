@@ -191,6 +191,22 @@
   font-weight: 500;
 }
 
+.status-text.online {
+  color: #22c55e;
+}
+
+.status-text.ausente {
+  color: #fbbf24;
+}
+
+.status-text.ocupado {
+  color: #ef4444;
+}
+
+.status-text.offline {
+  color: #6b7280;
+}
+
 .current-page {
   font-size: 0.65rem;
   color: #8b5cf6;

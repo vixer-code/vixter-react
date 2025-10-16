@@ -213,7 +213,12 @@ const OnlineUsersList = ({ onUserSelect, currentUser }) => {
                 {getKycBadge(user)}
               </div>
               <div className="user-status-info">
-                <span className="status-text">🟢 Online agora</span>
+                {(() => {
+                  const status = user.status;
+                  const label = status === 'online' ? '🟢 Online agora' : status === 'ausente' ? '🟡 Ausente' : status === 'ocupado' ? '🔴 Ocupado' : 'Offline';
+                  const cls = status === 'online' ? 'online' : status === 'ausente' ? 'ausente' : status === 'ocupado' ? 'ocupado' : 'offline';
+                  return <span className={`status-text ${cls}`}>{label}</span>;
+                })()}
               </div>
             </div>
             

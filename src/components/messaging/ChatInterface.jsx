@@ -366,8 +366,12 @@ const ChatInterface = ({ conversation, onClose }) => {
                 <span className="service-completed">🔒 Serviço Concluído</span>
               ) : otherUserStatus === 'online' ? (
                 <span className="status-online">🟢 Online</span>
+              ) : otherUserStatus === 'ausente' ? (
+                <span className="status-away">🟡 Ausente</span>
+              ) : otherUserStatus === 'ocupado' ? (
+                <span className="status-busy">🔴 Ocupado</span>
               ) : (
-                <span className="status-offline">🔴 Offline</span>
+                <span className="status-offline">⚫ Offline</span>
               )}
             </div>
             {conversation?.type === 'service' && (
