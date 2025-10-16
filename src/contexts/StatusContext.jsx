@@ -59,8 +59,8 @@ export const StatusProvider = ({ children }) => {
             manualType: typeof currentStatus?.manual
           });
           
-          // If user has manual status, skip all refresh logic
-          if (currentStatus && (currentStatus.manual === true || currentStatus.manual === "true")) {
+          // If user has manual status set to true, skip all refresh logic
+          if (currentStatus && ((currentStatus && (currentStatus.manual === true || currentStatus.manual === "true")) || currentStatus.manual === "true")) {
             console.log('🔒 MANUAL STATUS FOUND - Skipping all refresh logic, respecting:', currentStatus.state);
             console.log('🔒 MANUAL STATUS DETAILS:', {
               state: currentStatus.state,
@@ -69,7 +69,12 @@ export const StatusProvider = ({ children }) => {
             });
             resolve(true); // Indicates manual status found
           } else {
-            console.log('🤖 NO MANUAL STATUS - Proceeding with normal refresh logic');
+            console.log('🤖 NO MANUAL STATUS OR MANUAL=FALSE - Proceeding with normal refresh logic');
+            console.log('🔍 Current status details:', {
+              hasStatus: !!currentStatus,
+              manual: currentStatus?.manual,
+              state: currentStatus?.state
+            });
             resolve(false); // Indicates no manual status, proceed normally
           }
         }, { onlyOnce: true }); // Only read once
@@ -175,7 +180,7 @@ export const StatusProvider = ({ children }) => {
         });
         
         // SIMPLIFIED LOGIC: If manual flag exists and is true, respect the current state
-        if (currentStatus.manual === true) {
+        if ((currentStatus && (currentStatus.manual === true || currentStatus.manual === "true"))) {
           console.log('🔒 MANUAL STATUS DETECTED - Respecting current status:', currentStatus.state);
           // Don't change anything, just respect the manual setting
         } else {
@@ -195,7 +200,7 @@ export const StatusProvider = ({ children }) => {
         const currentStatus = currentStatusSnapshot.val();
         
         // Only set to offline if user doesn't have manual status
-        if (!currentStatus || currentStatus.manual !== true) {
+        if (!currentStatus || !(currentStatus && (currentStatus.manual === true || currentStatus.manual === "true"))) {
           set(userStatusRef, {
             state: 'offline',
             manual: currentStatus?.manual || false,
@@ -223,7 +228,7 @@ export const StatusProvider = ({ children }) => {
         const currentStatus = currentStatusSnapshot.val();
         
         // Only set to offline if user doesn't have manual status
-        if (currentStatus.manual !== true) {
+        if (!(currentStatus && (currentStatus.manual === true || currentStatus.manual === "true"))) {
           await set(userStatusRef, {
             state: 'offline',
             last_changed: serverTimestamp(),
@@ -239,7 +244,7 @@ export const StatusProvider = ({ children }) => {
         const currentStatus = currentStatusSnapshot.val();
         
         // SIMPLIFIED LOGIC: If manual flag exists and is true, respect the current state
-        if (currentStatus.manual === true) {
+        if ((currentStatus && (currentStatus.manual === true || currentStatus.manual === "true"))) {
           console.log('🔒 MANUAL STATUS DETECTED - Respecting current status:', currentStatus.state);
           // Don't change anything, just respect the manual setting
         } else {
@@ -267,7 +272,7 @@ export const StatusProvider = ({ children }) => {
       const currentStatus = currentStatusSnapshot.val();
       
       // Only set to offline if user doesn't have manual status
-      if (currentStatus.manual !== true) {
+      if (!(currentStatus && (currentStatus.manual === true || currentStatus.manual === "true"))) {
         await set(userStatusRef, {
           state: 'offline',
           last_changed: serverTimestamp(),
@@ -332,7 +337,7 @@ export const StatusProvider = ({ children }) => {
         });
         
         // SIMPLIFIED LOGIC: If manual flag exists and is true, respect the current state
-        if (currentStatus.manual === true) {
+        if ((currentStatus && (currentStatus.manual === true || currentStatus.manual === "true"))) {
           console.log('🔒 MANUAL STATUS DETECTED - Respecting current status:', currentStatus.state);
           // Don't change anything, just respect the manual setting
         } else {
@@ -372,7 +377,7 @@ export const StatusProvider = ({ children }) => {
           const currentStatus = snapshot.val();
           
           // Only set to offline if user doesn't have manual status
-          if (currentStatus.manual !== true) {
+          if (!(currentStatus && (currentStatus.manual === true || currentStatus.manual === "true"))) {
             set(userStatusRef, {
               state: 'offline',
               last_changed: serverTimestamp(),
