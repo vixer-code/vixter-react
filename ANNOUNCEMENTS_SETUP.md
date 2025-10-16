@@ -52,7 +52,7 @@ Foi implementado um sistema de avisos oficiais para os feeds do Vixter React. Os
 ### Layout e Visual:
 - **Borda dourada** (#FFD700) mantida para identidade visual dos avisos
 - **Layout unificado** - avisos agora usam a mesma estrutura dos posts normais
-- **Avatar do administrador** - mostra a foto de perfil real do admin que criou o aviso
+- **Avatar do administrador** - mostra a foto de perfil real do admin que criou o aviso (usando a mesma lógica de validação de URL dos posts normais)
 - **Modal de exclusão padronizado** - todos os feeds (Lobby, Vixies, Vixink) usam o mesmo modal
 - **Botões de fechar** adicionados no modal de criação de avisos
 - **Controle de visibilidade** - botão "Criar Aviso" só aparece para admins

@@ -95,14 +95,26 @@ const AnnouncementsTab = ({ feedType }) => {
   const renderAnnouncement = (announcement) => {
     const author = users[announcement.authorId];
     const authorName = author?.name || announcement.authorName || 'Administrador';
-    const authorPhoto = author?.profilePictureURL || author?.photoURL || '/images/admin.png';
 
     return (
       <div key={announcement.id} className="post-card announcement-card">
         <div className="post-header">
           <div className="post-author">
             <img
-              src={authorPhoto}
+              src={(() => {
+                const photoURL = author?.profilePictureURL || author?.photoURL;
+                // Validate URL before using it (same logic as regular posts)
+                if (photoURL && typeof photoURL === 'string' && photoURL.trim()) {
+                  try {
+                    // Test if URL is valid
+                    new URL(photoURL);
+                    return photoURL;
+                  } catch (urlError) {
+                    console.warn('Invalid author photo URL in announcement:', photoURL, urlError);
+                  }
+                }
+                return '/images/defpfp1.png';
+              })()}
               alt={authorName}
               className="author-avatar"
               onError={(e) => { 
