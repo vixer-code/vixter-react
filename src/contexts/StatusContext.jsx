@@ -31,18 +31,16 @@ export const StatusProvider = ({ children }) => {
     try {
       const uid = currentUser.uid;
       
-      // Get current status to preserve manual flag
-      const snapshot = await get(ref(database, `status/${uid}`));
-      const currentStatus = snapshot.val();
-      
+      // Logic: offline = manual, online = automatic
+      // This is called only when user manually clicks buttons
       await set(ref(database, `status/${uid}`), {
         state: status,
         last_changed: serverTimestamp(),
-        manual: currentStatus?.manual || false
+        manual: status === 'offline'
       });
       
       setSelectedStatus(status);
-      console.log(`✅ Status updated to: ${status} (manual: ${currentStatus?.manual || false})`);
+      console.log(`✅ Status updated to: ${status} (manual: ${status === 'offline'})`);
       return true;
     } catch (error) {
       console.error('Error updating user status:', error);
