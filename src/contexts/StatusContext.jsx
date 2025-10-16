@@ -53,15 +53,15 @@ export const StatusProvider = ({ children }) => {
         const currentStatus = currentStatusSnapshot.val();
         
         // Only set to online if user hasn't manually set themselves to offline
-        if (!currentStatus?.manual || currentStatus?.state === 'online') {
+        if (currentStatus?.manual && currentStatus?.state === 'offline') {
+          console.log('🔒 User manually set to offline, keeping offline status');
+        } else {
           await set(userStatusRef, {
             state: 'online',
             last_changed: serverTimestamp(),
             manual: false // Reset manual flag when automatically setting online
           });
           console.log('✅ User status set to: online for user:', uid);
-        } else {
-          console.log('🔒 User manually set to offline, keeping offline status');
         }
       } else {
         // If disconnected, set user as offline immediately
@@ -98,15 +98,15 @@ export const StatusProvider = ({ children }) => {
         const currentStatus = currentStatusSnapshot.val();
         
         // Only set to online if user hasn't manually set themselves to offline
-        if (!currentStatus?.manual || currentStatus?.state === 'online') {
+        if (currentStatus?.manual && currentStatus?.state === 'offline') {
+          console.log('🔒 User manually set to offline, keeping offline status');
+        } else {
           set(userStatusRef, {
             state: 'online',
             last_changed: serverTimestamp(),
             manual: false // Reset manual flag when automatically setting online
           });
           console.log('📱 Page visible - User set to online:', uid);
-        } else {
-          console.log('🔒 User manually set to offline, keeping offline status');
         }
       }
     };
@@ -169,29 +169,31 @@ export const StatusProvider = ({ children }) => {
     // Try to load status, but don't fail if it doesn't exist
     loadSelectedStatus();
 
-    // Immediately set user status to online when they login
-    const setInitialOnlineStatus = async () => {
+    // Set up initial status and disconnect handler when user logs in
+    const setupInitialStatus = async () => {
       try {
-        console.log('🌐 Setting initial online status for user:', uid);
+        console.log('🌐 Setting up initial status for user:', uid);
         const userStatusRef = ref(database, `status/${uid}`);
         
         // Check if user has manually set their status
         const currentStatusSnapshot = await get(userStatusRef);
         const currentStatus = currentStatusSnapshot.val();
         
-        // Only set to online if user hasn't manually set themselves to offline
-        if (!currentStatus?.manual || currentStatus?.state === 'online') {
+        // If user has manually set themselves to offline, respect that choice
+        if (currentStatus?.manual && currentStatus?.state === 'offline') {
+          console.log('🔒 User manually set to offline, respecting offline status');
+          // Just set up disconnect handler, don't change status
+        } else {
+          // User is online or no manual status set, set to online
           await set(userStatusRef, {
             state: 'online',
             last_changed: serverTimestamp(),
             manual: false // Reset manual flag when automatically setting online
           });
           console.log('✅ Initial status set to online');
-        } else {
-          console.log('🔒 User manually set to offline, keeping offline status');
         }
         
-        // Also set up disconnect handler here to ensure it's always configured
+        // Always set up disconnect handler
         const isOfflineForDatabase = {
           state: 'offline',
           last_changed: serverTimestamp(),
@@ -199,12 +201,12 @@ export const StatusProvider = ({ children }) => {
         onDisconnect(userStatusRef).set(isOfflineForDatabase);
         console.log('🔧 Disconnect handler configured');
       } catch (error) {
-        console.error('❌ Error setting initial status:', error);
+        console.error('❌ Error setting up initial status:', error);
       }
     };
 
-    // Set initial status immediately
-    setInitialOnlineStatus();
+    // Set up initial status immediately
+    setupInitialStatus();
 
     return () => {
       // Force offline status before cleanup - only if user is still authenticated
