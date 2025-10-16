@@ -147,7 +147,6 @@ export const StatusProvider = ({ children }) => {
           await set(userStatusRef, {
             state: 'online',
             last_changed: serverTimestamp(),
-            manual: false // Keep manual flag as false for automatic setting
           });
           console.log('✅ User status set to: online (automatic) for user:', uid);
         }
@@ -161,7 +160,6 @@ export const StatusProvider = ({ children }) => {
         set(userStatusRef, {
           state: 'offline',
           last_changed: serverTimestamp(),
-          manual: currentStatus?.manual || false // Preserve manual flag if it exists
         });
         console.log('📴 User disconnected - set to offline:', uid);
       }
@@ -185,8 +183,7 @@ export const StatusProvider = ({ children }) => {
         if (!currentStatus || currentStatus.manual !== true) {
           set(userStatusRef, {
             state: 'offline',
-            last_changed: serverTimestamp(),
-            manual: false // Keep manual flag as false for automatic setting
+            last_changed: serverTimestamp()
           });
           console.log('📱 Page hidden - User set to offline (automatic):', uid);
         } else {
