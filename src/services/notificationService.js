@@ -406,6 +406,7 @@ export const sendAnnouncementNotification = async (
       action: 'announcement',
       feedType,
       feedDisplayName,
+      actorName: feedDisplayName, // Add this for compatibility with getNotificationMessage
       announcementId,
       announcementText: announcementText ? announcementText.substring(0, 100) + (announcementText.length > 100 ? '...' : '') : '',
       authorId,
