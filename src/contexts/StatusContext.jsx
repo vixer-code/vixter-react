@@ -34,6 +34,13 @@ export const StatusProvider = ({ children }) => {
       // Simple logic: offline = manual, online = automatic
       const isManual = status === 'offline';
       
+      console.log('🔧 updateUserStatus called:', {
+        uid: uid.slice(0, 8),
+        status,
+        isManual,
+        timestamp: new Date().toISOString()
+      });
+      
       await set(ref(database, `status/${uid}`), {
         state: status,
         last_changed: serverTimestamp(),
@@ -115,7 +122,8 @@ export const StatusProvider = ({ children }) => {
             uid: uid.slice(0, 8),
             state: data.state,
             manual: data.manual,
-            last_changed: data.last_changed
+            last_changed: data.last_changed,
+            timestamp: new Date().toISOString()
           });
           setUserStatus(data.state || 'offline');
           setSelectedStatus(data.state || 'online');
@@ -170,6 +178,11 @@ export const StatusProvider = ({ children }) => {
             console.log('🚫 SKIPPING AUTOMATIC ONLINE - User has manual status');
           } else {
             // Set to online automatically
+            console.log('🔧 SETTING TO ONLINE AUTOMATICALLY:', {
+              uid: uid.slice(0, 8),
+              manual: false,
+              timestamp: new Date().toISOString()
+            });
             await set(userStatusRef, {
               state: 'online',
               last_changed: serverTimestamp(),
@@ -202,6 +215,7 @@ export const StatusProvider = ({ children }) => {
     };
 
     // Setup listeners
+    console.log('🔧 Setting up listeners for user:', uid.slice(0, 8));
     setupStatusListener();
     setupConnectionListener();
 
@@ -232,14 +246,16 @@ export const StatusProvider = ({ children }) => {
         // If user has manual status, don't change it
         if (currentStatus.manual === true) {
           console.log('🔒 Manual status detected, respecting:', currentStatus.state);
+          console.log('🚫 SKIPPING AUTOMATIC OFFLINE - User has manual status');
         } else {
-          // Set to offline automatically
+          // Set to offline automatically but preserve manual flag
           await set(ref(database, `status/${uid}`), {
             state: 'offline',
             last_changed: serverTimestamp(),
-            manual: false
+            manual: currentStatus?.manual || false
           });
           console.log('✅ Set to offline (page hidden)');
+          console.log('🔄 PRESENCE DYNAMIC - User is now offline and being tracked');
         }
       } else {
         console.log('📱 Page visible');
@@ -250,14 +266,16 @@ export const StatusProvider = ({ children }) => {
         // If user has manual status, don't change it
         if (currentStatus.manual === true) {
           console.log('🔒 Manual status detected, respecting:', currentStatus.state);
+          console.log('🚫 SKIPPING AUTOMATIC ONLINE - User has manual status');
         } else {
-          // Set to online automatically
+          // Set to online automatically but preserve manual flag
           await set(ref(database, `status/${uid}`), {
             state: 'online',
             last_changed: serverTimestamp(),
-            manual: false
+            manual: currentStatus?.manual || false
           });
           console.log('✅ Set to online (page visible)');
+          console.log('🔄 PRESENCE DYNAMIC - User is now online and being tracked');
         }
       }
     };
@@ -282,14 +300,16 @@ export const StatusProvider = ({ children }) => {
       // If user has manual status, don't change it
       if (currentStatus.manual === true) {
         console.log('🔒 Manual status detected, respecting:', currentStatus.state);
+        console.log('🚫 SKIPPING AUTOMATIC OFFLINE - User has manual status');
       } else {
-        // Set to offline automatically
+        // Set to offline automatically but preserve manual flag
         await set(ref(database, `status/${uid}`), {
           state: 'offline',
           last_changed: serverTimestamp(),
-          manual: false
+          manual: currentStatus?.manual || false
         });
         console.log('✅ Set to offline (page unload)');
+        console.log('🔄 PRESENCE DYNAMIC - User is now offline and being tracked');
       }
     };
 
