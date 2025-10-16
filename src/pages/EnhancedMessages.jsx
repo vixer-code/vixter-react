@@ -4,6 +4,7 @@ import { useCentrifugo } from '../contexts/CentrifugoContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useServiceOrder } from '../contexts/ServiceOrderContext';
+import { useStatus } from '../contexts/StatusContext';
 import { useLocation, useParams } from 'react-router-dom';
 import UserSelector from '../components/messaging/UserSelector';
 import ChatInterface from '../components/messaging/ChatInterface';
@@ -35,6 +36,7 @@ const EnhancedMessages = () => {
   const { currentUser } = useAuth();
   const { showInfo } = useNotification();
   const { receivedOrders, sentOrders, getOrderStatusInfo } = useServiceOrder();
+  const { userStatus, selectedStatus, updateUserStatus } = useStatus();
   const location = useLocation();
   const { conversationId } = useParams();
   
@@ -196,6 +198,23 @@ const EnhancedMessages = () => {
     return null;
   };
 
+  // Handle presence toggle
+  const handlePresenceToggle = async () => {
+    if (!currentUser?.uid) return;
+    
+    const newStatus = selectedStatus === 'online' ? 'offline' : 'online';
+    const success = await updateUserStatus(newStatus);
+    
+    if (success) {
+      showInfo(
+        newStatus === 'online' ? 'Você está online agora' : 'Você está offline',
+        newStatus === 'online' ? 'Online' : 'Offline'
+      );
+    } else {
+      showInfo('Erro ao alterar status de presença', 'error');
+    }
+  };
+
 
   if (loading) {
     return (
@@ -289,6 +308,20 @@ const EnhancedMessages = () => {
         <div className={`conversations-sidebar ${showMobileChat ? 'mobile-hidden' : ''}`}>
           <div className="sidebar-header">
             <h2>Mensagens</h2>
+            <div className="header-actions">
+              <button
+                className={`presence-toggle ${selectedStatus}`}
+                onClick={handlePresenceToggle}
+                title={selectedStatus === 'online' ? 'Clique para ficar offline' : 'Clique para ficar online'}
+              >
+                <div className="presence-indicator">
+                  <div className={`status-dot ${selectedStatus}`}></div>
+                </div>
+                <span className="presence-text">
+                  {selectedStatus === 'online' ? 'Online' : 'Offline'}
+                </span>
+              </button>
+            </div>
           </div>
 
           <div className="sidebar-tabs">

@@ -640,30 +640,10 @@ const Settings = () => {
 
       <div className="settings-content">
 
-        {/* PIX Configuration Section */}
-        <div className="settings-section">
-          <h2>Configuração PIX</h2>
-          {accountType === 'client' ? (
-            <div className="settings-grid">
-              <div className="setting-group full-width">
-                <div className="pix-restriction-notice">
-                  <div className="restriction-icon">
-                    <i className="fas fa-info-circle"></i>
-                  </div>
-                  <div className="restriction-content">
-                    <h3>PIX não disponível para clientes</h3>
-                    <p>
-                      A configuração PIX está disponível apenas para usuários do tipo <strong>Provider</strong> ou <strong>Both</strong>, 
-                      pois apenas estes tipos de usuário podem receber pagamentos através da plataforma.
-                    </p>
-                    <p>
-                      Se você deseja configurar PIX para receber pagamentos, altere seu tipo de conta para Provider nas configurações de perfil.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
+        {/* PIX Configuration Section - Only show for provider or both account types */}
+        {isProvider && (
+          <div className="settings-section">
+            <h2>Configuração PIX</h2>
             <div className="settings-grid">
               <div className="setting-group">
                 <label htmlFor="pixType">Tipo da Chave PIX</label>
@@ -724,8 +704,8 @@ const Settings = () => {
                 </small>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* KYC Verification Section */}
         <div className="settings-section">

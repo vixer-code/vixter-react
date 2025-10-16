@@ -33,7 +33,7 @@ export const StatusProvider = ({ children }) => {
     
     // Listen for connection status
     const connectedRef = ref(database, '.info/connected');
-    const unsubscribeConnected = onValue(connectedRef, (snapshot) => {
+    const unsubscribeConnected = onValue(connectedRef, async (snapshot) => {
       const connected = snapshot.val();
       setIsConnected(connected);
       
@@ -48,46 +48,66 @@ export const StatusProvider = ({ children }) => {
         // Set up the disconnect handler
         onDisconnect(userStatusRef).set(isOfflineForDatabase);
         
-        // Then set user as online
-        set(userStatusRef, {
-          state: 'online',
-          last_changed: serverTimestamp()
-        });
-        console.log('✅ User status set to: online for user:', uid);
+        // Check if user has manually set their status to offline
+        const currentStatusSnapshot = await get(userStatusRef);
+        const currentStatus = currentStatusSnapshot.val();
+        
+        // Only set to online if user hasn't manually set themselves to offline
+        if (!currentStatus?.manual || currentStatus?.state === 'online') {
+          await set(userStatusRef, {
+            state: 'online',
+            last_changed: serverTimestamp(),
+            manual: false // Reset manual flag when automatically setting online
+          });
+          console.log('✅ User status set to: online for user:', uid);
+        } else {
+          console.log('🔒 User manually set to offline, keeping offline status');
+        }
       } else {
         // If disconnected, set user as offline immediately
         const userStatusRef = ref(database, `status/${uid}`);
         set(userStatusRef, {
           state: 'offline',
-          last_changed: serverTimestamp()
+          last_changed: serverTimestamp(),
+          manual: false // Reset manual flag when automatically setting offline
         });
         console.log('📴 User disconnected - set to offline:', uid);
       }
     });
 
     // Handle page visibility changes and beforeunload events
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (!auth?.currentUser) {
         console.log('📱 Visibility change ignored - user not authenticated');
         return;
       }
       
+      const userStatusRef = ref(database, `status/${uid}`);
+      
       if (document.hidden) {
         // Page is hidden, set user as offline
-        const userStatusRef = ref(database, `status/${uid}`);
         set(userStatusRef, {
           state: 'offline',
-          last_changed: serverTimestamp()
+          last_changed: serverTimestamp(),
+          manual: false // Reset manual flag when automatically setting offline
         });
         console.log('📱 Page hidden - User set to offline:', uid);
       } else {
-        // Page is visible again, set user as online
-        const userStatusRef = ref(database, `status/${uid}`);
-        set(userStatusRef, {
-          state: 'online',
-          last_changed: serverTimestamp()
-        });
-        console.log('📱 Page visible - User set to online:', uid);
+        // Page is visible again, check if user manually set themselves to offline
+        const currentStatusSnapshot = await get(userStatusRef);
+        const currentStatus = currentStatusSnapshot.val();
+        
+        // Only set to online if user hasn't manually set themselves to offline
+        if (!currentStatus?.manual || currentStatus?.state === 'online') {
+          set(userStatusRef, {
+            state: 'online',
+            last_changed: serverTimestamp(),
+            manual: false // Reset manual flag when automatically setting online
+          });
+          console.log('📱 Page visible - User set to online:', uid);
+        } else {
+          console.log('🔒 User manually set to offline, keeping offline status');
+        }
       }
     };
 
@@ -154,11 +174,22 @@ export const StatusProvider = ({ children }) => {
       try {
         console.log('🌐 Setting initial online status for user:', uid);
         const userStatusRef = ref(database, `status/${uid}`);
-        await set(userStatusRef, {
-          state: 'online',
-          last_changed: serverTimestamp()
-        });
-        console.log('✅ Initial status set successfully');
+        
+        // Check if user has manually set their status
+        const currentStatusSnapshot = await get(userStatusRef);
+        const currentStatus = currentStatusSnapshot.val();
+        
+        // Only set to online if user hasn't manually set themselves to offline
+        if (!currentStatus?.manual || currentStatus?.state === 'online') {
+          await set(userStatusRef, {
+            state: 'online',
+            last_changed: serverTimestamp(),
+            manual: false // Reset manual flag when automatically setting online
+          });
+          console.log('✅ Initial status set to online');
+        } else {
+          console.log('🔒 User manually set to offline, keeping offline status');
+        }
         
         // Also set up disconnect handler here to ensure it's always configured
         const isOfflineForDatabase = {
@@ -214,13 +245,18 @@ export const StatusProvider = ({ children }) => {
     try {
       const uid = currentUser.uid;
       
-      // Update the current status (simplified)
-      await set(ref(database, `status/${uid}`), {
-        state: status,
-        last_changed: serverTimestamp()
-      });
+      // Update the current status and save the manual selection
+      await Promise.all([
+        set(ref(database, `status/${uid}`), {
+          state: status,
+          last_changed: serverTimestamp(),
+          manual: true // Flag to indicate this is a manual status change
+        }),
+        set(ref(database, `users/${uid}/selectedStatus`), status)
+      ]);
       
       setSelectedStatus(status);
+      console.log(`✅ Status updated to: ${status} (manual)`);
       return true;
     } catch (error) {
       console.error('Error updating user status:', error);
