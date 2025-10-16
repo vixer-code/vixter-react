@@ -32,33 +32,23 @@ export const StatusProvider = ({ children }) => {
       const uid = currentUser.uid;
       
       // Get current status to preserve manual flag
-      const currentStatus = await getCurrentStatus(uid);
-      
-      // Preserve the existing manual flag - don't force it based on status
-      const isManual = currentStatus?.manual || false;
-      
-      console.log('🔧 updateUserStatus called:', {
-        uid: uid.slice(0, 8),
-        status,
-        isManual,
-        currentManual: currentStatus?.manual,
-        timestamp: new Date().toISOString()
-      });
+      const snapshot = await get(ref(database, `status/${uid}`));
+      const currentStatus = snapshot.val();
       
       await set(ref(database, `status/${uid}`), {
         state: status,
         last_changed: serverTimestamp(),
-        manual: isManual
+        manual: currentStatus?.manual || false
       });
       
       setSelectedStatus(status);
-      console.log(`✅ Status updated to: ${status} (manual: ${isManual})`);
+      console.log(`✅ Status updated to: ${status} (manual: ${currentStatus?.manual || false})`);
       return true;
     } catch (error) {
       console.error('Error updating user status:', error);
       return false;
     }
-  }, [currentUser, getCurrentStatus]);
+  }, [currentUser]);
 
   // Get current status function
   const getCurrentStatus = useCallback(async (uid) => {
