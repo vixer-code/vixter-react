@@ -573,7 +573,8 @@ const Feed = () => {
   };
 
   const renderPost = (post) => {
-    const user = users[post.userId || post.authorId];
+    const isCurrentUser = currentUser && (post.userId || post.authorId) === currentUser.uid;
+    const user = isCurrentUser ? userProfile : (users[post.userId || post.authorId] || {});
     if (!user && !post.authorName) return null;
 
     const isLiked = post.likes && post.likes[currentUser?.uid];

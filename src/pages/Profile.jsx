@@ -1126,44 +1126,6 @@ const Profile = () => {
     loadAllCommentCounts();
   }, [posts]);
 
-  const renderAccountBadges = () => {
-    if (!profile) return null;
-
-    const levelMap = {
-      iron: 'iron.png', bronze: 'bronze.png', silver: 'silver.png',
-      gold: 'gold.png', platinum: 'platinum.png',
-      emerald: 'emerald.png', diamond: 'diamond.png', master: 'master.png'
-    };
-
-    const badges = [];
-    const levelKey = (profile.accountLevel || '').toLowerCase();
-    
-    if (levelMap[levelKey]) {
-      badges.push({
-        src: `/images/${levelMap[levelKey]}`,
-        alt: `${profile.accountLevel} badge`,
-        label: `Esse usuário é nível ${profile.accountLevel}!`
-      });
-    }
-
-    if (profile.admin === true) {
-      badges.push({
-        src: '/images/admin.png',
-        alt: 'Admin badge',
-        label: 'Esse é um dos nossos administradores!'
-      });
-    }
-
-    return (
-      <div className="account-badges">
-        {badges.map((badge, index) => (
-          <span key={index} className="badge-icon" data-label={badge.label}>
-            <img src={badge.src} alt={badge.alt} />
-          </span>
-        ))}
-      </div>
-    );
-  };
 
   // Optimized tab switching to prevent INP issues
   const handleTabClick = useCallback((event) => {
@@ -1384,7 +1346,6 @@ const Profile = () => {
                   </div>
                 )}
               </h1>
-              {renderAccountBadges()}
             </div>
             <p className="profile-username">
               @{profile.username || 'username'}
