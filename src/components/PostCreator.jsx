@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import { useNotification } from '../contexts/NotificationContext';
+import { sendAnnouncementNotification } from '../services/notificationService';
 import { database, storage, firestore } from '../../config/firebase';
 import { ref, push } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import Portal from './Portal';
 import './PostCreator.css';
 
@@ -14,14 +15,15 @@ const PostCreator = ({
   onPostCreated = () => {},
   placeholder = "O que você está pensando?",
   showAttachment = false,
-  categories = []
+  categories = [],
+  isAnnouncement = false // Novo parâmetro para indicar se é um aviso
 }) => {
   const { currentUser } = useAuth();
   const { userProfile } = useUser();
   const { showSuccess, showError, showWarning } = useNotification();
   
   // Lista de tags que indicam conteúdo +18 (adulto)
-  const adultTags = ['vixies', '+18', '18+', 'adulto', 'nsfw', 'adult', 'xxx', 'sexual', 'sexy', 'nude', 'nudes'];
+  const adultTags = ['vixies', '+18', '18+', 'adulto', 'nsfw', 'adult', 'xxx', 'sexual', 'sexy', 'nude', 'nudes', 'droga', 'sexo', 'vagina', 'buceta', 'buraquinho', 'molhadinha'];
   
   // Post content state
   const [postText, setPostText] = useState('');
@@ -385,8 +387,38 @@ const PostCreator = ({
       console.log('Attachment image:', attachment?.image);
 
       // Publish to appropriate database location
-      const postsRef = ref(database, mode === 'general_feed' ? 'posts' : `${mode}_posts`);
-      await push(postsRef, postData);
+      if (isAnnouncement) {
+        // Para avisos, usar Firestore
+        const announcementsCollection = mode === 'general_feed' ? 'announcements_lobby' : 
+                                       mode === 'vixies' ? 'announcements_vixies' : 
+                                       mode === 'vixink' ? 'announcements_vixink' : 'announcements_lobby';
+        
+        const announcementsRef = collection(firestore, announcementsCollection);
+        const announcementData = {
+          ...postData,
+          createdAt: Timestamp.now(),
+          type: 'announcement',
+          feedType: mode === 'general_feed' ? 'lobby' : mode
+        };
+        
+        const newAnnouncementRef = await addDoc(announcementsRef, announcementData);
+        
+        // Enviar notificação para todos os usuários
+        await sendAnnouncementNotification(
+          mode === 'general_feed' ? 'lobby' : mode,
+          newAnnouncementRef.id,
+          content,
+          currentUser.uid,
+          userName
+        );
+        
+        showSuccess('Aviso criado com sucesso!');
+      } else {
+        // Para posts normais, usar Realtime Database
+        const postsRef = ref(database, mode === 'general_feed' ? 'posts' : `${mode}_posts`);
+        await push(postsRef, postData);
+        showSuccess('Post criado com sucesso!');
+      }
 
       // Reset form
       setPostText('');
@@ -395,7 +427,6 @@ const PostCreator = ({
       setSelectedCategory('all');
       setIsAdultContent(false);
       
-      showSuccess('Post criado com sucesso!');
       onPostCreated();
       
     } catch (error) {

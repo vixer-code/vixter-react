@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, onSnapshot, orderBy, query, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useAdminStatus } from '../hooks/useAdminStatus';
 import { useNotification } from '../contexts/NotificationContext';
-import { sendAnnouncementNotification } from '../services/notificationService';
 import PostCreator from './PostCreator';
 import './AnnouncementsTab.css';
 
@@ -72,42 +71,13 @@ const AnnouncementsTab = ({ feedType }) => {
     };
   }, [feedType]);
 
-  const handleCreateAnnouncement = async (postData) => {
-    if (!isAdmin) {
-      showError('Apenas administradores podem criar avisos.');
-      return;
-    }
-
-    try {
-      const announcementsCollection = getAnnouncementsCollection();
-      const announcementsRef = collection(db, announcementsCollection);
-      
-      const announcementData = {
-        ...postData,
-        authorId: currentUser.uid,
-        authorName: currentUser.displayName || 'Administrador',
-        createdAt: Timestamp.now(),
-        type: 'announcement',
-        feedType: feedType
-      };
-
-      const newAnnouncementRef = await addDoc(announcementsRef, announcementData);
-      
-      // Enviar notificação para todos os usuários
-      await sendAnnouncementNotification(
-        feedType,
-        newAnnouncementRef.id,
-        postData.text || '',
-        currentUser.uid,
-        currentUser.displayName || 'Administrador'
-      );
-      
-      showSuccess(`Aviso criado com sucesso no ${getFeedDisplayName()}!`);
-      setShowPostCreator(false);
-    } catch (error) {
-      console.error('Error creating announcement:', error);
-      showError('Erro ao criar aviso.');
-    }
+  const handleCreateAnnouncement = () => {
+    // O PostCreator agora cuida de salvar o aviso diretamente
+    // Esta função apenas fecha o modal e atualiza a lista
+    setShowPostCreator(false);
+    
+    // As notificações serão enviadas pelo PostCreator quando o aviso for criado
+    // A lista de avisos será atualizada automaticamente pelo listener do Firestore
   };
 
   const formatTimestamp = (timestamp) => {
@@ -230,10 +200,11 @@ const AnnouncementsTab = ({ feedType }) => {
               </button>
             </div>
             <PostCreator
-              onSubmit={handleCreateAnnouncement}
+              mode={feedType === 'lobby' ? 'general_feed' : feedType}
+              onPostCreated={handleCreateAnnouncement}
               placeholder="Digite seu aviso oficial aqui..."
-              showLocation={false}
-              maxLength={500}
+              showAttachment={false}
+              isAnnouncement={true}
             />
             <div className="modal-footer">
               <button 

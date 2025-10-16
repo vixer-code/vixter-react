@@ -57,6 +57,7 @@ Foi implementado um sistema de avisos oficiais para os feeds do Vixter React. Os
 ### Arquivos Modificados:
 - `src/services/notificationService.js` - Adicionada função de notificação de avisos
 - `src/components/NotificationCenter.jsx` - Suporte a notificações de avisos
+- `src/components/PostCreator.jsx` - Suporte para criar avisos via parâmetro `isAnnouncement`
 - `src/pages/Feed.jsx` - Integração da tab de avisos no Lobby
 - `src/pages/Vixies.jsx` - Integração da tab de avisos no Vixies
 - `src/pages/Vixink.jsx` - Integração da tab de avisos no Vixink
@@ -94,7 +95,7 @@ Foi implementado um sistema de avisos oficiais para os feeds do Vixter React. Os
 2. Não há interface para gerenciar admins no frontend (por segurança)
 3. Avisos são separados por feed (cada feed tem seus próprios avisos)
 4. Notificações são enviadas para TODOS os usuários quando um aviso é criado
-5. O sistema usa o mesmo PostCreator existente, mas com validações especiais para admins
+5. O sistema usa o mesmo PostCreator existente com parâmetro `isAnnouncement=true` para avisos
 6. **Avisos não aparecem nos feeds normais** - são armazenados em coleções separadas
 7. **PostCreator é ocultado** quando o usuário está na tab de Avisos
 8. **Modal de criar aviso** tem botão de cancelar para sair
