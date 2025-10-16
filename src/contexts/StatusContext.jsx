@@ -151,17 +151,21 @@ export const StatusProvider = ({ children }) => {
           console.log('✅ User status set to: online (automatic) for user:', uid);
         }
       } else {
-        // If disconnected, set user as offline immediately
+        // If disconnected, check if user has manual status
         const userStatusRef = ref(database, `status/${uid}`);
-        // Check current status to preserve manual flag
         const currentStatusSnapshot = await get(userStatusRef);
         const currentStatus = currentStatusSnapshot.val();
         
-        set(userStatusRef, {
-          state: 'offline',
-          last_changed: serverTimestamp(),
-        });
-        console.log('📴 User disconnected - set to offline:', uid);
+        // Only set to offline if user doesn't have manual status
+        if (!currentStatus || currentStatus.manual !== true) {
+          set(userStatusRef, {
+            state: 'offline',
+            last_changed: serverTimestamp(),
+          });
+          console.log('📴 User disconnected - set to offline (automatic):', uid);
+        } else {
+          console.log('📴 User disconnected - has manual status, not changing:', currentStatus.state);
+        }
       }
     });
 
@@ -203,27 +207,34 @@ export const StatusProvider = ({ children }) => {
           // User has no manual status set, set to online automatically
           set(userStatusRef, {
             state: 'online',
-            last_changed: serverTimestamp(),
-            manual: false // Keep manual flag as false for automatic setting
+            last_changed: serverTimestamp()
           });
           console.log('📱 Page visible - User set to online (automatic):', uid);
         }
       }
     };
 
-    const handleBeforeUnload = () => {
+    const handleBeforeUnload = async () => {
       if (!auth?.currentUser) {
         console.log('🚪 Page unload ignored - user not authenticated');
         return;
       }
       
-      // Set user as offline when page is about to unload
+      // Check if user has manual status before setting offline
       const userStatusRef = ref(database, `status/${uid}`);
-      set(userStatusRef, {
-        state: 'offline',
-        last_changed: serverTimestamp()
-      });
-      console.log('🚪 Page unloading - User set to offline:', uid);
+      const currentStatusSnapshot = await get(userStatusRef);
+      const currentStatus = currentStatusSnapshot.val();
+      
+      // Only set to offline if user doesn't have manual status
+      if (!currentStatus || currentStatus.manual !== true) {
+        set(userStatusRef, {
+          state: 'offline',
+          last_changed: serverTimestamp()
+        });
+        console.log('🚪 Page unloading - User set to offline (automatic):', uid);
+      } else {
+        console.log('🚪 Page unloading - User has manual status, not changing:', currentStatus.state);
+      }
     };
 
     // Add event listeners
@@ -280,8 +291,7 @@ export const StatusProvider = ({ children }) => {
           // User has no manual status set, set to online automatically
           await set(userStatusRef, {
             state: 'online',
-            last_changed: serverTimestamp(),
-            manual: false // Keep manual flag as false for automatic setting
+            last_changed: serverTimestamp()
           });
           console.log('✅ Initial status set to online (automatic)');
         }
@@ -302,16 +312,29 @@ export const StatusProvider = ({ children }) => {
     setupInitialStatus();
 
     return () => {
-      // Force offline status before cleanup - only if user is still authenticated
+      // Set offline status before cleanup - only if user is still authenticated and not manual
       if (currentUser?.uid && auth?.currentUser) {
         const userStatusRef = ref(database, `status/${currentUser.uid}`);
-        set(userStatusRef, {
-          state: 'offline',
-          last_changed: serverTimestamp()
+        
+        // Check if user has manual status
+        get(userStatusRef).then(snapshot => {
+          const currentStatus = snapshot.val();
+          
+          // Only set to offline if user doesn't have manual status
+          if (!currentStatus || currentStatus.manual !== true) {
+            set(userStatusRef, {
+              state: 'offline',
+              last_changed: serverTimestamp()
+            }).catch(error => {
+              console.error('❌ Error setting offline status during cleanup:', error);
+            });
+            console.log('🧹 Cleanup - User set to offline (automatic):', currentUser.uid);
+          } else {
+            console.log('🧹 Cleanup - User has manual status, not changing:', currentStatus.state);
+          }
         }).catch(error => {
-          console.error('❌ Error setting offline status during cleanup:', error);
+          console.error('❌ Error checking manual status during cleanup:', error);
         });
-        console.log('🧹 Cleanup - User set to offline:', currentUser.uid);
       } else {
         console.log('🧹 Cleanup - Skipping status update (user not authenticated)');
       }
