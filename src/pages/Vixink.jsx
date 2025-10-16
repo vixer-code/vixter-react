@@ -12,6 +12,7 @@ import VixtipModal from '../components/VixtipModal';
 import VixtipSupporters from '../components/VixtipSupporters';
 import PurpleSpinner from '../components/PurpleSpinner';
 import MediaViewer from '../components/MediaViewer';
+import AnnouncementsTab from '../components/AnnouncementsTab';
 import './Vixies.css';
 
 // Component for displaying attachments with validation
@@ -85,7 +86,7 @@ const Vixink = () => {
   const [users, setUsers] = useState({});
   const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('main'); // main | following | myposts
+  const [activeTab, setActiveTab] = useState('main'); // main | following | myposts | announcements
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
   const [showVixtipModal, setShowVixtipModal] = useState(false);
@@ -419,6 +420,13 @@ const Vixink = () => {
             >
               Seguindo
             </button>
+            <button 
+              className={`tab-btn ${activeTab === 'announcements' ? 'active' : ''}`}
+              onClick={() => setActiveTab('announcements')}
+            >
+              <i className="fas fa-bullhorn"></i>
+              Avisos
+            </button>
             {userProfile && userProfile.accountType !== 'client' && (
               <button 
                 className={`tab-btn tab-btn-myposts ${activeTab === 'myposts' ? 'active' : ''}`}
@@ -476,7 +484,9 @@ const Vixink = () => {
         </div>
 
         <div className="vixies-feed">
-          {filteredPosts.length === 0 ? (
+          {activeTab === 'announcements' ? (
+            <AnnouncementsTab feedType="vixink" />
+          ) : filteredPosts.length === 0 ? (
             <div className="no-posts">
               <i className="fas fa-link"></i>
               <h3>Nenhum post encontrado</h3>

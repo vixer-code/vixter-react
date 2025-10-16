@@ -123,6 +123,8 @@ export const getNotificationMessage = (action, actorName, commentContent = null)
       return 'Seu pedido de serviço foi aceito';
     case 'pack_accepted':
       return 'Seu pedido de pack foi aceito';
+    case 'announcement':
+      return `Novo aviso no ${actorName}`;
     default:
       return `${actorName} interagiu com seu post`;
   }
@@ -376,5 +378,64 @@ export const sendPackAcceptedNotification = async (
     console.log(`Pack accepted notification sent to buyer ${buyerId} for pack ${packName}`);
   } catch (error) {
     console.error('Error sending pack accepted notification:', error);
+  }
+};
+
+/**
+ * Send announcement notification to all users
+ * @param {string} feedType - Type of feed (lobby, vixies, vixink)
+ * @param {string} announcementId - ID of the announcement
+ * @param {string} announcementText - Text content of the announcement
+ * @param {string} authorId - ID of the admin who created the announcement
+ * @param {string} authorName - Name of the admin
+ */
+export const sendAnnouncementNotification = async (
+  feedType,
+  announcementId,
+  announcementText,
+  authorId,
+  authorName
+) => {
+  try {
+    const feedDisplayName = feedType === 'lobby' ? 'Lobby' : 
+                           feedType === 'vixies' ? 'Vixies' : 
+                           feedType === 'vixink' ? 'Vixink' : 'Feed';
+
+    const notificationData = {
+      type: 'announcement',
+      action: 'announcement',
+      feedType,
+      feedDisplayName,
+      announcementId,
+      announcementText: announcementText ? announcementText.substring(0, 100) + (announcementText.length > 100 ? '...' : '') : '',
+      authorId,
+      authorName,
+      timestamp: Date.now(),
+      read: false
+    };
+
+    // Get all users from database to send notification
+    const usersRef = ref(database, 'users');
+    const usersSnapshot = await get(usersRef);
+    
+    if (usersSnapshot.exists()) {
+      const notificationsPromises = [];
+      
+      usersSnapshot.forEach((childSnapshot) => {
+        const userId = childSnapshot.key;
+        // Don't send notification to the author
+        if (userId !== authorId) {
+          const notificationsRef = ref(database, `notifications/${userId}`);
+          notificationsPromises.push(push(notificationsRef, notificationData));
+        }
+      });
+      
+      // Send all notifications in parallel
+      await Promise.all(notificationsPromises);
+      
+      console.log(`Announcement notification sent to all users for ${feedDisplayName}`);
+    }
+  } catch (error) {
+    console.error('Error sending announcement notification:', error);
   }
 };

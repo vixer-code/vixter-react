@@ -42,6 +42,8 @@ const NotificationCenter = () => {
         return 'fas fa-check-circle';
       case 'pack_accepted':
         return 'fas fa-check-circle';
+      case 'announcement':
+        return 'fas fa-bullhorn';
       default:
         return 'fas fa-bell';
     }
@@ -65,6 +67,8 @@ const NotificationCenter = () => {
         return '#27ae60';
       case 'pack_accepted':
         return '#27ae60';
+      case 'announcement':
+        return '#FFD700';
       default:
         return '#a8a8b3';
     }

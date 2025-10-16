@@ -12,6 +12,7 @@ import { doc, getDoc, setDoc, deleteDoc, writeBatch, increment, collection, getD
 import { Link } from 'react-router-dom';
 import PostCreator from '../components/PostCreator';
 import MediaViewer from '../components/MediaViewer';
+import AnnouncementsTab from '../components/AnnouncementsTab';
 import './Feed.css';
 
 const Feed = () => {
@@ -24,7 +25,7 @@ const Feed = () => {
   const [users, setUsers] = useState({});
   const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('main'); // main | following | myposts
+  const [activeTab, setActiveTab] = useState('main'); // main | following | myposts | announcements
   const [dismissedClientRestriction, setDismissedClientRestriction] = useState(false);
   const [commentsByPost, setCommentsByPost] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
@@ -709,6 +710,13 @@ const Feed = () => {
             >
               Seguindo
             </button>
+            <button 
+              className={`tab-btn ${activeTab === 'announcements' ? 'active' : ''}`}
+              onClick={() => setActiveTab('announcements')}
+            >
+              <i className="fas fa-bullhorn"></i>
+              Avisos
+            </button>
             {currentUser && (
               <button 
                 className={`tab-btn tab-btn-myposts ${activeTab === 'myposts' ? 'active' : ''}`}
@@ -752,7 +760,9 @@ const Feed = () => {
         </div>
 
         <div className="vixies-feed">
-          {getFilteredPosts().length === 0 ? (
+          {activeTab === 'announcements' ? (
+            <AnnouncementsTab feedType="lobby" />
+          ) : getFilteredPosts().length === 0 ? (
             <div className="no-posts">
               <i className="fas fa-stream"></i>
               <h3>Nenhum post encontrado</h3>
