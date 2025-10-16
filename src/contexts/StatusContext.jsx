@@ -165,7 +165,7 @@ export const StatusProvider = ({ children }) => {
             onDisconnect(userStatusRef).set({
               state: 'offline',
               last_changed: serverTimestamp(),
-              manual: false
+              manual: currentStatus?.manual || false
             });
             console.log('🔧 Disconnect handler configured for automatic user');
           } else {
@@ -177,16 +177,16 @@ export const StatusProvider = ({ children }) => {
             console.log('🔒 Manual status detected, respecting:', currentStatus.state);
             console.log('🚫 SKIPPING AUTOMATIC ONLINE - User has manual status');
           } else {
-            // Set to online automatically
+            // Set to online automatically but preserve manual flag
             console.log('🔧 SETTING TO ONLINE AUTOMATICALLY:', {
               uid: uid.slice(0, 8),
-              manual: false,
+              manual: currentStatus?.manual || false,
               timestamp: new Date().toISOString()
             });
             await set(userStatusRef, {
               state: 'online',
               last_changed: serverTimestamp(),
-              manual: false
+              manual: currentStatus?.manual || false
             });
             console.log('✅ Set to online automatically');
             console.log('🔄 PRESENCE DYNAMIC - User is now online and being tracked');
@@ -201,12 +201,12 @@ export const StatusProvider = ({ children }) => {
           if (currentStatus.manual === true) {
             console.log('🔒 Manual status detected, respecting:', currentStatus.state);
           } else {
-            // Set to offline automatically
+            // Set to offline automatically but preserve manual flag
             const userStatusRef = ref(database, `status/${uid}`);
             await set(userStatusRef, {
               state: 'offline',
               last_changed: serverTimestamp(),
-              manual: false
+              manual: currentStatus?.manual || false
             });
             console.log('✅ Set to offline automatically');
           }
