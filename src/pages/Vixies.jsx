@@ -6,7 +6,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { getProfileUrlById } from '../utils/profileUrls';
 import { database } from '../../config/firebase';
 import { ref, onValue, set, update, push, off, query, orderByChild, get, remove } from 'firebase/database';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import PostCreator from '../components/PostCreator';
 import VixtipModal from '../components/VixtipModal';
 import VixtipSupporters from '../components/VixtipSupporters';
@@ -81,6 +81,7 @@ const Vixies = () => {
   const { userProfile } = useUser();
   const { hasBlockBetween } = useBlock();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
+  const [searchParams] = useSearchParams();
   const [posts, setPosts] = useState([]);
   const [users, setUsers] = useState({});
   const [following, setFollowing] = useState([]);
@@ -104,6 +105,13 @@ const Vixies = () => {
     }
   }, [userProfile, isKycVerified, showWarning]);
 
+  useEffect(() => {
+    // Check URL parameters for tab
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['main', 'following', 'myposts', 'announcements'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;

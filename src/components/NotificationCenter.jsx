@@ -82,7 +82,13 @@ const NotificationCenter = () => {
     setIsOpen(false);
     
     // Navigate based on notification type
-    if (notification.type === 'post_interaction' && notification.postId) {
+    if (notification.type === 'announcement' && notification.feedType) {
+      // Navigate to the announcements tab of the specific feed
+      const feedPath = notification.feedType === 'lobby' ? '/lobby' : 
+                      notification.feedType === 'vixies' ? '/vixies' : 
+                      notification.feedType === 'vixink' ? '/vixink' : '/lobby';
+      navigate(`${feedPath}?tab=announcements`);
+    } else if (notification.type === 'post_interaction' && notification.postId) {
       // Navigate to the specific post
       // We'll need to determine which feed the post is in
       if (notification.postId.includes('vixies')) {

@@ -9,7 +9,7 @@ import useKycStatus from '../hooks/useKycStatus';
 import { database, firestore } from '../../config/firebase';
 import { ref, onValue, off, query, orderByChild, set, update, push, get, remove } from 'firebase/database';
 import { doc, getDoc, setDoc, deleteDoc, writeBatch, increment, collection, getDocs } from 'firebase/firestore';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import PostCreator from '../components/PostCreator';
 import MediaViewer from '../components/MediaViewer';
 import AnnouncementsTab from '../components/AnnouncementsTab';
@@ -21,6 +21,7 @@ const Feed = () => {
   const { hasBlockBetween } = useBlock();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const { isKycVerified } = useKycStatus();
+  const [searchParams] = useSearchParams();
   const [posts, setPosts] = useState([]);
   const [users, setUsers] = useState({});
   const [following, setFollowing] = useState([]);
@@ -35,6 +36,14 @@ const Feed = () => {
   const [postToDelete, setPostToDelete] = useState(null);
   const [showMediaViewer, setShowMediaViewer] = useState(false);
   const [mediaToView, setMediaToView] = useState(null);
+
+  useEffect(() => {
+    // Check URL parameters for tab
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['main', 'following', 'myposts', 'announcements'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let postsUnsubscribe, usersUnsubscribe, followingUnsubscribe;

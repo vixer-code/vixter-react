@@ -63,7 +63,40 @@ Foi implementado um sistema de avisos oficiais para os feeds do Vixter React. Os
 - **Cor diferenciada** - dourado para avisos nas notificações
 - **Exibição de conteúdo corrigida** - avisos agora mostram o texto correto
 
-## Arquivos Criados/Modificados
+## 8. Navegação por Notificações
+
+### Funcionalidade
+- Quando um usuário clica em uma notificação de aviso, ele é redirecionado automaticamente para a aba "Avisos" do feed correspondente
+- A navegação usa parâmetros de URL (`?tab=announcements`) para definir a aba ativa
+
+### Implementação
+- **NotificationCenter.jsx**: Adicionado tratamento para `notification.type === 'announcement'` no `handleNotificationClick`
+- **Páginas de Feed**: Adicionado `useSearchParams` para ler o parâmetro `tab` da URL e definir a aba ativa automaticamente
+- **URLs de Redirecionamento**:
+  - Avisos do Lobby: `/lobby?tab=announcements`
+  - Avisos do Vixies: `/vixies?tab=announcements`
+  - Avisos do Vixink: `/vixink?tab=announcements`
+
+### Código Adicionado
+```javascript
+// NotificationCenter.jsx
+if (notification.type === 'announcement' && notification.feedType) {
+  const feedPath = notification.feedType === 'lobby' ? '/lobby' : 
+                  notification.feedType === 'vixies' ? '/vixies' : 
+                  notification.feedType === 'vixink' ? '/vixink' : '/lobby';
+  navigate(`${feedPath}?tab=announcements`);
+}
+
+// Páginas de Feed (Feed.jsx, Vixies.jsx, Vixink.jsx)
+useEffect(() => {
+  const tabParam = searchParams.get('tab');
+  if (tabParam && ['main', 'following', 'myposts', 'announcements'].includes(tabParam)) {
+    setActiveTab(tabParam);
+  }
+}, [searchParams]);
+```
+
+## 9. Arquivos Criados/Modificados
 
 ### Novos Arquivos:
 - `src/hooks/useAdminStatus.js` - Hook para verificar se usuário é admin
