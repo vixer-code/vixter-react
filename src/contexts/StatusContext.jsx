@@ -31,6 +31,76 @@ export const StatusProvider = ({ children }) => {
 
     const uid = currentUser.uid;
     
+    // EARLY VALIDATION: Check if user has manual status and skip all refresh logic
+    const checkInitialManualStatus = async () => {
+      try {
+        const userStatusRef = ref(database, `status/${uid}`);
+        const currentStatusSnapshot = await get(userStatusRef);
+        const currentStatus = currentStatusSnapshot.val();
+        
+        console.log('🔍 EARLY VALIDATION - Checking manual status:', {
+          uid: uid.slice(0, 8),
+          currentStatus,
+          hasData: !!currentStatus,
+          state: currentStatus?.state,
+          manual: currentStatus?.manual,
+          manualType: typeof currentStatus?.manual
+        });
+        
+        // If user has manual status, skip all refresh logic
+        if (currentStatus && currentStatus.manual === true) {
+          console.log('🔒 MANUAL STATUS FOUND - Skipping all refresh logic, respecting:', currentStatus.state);
+          // Just set up disconnect handler and return early
+          const isOfflineForDatabase = {
+            state: 'offline',
+            last_changed: serverTimestamp(),
+          };
+          onDisconnect(userStatusRef).set(isOfflineForDatabase);
+          console.log('🔧 Disconnect handler configured for manual status');
+          return true; // Indicates manual status found
+        }
+        
+        console.log('🤖 NO MANUAL STATUS - Proceeding with normal refresh logic');
+        return false; // Indicates no manual status, proceed normally
+      } catch (error) {
+        console.error('❌ Error checking initial manual status:', error);
+        return false; // On error, proceed normally
+      }
+    };
+    
+    // Listen for user's own status changes (works for both manual and automatic)
+    const userStatusRef = ref(database, `status/${uid}`);
+    const unsubscribeStatus = onValue(userStatusRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        console.log('📊 StatusContext - User status changed:', {
+          uid: uid.slice(0, 8),
+          state: data.state,
+          manual: data.manual,
+          last_changed: data.last_changed,
+          timestamp: new Date().toISOString()
+        });
+        setUserStatus(data.state || 'offline');
+      } else {
+        console.log('📊 StatusContext - No status data found for user:', uid.slice(0, 8));
+        setUserStatus('offline');
+      }
+    });
+
+    // Check manual status first
+    checkInitialManualStatus().then(hasManualStatus => {
+      if (hasManualStatus) {
+        console.log('🚫 SKIPPING ALL REFRESH LOGIC - User has manual status');
+        return; // Exit early, don't run any refresh logic
+      }
+      
+      console.log('▶️ PROCEEDING WITH NORMAL REFRESH LOGIC');
+      runNormalRefreshLogic();
+    });
+    
+    // Move all the existing logic into this function
+    const runNormalRefreshLogic = () => {
+    
     // Listen for connection status
     const connectedRef = ref(database, '.info/connected');
     const unsubscribeConnected = onValue(connectedRef, async (snapshot) => {
@@ -57,14 +127,17 @@ export const StatusProvider = ({ children }) => {
           currentStatus,
           hasData: !!currentStatus,
           state: currentStatus?.state,
-          manual: currentStatus?.manual
+          manual: currentStatus?.manual,
+          manualType: typeof currentStatus?.manual,
+          manualValue: currentStatus?.manual
         });
         
-        // If user has manually set their status (online or offline), respect that choice
-        if (currentStatus?.manual) {
-          console.log('🔒 User has manual status setting, respecting current status:', currentStatus.state);
+        // SIMPLIFIED LOGIC: If manual flag exists and is true, respect the current state
+        if (currentStatus && currentStatus.manual === true) {
+          console.log('🔒 MANUAL STATUS DETECTED - Respecting current status:', currentStatus.state);
           // Don't change anything, just respect the manual setting
         } else {
+          console.log('🤖 AUTOMATIC MODE - Setting to online');
           // User has no manual status set, set to online automatically
           await set(userStatusRef, {
             state: 'online',
@@ -107,11 +180,12 @@ export const StatusProvider = ({ children }) => {
         const currentStatusSnapshot = await get(userStatusRef);
         const currentStatus = currentStatusSnapshot.val();
         
-        // If user has manually set their status (online or offline), respect that choice
-        if (currentStatus?.manual) {
-          console.log('🔒 User has manual status setting, respecting current status:', currentStatus.state);
+        // SIMPLIFIED LOGIC: If manual flag exists and is true, respect the current state
+        if (currentStatus && currentStatus.manual === true) {
+          console.log('🔒 MANUAL STATUS DETECTED - Respecting current status:', currentStatus.state);
           // Don't change anything, just respect the manual setting
         } else {
+          console.log('🤖 AUTOMATIC MODE - Setting to online');
           // User has no manual status set, set to online automatically
           set(userStatusRef, {
             state: 'online',
@@ -143,25 +217,6 @@ export const StatusProvider = ({ children }) => {
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('pagehide', handleBeforeUnload);
 
-
-    // Listen for user's own status changes
-    const userStatusRef = ref(database, `status/${uid}`);
-    const unsubscribeStatus = onValue(userStatusRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        console.log('📊 StatusContext - User status changed:', {
-          uid: uid.slice(0, 8),
-          state: data.state,
-          manual: data.manual,
-          last_changed: data.last_changed,
-          timestamp: new Date().toISOString()
-        });
-        setUserStatus(data.state || 'offline');
-      } else {
-        console.log('📊 StatusContext - No status data found for user:', uid.slice(0, 8));
-        setUserStatus('offline');
-      }
-    });
 
     // Load user's selected status with fallback
     const loadSelectedStatus = async () => {
@@ -197,14 +252,17 @@ export const StatusProvider = ({ children }) => {
           currentStatus,
           hasData: !!currentStatus,
           state: currentStatus?.state,
-          manual: currentStatus?.manual
+          manual: currentStatus?.manual,
+          manualType: typeof currentStatus?.manual,
+          manualValue: currentStatus?.manual
         });
         
-        // If user has manually set their status (online or offline), respect that choice
-        if (currentStatus?.manual) {
-          console.log('🔒 User has manual status setting, respecting current status:', currentStatus.state);
+        // SIMPLIFIED LOGIC: If manual flag exists and is true, respect the current state
+        if (currentStatus && currentStatus.manual === true) {
+          console.log('🔒 MANUAL STATUS DETECTED - Respecting current status:', currentStatus.state);
           // Don't change anything, just respect the manual setting
         } else {
+          console.log('🤖 AUTOMATIC MODE - Setting to online');
           // User has no manual status set, set to online automatically
           await set(userStatusRef, {
             state: 'online',
@@ -250,6 +308,13 @@ export const StatusProvider = ({ children }) => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('pagehide', handleBeforeUnload);
+    };
+    
+    }; // End of runNormalRefreshLogic function
+    
+    // Return cleanup function for the main useEffect
+    return () => {
+      unsubscribeStatus();
     };
   }, [currentUser]);
 
