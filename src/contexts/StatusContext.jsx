@@ -31,13 +31,17 @@ export const StatusProvider = ({ children }) => {
     try {
       const uid = currentUser.uid;
       
-      // Simple logic: offline = manual, online = automatic
+      // Get current status to preserve manual flag
+      const currentStatus = await getCurrentStatus(uid);
+      
+      // Logic: offline = manual, online = automatic (but preserve existing manual if needed)
       const isManual = status === 'offline';
       
       console.log('🔧 updateUserStatus called:', {
         uid: uid.slice(0, 8),
         status,
         isManual,
+        currentManual: currentStatus.manual,
         timestamp: new Date().toISOString()
       });
       
@@ -54,7 +58,7 @@ export const StatusProvider = ({ children }) => {
       console.error('Error updating user status:', error);
       return false;
     }
-  }, [currentUser]);
+  }, [currentUser, getCurrentStatus]);
 
   // Get current status function
   const getCurrentStatus = useCallback(async (uid) => {
