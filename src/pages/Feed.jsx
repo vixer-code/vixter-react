@@ -13,6 +13,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import PostCreator from '../components/PostCreator';
 import MediaViewer from '../components/MediaViewer';
 import AnnouncementsTab from '../components/AnnouncementsTab';
+import UserBadge from '../components/UserBadge';
 import './Feed.css';
 
 const Feed = () => {
@@ -609,6 +610,7 @@ const Feed = () => {
                 <Link to={isOwnPost ? '/profile' : getProfileUrlById(post.userId || post.authorId, post.authorUsername)} className="author-name">
                   {post.authorName || user?.displayName || user?.email}
                 </Link>
+                <UserBadge user={user} />
                 {post.isAdultContent && isKycVerified && (
                   <span className="adult-content-badge">
                     <i className="fas fa-exclamation-triangle"></i>

@@ -96,20 +96,48 @@ useEffect(() => {
 }, [searchParams]);
 ```
 
-## 9. Arquivos Criados/Modificados
+## 9. Sistema de Badges de Usuário
+
+### Funcionalidade
+- Sistema de badges implementado para mostrar status de usuários
+- Atualmente suporta badge de administrador (`admin.png`)
+- Preparado para futuras implementações de elos/ranks
+
+### Implementação
+- **UserBadge.jsx**: Componente reutilizável que verifica se o usuário tem `admin: true`
+- **UserBadge.css**: Estilos para badges com borda dourada para admin
+- **Integração**: Badge aparece em todos os post-headers e na página de perfil
+
+### Locais onde aparece:
+- **Feed.jsx (Lobby)**: Ao lado do nome do autor nos posts
+- **Vixies.jsx**: Ao lado do nome do autor nos posts
+- **Vixink.jsx**: Ao lado do nome do autor nos posts
+- **AnnouncementsTab.jsx**: Substitui a coroa de administrador
+- **Profile.jsx**: Ao lado do displayName na página de perfil
+
+### Características:
+- **Responsivo**: Tamanho ajustado para mobile (18px) e desktop (20px)
+- **Visual**: Borda dourada para admin, sombra sutil
+- **Tooltip**: Mostra "Administrador" ao passar o mouse
+- **Fallback**: Não renderiza nada se o usuário não for admin
+
+## 10. Arquivos Criados/Modificados
 
 ### Novos Arquivos:
 - `src/hooks/useAdminStatus.js` - Hook para verificar se usuário é admin
 - `src/components/AnnouncementsTab.jsx` - Componente da tab de avisos
 - `src/components/AnnouncementsTab.css` - Estilos para avisos
+- `src/components/UserBadge.jsx` - Componente de badge para usuários (admin, futuros elos)
+- `src/components/UserBadge.css` - Estilos para badges de usuário
 
 ### Arquivos Modificados:
 - `src/services/notificationService.js` - Adicionada função de notificação de avisos
 - `src/components/NotificationCenter.jsx` - Suporte a notificações de avisos
 - `src/components/PostCreator.jsx` - Suporte para criar avisos via parâmetro `isAnnouncement`
-- `src/pages/Feed.jsx` - Integração da tab de avisos no Lobby
-- `src/pages/Vixies.jsx` - Integração da tab de avisos no Vixies
-- `src/pages/Vixink.jsx` - Integração da tab de avisos no Vixink
+- `src/pages/Feed.jsx` - Integração da tab de avisos no Lobby + UserBadge
+- `src/pages/Vixies.jsx` - Integração da tab de avisos no Vixies + UserBadge
+- `src/pages/Vixink.jsx` - Integração da tab de avisos no Vixink + UserBadge
+- `src/pages/Profile.jsx` - UserBadge ao lado do displayName
 
 ## Como Usar
 

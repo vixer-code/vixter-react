@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAdminStatus } from '../hooks/useAdminStatus';
 import { useNotification } from '../contexts/NotificationContext';
 import PostCreator from './PostCreator';
+import UserBadge from './UserBadge';
 import './AnnouncementsTab.css';
 
 const AnnouncementsTab = ({ feedType }) => {
@@ -111,9 +112,7 @@ const AnnouncementsTab = ({ feedType }) => {
             <div className="author-info">
               <div className="author-name-container">
                 <span className="author-name">{authorName}</span>
-                <span className="announcement-admin-badge">
-                  <i className="fas fa-crown"></i> Administrador
-                </span>
+                <UserBadge user={author} />
               </div>
               <span className="post-time">{formatTimestamp(announcement.createdAt)}</span>
             </div>

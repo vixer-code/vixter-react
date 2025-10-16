@@ -13,6 +13,7 @@ import VixtipSupporters from '../components/VixtipSupporters';
 import PurpleSpinner from '../components/PurpleSpinner';
 import MediaViewer from '../components/MediaViewer';
 import AnnouncementsTab from '../components/AnnouncementsTab';
+import UserBadge from '../components/UserBadge';
 import './Vixies.css';
 
 // Component for displaying attachments with validation
@@ -574,12 +575,15 @@ const Vixies = () => {
                         }}
                       />
                       <div className="author-info">
-                        <Link 
-                          to={isCurrentUser ? '/profile' : getProfileUrlById(post.authorId, post.authorUsername)} 
-                          className="author-name"
-                        >
-                          {post.authorName}
-                        </Link>
+                        <div className="author-name-container">
+                          <Link 
+                            to={isCurrentUser ? '/profile' : getProfileUrlById(post.authorId, post.authorUsername)} 
+                            className="author-name"
+                          >
+                            {post.authorName}
+                          </Link>
+                          <UserBadge user={author} />
+                        </div>
                         <span className="post-time">{formatTime(post.timestamp)}</span>
                       </div>
                     </div>

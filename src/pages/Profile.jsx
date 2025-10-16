@@ -28,6 +28,7 @@ import DeletePackModal from '../components/DeletePackModal';
 import PackBuyersModal from '../components/PackBuyersModal';
 import ImageEditorModal from '../components/ImageEditorModal';
 import PostCreator from '../components/PostCreator';
+import UserBadge from '../components/UserBadge';
 import './Profile.css';
 
 const Profile = () => {
@@ -1377,7 +1378,10 @@ const Profile = () => {
                   className="edit-input"
                 />
               ) : (
-                profile.displayName || 'Nome do Usuário'
+                <div className="profile-name-container">
+                  <span>{profile.displayName || 'Nome do Usuário'}</span>
+                  <UserBadge user={profile} />
+                </div>
               )}
             </h1>
             <p className="profile-username">
