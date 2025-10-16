@@ -1368,22 +1368,24 @@ const Profile = () => {
           </div>
           
           <div className="profile-info">
-            {renderAccountBadges()}
-            <h1 className="profile-name">
-              {editing ? (
-                <input
-                  type="text"
-                  value={formData.displayName}
-                  onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                  className="edit-input"
-                />
-              ) : (
-                <div className="profile-name-container">
-                  <span>{profile.displayName || 'Nome do Usuário'}</span>
-                  <UserBadge user={profile} />
-                </div>
-              )}
-            </h1>
+            <div className="profile-name-section">
+              <h1 className="profile-name">
+                {editing ? (
+                  <input
+                    type="text"
+                    value={formData.displayName}
+                    onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                    className="edit-input"
+                  />
+                ) : (
+                  <div className="profile-name-container">
+                    <span>{profile.displayName || 'Nome do Usuário'}</span>
+                    <UserBadge user={profile} />
+                  </div>
+                )}
+              </h1>
+              {renderAccountBadges()}
+            </div>
             <p className="profile-username">
               @{profile.username || 'username'}
             </p>
