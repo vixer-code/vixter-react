@@ -60,16 +60,18 @@ export const StatusProvider = ({ children }) => {
           manual: currentStatus?.manual
         });
         
-        // Only set to online if user hasn't manually set themselves to offline
-        if (currentStatus?.manual && currentStatus?.state === 'offline') {
-          console.log('🔒 User manually set to offline, keeping offline status');
+        // If user has manually set their status (online or offline), respect that choice
+        if (currentStatus?.manual) {
+          console.log('🔒 User has manual status setting, respecting current status:', currentStatus.state);
+          // Don't change anything, just respect the manual setting
         } else {
+          // User has no manual status set, set to online automatically
           await set(userStatusRef, {
             state: 'online',
             last_changed: serverTimestamp(),
-            manual: false // Reset manual flag when automatically setting online
+            manual: false // Keep manual flag as false for automatic setting
           });
-          console.log('✅ User status set to: online for user:', uid);
+          console.log('✅ User status set to: online (automatic) for user:', uid);
         }
       } else {
         // If disconnected, set user as offline immediately
@@ -105,16 +107,18 @@ export const StatusProvider = ({ children }) => {
         const currentStatusSnapshot = await get(userStatusRef);
         const currentStatus = currentStatusSnapshot.val();
         
-        // Only set to online if user hasn't manually set themselves to offline
-        if (currentStatus?.manual && currentStatus?.state === 'offline') {
-          console.log('🔒 User manually set to offline, keeping offline status');
+        // If user has manually set their status (online or offline), respect that choice
+        if (currentStatus?.manual) {
+          console.log('🔒 User has manual status setting, respecting current status:', currentStatus.state);
+          // Don't change anything, just respect the manual setting
         } else {
+          // User has no manual status set, set to online automatically
           set(userStatusRef, {
             state: 'online',
             last_changed: serverTimestamp(),
-            manual: false // Reset manual flag when automatically setting online
+            manual: false // Keep manual flag as false for automatic setting
           });
-          console.log('📱 Page visible - User set to online:', uid);
+          console.log('📱 Page visible - User set to online (automatic):', uid);
         }
       }
     };
@@ -196,18 +200,18 @@ export const StatusProvider = ({ children }) => {
           manual: currentStatus?.manual
         });
         
-        // If user has manually set themselves to offline, respect that choice
-        if (currentStatus?.manual && currentStatus?.state === 'offline') {
-          console.log('🔒 User manually set to offline, respecting offline status');
-          // Just set up disconnect handler, don't change status
+        // If user has manually set their status (online or offline), respect that choice
+        if (currentStatus?.manual) {
+          console.log('🔒 User has manual status setting, respecting current status:', currentStatus.state);
+          // Don't change anything, just respect the manual setting
         } else {
-          // User is online or no manual status set, set to online
+          // User has no manual status set, set to online automatically
           await set(userStatusRef, {
             state: 'online',
             last_changed: serverTimestamp(),
-            manual: false // Reset manual flag when automatically setting online
+            manual: false // Keep manual flag as false for automatic setting
           });
-          console.log('✅ Initial status set to online');
+          console.log('✅ Initial status set to online (automatic)');
         }
         
         // Always set up disconnect handler
