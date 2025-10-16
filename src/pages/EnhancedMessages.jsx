@@ -26,7 +26,6 @@ const EnhancedMessages = () => {
     setActiveTab,
     setSelectedConversation,
     isOnline,
-    offlineMessages,
     users,
     loadUserData,
     forceReloadConversations
@@ -276,11 +275,6 @@ const EnhancedMessages = () => {
              isConnected ? 'Conectado' : 'Desconectado'}
           </span>
         </div>
-        {!isOnline && (
-          <div className="offline-indicator">
-            <span>📱 Modo offline - {offlineMessages.length} mensagem(ns) na fila</span>
-          </div>
-        )}
         {selectedConversation?.type === 'service' && selectedConversation?.serviceOrderId && (() => {
           const serviceStatus = getServiceOrderStatus(selectedConversation);
           if (!serviceStatus) return null;

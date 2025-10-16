@@ -89,7 +89,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [activeTab, setActiveTab] = useState('messages');
-  const [offlineMessages, setOfflineMessages] = useState([]);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   
   // Update isOnline based on user status
@@ -216,13 +215,12 @@ export const EnhancedMessagingProvider = ({ children }) => {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      console.log('App is online - processing offline messages');
-      processOfflineMessages();
+      console.log('App is online');
     };
 
     const handleOffline = () => {
       setIsOnline(false);
-      console.log('App is offline - messages will be queued');
+      console.log('App is offline');
     };
 
     window.addEventListener('online', handleOnline);
@@ -233,23 +231,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
-  // Process offline messages when coming back online
-  const processOfflineMessages = useCallback(async () => {
-    if (offlineMessages.length === 0) return;
-
-    console.log(`Processing ${offlineMessages.length} offline messages`);
-    
-    for (const message of offlineMessages) {
-      try {
-        await sendMessageDirect(message.text, message.conversationId, message.replyToId);
-      } catch (error) {
-        console.error('Error processing offline message:', error);
-      }
-    }
-
-    setOfflineMessages([]);
-  }, [offlineMessages]);
 
   // Function to enrich conversation with user data
   const enrichConversationWithUserData = async (conversation) => {
@@ -1760,17 +1741,8 @@ export const EnhancedMessagingProvider = ({ children }) => {
       }
     }
 
-    // If offline, queue the message
-    if (!isOnline) {
-      console.log('App is offline - queuing message');
-      setOfflineMessages(prev => [...prev, {
-        text: text.trim(),
-        conversationId: selectedConversation.id,
-        replyToId,
-        timestamp: Date.now()
-      }]);
-      return true;
-    }
+    // Always try to send the message directly, regardless of online/offline status
+    // The presence management will handle the user's actual availability
 
     try {
       setSending(true);
@@ -2672,7 +2644,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
     recordingAudio,
     activeTab,
     readReceiptsEnabled,
-    offlineMessages,
     isOnline,
     
     // Typing indicators
@@ -2731,7 +2702,6 @@ export const EnhancedMessagingProvider = ({ children }) => {
     recordingAudio,
     activeTab,
     readReceiptsEnabled,
-    offlineMessages,
     isOnline,
     sendMessage,
     sendMediaMessage,

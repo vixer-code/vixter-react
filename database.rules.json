@@ -195,7 +195,7 @@
           ".validate": "newData.isBoolean()"
         },
         "selectedStatus": {
-          ".validate": "newData.isString() && (newData.val() == 'online' || newData.val() == 'ausente' || newData.val() == 'invisivel')"
+          ".validate": "newData.isString() && (newData.val() == 'online' || newData.val() == 'offline' || newData.val() == 'ausente' || newData.val() == 'invisivel')"
         }
       }
     },
@@ -209,6 +209,9 @@
         },
         "last_changed": {
           ".validate": "newData.isNumber() || newData.val() == '.sv' && newData.child('.sv').val() == 'timestamp'"
+        },
+        "manual": {
+          ".validate": "newData.isBoolean()"
         }
       }
     },
