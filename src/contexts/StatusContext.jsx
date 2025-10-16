@@ -110,6 +110,9 @@ export const StatusProvider = ({ children }) => {
       
       console.log('▶️ PROCEEDING WITH NORMAL REFRESH LOGIC');
       
+      // Set up initial status for automatic users
+      setupInitialStatus();
+      
       // Set up status listener for automatic users (with refresh logic)
       const userStatusRef = ref(database, `status/${uid}`);
       const unsubscribeStatus = onValue(userStatusRef, (snapshot) => {
@@ -357,8 +360,7 @@ export const StatusProvider = ({ children }) => {
       }
     };
 
-    // Set up initial status immediately
-    setupInitialStatus();
+    // DON'T set up initial status here - wait for manual validation first
 
     return () => {
       // Set offline status before cleanup - only if user is still authenticated and not manual
