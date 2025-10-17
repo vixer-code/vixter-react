@@ -10,14 +10,52 @@ const ExpandableText = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
-  // Se o texto é menor que o limite, não precisa de expansão
-  if (!text || text.length <= maxLength) {
+  if (!text) {
+    return null;
+  }
+  
+  // Normalizar o texto removendo espaços em branco excessivos
+  const normalizeText = (str) => {
+    return str
+      .replace(/\n\s*\n\s*\n/g, '\n\n') // Reduz múltiplas quebras de linha para máximo 2
+      .replace(/[ \t]+/g, ' ') // Reduz múltiplos espaços/tabs para 1 espaço
+      .trim(); // Remove espaços do início e fim
+  };
+  
+  const normalizedText = normalizeText(text);
+  
+  // Se o texto normalizado é menor que o limite, não precisa de expansão
+  if (normalizedText.length <= maxLength) {
     return <p className={`expandable-text ${className}`}>{text}</p>;
   }
   
-  const truncatedText = text.substring(0, maxLength);
+  // Para truncar, vamos procurar um ponto de quebra natural próximo ao limite
+  const findBreakPoint = (str, maxLen) => {
+    // Se o texto é menor que o limite, retorna tudo
+    if (str.length <= maxLen) return str.length;
+    
+    // Procura por pontos de quebra naturais (espaços, pontuação, quebras de linha)
+    const breakPoints = [];
+    for (let i = maxLen; i >= Math.max(0, maxLen - 50); i--) {
+      const char = str[i];
+      if (char === ' ' || char === '\n' || char === '.' || char === '!' || char === '?' || char === ',') {
+        breakPoints.push(i + 1);
+      }
+    }
+    
+    // Se encontrou um ponto de quebra, usa o mais próximo ao limite
+    if (breakPoints.length > 0) {
+      return breakPoints[breakPoints.length - 1];
+    }
+    
+    // Caso contrário, trunca no limite
+    return maxLen;
+  };
+  
+  const breakPoint = findBreakPoint(normalizedText, maxLength);
+  const truncatedText = normalizedText.substring(0, breakPoint);
   const displayText = isExpanded ? text : truncatedText;
-  const needsExpansion = text.length > maxLength;
+  const needsExpansion = normalizedText.length > maxLength;
   
   return (
     <p className={`expandable-text ${className}`}>
