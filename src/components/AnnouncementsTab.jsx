@@ -6,6 +6,7 @@ import { useAdminStatus } from '../hooks/useAdminStatus';
 import { useNotification } from '../contexts/NotificationContext';
 import PostCreator from './PostCreator';
 import UserBadge from './UserBadge';
+import ExpandableText from './ExpandableText';
 import './AnnouncementsTab.css';
 
 const AnnouncementsTab = ({ feedType }) => {
@@ -121,7 +122,11 @@ const AnnouncementsTab = ({ feedType }) => {
         
         <div className="post-content">
           {(announcement.content || announcement.text) && (
-            <p>{announcement.content || announcement.text}</p>
+            <ExpandableText 
+              text={announcement.content || announcement.text} 
+              maxLength={200}
+              className="announcement-content"
+            />
           )}
           
           {announcement.media && announcement.media.length > 0 && (

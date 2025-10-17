@@ -14,6 +14,7 @@ import PurpleSpinner from '../components/PurpleSpinner';
 import MediaViewer from '../components/MediaViewer';
 import AnnouncementsTab from '../components/AnnouncementsTab';
 import UserBadge from '../components/UserBadge';
+import ExpandableText from '../components/ExpandableText';
 import './Vixies.css';
 
 // Component for displaying attachments with validation
@@ -603,7 +604,11 @@ const Vixies = () => {
 
 
                   <div className="post-content">
-                    <p>{post.content}</p>
+                    <ExpandableText 
+                      text={post.content} 
+                      maxLength={200}
+                      className="post-text-content"
+                    />
                     {Array.isArray(post.media) && post.media.length > 0 && (
                       <div className="post-media">
                         {post.media.map((m, idx) => (

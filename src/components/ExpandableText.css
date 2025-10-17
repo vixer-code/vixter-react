@@ -1,0 +1,38 @@
+.expandable-text {
+  margin: 0;
+  line-height: 1.5;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.expand-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--accent-color, #8a2be2);
+  cursor: pointer;
+  font-size: inherit;
+  font-weight: 600;
+  padding: 0;
+  margin-left: 4px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.expand-toggle-btn:hover {
+  color: var(--accent-hover, #7b1fa2);
+  text-decoration: underline;
+}
+
+.expand-toggle-btn:focus {
+  outline: 2px solid var(--accent-color, #8a2be2);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .expand-toggle-btn {
+    font-size: 14px;
+  }
+}

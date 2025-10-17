@@ -2,6 +2,16 @@
 /* ======= VIXIES ========= */
 /* ======================== */
 
+/* ===== EXPANDABLE TEXT STYLES ===== */
+.post-text-content {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--text-primary);
+  font-size: 15px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
 /* ===== Container Geral ===== */
 .feed-page .vixies-container {
   max-width: 1200px;

@@ -14,6 +14,7 @@ import PostCreator from '../components/PostCreator';
 import MediaViewer from '../components/MediaViewer';
 import AnnouncementsTab from '../components/AnnouncementsTab';
 import UserBadge from '../components/UserBadge';
+import ExpandableText from '../components/ExpandableText';
 import './Feed.css';
 
 const Feed = () => {
@@ -637,7 +638,13 @@ const Feed = () => {
         </div>
 
         <div className="post-content">
-          {contentText && <p>{contentText}</p>}
+          {contentText && (
+            <ExpandableText 
+              text={contentText} 
+              maxLength={200}
+              className="post-text-content"
+            />
+          )}
           {mediaArray.length > 0 && (
             <div className="post-media">
               {mediaArray.map((m, idx) => (

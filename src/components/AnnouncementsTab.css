@@ -6,6 +6,16 @@
   padding: 20px;
 }
 
+/* ===== EXPANDABLE TEXT STYLES ===== */
+.announcement-content {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--text-primary);
+  font-size: 15px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
 .announcements-header {
   display: flex;
   justify-content: space-between;
