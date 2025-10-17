@@ -641,7 +641,7 @@ const Feed = () => {
           {contentText && (
             <ExpandableText 
               text={contentText} 
-              maxLength={200}
+              maxLines={3}
               className="post-text-content"
             />
           )}

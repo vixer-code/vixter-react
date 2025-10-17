@@ -124,7 +124,7 @@ const AnnouncementsTab = ({ feedType }) => {
           {(announcement.content || announcement.text) && (
             <ExpandableText 
               text={announcement.content || announcement.text} 
-              maxLength={200}
+              maxLines={3}
               className="announcement-content"
             />
           )}

@@ -606,7 +606,7 @@ const Vixies = () => {
                   <div className="post-content">
                     <ExpandableText 
                       text={post.content} 
-                      maxLength={200}
+                      maxLines={3}
                       className="post-text-content"
                     />
                     {Array.isArray(post.media) && post.media.length > 0 && (

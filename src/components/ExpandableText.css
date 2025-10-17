@@ -1,4 +1,9 @@
 .expandable-text {
+  position: relative;
+  margin: 0;
+}
+
+.text-content {
   margin: 0;
   line-height: 1.5;
   word-wrap: break-word;
@@ -13,10 +18,11 @@
   font-size: inherit;
   font-weight: 600;
   padding: 0;
-  margin-left: 4px;
+  margin-top: 4px;
   text-decoration: none;
   transition: all 0.2s ease;
   font-family: inherit;
+  display: block;
 }
 
 .expand-toggle-btn:hover {
