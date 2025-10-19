@@ -544,7 +544,7 @@ const Vixies = () => {
             <AnnouncementsTab feedType="vixies" />
           ) : filteredPosts.length === 0 ? (
             <div className="no-posts">
-              <i className="fas fa-heart"></i>
+              <span className="pumpkin-icon">🎃</span>
               <h3>Nenhum post encontrado</h3>
               <p>
                 {activeTab === 'following'
@@ -642,7 +642,7 @@ const Vixies = () => {
                       onClick={() => likePost(post.id, likeCount, likes[post.id] ? Object.keys(likes[post.id]) : [])}
                       className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}
                     >
-                      <i className={`fas fa-heart ${isLiked ? 'fas' : 'far'}`}></i>
+                      <span className="pumpkin-icon">🎃</span>
                       <span>{likeCount}</span>
                     </button>
                     <button className="action-btn tip-btn" onClick={() => tipPost(post)}>

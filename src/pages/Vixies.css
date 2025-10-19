@@ -857,19 +857,23 @@
 
 /* ===== Like Button Styles ===== */
 .action-btn.like-btn.liked {
-  background: rgba(220, 53, 69, 0.15) !important;
-  border-color: rgba(220, 53, 69, 0.3) !important;
-  color: #dc3545 !important;
+  background: rgba(255, 140, 0, 0.15) !important;
+  border-color: rgba(255, 140, 0, 0.3) !important;
+  color: #ff8c00 !important;
 }
 
 .action-btn.like-btn.liked:hover {
-  background: rgba(220, 53, 69, 0.25) !important;
-  border-color: rgba(220, 53, 69, 0.5) !important;
-  color: #dc3545 !important;
+  background: rgba(255, 140, 0, 0.25) !important;
+  border-color: rgba(255, 140, 0, 0.5) !important;
+  color: #ff8c00 !important;
 }
 
 .action-btn.like-btn.liked i {
-  color: #dc3545 !important;
+  color: #ff8c00 !important;
+}
+
+.pumpkin-icon {
+  font-size: 1.2em;
 }
 
 

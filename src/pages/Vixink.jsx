@@ -599,7 +599,7 @@ const Vixink = () => {
                       onClick={() => likePost(post.id, likeCount, likes[post.id] ? Object.keys(likes[post.id]) : [])}
                       className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}
                     >
-                      <i className={`fas fa-heart ${isLiked ? 'fas' : 'far'}`}></i>
+                      <span className="pumpkin-icon">🎃</span>
                       <span>{likeCount}</span>
                     </button>
                     

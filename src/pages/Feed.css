@@ -1256,7 +1256,7 @@
 }
 
 .comment-action-btn.liked { 
-  color: #ff4757; 
+  color: #ff8c00; 
 }
 
 .comment-delete-btn { 
@@ -1330,11 +1330,15 @@
 
 /* Action button feedback styling */
 .action-btn.like-btn.liked { 
-  color: #ff4757 !important; 
+  color: #ff8c00 !important; 
 }
 
 .action-btn.like-btn.liked i { 
-  color: #ff4757 !important; 
+  color: #ff8c00 !important; 
+}
+
+.pumpkin-icon {
+  font-size: 1.2em;
 }
 
 /* Post Media Styles */
