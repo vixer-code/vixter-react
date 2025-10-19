@@ -1259,6 +1259,14 @@
   color: #ff8c00; 
 }
 
+.comment-action-btn .pumpkin-icon {
+  color: #ffffff;
+}
+
+.comment-action-btn.liked .pumpkin-icon {
+  color: #ff8c00;
+}
+
 .comment-delete-btn { 
   background: transparent; 
   border: none; 
@@ -1339,6 +1347,15 @@
 
 .pumpkin-icon {
   font-size: 1.2em;
+  color: #ffffff;
+}
+
+.action-btn.like-btn .pumpkin-icon {
+  color: #ffffff;
+}
+
+.action-btn.like-btn.liked .pumpkin-icon {
+  color: #ff8c00 !important;
 }
 
 /* Post Media Styles */

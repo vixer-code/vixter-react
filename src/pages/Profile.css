@@ -99,6 +99,15 @@
 
 .pumpkin-icon {
   font-size: 1.2em;
+  color: #ffffff;
+}
+
+.action-btn.like-btn .pumpkin-icon {
+  color: #ffffff;
+}
+
+.action-btn.like-btn.liked .pumpkin-icon {
+  color: #ff8c00 !important;
 }
 
 
@@ -267,6 +276,14 @@
 
 .comment-action-btn.like-btn.liked i {
   color: #ff8c00 !important;
+}
+
+.comment-action-btn .pumpkin-icon {
+  color: #ffffff;
+}
+
+.comment-action-btn.liked .pumpkin-icon {
+  color: #ff8c00;
 }
 
 .comment-reply {
