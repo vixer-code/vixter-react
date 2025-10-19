@@ -50,6 +50,16 @@ import {
   testEmailReply,
 } from './email-reply-webhook.js';
 
+const {
+  // Elo System Functions
+  initializeEloConfig,
+  updateEloConfig,
+  getEloConfig,
+  calculateUserElo,
+  updateUserElo,
+  getUserElo,
+} = require('./elo-functions.js');
+
 export {
   // Wallet & Payments
   initializeWallet,
@@ -91,4 +101,12 @@ export {
   // Email Reply Processing
   processEmailReply,
   testEmailReply,
+
+  // Elo System Functions
+  initializeEloConfig,
+  updateEloConfig,
+  getEloConfig,
+  calculateUserElo,
+  updateUserElo,
+  getUserElo,
 };

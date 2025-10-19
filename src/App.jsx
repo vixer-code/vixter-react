@@ -48,6 +48,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Sobre = lazy(() => import('./pages/Sobre'));
 const Support = lazy(() => import('./pages/Support'));
 const Success = lazy(() => import('./pages/Success'));
+const EloSystem = lazy(() => import('./pages/EloSystem'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Componente interno para usar o hook de verificação de versão
@@ -85,6 +86,7 @@ function AppContent() {
               <Route path="/sobre" element={<Sobre />} />
               <Route path="/support" element={<Support />} />
               <Route path="/success" element={<Success />} />
+              <Route path="/elo-system" element={<ProtectedRoute><EloSystem /></ProtectedRoute>} />
               <Route path="/services" element={<div>Services Page - Coming Soon</div>} />
               
               {/* Catch-all route - must be last */}

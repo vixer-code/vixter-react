@@ -888,6 +888,13 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+.profile-name-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .profile-username {
   font-size: 1rem;
   color: #00FFCA;

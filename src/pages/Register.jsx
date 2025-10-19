@@ -497,7 +497,8 @@ const Register = () => {
             totalPostsFeed: 0,
             totalPostsVixink: 0,
             totalVixtipsReceived: 0,
-            totalVixtipsReceivedAmount: 0
+            totalVixtipsReceivedAmount: 0,
+            totalVcEarned: 0
           },
           searchTerms: [
             (formData.displayName || user.displayName || '').toLowerCase(),
