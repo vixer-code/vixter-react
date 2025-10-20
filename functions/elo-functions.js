@@ -24,7 +24,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Bronze',
     order: 2,
     requirements: {
-      xp: 100
+      xp: 1250
     },
     benefits: {
       badgeColor: '#CD7F32',
@@ -36,7 +36,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Prata',
     order: 3,
     requirements: {
-      xp: 500
+      xp: 5450  // 1250 + 4200
     },
     benefits: {
       badgeColor: '#C0C0C0',
@@ -48,7 +48,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Ouro',
     order: 4,
     requirements: {
-      xp: 1000
+      xp: 13950  // 1250 + 4200 + 8500
     },
     benefits: {
       badgeColor: '#FFD700',
@@ -60,7 +60,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Platina',
     order: 5,
     requirements: {
-      xp: 2500
+      xp: 29300  // 1250 + 4200 + 8500 + 15350
     },
     benefits: {
       badgeColor: '#E5E4E2',
@@ -72,7 +72,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Esmeralda',
     order: 6,
     requirements: {
-      xp: 5000
+      xp: 48100  // 1250 + 4200 + 8500 + 15350 + 18800
     },
     benefits: {
       badgeColor: '#50C878',
@@ -84,7 +84,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Diamante',
     order: 7,
     requirements: {
-      xp: 10000
+      xp: 70400  // 1250 + 4200 + 8500 + 15350 + 18800 + 22300
     },
     benefits: {
       badgeColor: '#B9F2FF',
@@ -96,7 +96,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Mestre',
     order: 8,
     requirements: {
-      xp: 25000
+      xp: 98600  // 1250 + 4200 + 8500 + 15350 + 18800 + 22300 + 28200
     },
     benefits: {
       badgeColor: '#800080',
@@ -422,35 +422,44 @@ const getUserElo = onCall({
 });
 
 /**
- * Calcula XP baseado na transação
+ * Calcula XP baseado na nova fórmula: (x*0.67)*2y=z
+ * x = valor em VP do produto
+ * y = tipo do produto (1 = vixtips, 1.5 = packs, 2 = serviços)
+ * z = valor total de XP
  */
-const calculateXpFromTransaction = (transactionType, amount, userRole) => {
-  let xpMultiplier = 0;
+const calculateXpFromTransaction = (transactionType, vpAmount, productType = null) => {
+  // Determinar o tipo de produto (y) baseado na transação
+  let productMultiplier = 1; // Default para vixtips
   
-  switch (transactionType) {
-    case 'PACK_SALE':
-    case 'SERVICE_SALE':
-      // Vendedores ganham 25 XP por VC recebido
-      xpMultiplier = 25;
-      break;
-    case 'PACK_PURCHASE':
-    case 'SERVICE_PURCHASE':
-      // Compradores ganham 12 XP por VP gasto
-      xpMultiplier = 12;
-      break;
-    case 'VIXTIP_SENT':
-      // Quem envia gorjeta ganha 12 XP por VP gasto
-      xpMultiplier = 12;
-      break;
-    case 'VIXTIP_RECEIVED':
-      // Quem recebe gorjeta ganha 25 XP por VP recebido
-      xpMultiplier = 25;
-      break;
-    default:
-      return 0;
+  if (productType) {
+    // Se o tipo do produto foi especificado, usar ele
+    productMultiplier = productType;
+  } else {
+    // Determinar baseado no tipo de transação
+    switch (transactionType) {
+      case 'PACK_SALE':
+      case 'PACK_PURCHASE':
+        productMultiplier = 1.5; // Packs
+        break;
+      case 'SERVICE_SALE':
+      case 'SERVICE_PURCHASE':
+        productMultiplier = 2; // Serviços
+        break;
+      case 'VIXTIP_SENT':
+      case 'VIXTIP_RECEIVED':
+        productMultiplier = 1; // Vixtips
+        break;
+      default:
+        productMultiplier = 1; // Default para vixtips
+    }
   }
   
-  return Math.floor(amount * xpMultiplier);
+  // Aplicar fórmula: (x*0.67)*2y = z
+  // x = vpAmount (valor em VP)
+  // y = productMultiplier (tipo do produto)
+  const xp = Math.floor((vpAmount * 0.67) * (2 * productMultiplier));
+  
+  return xp;
 };
 
 /**

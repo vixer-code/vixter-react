@@ -222,28 +222,42 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
             <div className="xp-source-icon">🛒</div>
             <div className="xp-source-info">
               <h4>Comprar Packs</h4>
-              <p>12 XP por VP gasto</p>
+              <p>Ganhe XP ao comprar packs</p>
             </div>
           </div>
           <div className="xp-source-card">
             <div className="xp-source-icon">💰</div>
             <div className="xp-source-info">
               <h4>Vender Packs</h4>
-              <p>25 XP por VC recebido</p>
+              <p>Ganhe XP ao vender packs</p>
             </div>
           </div>
           <div className="xp-source-card">
             <div className="xp-source-icon">🎁</div>
             <div className="xp-source-info">
               <h4>Enviar Gorjetas</h4>
-              <p>12 XP por VP gasto</p>
+              <p>Ganhe XP ao enviar gorjetas</p>
             </div>
           </div>
           <div className="xp-source-card">
             <div className="xp-source-icon">💎</div>
             <div className="xp-source-info">
               <h4>Receber Gorjetas</h4>
-              <p>25 XP por VP recebido</p>
+              <p>Ganhe XP ao receber gorjetas</p>
+            </div>
+          </div>
+          <div className="xp-source-card">
+            <div className="xp-source-icon">⚙️</div>
+            <div className="xp-source-info">
+              <h4>Comprar Serviços</h4>
+              <p>Ganhe XP ao comprar serviços</p>
+            </div>
+          </div>
+          <div className="xp-source-card">
+            <div className="xp-source-icon">🔧</div>
+            <div className="xp-source-info">
+              <h4>Vender Serviços</h4>
+              <p>Ganhe XP ao vender serviços</p>
             </div>
           </div>
         </div>

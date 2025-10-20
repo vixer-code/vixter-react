@@ -1552,11 +1552,11 @@ async function acceptPackOrderInternal(sellerId, orderId) {
     })
   ]);
 
-  // Adicionar XP para ambos os usuários
+  // Adicionar XP para ambos os usuários usando nova fórmula
   const { calculateXpFromTransaction, addXpToUser } = require('./elo-functions');
   
-  // XP para o comprador (12 XP por VP gasto)
-  const buyerXp = calculateXpFromTransaction('PACK_PURCHASE', order.vpAmount, 'client');
+  // XP para o comprador (usando VP gasto e tipo pack = 1.5)
+  const buyerXp = calculateXpFromTransaction('PACK_PURCHASE', order.vpAmount, 1.5);
   if (buyerXp > 0) {
     await addXpToUser({ 
       data: { 
@@ -1569,8 +1569,10 @@ async function acceptPackOrderInternal(sellerId, orderId) {
     });
   }
   
-  // XP para o vendedor (25 XP por VC recebido)
-  const sellerXp = calculateXpFromTransaction('PACK_SALE', order.vcAmount, 'provider');
+  // XP para o vendedor (usando VP equivalente e tipo pack = 1.5)
+  // Converter VC para VP para usar na fórmula (1 VC = 1.5 VP)
+  const vpEquivalent = Math.ceil(order.vcAmount * 1.5);
+  const sellerXp = calculateXpFromTransaction('PACK_SALE', vpEquivalent, 1.5);
   if (sellerXp > 0) {
     await addXpToUser({ 
       data: { 
