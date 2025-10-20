@@ -54,7 +54,7 @@ const EloBadgeSimple = ({
       <div className="elo-info-simple">
         <span className="elo-name-simple">{elo.name}</span>
         {showXp && (
-          <span className="elo-xp-simple">{currentXp.toLocaleString()} XP</span>
+          <span className="elo-xp-simple">{(currentXp || 0).toLocaleString()} XP</span>
         )}
       </div>
     </div>

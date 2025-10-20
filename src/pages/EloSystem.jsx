@@ -85,7 +85,7 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
   }
 
   const currentElo = userElo.elo;
-  const currentXp = userProfile.stats?.xp || 0;
+  const currentXp = userProfile?.stats?.xp || 0;
   
   // Verificar se currentElo existe e tem as propriedades necessárias
   if (!currentElo || typeof currentElo.order === 'undefined') {
@@ -144,7 +144,7 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
             <h2 className="elo-name-large">{currentElo.name || 'Elo'}</h2>
             <p className="elo-description">{currentElo.benefits?.description || 'Carregando...'}</p>
             <div className="elo-xp-info">
-              <span className="current-xp">{currentXp.toLocaleString()} XP</span>
+              <span className="current-xp">{(currentXp || 0).toLocaleString()} XP</span>
             </div>
           </div>
         </div>
@@ -165,7 +165,7 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
             <h3>Progresso para o Próximo Elo</h3>
             <div className="next-elo-info">
               <span className="next-elo-name">{nextElo.name}</span>
-              <span className="xp-needed">{xpNeeded.toLocaleString()} XP restantes</span>
+              <span className="xp-needed">{(xpNeeded || 0).toLocaleString()} XP restantes</span>
             </div>
           </div>
           
@@ -197,15 +197,15 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
             <div className="progress-stats">
               <div className="progress-stat">
                 <span className="stat-label">XP Atual</span>
-                <span className="stat-value">{currentXp.toLocaleString()}</span>
+                <span className="stat-value">{(currentXp || 0).toLocaleString()}</span>
               </div>
               <div className="progress-stat">
                 <span className="stat-label">Próximo Elo</span>
-                <span className="stat-value">{(currentElo.requirements?.xp || 0) + (nextElo.requirements?.xp || 0)}</span>
+                <span className="stat-value">{(nextElo.requirements?.xp || 0).toLocaleString()}</span>
               </div>
               <div className="progress-stat">
                 <span className="stat-label">Progresso</span>
-                <span className="stat-value">{Math.round(progressPercentage)}%</span>
+                <span className="stat-value">{Math.round(progressPercentage || 0)}%</span>
               </div>
             </div>
           </div>
@@ -290,7 +290,7 @@ const EloListTab = ({ eloConfig }) => {
               <p className="elo-list-description">{eloData.benefits.description}</p>
               <div className="elo-list-requirement">
                 <span className="requirement-label">XP Necessário:</span>
-                <span className="requirement-value">{eloData.requirements.xp.toLocaleString()}</span>
+                <span className="requirement-value">{(eloData.requirements?.xp || 0).toLocaleString()}</span>
               </div>
             </div>
           </div>
