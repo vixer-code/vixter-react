@@ -8,7 +8,6 @@ import CachedImage from './CachedImage';
 import NotificationIcon from './NotificationIcon';
 import NotificationCenter from './NotificationCenter';
 import SearchBar from './SearchBar';
-import { EloBadge } from './EloBadge';
 import './Header.css';
 
 const Header = () => {
@@ -340,7 +339,6 @@ const Header = () => {
                           <i className="fas fa-user"></i>
                         )}
                       </div>
-                      <EloBadge userId={currentUser?.uid} size="small" className="header-elo-badge" />
                       <div className="dropdown-indicator">
                         <i className="fas fa-chevron-down"></i>
                       </div>

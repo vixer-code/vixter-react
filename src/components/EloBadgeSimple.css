@@ -1,0 +1,156 @@
+/* Elo Badge Simple Styles */
+.elo-badge-simple {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.elo-badge-simple:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.elo-icon-simple {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.elo-image-simple {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.elo-symbol-simple {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.elo-info-simple {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.elo-name-simple {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.elo-xp-simple {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+/* Size variants */
+.elo-badge-simple.small {
+  padding: 4px 8px;
+  gap: 6px;
+}
+
+.elo-badge-simple.small .elo-icon-simple {
+  width: 20px;
+  height: 20px;
+}
+
+.elo-badge-simple.small .elo-image-simple {
+  width: 12px;
+  height: 12px;
+}
+
+.elo-badge-simple.small .elo-name-simple {
+  font-size: 0.8rem;
+}
+
+.elo-badge-simple.small .elo-xp-simple {
+  font-size: 0.6rem;
+}
+
+.elo-badge-simple.large {
+  padding: 10px 16px;
+  gap: 12px;
+}
+
+.elo-badge-simple.large .elo-icon-simple {
+  width: 32px;
+  height: 32px;
+}
+
+.elo-badge-simple.large .elo-image-simple {
+  width: 20px;
+  height: 20px;
+}
+
+.elo-badge-simple.large .elo-name-simple {
+  font-size: 1.1rem;
+}
+
+.elo-badge-simple.large .elo-xp-simple {
+  font-size: 0.9rem;
+}
+
+/* Dark theme variant */
+.elo-badge-simple.dark {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.elo-badge-simple.dark:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Light theme variant */
+.elo-badge-simple.light {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.elo-badge-simple.light .elo-name-simple {
+  color: #333;
+  text-shadow: none;
+}
+
+.elo-badge-simple.light .elo-xp-simple {
+  color: #666;
+}
+
+.elo-badge-simple.light:hover {
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .elo-badge-simple {
+    padding: 4px 8px;
+    gap: 6px;
+  }
+  
+  .elo-badge-simple .elo-name-simple {
+    font-size: 0.8rem;
+  }
+  
+  .elo-badge-simple .elo-xp-simple {
+    font-size: 0.6rem;
+  }
+}

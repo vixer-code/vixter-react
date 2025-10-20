@@ -1552,6 +1552,37 @@ async function acceptPackOrderInternal(sellerId, orderId) {
     })
   ]);
 
+  // Adicionar XP para ambos os usuários
+  const { calculateXpFromTransaction, addXpToUser } = require('./elo-functions');
+  
+  // XP para o comprador (12 XP por VP gasto)
+  const buyerXp = calculateXpFromTransaction('PACK_PURCHASE', order.vpAmount, 'client');
+  if (buyerXp > 0) {
+    await addXpToUser({ 
+      data: { 
+        userId: order.buyerId, 
+        xpAmount: buyerXp, 
+        transactionType: 'PACK_PURCHASE',
+        transactionId: orderId
+      }, 
+      auth: { uid: order.buyerId } 
+    });
+  }
+  
+  // XP para o vendedor (25 XP por VC recebido)
+  const sellerXp = calculateXpFromTransaction('PACK_SALE', order.vcAmount, 'provider');
+  if (sellerXp > 0) {
+    await addXpToUser({ 
+      data: { 
+        userId: order.sellerId, 
+        xpAmount: sellerXp, 
+        transactionType: 'PACK_SALE',
+        transactionId: orderId
+      }, 
+      auth: { uid: order.sellerId } 
+    });
+  }
+
   logger.info(`✅ Pack order accepted: ${orderId}`);
   return { success: true };
 }

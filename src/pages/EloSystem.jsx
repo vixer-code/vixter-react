@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '../contexts/UserContext';
-import { useElo, eloUtils } from '../hooks/useElo';
-import { EloBadge, EloDetails, EloList } from '../components/EloBadge';
+import { useElo } from '../hooks/useElo';
 import './EloSystem.css';
 
 const EloSystem = () => {
@@ -50,45 +49,24 @@ const EloSystem = () => {
         >
           Todos os Elos
         </button>
-        <button 
-          className={`tab-button ${activeTab === 'admin' ? 'active' : ''}`}
-          onClick={() => setActiveTab('admin')}
-        >
-          Administração
-        </button>
       </div>
 
       <div className="elo-content">
         {activeTab === 'my-elo' && (
           <div className="my-elo-tab">
-            <div className="elo-summary">
-              <div className="current-elo">
-                <EloBadge userId={userProfile.uid} size="large" showProgress={true} />
-                <div className="elo-actions">
-                  <button 
-                    className="refresh-button"
-                    onClick={handleRefreshElo}
-                    disabled={configLoading}
-                  >
-                    {configLoading ? 'Atualizando...' : 'Atualizar Elo'}
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <EloDetails userId={userProfile.uid} />
+            <MyEloTab 
+              userProfile={userProfile}
+              userElo={userElo}
+              eloConfig={eloConfig}
+              onRefresh={handleRefreshElo}
+              loading={configLoading}
+            />
           </div>
         )}
 
         {activeTab === 'elo-list' && (
           <div className="elo-list-tab">
-            <EloList />
-          </div>
-        )}
-
-        {activeTab === 'admin' && (
-          <div className="admin-tab">
-            <EloAdminPanel />
+            <EloListTab eloConfig={eloConfig} />
           </div>
         )}
       </div>
@@ -96,224 +74,210 @@ const EloSystem = () => {
   );
 };
 
-const EloAdminPanel = () => {
-  const { eloConfig, loading, error, initializeEloConfig, updateEloConfig } = useElo();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedConfig, setEditedConfig] = useState(null);
-
-  const handleInitializeConfig = async () => {
-    try {
-      await initializeEloConfig();
-    } catch (error) {
-      console.error('Error initializing config:', error);
-    }
-  };
-
-  const handleEditConfig = () => {
-    setEditedConfig(JSON.parse(JSON.stringify(eloConfig)));
-    setIsEditing(true);
-  };
-
-  const handleSaveConfig = async () => {
-    try {
-      await updateEloConfig(editedConfig);
-      setIsEditing(false);
-      setEditedConfig(null);
-    } catch (error) {
-      console.error('Error saving config:', error);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditedConfig(null);
-  };
-
-  const updateEloRequirement = (eloKey, accountType, metric, value) => {
-    setEditedConfig(prev => ({
-      ...prev,
-      [eloKey]: {
-        ...prev[eloKey],
-        requirements: {
-          ...prev[eloKey].requirements,
-          [accountType]: {
-            ...prev[eloKey].requirements[accountType],
-            [metric]: parseFloat(value) || 0
-          }
-        }
-      }
-    }));
-  };
-
-  if (loading) {
+const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
+  if (!userElo || !eloConfig) {
     return (
-      <div className="admin-panel loading">
+      <div className="elo-loading">
         <div className="loading-spinner"></div>
-        <p>Carregando configurações...</p>
+        <p>Carregando informações do elo...</p>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="admin-panel error">
-        <p>Erro ao carregar configurações: {error}</p>
-        <button onClick={handleInitializeConfig} className="init-button">
-          Inicializar Configurações
-        </button>
-      </div>
-    );
+  const currentElo = userElo.elo;
+  const currentXp = userProfile.stats?.xp || 0;
+  
+  // Encontrar próximo elo
+  const eloEntries = Object.entries(eloConfig).sort((a, b) => a[1].order - b[1].order);
+  const nextEloEntry = eloEntries.find(([_, data]) => data.order === currentElo.order + 1);
+  const nextElo = nextEloEntry ? nextEloEntry[1] : null;
+  
+  // Calcular progresso
+  let progressPercentage = 0;
+  let xpNeeded = 0;
+  
+  if (nextElo) {
+    const currentRequiredXp = currentElo.requirements?.xp || 0;
+    const nextRequiredXp = nextElo.requirements?.xp || 0;
+    xpNeeded = nextRequiredXp - currentXp;
+    progressPercentage = Math.min(100, Math.max(0, 
+      ((currentXp - currentRequiredXp) / (nextRequiredXp - currentRequiredXp)) * 100
+    ));
   }
-
-  if (!eloConfig) {
-    return (
-      <div className="admin-panel">
-        <h3>Configurações dos Elos</h3>
-        <p>Nenhuma configuração encontrada.</p>
-        <button onClick={handleInitializeConfig} className="init-button">
-          Inicializar Configurações
-        </button>
-      </div>
-    );
-  }
-
-  const config = isEditing ? editedConfig : eloConfig;
 
   return (
-    <div className="admin-panel">
-      <div className="admin-header">
-        <h3>Configurações dos Elos</h3>
-        <div className="admin-actions">
-          {!isEditing ? (
-            <button onClick={handleEditConfig} className="edit-button">
-              Editar Configurações
-            </button>
-          ) : (
-            <>
-              <button onClick={handleSaveConfig} className="save-button">
-                Salvar
-              </button>
-              <button onClick={handleCancelEdit} className="cancel-button">
-                Cancelar
-              </button>
-            </>
-          )}
+    <div className="my-elo-content">
+      {/* Current Elo Card */}
+      <div className="current-elo-card">
+        <div className="elo-badge-large">
+          <div 
+            className="elo-icon-large"
+            style={{ backgroundColor: currentElo.benefits?.badgeColor || '#8B4513' }}
+          >
+            <img 
+              src={currentElo.benefits?.imageUrl || '/images/iron.png'} 
+              alt={currentElo.name}
+              className="elo-image-large"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+            <span className="elo-symbol-large" style={{ display: 'none' }}>
+              {currentElo.name.charAt(0)}
+            </span>
+          </div>
+          <div className="elo-info-large">
+            <h2 className="elo-name-large">{currentElo.name}</h2>
+            <p className="elo-description">{currentElo.benefits?.description}</p>
+            <div className="elo-xp-info">
+              <span className="current-xp">{currentXp.toLocaleString()} XP</span>
+            </div>
+          </div>
         </div>
+        
+        <button 
+          className="refresh-elo-button"
+          onClick={onRefresh}
+          disabled={loading}
+        >
+          {loading ? 'Atualizando...' : 'Atualizar Elo'}
+        </button>
       </div>
 
-      <div className="config-grid">
-        {Object.entries(config).sort((a, b) => a[1].order - b[1].order).map(([eloKey, eloData]) => (
-          <div key={eloKey} className="config-elo-card">
-            <div className="elo-card-header">
-              <div 
-                className="elo-icon" 
-                style={{ backgroundColor: eloData.benefits.badgeColor }}
-              >
-                <img 
-                  src={eloUtils.getEloImageUrl(eloKey, config)} 
-                  alt={eloData.name}
-                  className="elo-image"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                  }}
-                />
-                <span className="elo-symbol" style={{ display: 'none' }}>{eloData.name.charAt(0)}</span>
+      {/* Progress Section */}
+      {nextElo && (
+        <div className="progress-section">
+          <div className="progress-header">
+            <h3>Progresso para o Próximo Elo</h3>
+            <div className="next-elo-info">
+              <span className="next-elo-name">{nextElo.name}</span>
+              <span className="xp-needed">{xpNeeded.toLocaleString()} XP restantes</span>
+            </div>
+          </div>
+          
+          <div className="progress-container">
+            <div className="progress-bar-container">
+              <div className="progress-bar">
+                <div 
+                  className="progress-fill"
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
               </div>
-              <div className="elo-info">
-                <h4>{eloData.name}</h4>
-                <p>{eloData.benefits.description}</p>
+              <div className="progress-icons">
+                <div className="current-elo-icon">
+                  <img 
+                    src={currentElo.benefits?.imageUrl || '/images/iron.png'} 
+                    alt={currentElo.name}
+                    className="progress-elo-image"
+                  />
+                </div>
+                <div className="next-elo-icon">
+                  <img 
+                    src={nextElo.benefits?.imageUrl || '/images/bronze.png'} 
+                    alt={nextElo.name}
+                    className="progress-elo-image"
+                  />
+                </div>
               </div>
             </div>
-
-            <div className="elo-requirements">
-              <h5>Requisitos para Clientes</h5>
-              <div className="requirement-grid">
-                <div className="requirement-item">
-                  <label>Total Gasto (VP)</label>
-                  <input
-                    type="number"
-                    value={eloData.requirements.client.totalSpent}
-                    onChange={(e) => updateEloRequirement(eloKey, 'client', 'totalSpent', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="requirement-item">
-                  <label>Packs Comprados</label>
-                  <input
-                    type="number"
-                    value={eloData.requirements.client.totalPacksBought}
-                    onChange={(e) => updateEloRequirement(eloKey, 'client', 'totalPacksBought', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="requirement-item">
-                  <label>Serviços Comprados</label>
-                  <input
-                    type="number"
-                    value={eloData.requirements.client.totalServicesBought}
-                    onChange={(e) => updateEloRequirement(eloKey, 'client', 'totalServicesBought', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="requirement-item">
-                  <label>Gorjetas Enviadas (VP)</label>
-                  <input
-                    type="number"
-                    value={eloData.requirements.client.totalVixtipsSentAmount}
-                    onChange={(e) => updateEloRequirement(eloKey, 'client', 'totalVixtipsSentAmount', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
+            <div className="progress-stats">
+              <div className="progress-stat">
+                <span className="stat-label">XP Atual</span>
+                <span className="stat-value">{currentXp.toLocaleString()}</span>
               </div>
+              <div className="progress-stat">
+                <span className="stat-label">Próximo Elo</span>
+                <span className="stat-value">{(currentElo.requirements?.xp || 0) + (nextElo.requirements?.xp || 0)}</span>
+              </div>
+              <div className="progress-stat">
+                <span className="stat-label">Progresso</span>
+                <span className="stat-value">{Math.round(progressPercentage)}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-              <h5>Requisitos para Provedores</h5>
-              <div className="requirement-grid">
-                <div className="requirement-item">
-                  <label>Packs Vendidos</label>
-                  <input
-                    type="number"
-                    value={eloData.requirements.provider.totalPacksSold}
-                    onChange={(e) => updateEloRequirement(eloKey, 'provider', 'totalPacksSold', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="requirement-item">
-                  <label>Serviços Vendidos</label>
-                  <input
-                    type="number"
-                    value={eloData.requirements.provider.totalServicesSold}
-                    onChange={(e) => updateEloRequirement(eloKey, 'provider', 'totalServicesSold', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="requirement-item">
-                  <label>Total de Vendas</label>
-                  <input
-                    type="number"
-                    value={eloData.requirements.provider.totalSales}
-                    onChange={(e) => updateEloRequirement(eloKey, 'provider', 'totalSales', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="requirement-item">
-                  <label>Gorjetas Recebidas (VP)</label>
-                  <input
-                    type="number"
-                    value={eloData.requirements.provider.totalVixtipsReceivedAmount}
-                    onChange={(e) => updateEloRequirement(eloKey, 'provider', 'totalVixtipsReceivedAmount', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="requirement-item">
-                  <label>VC Ganho</label>
-                  <input
-                    type="number"
-                    value={eloData.requirements.provider.totalVcEarned}
-                    onChange={(e) => updateEloRequirement(eloKey, 'provider', 'totalVcEarned', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
+      {/* XP Sources */}
+      <div className="xp-sources-section">
+        <h3>Como Ganhar XP</h3>
+        <div className="xp-sources-grid">
+          <div className="xp-source-card">
+            <div className="xp-source-icon">🛒</div>
+            <div className="xp-source-info">
+              <h4>Comprar Packs</h4>
+              <p>12 XP por VP gasto</p>
+            </div>
+          </div>
+          <div className="xp-source-card">
+            <div className="xp-source-icon">💰</div>
+            <div className="xp-source-info">
+              <h4>Vender Packs</h4>
+              <p>25 XP por VC recebido</p>
+            </div>
+          </div>
+          <div className="xp-source-card">
+            <div className="xp-source-icon">🎁</div>
+            <div className="xp-source-info">
+              <h4>Enviar Gorjetas</h4>
+              <p>12 XP por VP gasto</p>
+            </div>
+          </div>
+          <div className="xp-source-card">
+            <div className="xp-source-icon">💎</div>
+            <div className="xp-source-info">
+              <h4>Receber Gorjetas</h4>
+              <p>25 XP por VP recebido</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EloListTab = ({ eloConfig }) => {
+  if (!eloConfig) {
+    return (
+      <div className="elo-loading">
+        <div className="loading-spinner"></div>
+        <p>Carregando lista de elos...</p>
+      </div>
+    );
+  }
+
+  const eloEntries = Object.entries(eloConfig).sort((a, b) => a[1].order - b[1].order);
+
+  return (
+    <div className="elo-list-content">
+      <h3>Todos os Elos</h3>
+      <div className="elo-list-grid">
+        {eloEntries.map(([eloKey, eloData]) => (
+          <div key={eloKey} className="elo-list-card">
+            <div 
+              className="elo-list-icon"
+              style={{ backgroundColor: eloData.benefits.badgeColor }}
+            >
+              <img 
+                src={eloData.benefits.imageUrl} 
+                alt={eloData.name}
+                className="elo-list-image"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <span className="elo-list-symbol" style={{ display: 'none' }}>
+                {eloData.name.charAt(0)}
+              </span>
+            </div>
+            <div className="elo-list-info">
+              <h4 className="elo-list-name">{eloData.name}</h4>
+              <p className="elo-list-description">{eloData.benefits.description}</p>
+              <div className="elo-list-requirement">
+                <span className="requirement-label">XP Necessário:</span>
+                <span className="requirement-value">{eloData.requirements.xp.toLocaleString()}</span>
               </div>
             </div>
           </div>

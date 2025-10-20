@@ -5,26 +5,14 @@ import admin from 'firebase-admin';
 const db = admin.firestore();
 
 /**
- * Configurações padrão dos elos
+ * Configurações padrão dos elos baseadas em XP
  */
 const DEFAULT_ELO_CONFIG = {
   ferro: {
     name: 'Ferro',
     order: 1,
     requirements: {
-      client: {
-        totalSpent: 0,
-        totalPacksBought: 0,
-        totalServicesBought: 0,
-        totalVixtipsSentAmount: 0
-      },
-      provider: {
-        totalPacksSold: 0,
-        totalServicesSold: 0,
-        totalSales: 0,
-        totalVixtipsReceivedAmount: 0,
-        totalVcEarned: 0
-      }
+      xp: 0
     },
     benefits: {
       badgeColor: '#8B4513',
@@ -36,19 +24,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Bronze',
     order: 2,
     requirements: {
-      client: {
-        totalSpent: 1000,
-        totalPacksBought: 1,
-        totalServicesBought: 0,
-        totalVixtipsSentAmount: 0
-      },
-      provider: {
-        totalPacksSold: 1,
-        totalServicesSold: 0,
-        totalSales: 1,
-        totalVixtipsReceivedAmount: 0,
-        totalVcEarned: 10
-      }
+      xp: 100
     },
     benefits: {
       badgeColor: '#CD7F32',
@@ -60,19 +36,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Prata',
     order: 3,
     requirements: {
-      client: {
-        totalSpent: 5000,
-        totalPacksBought: 3,
-        totalServicesBought: 2,
-        totalVixtipsSentAmount: 100
-      },
-      provider: {
-        totalPacksSold: 5,
-        totalServicesSold: 3,
-        totalSales: 8,
-        totalVixtipsReceivedAmount: 200,
-        totalVcEarned: 100
-      }
+      xp: 500
     },
     benefits: {
       badgeColor: '#C0C0C0',
@@ -84,19 +48,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Ouro',
     order: 4,
     requirements: {
-      client: {
-        totalSpent: 15000,
-        totalPacksBought: 8,
-        totalServicesBought: 5,
-        totalVixtipsSentAmount: 500
-      },
-      provider: {
-        totalPacksSold: 15,
-        totalServicesSold: 10,
-        totalSales: 25,
-        totalVixtipsReceivedAmount: 1000,
-        totalVcEarned: 500
-      }
+      xp: 1000
     },
     benefits: {
       badgeColor: '#FFD700',
@@ -108,19 +60,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Platina',
     order: 5,
     requirements: {
-      client: {
-        totalSpent: 35000,
-        totalPacksBought: 20,
-        totalServicesBought: 15,
-        totalVixtipsSentAmount: 1500
-      },
-      provider: {
-        totalPacksSold: 40,
-        totalServicesSold: 25,
-        totalSales: 65,
-        totalVixtipsReceivedAmount: 3000,
-        totalVcEarned: 1500
-      }
+      xp: 2500
     },
     benefits: {
       badgeColor: '#E5E4E2',
@@ -132,19 +72,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Esmeralda',
     order: 6,
     requirements: {
-      client: {
-        totalSpent: 75000,
-        totalPacksBought: 50,
-        totalServicesBought: 35,
-        totalVixtipsSentAmount: 4000
-      },
-      provider: {
-        totalPacksSold: 100,
-        totalServicesSold: 60,
-        totalSales: 160,
-        totalVixtipsReceivedAmount: 8000,
-        totalVcEarned: 4000
-      }
+      xp: 5000
     },
     benefits: {
       badgeColor: '#50C878',
@@ -156,19 +84,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Diamante',
     order: 7,
     requirements: {
-      client: {
-        totalSpent: 150000,
-        totalPacksBought: 100,
-        totalServicesBought: 75,
-        totalVixtipsSentAmount: 10000
-      },
-      provider: {
-        totalPacksSold: 250,
-        totalServicesSold: 150,
-        totalSales: 400,
-        totalVixtipsReceivedAmount: 20000,
-        totalVcEarned: 10000
-      }
+      xp: 10000
     },
     benefits: {
       badgeColor: '#B9F2FF',
@@ -180,19 +96,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Mestre',
     order: 8,
     requirements: {
-      client: {
-        totalSpent: 300000,
-        totalPacksBought: 200,
-        totalServicesBought: 150,
-        totalVixtipsSentAmount: 25000
-      },
-      provider: {
-        totalPacksSold: 500,
-        totalServicesSold: 300,
-        totalSales: 800,
-        totalVixtipsReceivedAmount: 50000,
-        totalVcEarned: 25000
-      }
+      xp: 25000
     },
     benefits: {
       badgeColor: '#800080',
@@ -352,8 +256,9 @@ const calculateUserElo = onCall({
     const userData = userSnap.data();
     const accountType = userData.accountType || 'client';
     const stats = userData.stats || {};
+    const currentXp = stats.xp || 0;
     
-    // Determinar elo baseado nas métricas
+    // Determinar elo baseado no XP
     let currentElo = 'ferro';
     let currentEloData = eloConfig.ferro;
     
@@ -361,21 +266,9 @@ const calculateUserElo = onCall({
     const eloEntries = Object.entries(eloConfig).sort((a, b) => b[1].order - a[1].order);
     
     for (const [eloKey, eloData] of eloEntries) {
-      const requirements = eloData.requirements[accountType];
-      if (!requirements) continue;
+      const requiredXp = eloData.requirements.xp || 0;
       
-      let meetsRequirements = true;
-      
-      // Verificar cada requisito
-      for (const [metric, requiredValue] of Object.entries(requirements)) {
-        const currentValue = stats[metric] || 0;
-        if (currentValue < requiredValue) {
-          meetsRequirements = false;
-          break;
-        }
-      }
-      
-      if (meetsRequirements) {
+      if (currentXp >= requiredXp) {
         currentElo = eloKey;
         currentEloData = eloData;
         break;
@@ -393,27 +286,21 @@ const calculateUserElo = onCall({
       const [nextEloKey, nextEloData] = nextEloEntry;
       nextElo = nextEloKey;
       
-      const nextRequirements = nextEloData.requirements[accountType];
-      if (nextRequirements) {
-        const progressData = {};
+      const nextRequiredXp = nextEloData.requirements.xp || 0;
+      const currentRequiredXp = currentEloData.requirements.xp || 0;
+      
+      if (nextRequiredXp > currentRequiredXp) {
+        const progressValue = Math.min(100, Math.max(0, 
+          ((currentXp - currentRequiredXp) / (nextRequiredXp - currentRequiredXp)) * 100
+        ));
         
-        for (const [metric, requiredValue] of Object.entries(nextRequirements)) {
-          const currentValue = stats[metric] || 0;
-          const currentEloValue = currentEloData.requirements[accountType][metric] || 0;
-          
-          if (requiredValue > currentEloValue) {
-            const progressValue = Math.min(100, Math.max(0, 
-              ((currentValue - currentEloValue) / (requiredValue - currentEloValue)) * 100
-            ));
-            progressData[metric] = {
-              current: currentValue,
-              required: requiredValue,
-              progress: Math.round(progressValue)
-            };
+        progress = {
+          xp: {
+            current: currentXp,
+            required: nextRequiredXp,
+            progress: Math.round(progressValue)
           }
-        }
-        
-        progress = progressData;
+        };
       }
     }
     
@@ -534,11 +421,123 @@ const getUserElo = onCall({
   }
 });
 
+/**
+ * Calcula XP baseado na transação
+ */
+const calculateXpFromTransaction = (transactionType, amount, userRole) => {
+  let xpMultiplier = 0;
+  
+  switch (transactionType) {
+    case 'PACK_SALE':
+    case 'SERVICE_SALE':
+      // Vendedores ganham 25 XP por VC recebido
+      xpMultiplier = 25;
+      break;
+    case 'PACK_PURCHASE':
+    case 'SERVICE_PURCHASE':
+      // Compradores ganham 12 XP por VP gasto
+      xpMultiplier = 12;
+      break;
+    case 'VIXTIP_SENT':
+      // Quem envia gorjeta ganha 12 XP por VP gasto
+      xpMultiplier = 12;
+      break;
+    case 'VIXTIP_RECEIVED':
+      // Quem recebe gorjeta ganha 25 XP por VP recebido
+      xpMultiplier = 25;
+      break;
+    default:
+      return 0;
+  }
+  
+  return Math.floor(amount * xpMultiplier);
+};
+
+/**
+ * Adiciona XP ao usuário e atualiza o elo
+ */
+const addXpToUser = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 30,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { userId, xpAmount, transactionType, transactionId } = request.data;
+
+  try {
+    logger.info(`🔄 Adicionando ${xpAmount} XP para usuário: ${userId}`);
+    
+    // Atualizar XP do usuário
+    const userRef = db.collection('users').doc(userId);
+    const userSnap = await userRef.get();
+    
+    if (!userSnap.exists) {
+      throw new HttpsError("not-found", "Usuário não encontrado");
+    }
+    
+    const userData = userSnap.data();
+    const currentXp = userData.stats?.xp || 0;
+    const newXp = currentXp + xpAmount;
+    
+    // Atualizar stats do usuário
+    await userRef.update({
+      'stats.xp': newXp,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    // Registrar transação de XP
+    await db.collection('xpTransactions').add({
+      userId: userId,
+      xpAmount: xpAmount,
+      transactionType: transactionType,
+      transactionId: transactionId,
+      timestamp: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    // Recalcular elo do usuário
+    const eloResult = await calculateUserElo({ 
+      data: { userId: userId }, 
+      auth: request.auth 
+    });
+    
+    if (eloResult.success) {
+      const { elo } = eloResult;
+      
+      // Atualizar elo no documento do usuário
+      await userRef.update({
+        elo: {
+          current: elo.current,
+          name: elo.name,
+          order: elo.order,
+          benefits: elo.benefits,
+          lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+        }
+      });
+    }
+    
+    logger.info(`✅ ${xpAmount} XP adicionado para ${userId}. Total: ${newXp}`);
+    
+    return {
+      success: true,
+      newXp: newXp,
+      xpAdded: xpAmount
+    };
+    
+  } catch (error) {
+    logger.error(`❌ Erro ao adicionar XP para ${userId}:`, error);
+    throw new HttpsError("internal", "Erro interno ao adicionar XP");
+  }
+});
+
 export {
   initializeEloConfig,
   updateEloConfig,
   getEloConfig,
   calculateUserElo,
   updateUserElo,
-  getUserElo
+  getUserElo,
+  calculateXpFromTransaction,
+  addXpToUser
 };
