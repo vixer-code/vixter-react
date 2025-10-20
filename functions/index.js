@@ -50,7 +50,7 @@ import {
   testEmailReply,
 } from './email-reply-webhook.js';
 
-const {
+import {
   // Elo System Functions
   initializeEloConfig,
   updateEloConfig,
@@ -58,7 +58,7 @@ const {
   calculateUserElo,
   updateUserElo,
   getUserElo,
-} = require('./elo-functions.js');
+} from './elo-functions.js';
 
 export {
   // Wallet & Payments

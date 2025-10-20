@@ -1,6 +1,6 @@
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { logger } = require('firebase-functions');
-const admin = require('firebase-admin');
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { logger } from 'firebase-functions';
+import admin from 'firebase-admin';
 
 const db = admin.firestore();
 
@@ -534,7 +534,7 @@ const getUserElo = onCall({
   }
 });
 
-module.exports = {
+export {
   initializeEloConfig,
   updateEloConfig,
   getEloConfig,
