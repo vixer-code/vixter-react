@@ -29,6 +29,7 @@ import PackBuyersModal from '../components/PackBuyersModal';
 import ImageEditorModal from '../components/ImageEditorModal';
 import PostCreator from '../components/PostCreator';
 import UserBadge from '../components/UserBadge';
+import { EloBadge } from '../components/EloBadge';
 import './Profile.css';
 
 const Profile = () => {
@@ -1343,6 +1344,7 @@ const Profile = () => {
                   <div className="profile-name-container">
                     <span>{profile.displayName || 'Nome do Usuário'}</span>
                     <UserBadge user={profile} />
+                    <EloBadge userId={profile.uid} size="small" />
                   </div>
                 )}
               </h1>

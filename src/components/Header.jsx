@@ -8,6 +8,7 @@ import CachedImage from './CachedImage';
 import NotificationIcon from './NotificationIcon';
 import NotificationCenter from './NotificationCenter';
 import SearchBar from './SearchBar';
+import { EloBadge } from './EloBadge';
 import './Header.css';
 
 const Header = () => {
@@ -339,6 +340,7 @@ const Header = () => {
                           <i className="fas fa-user"></i>
                         )}
                       </div>
+                      <EloBadge userId={currentUser?.uid} size="small" className="header-elo-badge" />
                       <div className="dropdown-indicator">
                         <i className="fas fa-chevron-down"></i>
                       </div>
@@ -371,6 +373,7 @@ const Header = () => {
                       </Link>
                     )}
                     <Link to="/wallet"><i className="fas fa-wallet"></i> Carteira</Link>
+                    <Link to="/elo-system"><i className="fas fa-trophy"></i> Sistema de Elos</Link>
                     <Link to="/settings"><i className="fas fa-cog"></i> Configurações</Link>
                     <div className="dropdown-divider"></div>
                     <Link to="/sobre"><i className="fas fa-info-circle"></i> Sobre</Link>
@@ -585,6 +588,9 @@ const Header = () => {
               )}
               <li><Link to="/wallet" onClick={() => setTimeout(closeMobileMenu, 100)}>
                 <i className="fas fa-wallet"></i>Carteira
+              </Link></li>
+              <li><Link to="/elo-system" onClick={() => setTimeout(closeMobileMenu, 100)}>
+                <i className="fas fa-trophy"></i>Sistema de Elos
               </Link></li>
               <li><Link to="/settings" onClick={() => setTimeout(closeMobileMenu, 100)}>
                 <i className="fas fa-cog"></i>Configurações

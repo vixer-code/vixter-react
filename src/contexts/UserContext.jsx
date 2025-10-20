@@ -20,6 +20,7 @@ import { database as rtdb, } from '../../config/firebase';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import { useReview } from './ReviewContext';
+import { useUserElo } from '../hooks/useElo';
 
 const UserContext = createContext({});
 
@@ -35,6 +36,7 @@ export const UserProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showInfo } = useNotification();
   const { updateReviewerPhoto } = useReview();
+  const { userElo, calculateUserElo, updateUserElo } = useUserElo(currentUser?.uid);
   
   // User state
   const [userProfile, setUserProfile] = useState(null);
@@ -385,7 +387,12 @@ export const UserProvider = ({ children }) => {
     canClaimDailyBonus,
     formatUserDisplayName,
     getUserAvatarUrl,
-    getUserStats
+    getUserStats,
+    
+    // Elo system
+    userElo,
+    calculateUserElo,
+    updateUserElo
   };
 
   return (

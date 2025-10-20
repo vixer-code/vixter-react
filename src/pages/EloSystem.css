@@ -1,0 +1,440 @@
+/* Elo System Page Styles */
+.elo-system {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  font-family: 'Inter', sans-serif;
+}
+
+.elo-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.elo-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.elo-subtitle {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+.elo-tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 32px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.tab-button:hover {
+  color: #333;
+}
+
+.tab-button.active {
+  color: #007bff;
+  border-bottom-color: #007bff;
+}
+
+.elo-content {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* My Elo Tab */
+.my-elo-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.elo-summary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.current-elo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.elo-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.refresh-button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.refresh-button:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.refresh-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Admin Panel */
+.admin-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.admin-panel.loading,
+.admin-panel.error {
+  text-align: center;
+  padding: 40px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.admin-header h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.edit-button,
+.save-button {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.edit-button:hover,
+.save-button:hover {
+  background: #218838;
+}
+
+.cancel-button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.cancel-button:hover {
+  background: #c82333;
+}
+
+.init-button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.init-button:hover {
+  background: #0056b3;
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+}
+
+.config-elo-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+}
+
+.elo-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.elo-card-header .elo-icon {
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.elo-card-header .elo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.elo-card-header .elo-symbol {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+  font-weight: bold;
+  color: white;
+}
+
+.elo-card-header .elo-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.elo-card-header .elo-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.elo-requirements h5 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.requirement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.requirement-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.requirement-item label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+}
+
+.requirement-item input {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+}
+
+.requirement-item input:disabled {
+  background: #f5f5f5;
+  color: #999;
+}
+
+/* Loading Container */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  text-align: center;
+}
+
+.loading-container p {
+  margin: 16px 0 0 0;
+  color: #666;
+  font-size: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .elo-system {
+    padding: 16px;
+  }
+  
+  .elo-header h1 {
+    font-size: 24px;
+  }
+  
+  .elo-content {
+    padding: 16px;
+  }
+  
+  .elo-tabs {
+    flex-direction: column;
+    gap: 0;
+  }
+  
+  .tab-button {
+    border-bottom: 1px solid #e0e0e0;
+    border-radius: 0;
+  }
+  
+  .tab-button.active {
+    border-bottom-color: #007bff;
+  }
+  
+  .config-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .requirement-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .admin-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .admin-actions {
+    justify-content: center;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .elo-system {
+    background: #1a1a1a;
+    color: #fff;
+  }
+  
+  .elo-header h1 {
+    color: #fff;
+  }
+  
+  .elo-subtitle {
+    color: #ccc;
+  }
+  
+  .elo-content {
+    background: #2d2d2d;
+  }
+  
+  .tab-button {
+    color: #ccc;
+  }
+  
+  .tab-button:hover {
+    color: #fff;
+  }
+  
+  .tab-button.active {
+    color: #4dabf7;
+    border-bottom-color: #4dabf7;
+  }
+  
+  .elo-summary {
+    background: #3d3d3d;
+  }
+  
+  .config-elo-card {
+    background: #3d3d3d;
+    border-color: #4d4d4d;
+  }
+  
+  .elo-card-header {
+    border-bottom-color: #4d4d4d;
+  }
+  
+  .elo-card-header .elo-info h4,
+  .elo-requirements h5 {
+    color: #fff;
+  }
+  
+  .elo-card-header .elo-info p {
+    color: #ccc;
+  }
+  
+  .requirement-item label {
+    color: #ccc;
+  }
+  
+  .requirement-item input {
+    background: #4d4d4d;
+    border-color: #666;
+    color: #fff;
+  }
+  
+  .requirement-item input:disabled {
+    background: #3d3d3d;
+    color: #999;
+  }
+}

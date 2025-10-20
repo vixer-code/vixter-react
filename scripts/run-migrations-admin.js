@@ -47,7 +47,25 @@ async function migrateUsers() {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       lastDailyBonus: toTs(u.lastDailyBonus),
       searchTerms: [ (u.displayName||"").toLowerCase(), (u.username||"").toLowerCase(), (u.location||"").toLowerCase() ].filter(Boolean),
-      stats: { totalPosts: 0, totalServices: 0, totalPacks: 0, totalSales: 0 }
+      stats: { 
+        // Stats para clientes
+        totalSpent: 0,
+        totalPacksBought: 0,
+        totalServicesBought: 0,
+        totalVixtipsSent: 0,
+        totalVixtipsSentAmount: 0,
+        // Stats para provedores
+        totalPacksSold: 0,
+        totalServicesSold: 0,
+        totalSales: 0,
+        totalPosts: 0,
+        totalPostsVixies: 0,
+        totalPostsFeed: 0,
+        totalPostsVixink: 0,
+        totalVixtipsReceived: 0,
+        totalVixtipsReceivedAmount: 0,
+        totalVcEarned: 0
+      }
     }, { merge: true });
     migrated++;
     if (migrated % 400 === 0) { await batch.commit(); }

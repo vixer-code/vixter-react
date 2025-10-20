@@ -161,7 +161,8 @@ async function updateUserStats(userId, statsUpdate) {
         totalPostsFeed: admin.firestore.FieldValue.increment(statsUpdate.totalPostsFeed || 0),
         totalPostsVixink: admin.firestore.FieldValue.increment(statsUpdate.totalPostsVixink || 0),
         totalVixtipsReceived: admin.firestore.FieldValue.increment(statsUpdate.totalVixtipsReceived || 0),
-        totalVixtipsReceivedAmount: admin.firestore.FieldValue.increment(statsUpdate.totalVixtipsReceivedAmount || 0)
+        totalVixtipsReceivedAmount: admin.firestore.FieldValue.increment(statsUpdate.totalVixtipsReceivedAmount || 0),
+        totalVcEarned: admin.firestore.FieldValue.increment(statsUpdate.totalVcEarned || 0)
       };
       
       // Calcular totalSales como soma de packs e serviços vendidos
@@ -172,6 +173,29 @@ async function updateUserStats(userId, statsUpdate) {
     
     await userRef.update(updates);
     logger.info(`Updated stats for user ${userId} (${accountType}):`, statsUpdate);
+    
+    // Atualizar elo do usuário automaticamente após atualizar stats
+    try {
+      const { calculateUserElo } = require('./elo-functions.js');
+      const eloResult = await calculateUserElo({ data: { userId }, auth: { uid: userId } });
+      
+      if (eloResult.success) {
+        const { elo } = eloResult;
+        await userRef.update({
+          elo: {
+            current: elo.current,
+            name: elo.name,
+            order: elo.order,
+            benefits: elo.benefits,
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+          }
+        });
+        logger.info(`Updated elo for user ${userId}: ${elo.current}`);
+      }
+    } catch (eloError) {
+      logger.warn(`Error updating elo for user ${userId}:`, eloError);
+      // Não falhar a operação principal se a atualização de elo falhar
+    }
     
   } catch (error) {
     logger.error(`Error updating stats for user ${userId}:`, error);
@@ -1131,7 +1155,8 @@ async function confirmServiceDeliveryInternal(buyerId, orderId) {
     }),
     // Stats do provedor (vendeu um serviço)
     updateUserStats(order.sellerId, {
-      totalServicesSold: 1
+      totalServicesSold: 1,
+      totalVcEarned: order.vcAmount
     })
   ]);
 
@@ -1261,7 +1286,8 @@ async function autoCompleteDeliveredServicesInternal() {
               }),
               // Stats do provedor (vendeu um serviço)
               updateUserStats(serviceData.sellerId, {
-                totalServicesSold: 1
+                totalServicesSold: 1,
+                totalVcEarned: serviceData.vcAmount
               })
             ]);
           } catch (statsError) {
@@ -1521,7 +1547,8 @@ async function acceptPackOrderInternal(sellerId, orderId) {
     }),
     // Stats do provedor (vendeu um pack)
     updateUserStats(order.sellerId, {
-      totalPacksSold: 1
+      totalPacksSold: 1,
+      totalVcEarned: order.vcAmount
     })
   ]);
 
@@ -2284,7 +2311,8 @@ export const processVixtip = onCall(async (request) => {
       // Stats do provedor (recebeu uma gorjeta)
       updateUserStats(authorId, {
         totalVixtipsReceived: 1,
-        totalVixtipsReceivedAmount: vcAmount
+        totalVixtipsReceivedAmount: vcAmount,
+        totalVcEarned: vcAmount
       })
     ]);
 

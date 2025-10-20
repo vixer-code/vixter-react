@@ -126,7 +126,8 @@ export const MIGRATION_MAPPINGS = {
         totalPostsFeed: 0,
         totalPostsVixink: 0,
         totalVixtipsReceived: 0,
-        totalVixtipsReceivedAmount: 0
+        totalVixtipsReceivedAmount: 0,
+        totalVcEarned: 0
       }
     }
   },
