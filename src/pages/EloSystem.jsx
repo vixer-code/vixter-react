@@ -87,6 +87,16 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
   const currentElo = userElo.elo;
   const currentXp = userProfile.stats?.xp || 0;
   
+  // Verificar se currentElo existe e tem as propriedades necessárias
+  if (!currentElo || typeof currentElo.order === 'undefined') {
+    return (
+      <div className="elo-loading">
+        <div className="loading-spinner"></div>
+        <p>Carregando informações do elo...</p>
+      </div>
+    );
+  }
+  
   // Encontrar próximo elo
   const eloEntries = Object.entries(eloConfig).sort((a, b) => a[1].order - b[1].order);
   const nextEloEntry = eloEntries.find(([_, data]) => data.order === currentElo.order + 1);
@@ -96,13 +106,16 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
   let progressPercentage = 0;
   let xpNeeded = 0;
   
-  if (nextElo) {
+  if (nextElo && nextElo.requirements) {
     const currentRequiredXp = currentElo.requirements?.xp || 0;
     const nextRequiredXp = nextElo.requirements?.xp || 0;
     xpNeeded = nextRequiredXp - currentXp;
-    progressPercentage = Math.min(100, Math.max(0, 
-      ((currentXp - currentRequiredXp) / (nextRequiredXp - currentRequiredXp)) * 100
-    ));
+    
+    if (nextRequiredXp > currentRequiredXp) {
+      progressPercentage = Math.min(100, Math.max(0, 
+        ((currentXp - currentRequiredXp) / (nextRequiredXp - currentRequiredXp)) * 100
+      ));
+    }
   }
 
   return (
@@ -116,7 +129,7 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
           >
             <img 
               src={currentElo.benefits?.imageUrl || '/images/iron.png'} 
-              alt={currentElo.name}
+              alt={currentElo.name || 'Elo'}
               className="elo-image-large"
               onError={(e) => {
                 e.target.style.display = 'none';
@@ -124,12 +137,12 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
               }}
             />
             <span className="elo-symbol-large" style={{ display: 'none' }}>
-              {currentElo.name.charAt(0)}
+              {(currentElo.name || 'Elo').charAt(0)}
             </span>
           </div>
           <div className="elo-info-large">
-            <h2 className="elo-name-large">{currentElo.name}</h2>
-            <p className="elo-description">{currentElo.benefits?.description}</p>
+            <h2 className="elo-name-large">{currentElo.name || 'Elo'}</h2>
+            <p className="elo-description">{currentElo.benefits?.description || 'Carregando...'}</p>
             <div className="elo-xp-info">
               <span className="current-xp">{currentXp.toLocaleString()} XP</span>
             </div>
