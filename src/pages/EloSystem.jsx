@@ -75,7 +75,8 @@ const EloSystem = () => {
 };
 
 const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
-  if (!userElo || !eloConfig) {
+  // Se não temos dados básicos, mostrar loading
+  if (!userProfile || !eloConfig) {
     return (
       <div className="elo-loading">
         <div className="loading-spinner"></div>
@@ -84,18 +85,19 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
     );
   }
 
-  const currentElo = userElo.elo;
-  const currentXp = userProfile?.stats?.xp || 0;
+  // Se userElo não existe, criar elo padrão
+  const currentElo = userElo?.elo || {
+    current: 'ferro',
+    name: 'Ferro',
+    order: 1,
+    benefits: {
+      badgeColor: '#8B4513',
+      description: 'Início da jornada',
+      imageUrl: '/images/iron.png'
+    }
+  };
   
-  // Verificar se currentElo existe e tem as propriedades necessárias
-  if (!currentElo || typeof currentElo.order === 'undefined') {
-    return (
-      <div className="elo-loading">
-        <div className="loading-spinner"></div>
-        <p>Carregando informações do elo...</p>
-      </div>
-    );
-  }
+  const currentXp = userProfile?.stats?.xp || 0;
   
   // Encontrar próximo elo
   const eloEntries = Object.entries(eloConfig).sort((a, b) => a[1].order - b[1].order);
@@ -290,7 +292,7 @@ const EloListTab = ({ eloConfig }) => {
               <p className="elo-list-description">{eloData.benefits.description}</p>
               <div className="elo-list-requirement">
                 <span className="requirement-label">XP Necessário:</span>
-                <span className="requirement-value">{(eloData.requirements?.xp || 0).toLocaleString()}</span>
+                <span className="requirement-value">{eloData.requirements?.xp?.toLocaleString() || '0'}</span>
               </div>
             </div>
           </div>
