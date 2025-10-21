@@ -921,9 +921,24 @@ const onTransactionUpdated = onDocumentUpdated({
     logger.info(`🔄 Updating elo for user ${userId} due to transaction ${event.params.transactionId} (${transactionType})`);
     
     // Recalcular elo do usuário
-    await calculateUserEloInternal(userId);
+    const eloResult = await calculateUserEloInternal(userId);
     
-    logger.info(`✅ Elo updated for user ${userId} after transaction ${event.params.transactionId}`);
+    if (eloResult.success) {
+      const { elo } = eloResult;
+      const userRef = db.collection('users').doc(userId);
+      await userRef.update({
+        elo: {
+          current: elo.current,
+          name: elo.name,
+          order: elo.order,
+          benefits: elo.benefits,
+          lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+        }
+      });
+      logger.info(`✅ Elo updated for user ${userId}: ${elo.current} after transaction ${event.params.transactionId}`);
+    } else {
+      logger.warn(`⚠️ Failed to calculate elo for user ${userId} after transaction ${event.params.transactionId}`);
+    }
     
   } catch (error) {
     logger.error(`❌ Error updating elo for transaction ${event.params.transactionId}:`, error);

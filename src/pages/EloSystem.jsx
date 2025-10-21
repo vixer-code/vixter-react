@@ -219,7 +219,7 @@ const MyEloTab = ({ userProfile, userElo, eloConfig }) => {
                 </div>
                 <div className="next-elo-icon">
                   <img 
-                    src={nextElo.benefits?.imageUrl || '/images/bronze.png'} 
+                    src={nextElo.image || '/images/bronze.png'} 
                     alt={nextElo.name}
                     className="progress-elo-image"
                   />
@@ -437,6 +437,34 @@ const AdminTab = ({ syncAllUsersXpAndElo, loading }) => {
             )}
           </div>
         )}
+      </div>
+
+      <div className="admin-section">
+        <h4>Sincronização de Elos</h4>
+        <p className="admin-description">
+          Esta função recalcula e atualiza o elo de todos os usuários baseado no XP atual.
+          <br />
+          <strong>Nota:</strong> Esta operação atualiza o campo 'elo' no documento do usuário.
+        </p>
+        
+        <div className="sync-controls">
+          <button 
+            className={`sync-button ${syncLoading ? 'loading' : ''}`}
+            onClick={handleSync}
+            disabled={syncLoading || loading}
+          >
+            {syncLoading ? (
+              <>
+                <div className="loading-spinner-small"></div>
+                Sincronizando Elos...
+              </>
+            ) : (
+              <>
+                🏆 Sincronizar Elos de Todos os Usuários
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="admin-info">
