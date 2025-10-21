@@ -618,8 +618,21 @@ const syncAllUsersXpAndElo = onCall({
           
           if (currentXp > 0) {
             // Se já tem XP, apenas recalcular o elo
-            await calculateUserEloInternal(userId);
-            logger.info(`✅ Elo recalculado para usuário ${userId}`);
+            const eloResult = await calculateUserEloInternal(userId);
+            if (eloResult.success) {
+              const { elo } = eloResult;
+              const userRef = db.collection('users').doc(userId);
+              await userRef.update({
+                elo: {
+                  current: elo.current,
+                  name: elo.name,
+                  order: elo.order,
+                  benefits: elo.benefits,
+                  lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+                }
+              });
+              logger.info(`✅ Elo recalculado para usuário ${userId}: ${elo.current}`);
+            }
           } else {
             // Se não tem XP, calcular baseado nas transações existentes
             await calculateAndSetUserXpFromTransactions(userId);
@@ -946,6 +959,99 @@ const onTransactionUpdated = onDocumentUpdated({
   }
 });
 
+/**
+ * Força a recalculação de elos de todos os usuários
+ */
+const recalculateAllElos = onCall({
+  region: 'us-central1',
+  memory: "512MiB",
+  timeoutSeconds: 540, // 9 minutos
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  try {
+    logger.info('🔄 Forçando recálculo de elos para todos os usuários...');
+    
+    // Buscar todos os usuários
+    const usersSnapshot = await db.collection('users').get();
+    const totalUsers = usersSnapshot.size;
+    
+    logger.info(`📊 Encontrados ${totalUsers} usuários para recalcular elo`);
+    
+    let processedCount = 0;
+    let errorCount = 0;
+    const errors = [];
+    
+    // Processar usuários em lotes de 50
+    const batchSize = 50;
+    const batches = [];
+    
+    for (let i = 0; i < usersSnapshot.docs.length; i += batchSize) {
+      batches.push(usersSnapshot.docs.slice(i, i + batchSize));
+    }
+    
+    for (const batch of batches) {
+      const batchPromises = batch.map(async (userDoc) => {
+        try {
+          const userId = userDoc.id;
+          const userData = userDoc.data();
+          
+          // Forçar recálculo do elo baseado no XP atual
+          const eloResult = await calculateUserEloInternal(userId);
+          if (eloResult.success) {
+            const { elo } = eloResult;
+            const userRef = db.collection('users').doc(userId);
+            await userRef.update({
+              elo: {
+                current: elo.current,
+                name: elo.name,
+                order: elo.order,
+                benefits: elo.benefits,
+                lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+              }
+            });
+            logger.info(`✅ Elo recalculado para usuário ${userId}: ${elo.current} (XP: ${userData.stats?.xp || 0})`);
+          } else {
+            logger.warn(`⚠️ Falha ao calcular elo para usuário ${userId}`);
+          }
+          
+          processedCount++;
+          
+        } catch (error) {
+          errorCount++;
+          const errorMsg = `Erro ao recalcular elo para usuário ${userDoc.id}: ${error.message}`;
+          errors.push(errorMsg);
+          logger.error(`💥 ${errorMsg}`, error);
+        }
+      });
+      
+      // Aguardar o lote atual terminar
+      await Promise.all(batchPromises);
+      
+      // Pequena pausa entre lotes para evitar sobrecarga
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    const result = {
+      success: true,
+      message: `Recálculo de elos concluído: ${processedCount} usuários processados, ${errorCount} erros`,
+      processed: processedCount,
+      errors: errorCount,
+      totalUsers: totalUsers,
+      errorDetails: errors
+    };
+    
+    logger.info(`🎉 Recálculo de elos concluído: ${processedCount} processados, ${errorCount} erros`);
+    return result;
+    
+  } catch (error) {
+    logger.error('💥 Erro no recálculo de elos:', error);
+    throw new HttpsError("internal", "Erro interno no recálculo de elos");
+  }
+});
+
 export {
   initializeEloConfig,
   updateEloConfig,
@@ -960,5 +1066,6 @@ export {
   syncAllUsersXpAndElo,
   calculateAndSetUserXpFromTransactions,
   testXpSystem,
-  onTransactionUpdated
+  onTransactionUpdated,
+  recalculateAllElos
 };

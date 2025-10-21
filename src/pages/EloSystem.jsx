@@ -5,7 +5,7 @@ import './EloSystem.css';
 
 const EloSystem = () => {
   const { userProfile, userElo } = useUser();
-  const { eloConfig, loading: configLoading, error: configError, syncAllUsersXpAndElo } = useElo();
+  const { eloConfig, loading: configLoading, error: configError, syncAllUsersXpAndElo, recalculateAllElos } = useElo();
   const [activeTab, setActiveTab] = useState('my-elo');
 
   if (!userProfile) {
@@ -373,8 +373,8 @@ const AdminTab = ({ syncAllUsersXpAndElo, loading }) => {
       setSyncError(null);
       setSyncResult(null);
       
-      // Usar a mesma função de sincronização que recalcula tudo
-      const result = await syncAllUsersXpAndElo();
+      // Usar a nova função específica para recalcular elos
+      const result = await recalculateAllElos();
       setSyncResult(result);
     } catch (error) {
       setSyncError(error.message);

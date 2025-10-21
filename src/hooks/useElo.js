@@ -106,6 +106,28 @@ export const useElo = () => {
     }
   }, []);
 
+  const recalculateAllElos = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const recalculateFunction = httpsCallable(eloFunctions, 'recalculateAllElos');
+      const result = await recalculateFunction();
+      
+      if (result.data.success) {
+        return result.data;
+      }
+      
+      throw new Error(result.data.message || 'Erro no recálculo de elos');
+    } catch (error) {
+      console.error('Erro ao recalcular elos:', error);
+      setError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Carregar configurações na inicialização
   useEffect(() => {
     if (!eloConfig) {
@@ -123,7 +145,8 @@ export const useElo = () => {
     initializeEloConfig,
     updateEloConfig,
     getEloConfig,
-    syncAllUsersXpAndElo
+    syncAllUsersXpAndElo,
+    recalculateAllElos
   };
 };
 
