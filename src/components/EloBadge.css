@@ -179,28 +179,28 @@
 
 /* Badge compacto para posts */
 .elo-badge.compact {
-  padding: 2px 6px;
-  font-size: 10px;
-  border-radius: 12px;
-  gap: 4px;
+  padding: 1.5px 4.5px;
+  font-size: 7.5px;
+  border-radius: 9px;
+  gap: 3px;
 }
 
 .elo-badge.compact .elo-badge-icon {
-  width: 14px;
-  height: 14px;
+  width: 10.5px;
+  height: 10.5px;
 }
 
 .elo-badge.compact .elo-badge-image {
-  width: 10px;
-  height: 10px;
+  width: 7.5px;
+  height: 7.5px;
 }
 
 .elo-badge.compact .elo-badge-symbol {
-  width: 10px;
-  height: 10px;
-  font-size: 7px;
+  width: 7.5px;
+  height: 7.5px;
+  font-size: 5.25px;
 }
 
 .elo-badge.compact .elo-badge-text {
-  font-size: 8px;
+  font-size: 6px;
 }
