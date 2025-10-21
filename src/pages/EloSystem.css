@@ -588,3 +588,232 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Admin Tab Styles */
+.admin-content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.admin-content h3 {
+  color: #ffffff;
+  font-size: 1.8rem;
+  margin-bottom: 30px;
+  text-align: center;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.admin-section {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.admin-section h4 {
+  color: #ffffff;
+  font-size: 1.4rem;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-description {
+  color: #e0e0e0;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+}
+
+.sync-controls {
+  display: flex;
+  justify-content: center;
+  margin: 25px 0;
+}
+
+.sync-button {
+  background: linear-gradient(135deg, #4c1d95, #7c3aed);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 15px 30px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 15px rgba(76, 29, 149, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sync-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5b21b6, #8b5cf6);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 29, 149, 0.4);
+}
+
+.sync-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.sync-button.loading {
+  background: linear-gradient(135deg, #6b7280, #9ca3af);
+}
+
+.loading-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.sync-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.sync-error h5 {
+  color: #fca5a5;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+}
+
+.sync-error p {
+  color: #fecaca;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.sync-success {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.sync-success h5 {
+  color: #86efac;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.sync-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-label {
+  color: #d1d5db;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.stat-value {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.error-details {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.error-details h6 {
+  color: #fca5a5;
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.error-details ul {
+  color: #fecaca;
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.9rem;
+}
+
+.error-details li {
+  margin-bottom: 5px;
+  line-height: 1.4;
+}
+
+.admin-info {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 15px;
+  padding: 25px;
+  margin-top: 20px;
+}
+
+.admin-info h4 {
+  color: #93c5fd;
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-info ul {
+  color: #dbeafe;
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.6;
+}
+
+.admin-info li {
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+/* Responsive Design for Admin Tab */
+@media (max-width: 768px) {
+  .admin-content {
+    padding: 15px;
+  }
+  
+  .admin-section {
+    padding: 20px;
+  }
+  
+  .sync-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .sync-button {
+    padding: 12px 24px;
+    font-size: 1rem;
+  }
+}
