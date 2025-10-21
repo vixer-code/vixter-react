@@ -223,19 +223,9 @@ const getEloConfig = onCall({
 });
 
 /**
- * Calcula o elo atual do usuário baseado nas métricas
+ * Calcula o elo atual do usuário baseado nas métricas (versão interna)
  */
-const calculateUserElo = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 30,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { userId } = request.data;
-  const targetUserId = userId || request.auth.uid;
-
+const calculateUserEloInternal = async (targetUserId) => {
   try {
     logger.info(`🔄 Calculando elo para usuário: ${targetUserId}`);
     
@@ -250,7 +240,7 @@ const calculateUserElo = onCall({
     const userSnap = await userRef.get();
     
     if (!userSnap.exists) {
-      throw new HttpsError("not-found", "Usuário não encontrado");
+      throw new Error("Usuário não encontrado");
     }
     
     const userData = userSnap.data();
@@ -322,6 +312,28 @@ const calculateUserElo = onCall({
     
   } catch (error) {
     logger.error(`❌ Erro ao calcular elo para ${targetUserId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Calcula o elo atual do usuário baseado nas métricas (Cloud Function)
+ */
+const calculateUserElo = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 30,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { userId } = request.data;
+  const targetUserId = userId || request.auth.uid;
+
+  try {
+    return await calculateUserEloInternal(targetUserId);
+  } catch (error) {
+    logger.error(`❌ Erro ao calcular elo para ${targetUserId}:`, error);
     throw new HttpsError("internal", "Erro interno ao calcular elo do usuário");
   }
 });
@@ -344,7 +356,7 @@ const updateUserElo = onCall({
     logger.info(`🔄 Atualizando elo para usuário: ${targetUserId}`);
     
     // Calcular elo atual
-    const eloResult = await calculateUserElo({ data: { userId: targetUserId }, auth: request.auth });
+    const eloResult = await calculateUserEloInternal(targetUserId);
     
     if (!eloResult.success) {
       throw new HttpsError("internal", "Erro ao calcular elo do usuário");
@@ -463,18 +475,9 @@ const calculateXpFromTransaction = (transactionType, vpAmount, productType = nul
 };
 
 /**
- * Adiciona XP ao usuário e atualiza o elo
+ * Adiciona XP ao usuário e atualiza o elo (versão interna)
  */
-const addXpToUser = onCall({
-  memory: "128MiB",
-  timeoutSeconds: 30,
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Usuário não autenticado");
-  }
-
-  const { userId, xpAmount, transactionType, transactionId } = request.data;
-
+const addXpToUserInternal = async (userId, xpAmount, transactionType, transactionId) => {
   try {
     logger.info(`🔄 Adicionando ${xpAmount} XP para usuário: ${userId}`);
     
@@ -483,7 +486,7 @@ const addXpToUser = onCall({
     const userSnap = await userRef.get();
     
     if (!userSnap.exists) {
-      throw new HttpsError("not-found", "Usuário não encontrado");
+      throw new Error("Usuário não encontrado");
     }
     
     const userData = userSnap.data();
@@ -506,10 +509,7 @@ const addXpToUser = onCall({
     });
     
     // Recalcular elo do usuário
-    const eloResult = await calculateUserElo({ 
-      data: { userId: userId }, 
-      auth: request.auth 
-    });
+    const eloResult = await calculateUserEloInternal(userId);
     
     if (eloResult.success) {
       const { elo } = eloResult;
@@ -536,6 +536,27 @@ const addXpToUser = onCall({
     
   } catch (error) {
     logger.error(`❌ Erro ao adicionar XP para ${userId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Adiciona XP ao usuário e atualiza o elo (Cloud Function)
+ */
+const addXpToUser = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 30,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  const { userId, xpAmount, transactionType, transactionId } = request.data;
+
+  try {
+    return await addXpToUserInternal(userId, xpAmount, transactionType, transactionId);
+  } catch (error) {
+    logger.error(`❌ Erro ao adicionar XP para ${userId}:`, error);
     throw new HttpsError("internal", "Erro interno ao adicionar XP");
   }
 });
@@ -545,8 +566,10 @@ export {
   updateEloConfig,
   getEloConfig,
   calculateUserElo,
+  calculateUserEloInternal,
   updateUserElo,
   getUserElo,
   calculateXpFromTransaction,
-  addXpToUser
+  addXpToUser,
+  addXpToUserInternal
 };
