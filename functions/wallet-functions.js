@@ -2358,6 +2358,23 @@ export const processVixtip = onCall(async (request) => {
       };
     });
 
+    // Adicionar XP para ambos os usuários usando nova fórmula
+    const { calculateXpFromTransaction, addXpToUserInternal } = require('./elo-functions');
+    
+    // XP para o comprador (usando VP gasto e tipo vixtip = 1)
+    const buyerXp = calculateXpFromTransaction('VIXTIP_SENT', vpAmount, 1);
+    if (buyerXp > 0) {
+      await addXpToUserInternal(buyerId, buyerXp, 'VIXTIP_SENT', vixtipRef.id);
+    }
+    
+    // XP para o vendedor (usando VP equivalente e tipo vixtip = 1)
+    // Converter VC para VP para usar na fórmula (1 VC = 1.5 VP)
+    const vpEquivalent = Math.ceil(vcAmount * 1.5);
+    const sellerXp = calculateXpFromTransaction('VIXTIP_RECEIVED', vpEquivalent, 1);
+    if (sellerXp > 0) {
+      await addXpToUserInternal(authorId, sellerXp, 'VIXTIP_RECEIVED', vixtipRef.id);
+    }
+
     // Atualizar estatísticas dos usuários
     await Promise.all([
       // Stats do cliente (enviou uma gorjeta)
@@ -2472,6 +2489,23 @@ export const processPendingVixtips = onCall(async () => {
             processedAt: admin.firestore.FieldValue.serverTimestamp()
           });
         });
+
+        // Adicionar XP para ambos os usuários usando nova fórmula (fora da transação)
+        const { calculateXpFromTransaction, addXpToUserInternal } = require('./elo-functions');
+        
+        // XP para o comprador (usando VP gasto e tipo vixtip = 1)
+        const buyerXp = calculateXpFromTransaction('VIXTIP_SENT', vixtipData.vpAmount, 1);
+        if (buyerXp > 0) {
+          await addXpToUserInternal(vixtipData.buyerId, buyerXp, 'VIXTIP_SENT', vixtipDoc.id);
+        }
+        
+        // XP para o vendedor (usando VP equivalente e tipo vixtip = 1)
+        // Converter VC para VP para usar na fórmula (1 VC = 1.5 VP)
+        const vpEquivalent = Math.ceil(vixtipData.vcAmount * 1.5);
+        const sellerXp = calculateXpFromTransaction('VIXTIP_RECEIVED', vpEquivalent, 1);
+        if (sellerXp > 0) {
+          await addXpToUserInternal(vixtipData.authorId, sellerXp, 'VIXTIP_RECEIVED', vixtipDoc.id);
+        }
 
         processedCount++;
         logger.info(`✅ Gorjeta ${vixtipDoc.id} processada - ${vixtipData.vcAmount} VC para ${vixtipData.authorName}`);
