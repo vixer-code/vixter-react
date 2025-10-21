@@ -5,7 +5,7 @@ import './EloSystem.css';
 
 const EloSystem = () => {
   const { userProfile, userElo } = useUser();
-  const { eloConfig, loading: configLoading, error: configError } = useElo();
+  const { eloConfig, loading: configLoading, error: configError, syncAllUsersXpAndElo } = useElo();
   const [activeTab, setActiveTab] = useState('my-elo');
 
   if (!userProfile) {
@@ -41,6 +41,12 @@ const EloSystem = () => {
         >
           Todos os Elos
         </button>
+        <button 
+          className={`tab-button ${activeTab === 'admin' ? 'active' : ''}`}
+          onClick={() => setActiveTab('admin')}
+        >
+          Administração
+        </button>
       </div>
 
       <div className="elo-content">
@@ -57,6 +63,15 @@ const EloSystem = () => {
         {activeTab === 'elo-list' && (
           <div className="elo-list-tab">
             <EloListTab eloConfig={eloConfig} />
+          </div>
+        )}
+
+        {activeTab === 'admin' && (
+          <div className="admin-tab">
+            <AdminTab 
+              syncAllUsersXpAndElo={syncAllUsersXpAndElo}
+              loading={configLoading}
+            />
           </div>
         )}
       </div>
@@ -327,6 +342,112 @@ const EloListTab = ({ eloConfig }) => {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+};
+
+const AdminTab = ({ syncAllUsersXpAndElo, loading }) => {
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncResult, setSyncResult] = useState(null);
+  const [syncError, setSyncError] = useState(null);
+
+  const handleSync = async () => {
+    try {
+      setSyncLoading(true);
+      setSyncError(null);
+      setSyncResult(null);
+      
+      const result = await syncAllUsersXpAndElo();
+      setSyncResult(result);
+    } catch (error) {
+      setSyncError(error.message);
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  return (
+    <div className="admin-content">
+      <h3>Administração do Sistema de Elos</h3>
+      
+      <div className="admin-section">
+        <h4>Sincronização de XP e Elos</h4>
+        <p className="admin-description">
+          Esta função recalcula o XP e elo de todos os usuários baseado nas transações existentes.
+          <br />
+          <strong>Atenção:</strong> Esta operação pode demorar alguns minutos e deve ser executada apenas quando necessário.
+        </p>
+        
+        <div className="sync-controls">
+          <button 
+            className={`sync-button ${syncLoading ? 'loading' : ''}`}
+            onClick={handleSync}
+            disabled={syncLoading || loading}
+          >
+            {syncLoading ? (
+              <>
+                <div className="loading-spinner-small"></div>
+                Sincronizando...
+              </>
+            ) : (
+              <>
+                🔄 Sincronizar Todos os Usuários
+              </>
+            )}
+          </button>
+        </div>
+
+        {syncError && (
+          <div className="sync-error">
+            <h5>❌ Erro na Sincronização</h5>
+            <p>{syncError}</p>
+          </div>
+        )}
+
+        {syncResult && (
+          <div className="sync-success">
+            <h5>✅ Sincronização Concluída</h5>
+            <div className="sync-stats">
+              <div className="stat-item">
+                <span className="stat-label">Usuários Processados:</span>
+                <span className="stat-value">{syncResult.processed || 0}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Total de Usuários:</span>
+                <span className="stat-value">{syncResult.totalUsers || 0}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Erros:</span>
+                <span className="stat-value">{syncResult.errors || 0}</span>
+              </div>
+            </div>
+            {syncResult.errorDetails && syncResult.errorDetails.length > 0 && (
+              <div className="error-details">
+                <h6>Detalhes dos Erros:</h6>
+                <ul>
+                  {syncResult.errorDetails.slice(0, 5).map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                  {syncResult.errorDetails.length > 5 && (
+                    <li>... e mais {syncResult.errorDetails.length - 5} erros</li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="admin-info">
+        <h4>Informações Importantes</h4>
+        <ul>
+          <li>• A sincronização processa usuários em lotes de 50 para otimizar performance</li>
+          <li>• Usuários que já possuem XP calculado terão apenas o elo recalculado</li>
+          <li>• Usuários sem XP terão o valor calculado baseado nas transações existentes</li>
+          <li>• A operação pode levar até 9 minutos para ser concluída</li>
+          <li>• Recomenda-se executar esta função após mudanças no sistema de XP</li>
+        </ul>
       </div>
     </div>
   );

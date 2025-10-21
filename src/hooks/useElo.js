@@ -80,6 +80,28 @@ export const useElo = () => {
     }
   }, []);
 
+  const syncAllUsersXpAndElo = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const syncFunction = httpsCallable(functions, 'syncAllUsersXpAndElo');
+      const result = await syncFunction();
+      
+      if (result.data.success) {
+        return result.data;
+      }
+      
+      throw new Error(result.data.message || 'Erro ao sincronizar XP e elos');
+    } catch (err) {
+      console.error('Error syncing all users XP and elo:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Carregar configurações na inicialização
   useEffect(() => {
     if (!eloConfig) {
@@ -96,7 +118,8 @@ export const useElo = () => {
     error,
     initializeEloConfig,
     updateEloConfig,
-    getEloConfig
+    getEloConfig,
+    syncAllUsersXpAndElo
   };
 };
 
