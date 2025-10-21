@@ -42,7 +42,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Prata',
     order: 3,
     requirements: {
-      xp: 5450  // 1250 + 4200
+      xp: 4200
     },
     benefits: {
       badgeColor: '#C0C0C0',
@@ -54,7 +54,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Ouro',
     order: 4,
     requirements: {
-      xp: 13950  // 1250 + 4200 + 8500
+      xp: 8500
     },
     benefits: {
       badgeColor: '#FFD700',
@@ -66,7 +66,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Platina',
     order: 5,
     requirements: {
-      xp: 29300  // 1250 + 4200 + 8500 + 15350
+      xp: 15350
     },
     benefits: {
       badgeColor: '#E5E4E2',
@@ -78,7 +78,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Esmeralda',
     order: 6,
     requirements: {
-      xp: 48100  // 1250 + 4200 + 8500 + 15350 + 18800
+      xp: 18800
     },
     benefits: {
       badgeColor: '#50C878',
@@ -90,7 +90,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Diamante',
     order: 7,
     requirements: {
-      xp: 70400  // 1250 + 4200 + 8500 + 15350 + 18800 + 22300
+      xp: 22300
     },
     benefits: {
       badgeColor: '#B9F2FF',
@@ -102,7 +102,7 @@ const DEFAULT_ELO_CONFIG = {
     name: 'Mestre',
     order: 8,
     requirements: {
-      xp: 98600  // 1250 + 4200 + 8500 + 15350 + 18800 + 22300 + 28200
+      xp: 28200
     },
     benefits: {
       badgeColor: '#800080',

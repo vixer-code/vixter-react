@@ -1557,7 +1557,7 @@ const Profile = () => {
           </div>
           
           <div className="profile-posts">
-            {isOwner && (
+            {isOwner && activeTab === 'perfil' && (
               <PostCreator
                 mode="general_feed"
                 onPostCreated={() => {
@@ -1570,17 +1570,18 @@ const Profile = () => {
               />
             )}
             
-            <div className="posts-container">
-              {posts.length > 0 ? (
-                posts
-                  .filter(post => {
-                    // Filter out adult content if user doesn't have KYC verified
-                    if (post.isAdultContent && !isKycVerified) {
-                      return false; // Hide adult content for non-KYC users
-                    }
-                    return true;
-                  })
-                  .map((post) => {
+            {activeTab === 'perfil' && (
+              <div className="posts-container">
+                {posts.length > 0 ? (
+                  posts
+                    .filter(post => {
+                      // Filter out adult content if user doesn't have KYC verified
+                      if (post.isAdultContent && !isKycVerified) {
+                        return false; // Hide adult content for non-KYC users
+                      }
+                      return true;
+                    })
+                    .map((post) => {
                   // Get media array for display
                   const mediaArray = post.media || (post.imageUrl ? [{ type: 'image', url: post.imageUrl }] : []);
                   const contentText = post.content || post.text || '';
@@ -1779,7 +1780,8 @@ const Profile = () => {
               ) : (
                 <div className="empty-state">Nenhuma publicação ainda.</div>
               )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

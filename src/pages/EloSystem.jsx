@@ -481,6 +481,34 @@ const AdminTab = ({ syncAllUsersXpAndElo, loading }) => {
             )}
           </button>
         </div>
+        
+        <div className="admin-section">
+          <h4>Sincronização Individual</h4>
+          <p className="admin-description">
+            Sincroniza o elo do usuário atual com base no XP atual.
+            <br />
+            <strong>Útil para:</strong> Testar o sistema ou corrigir elo individual.
+          </p>
+          
+          <div className="sync-controls">
+            <button 
+              className={`sync-button ${syncLoading ? 'loading' : ''}`}
+              onClick={handleSync}
+              disabled={syncLoading || loading}
+            >
+              {syncLoading ? (
+                <>
+                  <div className="loading-spinner-small"></div>
+                  Sincronizando...
+                </>
+              ) : (
+                <>
+                  🔄 Sincronizar Meu Elo
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="admin-info">
