@@ -151,9 +151,7 @@ const MyEloTab = ({ userProfile, userElo, eloConfig }) => {
       <div className="current-elo-card">
         <div className="elo-badge-large">
           <div 
-            className="elo-icon-large"
-            style={{ backgroundColor: currentElo.benefits?.badgeColor || '#8B4513' }}
-          >
+            className="elo-icon-large">
             <img 
               src={currentElo.benefits?.imageUrl || '/images/iron.png'} 
               alt={currentElo.name || 'Elo'}
@@ -305,9 +303,7 @@ const EloListTab = ({ eloConfig }) => {
         {eloEntries.map(([eloKey, eloData]) => (
           <div key={eloKey} className="elo-list-card">
             <div 
-              className="elo-list-icon"
-              style={{ backgroundColor: eloData.color }}
-            >
+              className="elo-list-icon">
               <img 
                 src={eloData.image} 
                 alt={eloData.name}
