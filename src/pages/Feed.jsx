@@ -16,7 +16,6 @@ import AnnouncementsTab from '../components/AnnouncementsTab';
 import UserBadge from '../components/UserBadge';
 import EloBadge from '../components/EloBadge';
 import ExpandableText from '../components/ExpandableText';
-import { useUserElo } from '../hooks/useElo';
 import './Feed.css';
 
 const Feed = () => {

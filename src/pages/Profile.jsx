@@ -17,7 +17,6 @@ import { getDefaultImage } from '../utils/defaultImages';
 import { getProfileUrl } from '../utils/profileUrls';
 import { useEmailVerification } from '../hooks/useEmailVerification';
 import useKycStatus from '../hooks/useKycStatus';
-import { useUserElo } from '../hooks/useElo';
 const CreateServiceModal = lazy(() => import('../components/CreateServiceModal'));
 const CreatePackModal = lazy(() => import('../components/CreatePackModal'));
 import CachedImage from '../components/CachedImage';
@@ -53,7 +52,6 @@ const Profile = () => {
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const { createOrGetConversation } = useEnhancedMessaging();
   const { isUserBlocked, blockUser, unblockUser, hasBlockBetween } = useBlock();
-  const { userElo } = useUserElo(profile?.uid);
   
   // All useState hooks must be at the top before any other logic
   const [profile, setProfile] = useState(null);
@@ -1346,7 +1344,7 @@ const Profile = () => {
                   <div className="profile-name-container">
                     <span>{profile.displayName || 'Nome do Usuário'}</span>
                     <UserBadge user={profile} />
-                    <EloBadge userElo={userElo} size="small" />
+                    <EloBadge userElo={profile?.elo} size="small" />
                   </div>
                 )}
               </h1>
@@ -1604,7 +1602,7 @@ const Profile = () => {
                           <div className="author-info">
                             <div className="author-name-container">
                               <div className="author-name">{post.authorName}</div>
-                              <EloBadge userElo={userElo} size="compact" />
+                              <EloBadge userElo={profile?.elo} size="compact" />
                               {post.isAdultContent && isKycVerified && (
                                 <span className="adult-content-badge">
                                   <i className="fas fa-exclamation-triangle"></i>
