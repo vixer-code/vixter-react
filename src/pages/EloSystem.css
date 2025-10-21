@@ -454,14 +454,11 @@
 .elo-list-icon {
   width: 60px;
   height: 60px;
-  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   position: relative;
   overflow: hidden;
-  border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .elo-list-image {
