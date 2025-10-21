@@ -58,6 +58,9 @@ import {
   calculateUserElo,
   updateUserElo,
   getUserElo,
+  syncAllUsersXpAndElo,
+  calculateAndSetUserXpFromTransactions,
+  testXpSystem,
 } from './elo-functions.js';
 
 export {
@@ -109,4 +112,7 @@ export {
   calculateUserElo,
   updateUserElo,
   getUserElo,
+  syncAllUsersXpAndElo,
+  calculateAndSetUserXpFromTransactions,
+  testXpSystem,
 };

@@ -561,6 +561,295 @@ const addXpToUser = onCall({
   }
 });
 
+/**
+ * Sincroniza XP e elo de todos os usuários existentes
+ */
+const syncAllUsersXpAndElo = onCall({
+  memory: "512MiB",
+  timeoutSeconds: 540, // 9 minutos
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  try {
+    logger.info('🔄 Iniciando sincronização de XP e elo para todos os usuários...');
+    
+    // Buscar todos os usuários
+    const usersSnapshot = await db.collection('users').get();
+    const totalUsers = usersSnapshot.size;
+    
+    logger.info(`📊 Encontrados ${totalUsers} usuários para sincronizar`);
+    
+    let processedCount = 0;
+    let errorCount = 0;
+    const errors = [];
+    
+    // Processar usuários em lotes de 50
+    const batchSize = 50;
+    const batches = [];
+    
+    for (let i = 0; i < usersSnapshot.docs.length; i += batchSize) {
+      batches.push(usersSnapshot.docs.slice(i, i + batchSize));
+    }
+    
+    for (const batch of batches) {
+      const batchPromises = batch.map(async (userDoc) => {
+        try {
+          const userId = userDoc.id;
+          const userData = userDoc.data();
+          
+          // Verificar se o usuário já tem XP calculado
+          const currentXp = userData.stats?.xp || 0;
+          
+          if (currentXp > 0) {
+            // Se já tem XP, apenas recalcular o elo
+            await calculateUserEloInternal(userId);
+            logger.info(`✅ Elo recalculado para usuário ${userId}`);
+          } else {
+            // Se não tem XP, calcular baseado nas transações existentes
+            await calculateAndSetUserXpFromTransactions(userId);
+            logger.info(`✅ XP calculado e elo atualizado para usuário ${userId}`);
+          }
+          
+          processedCount++;
+          
+        } catch (error) {
+          errorCount++;
+          const errorMsg = `Erro ao sincronizar usuário ${userDoc.id}: ${error.message}`;
+          errors.push(errorMsg);
+          logger.error(`💥 ${errorMsg}`, error);
+        }
+      });
+      
+      // Aguardar o lote atual terminar
+      await Promise.all(batchPromises);
+      
+      // Pequena pausa entre lotes para evitar sobrecarga
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    const result = {
+      success: true,
+      message: `Sincronização concluída: ${processedCount} usuários processados, ${errorCount} erros`,
+      processed: processedCount,
+      errors: errorCount,
+      totalUsers: totalUsers,
+      errorDetails: errors
+    };
+    
+    logger.info(`🎉 Sincronização de XP e elo concluída: ${processedCount} processados, ${errorCount} erros`);
+    return result;
+    
+  } catch (error) {
+    logger.error('💥 Erro na sincronização de XP e elo:', error);
+    throw new HttpsError("internal", "Erro interno na sincronização de XP e elo");
+  }
+});
+
+/**
+ * Calcula e define XP do usuário baseado nas transações existentes
+ */
+const calculateAndSetUserXpFromTransactions = async (userId) => {
+  try {
+    logger.info(`🔄 Calculando XP para usuário ${userId} baseado nas transações...`);
+    
+    // Buscar todas as transações do usuário
+    const transactionsSnapshot = await db.collection('transactions')
+      .where('userId', '==', userId)
+      .get();
+    
+    let totalXp = 0;
+    const xpTransactions = [];
+    
+    // Processar cada transação
+    for (const transactionDoc of transactionsSnapshot.docs) {
+      const transactionData = transactionDoc.data();
+      const transactionType = transactionData.type;
+      const amounts = transactionData.amounts || {};
+      
+      let xpAmount = 0;
+      let vpAmount = 0;
+      
+      // Determinar o valor em VP e tipo de produto
+      switch (transactionType) {
+        case 'PACK_PURCHASE':
+          vpAmount = Math.abs(amounts.vp || 0);
+          xpAmount = calculateXpFromTransaction(transactionType, vpAmount, 1.5);
+          break;
+        case 'PACK_SALE':
+        case 'PACK_SALE_COMPLETED':
+          // Converter VC para VP (1 VC = 1.5 VP)
+          vpAmount = Math.ceil((amounts.vc || 0) * 1.5);
+          xpAmount = calculateXpFromTransaction(transactionType, vpAmount, 1.5);
+          break;
+        case 'SERVICE_PURCHASE':
+          vpAmount = Math.abs(amounts.vp || 0);
+          xpAmount = calculateXpFromTransaction(transactionType, vpAmount, 2);
+          break;
+        case 'SERVICE_SALE':
+        case 'SERVICE_SALE_COMPLETED':
+        case 'SERVICE_SALE_AUTO_COMPLETED':
+          // Converter VC para VP (1 VC = 1.5 VP)
+          vpAmount = Math.ceil((amounts.vc || 0) * 1.5);
+          xpAmount = calculateXpFromTransaction(transactionType, vpAmount, 2);
+          break;
+        case 'VIXTIP_SENT':
+          vpAmount = Math.abs(amounts.vp || 0);
+          xpAmount = calculateXpFromTransaction(transactionType, vpAmount, 1);
+          break;
+        case 'VIXTIP_RECEIVED':
+          // Converter VC para VP (1 VC = 1.5 VP)
+          vpAmount = Math.ceil((amounts.vc || 0) * 1.5);
+          xpAmount = calculateXpFromTransaction(transactionType, vpAmount, 1);
+          break;
+        default:
+          // Ignorar outros tipos de transação
+          continue;
+      }
+      
+      if (xpAmount > 0) {
+        totalXp += xpAmount;
+        xpTransactions.push({
+          transactionId: transactionDoc.id,
+          transactionType: transactionType,
+          vpAmount: vpAmount,
+          xpAmount: xpAmount,
+          timestamp: transactionData.createdAt || transactionData.timestamp
+        });
+      }
+    }
+    
+    if (totalXp > 0) {
+      // Atualizar XP do usuário
+      await db.collection('users').doc(userId).update({
+        'stats.xp': totalXp,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      
+      // Criar transações de XP para histórico
+      const batch = db.batch();
+      for (const xpTransaction of xpTransactions) {
+        const xpTransactionRef = db.collection('xpTransactions').doc();
+        batch.set(xpTransactionRef, {
+          userId: userId,
+          xpAmount: xpTransaction.xpAmount,
+          transactionType: xpTransaction.transactionType,
+          transactionId: xpTransaction.transactionId,
+          timestamp: xpTransaction.timestamp || admin.firestore.FieldValue.serverTimestamp(),
+          isRetroactive: true // Marcar como retroativo
+        });
+      }
+      await batch.commit();
+      
+      // Recalcular elo do usuário
+      await calculateUserEloInternal(userId);
+      
+      logger.info(`✅ XP calculado para ${userId}: ${totalXp} XP (${xpTransactions.length} transações)`);
+    } else {
+      logger.info(`ℹ️ Nenhum XP calculado para ${userId} (sem transações elegíveis)`);
+    }
+    
+  } catch (error) {
+    logger.error(`❌ Erro ao calcular XP para ${userId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Função de teste para verificar o sistema de XP
+ */
+const testXpSystem = onCall({
+  memory: "128MiB",
+  timeoutSeconds: 30,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  try {
+    logger.info('🧪 Testando sistema de XP...');
+    
+    const testResults = {
+      calculateXpTests: [],
+      addXpTests: [],
+      errors: []
+    };
+    
+    // Testar cálculo de XP para diferentes tipos de transação
+    const testCases = [
+      { type: 'PACK_PURCHASE', vpAmount: 100, productType: 1.5, expectedMin: 200 },
+      { type: 'SERVICE_PURCHASE', vpAmount: 100, productType: 2, expectedMin: 268 },
+      { type: 'VIXTIP_SENT', vpAmount: 50, productType: 1, expectedMin: 67 },
+      { type: 'PACK_SALE', vpAmount: 150, productType: 1.5, expectedMin: 301 },
+      { type: 'SERVICE_SALE', vpAmount: 200, productType: 2, expectedMin: 536 }
+    ];
+    
+    for (const testCase of testCases) {
+      try {
+        const xp = calculateXpFromTransaction(testCase.type, testCase.vpAmount, testCase.productType);
+        const passed = xp >= testCase.expectedMin;
+        
+        testResults.calculateXpTests.push({
+          type: testCase.type,
+          vpAmount: testCase.vpAmount,
+          productType: testCase.productType,
+          calculatedXp: xp,
+          expectedMin: testCase.expectedMin,
+          passed: passed
+        });
+        
+        logger.info(`🧪 Teste ${testCase.type}: ${xp} XP (esperado: >=${testCase.expectedMin}) - ${passed ? '✅' : '❌'}`);
+      } catch (error) {
+        testResults.errors.push(`Erro no teste ${testCase.type}: ${error.message}`);
+      }
+    }
+    
+    // Testar adição de XP para o usuário atual
+    try {
+      const testXpAmount = 100;
+      const result = await addXpToUserInternal(request.auth.uid, testXpAmount, 'TEST_XP', 'test-transaction-id');
+      
+      testResults.addXpTests.push({
+        userId: request.auth.uid,
+        xpAmount: testXpAmount,
+        result: result,
+        passed: result.success
+      });
+      
+      logger.info(`🧪 Teste de adição de XP: ${result.success ? '✅' : '❌'}`);
+    } catch (error) {
+      testResults.errors.push(`Erro no teste de adição de XP: ${error.message}`);
+    }
+    
+    // Verificar se existem transações de XP para o usuário
+    const xpTransactionsSnapshot = await db.collection('xpTransactions')
+      .where('userId', '==', request.auth.uid)
+      .limit(5)
+      .get();
+    
+    const xpTransactions = xpTransactionsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    testResults.xpTransactions = xpTransactions;
+    testResults.totalXpTransactions = xpTransactionsSnapshot.size;
+    
+    logger.info(`🧪 Encontradas ${xpTransactionsSnapshot.size} transações de XP para o usuário`);
+    
+    return {
+      success: true,
+      message: "Teste do sistema de XP concluído",
+      results: testResults
+    };
+    
+  } catch (error) {
+    logger.error('💥 Erro no teste do sistema de XP:', error);
+    throw new HttpsError("internal", "Erro interno no teste do sistema de XP");
+  }
+});
+
 export {
   initializeEloConfig,
   updateEloConfig,
@@ -571,5 +860,8 @@ export {
   getUserElo,
   calculateXpFromTransaction,
   addXpToUser,
-  addXpToUserInternal
+  addXpToUserInternal,
+  syncAllUsersXpAndElo,
+  calculateAndSetUserXpFromTransactions,
+  testXpSystem
 };
