@@ -261,8 +261,8 @@ const calculateUserEloInternal = async (targetUserId) => {
     let currentElo = 'ferro';
     let currentEloData = eloConfig.ferro;
     
-    // Ordenar elos por ordem (maior para menor)
-    const eloEntries = Object.entries(eloConfig).sort((a, b) => b[1].order - a[1].order);
+    // Ordenar elos por XP necessário (maior para menor)
+    const eloEntries = Object.entries(eloConfig).sort((a, b) => (b[1].requirements.xp || 0) - (a[1].requirements.xp || 0));
     
     for (const [eloKey, eloData] of eloEntries) {
       const requiredXp = eloData.requirements.xp || 0;

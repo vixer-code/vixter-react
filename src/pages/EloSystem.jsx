@@ -367,6 +367,22 @@ const AdminTab = ({ syncAllUsersXpAndElo, loading }) => {
     }
   };
 
+  const handleRecalculateElos = async () => {
+    try {
+      setSyncLoading(true);
+      setSyncError(null);
+      setSyncResult(null);
+      
+      // Usar a mesma função de sincronização que recalcula tudo
+      const result = await syncAllUsersXpAndElo();
+      setSyncResult(result);
+    } catch (error) {
+      setSyncError(error.message);
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
   return (
     <div className="admin-content">
       <h3>Administração do Sistema de Elos</h3>
@@ -450,17 +466,17 @@ const AdminTab = ({ syncAllUsersXpAndElo, loading }) => {
         <div className="sync-controls">
           <button 
             className={`sync-button ${syncLoading ? 'loading' : ''}`}
-            onClick={handleSync}
+            onClick={handleRecalculateElos}
             disabled={syncLoading || loading}
           >
             {syncLoading ? (
               <>
                 <div className="loading-spinner-small"></div>
-                Sincronizando Elos...
+                Recalculando Elos...
               </>
             ) : (
               <>
-                🏆 Sincronizar Elos de Todos os Usuários
+                🔄 Recalcular Elos de Todos os Usuários
               </>
             )}
           </button>
