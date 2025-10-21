@@ -16,7 +16,7 @@ const database = admin.database();
 
 // Configurações globais
 setGlobalOptions({
-  region: "us-east1",
+  region: "us-central1",
   cpu: 0.5,
   maxInstances: 2,
   concurrency: 1,
@@ -266,7 +266,7 @@ export const autoAssignTicket = onCall({
 // Trigger: New ticket created
 export const onTicketCreated = onDocumentCreated({
   document: "supportTickets/{ticketId}",
-  region: "us-east1"
+  region: "us-central1"
 }, async (event) => {
   const ticketData = event.data.data();
   const ticketId = event.params.ticketId;
@@ -304,7 +304,7 @@ export const onTicketCreated = onDocumentCreated({
 // Trigger: Ticket updated
 export const onTicketUpdated = onDocumentUpdated({
   document: "supportTickets/{ticketId}",
-  region: "us-east1"
+  region: "us-central1"
 }, async (event) => {
   const beforeData = event.data.before.data();
   const afterData = event.data.after.data();

@@ -14,7 +14,7 @@ if (!admin.apps.length) {
 
 // Configurações globais
 setGlobalOptions({
-  region: "us-east1",
+  region: "us-central1",
   memory: "256MiB",
   timeoutSeconds: 60,
 });

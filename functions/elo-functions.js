@@ -112,6 +112,7 @@ const DEFAULT_ELO_CONFIG = {
 const initializeEloConfig = onCall({
   memory: "128MiB",
   timeoutSeconds: 30,
+  region: "us-central1",
 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Usuário não autenticado");
@@ -148,6 +149,7 @@ const initializeEloConfig = onCall({
 const updateEloConfig = onCall({
   memory: "128MiB",
   timeoutSeconds: 30,
+  region: "us-central1",
 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Usuário não autenticado");
@@ -189,6 +191,7 @@ const updateEloConfig = onCall({
 const getEloConfig = onCall({
   memory: "64MiB",
   timeoutSeconds: 15,
+  region: "us-central1",
 }, async (request) => {
   try {
     logger.info('🔄 Obtendo configurações dos elos...');
@@ -322,6 +325,7 @@ const calculateUserEloInternal = async (targetUserId) => {
 const calculateUserElo = onCall({
   memory: "128MiB",
   timeoutSeconds: 30,
+  region: "us-central1",
 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Usuário não autenticado");
@@ -344,6 +348,7 @@ const calculateUserElo = onCall({
 const updateUserElo = onCall({
   memory: "64MiB",
   timeoutSeconds: 15,
+  region: "us-central1",
 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Usuário não autenticado");
@@ -397,6 +402,7 @@ const updateUserElo = onCall({
 const getUserElo = onCall({
   memory: "64MiB",
   timeoutSeconds: 15,
+  region: "us-central1",
 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Usuário não autenticado");
@@ -546,6 +552,7 @@ const addXpToUserInternal = async (userId, xpAmount, transactionType, transactio
 const addXpToUser = onCall({
   memory: "128MiB",
   timeoutSeconds: 30,
+  region: "us-central1",
 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Usuário não autenticado");
@@ -567,6 +574,7 @@ const addXpToUser = onCall({
 const syncAllUsersXpAndElo = onCall({
   memory: "512MiB",
   timeoutSeconds: 540, // 9 minutos
+  region: "us-central1",
 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Usuário não autenticado");
@@ -762,6 +770,7 @@ const calculateAndSetUserXpFromTransactions = async (userId) => {
 const testXpSystem = onCall({
   memory: "128MiB",
   timeoutSeconds: 30,
+  region: "us-central1",
 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Usuário não autenticado");

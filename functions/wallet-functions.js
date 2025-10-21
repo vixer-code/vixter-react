@@ -29,7 +29,7 @@ const STRIPE_API_VERSION = '2023-10-16';
 
 // Configurações globais
 setGlobalOptions({
-  region: "us-east1",
+  region: "us-central1",
   cpu: 0.5,           // 0.5 vCPU per instance (Cloud Functions v2 on Cloud Run)
   maxInstances: 2,    // Cap instances per function to avoid quota overuse
   concurrency: 1,     // Required when cpu < 1 vCPU
@@ -38,7 +38,7 @@ setGlobalOptions({
 // Trigger para atualizar stats quando posts são criados
 export const onPostCreated = onDocumentUpdated({
   document: "posts/{postId}",
-  region: "us-east1"
+  region: "us-central1"
 }, async (event) => {
   const beforeData = event.data?.before?.data();
   const afterData = event.data?.after?.data();
@@ -63,7 +63,7 @@ export const onPostCreated = onDocumentUpdated({
 // Trigger para atualizar stats quando posts do Vixies são criados
 export const onVixiesPostCreated = onDocumentUpdated({
   document: "vixies_posts/{postId}",
-  region: "us-east1"
+  region: "us-central1"
 }, async (event) => {
   const beforeData = event.data?.before?.data();
   const afterData = event.data?.after?.data();
@@ -88,7 +88,7 @@ export const onVixiesPostCreated = onDocumentUpdated({
 // Trigger para atualizar stats quando posts do Vixink são criados
 export const onVixinkPostCreated = onDocumentUpdated({
   document: "vixink_posts/{postId}",
-  region: "us-east1"
+  region: "us-central1"
 }, async (event) => {
   const beforeData = event.data?.before?.data();
   const afterData = event.data?.after?.data();
@@ -2676,7 +2676,7 @@ export const claimDailyBonus = onCall({
  */
 export const onWithdrawalStatusChanged = onDocumentUpdated({
   document: "withdrawals/{withdrawalId}",
-  region: "us-east1",
+  region: "us-central1",
 }, async (event) => {
   const beforeData = event.data?.before?.data();
   const afterData = event.data?.after?.data();
