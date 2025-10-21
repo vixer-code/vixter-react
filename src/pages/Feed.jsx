@@ -638,7 +638,7 @@ const Feed = () => {
                   {post.authorName || user?.displayName || user?.email}
                 </Link>
                 <UserBadge user={user} />
-                <EloBadge userXp={user?.stats?.xp || user?.xp} size="compact" />
+                <EloBadge userXp={user?.stats?.xp || user?.xp} size="fixed-30" />
                 {post.isAdultContent && isKycVerified && (
                   <span className="adult-content-badge">
                     <i className="fas fa-exclamation-triangle"></i>
