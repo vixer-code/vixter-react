@@ -683,6 +683,45 @@
   border-radius: 50%;
 }
 
+/* Proteção específica para badges de Elo contra sobrescrita */
+.post-header .elo-badge .elo-badge-icon,
+.vixie-header .elo-badge .elo-badge-icon {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.post-header .elo-badge .elo-badge-image,
+.vixie-header .elo-badge .elo-badge-image {
+  width: 16px !important;
+  height: 16px !important;
+  object-fit: contain !important;
+}
+
+/* Proteção para tamanhos específicos */
+.post-header .elo-badge.fixed-30 .elo-badge-icon,
+.vixie-header .elo-badge.fixed-30 .elo-badge-icon {
+  width: 30px !important;
+  height: 30px !important;
+}
+
+.post-header .elo-badge.fixed-30 .elo-badge-image,
+.vixie-header .elo-badge.fixed-30 .elo-badge-image {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+.post-header .elo-badge.compact .elo-badge-icon,
+.vixie-header .elo-badge.compact .elo-badge-icon {
+  width: 10.5px !important;
+  height: 10.5px !important;
+}
+
+.post-header .elo-badge.compact .elo-badge-image,
+.vixie-header .elo-badge.compact .elo-badge-image {
+  width: 7.5px !important;
+  height: 7.5px !important;
+}
+
 .post-header h4, .vixie-header h4 {
   font-size: 1.1rem;
   font-weight: 700;

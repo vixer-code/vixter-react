@@ -49,13 +49,6 @@
   backdrop-filter: blur(4px);
 }
 
-/* Proteção contra CSS global */
-.elo-badge .elo-badge-image {
-  width: 16px !important;
-  height: 16px !important;
-  object-fit: contain;
-}
-
 .elo-badge-image {
   width: 16px;
   height: 16px;
@@ -246,22 +239,55 @@
   display: none;
 }
 
-/* Proteção específica contra CSS global de post-header */
+/* Proteção robusta contra CSS global de post-header */
+.post-header .elo-badge .elo-badge-icon,
+.vixie-header .elo-badge .elo-badge-icon,
+.post-author .elo-badge .elo-badge-icon {
+  width: 20px !important;
+  height: 20px !important;
+}
+
 .post-header .elo-badge .elo-badge-image,
 .vixie-header .elo-badge .elo-badge-image,
 .post-author .elo-badge .elo-badge-image {
-  width: inherit !important;
-  height: inherit !important;
+  width: 16px !important;
+  height: 16px !important;
   object-fit: contain !important;
 }
 
-/* Garantir que badges mantenham seus tamanhos específicos */
-.post-header .elo-badge.fixed-30 .elo-badge-image {
+/* Proteção específica para tamanhos fixos */
+.post-header .elo-badge.fixed-30 .elo-badge-icon,
+.vixie-header .elo-badge.fixed-30 .elo-badge-icon {
+  width: 30px !important;
+  height: 30px !important;
+}
+
+.post-header .elo-badge.fixed-30 .elo-badge-image,
+.vixie-header .elo-badge.fixed-30 .elo-badge-image {
   width: 24px !important;
   height: 24px !important;
 }
 
-.post-header .elo-badge.compact .elo-badge-image {
+.post-header .elo-badge.compact .elo-badge-icon,
+.vixie-header .elo-badge.compact .elo-badge-icon {
+  width: 10.5px !important;
+  height: 10.5px !important;
+}
+
+.post-header .elo-badge.compact .elo-badge-image,
+.vixie-header .elo-badge.compact .elo-badge-image {
   width: 7.5px !important;
   height: 7.5px !important;
+}
+
+/* Proteção adicional para todos os tamanhos */
+.elo-badge .elo-badge-icon {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.elo-badge .elo-badge-image {
+  width: 16px !important;
+  height: 16px !important;
+  object-fit: contain !important;
 }
