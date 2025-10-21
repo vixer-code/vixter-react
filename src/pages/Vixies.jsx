@@ -585,7 +585,7 @@ const Vixies = () => {
                             {post.authorName}
                           </Link>
                           <UserBadge user={author} />
-                          <EloBadge userElo={author?.elo} size="compact" />
+                          <EloBadge userXp={author?.stats?.xp} size="compact" />
                         </div>
                         <span className="post-time">{formatTime(post.timestamp)}</span>
                       </div>

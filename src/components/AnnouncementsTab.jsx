@@ -115,7 +115,7 @@ const AnnouncementsTab = ({ feedType }) => {
               <div className="author-name-container">
                 <span className="author-name">{authorName}</span>
                 <UserBadge user={author} />
-                <EloBadge userElo={author?.elo} size="compact" />
+                <EloBadge userXp={author?.stats?.xp} size="compact" />
               </div>
               <span className="post-time">{formatTimestamp(announcement.createdAt)}</span>
             </div>

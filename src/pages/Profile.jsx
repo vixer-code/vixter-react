@@ -1344,7 +1344,7 @@ const Profile = () => {
                   <div className="profile-name-container">
                     <span>{profile.displayName || 'Nome do Usuário'}</span>
                     <UserBadge user={profile} />
-                    <EloBadge userElo={profile?.elo} size="small" />
+                    <EloBadge userXp={profile?.stats?.xp} size="small" />
                   </div>
                 )}
               </h1>
@@ -1603,7 +1603,7 @@ const Profile = () => {
                           <div className="author-info">
                             <div className="author-name-container">
                               <div className="author-name">{post.authorName}</div>
-                              <EloBadge userElo={profile?.elo} size="compact" />
+                              <EloBadge userXp={profile?.stats?.xp} size="compact" />
                               {post.isAdultContent && isKycVerified && (
                                 <span className="adult-content-badge">
                                   <i className="fas fa-exclamation-triangle"></i>
