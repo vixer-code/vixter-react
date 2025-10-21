@@ -8,6 +8,7 @@ import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { setGlobalOptions } from "firebase-functions/v2";
 import admin from "firebase-admin";
 import { logger } from "firebase-functions";
+import { calculateXpFromTransaction, addXpToUserInternal } from './elo-functions.js';
 import { defineSecret } from 'firebase-functions/params';
 import { Buffer } from 'node:buffer';
 
@@ -174,8 +175,8 @@ async function updateUserStats(userId, statsUpdate) {
     await userRef.update(updates);
     logger.info(`Updated stats for user ${userId} (${accountType}):`, statsUpdate);
     
-    // Elo será atualizado automaticamente pelo trigger onTransactionUpdated
-    // quando as transações forem criadas/atualizadas
+    // Atualizar elo do usuário automaticamente após atualizar stats
+    await updateUserEloInternal(userId);
     
   } catch (error) {
     logger.error(`Error updating stats for user ${userId}:`, error);
@@ -1287,8 +1288,19 @@ async function autoCompleteDeliveredServicesInternal() {
           try {
             const serviceData = serviceDoc.data();
             
-            // XP e elo serão atualizados automaticamente pelo trigger onTransactionUpdated
-            // quando as transações forem criadas/atualizadas
+            // Adicionar XP para o vendedor quando o serviço é auto-completado
+            try {
+              // XP para o vendedor (usando VP equivalente e tipo serviço = 2)
+              // Converter VC para VP para usar na fórmula (1 VC = 1.5 VP)
+              const vpEquivalent = Math.ceil(serviceData.vcAmount * 1.5);
+              const sellerXp = calculateXpFromTransaction('SERVICE_SALE_AUTO_COMPLETED', vpEquivalent, 2);
+              if (sellerXp > 0) {
+                await addXpToUserInternal(serviceData.sellerId, sellerXp, 'SERVICE_SALE_AUTO_COMPLETED', serviceDoc.id);
+              }
+            } catch (xpError) {
+              logger.warn(`Error adding XP for auto-completed service ${serviceDoc.id}:`, xpError);
+              // Não falhar o processo se XP falhar
+            }
             
             await Promise.all([
               // Stats do cliente (comprou um serviço)
@@ -1564,8 +1576,25 @@ async function acceptPackOrderInternal(sellerId, orderId) {
     })
   ]);
 
-  // XP e elo serão atualizados automaticamente pelo trigger onTransactionUpdated
-  // quando as transações forem criadas/atualizadas
+  // Adicionar XP para ambos os usuários usando nova fórmula
+  try {
+    // XP para o comprador (usando VP gasto e tipo pack = 1.5)
+    const buyerXp = calculateXpFromTransaction('PACK_PURCHASE', order.vpAmount, 1.5);
+    if (buyerXp > 0) {
+      await addXpToUserInternal(order.buyerId, buyerXp, 'PACK_PURCHASE', orderId);
+    }
+    
+    // XP para o vendedor (usando VP equivalente e tipo pack = 1.5)
+    // Converter VC para VP para usar na fórmula (1 VC = 1.5 VP)
+    const vpEquivalent = Math.ceil(order.vcAmount * 1.5);
+    const sellerXp = calculateXpFromTransaction('PACK_SALE', vpEquivalent, 1.5);
+    if (sellerXp > 0) {
+      await addXpToUserInternal(order.sellerId, sellerXp, 'PACK_SALE', orderId);
+    }
+  } catch (xpError) {
+    logger.warn(`Error adding XP for pack order ${orderId}:`, xpError);
+    // Não falhar a operação principal se a adição de XP falhar
+  }
 
   logger.info(`✅ Pack order accepted: ${orderId}`);
   return { success: true };
@@ -2312,17 +2341,18 @@ export const processVixtip = onCall(async (request) => {
       return {
         success: true,
         vcCredited: vcAmount,
-        sellerId: authorId
+        sellerId: authorId,
+        vixtipId: vixtipRef.id
       };
     });
 
     // Adicionar XP para ambos os usuários usando nova fórmula
-    const { calculateXpFromTransaction, addXpToUserInternal } = require('./elo-functions');
+    // Funções de XP já importadas no topo do arquivo
     
     // XP para o comprador (usando VP gasto e tipo vixtip = 1)
     const buyerXp = calculateXpFromTransaction('VIXTIP_SENT', vpAmount, 1);
     if (buyerXp > 0) {
-      await addXpToUserInternal(buyerId, buyerXp, 'VIXTIP_SENT', vixtipRef.id);
+      await addXpToUserInternal(buyerId, buyerXp, 'VIXTIP_SENT', result.vixtipId || 'unknown');
     }
     
     // XP para o vendedor (usando VP equivalente e tipo vixtip = 1)
@@ -2330,7 +2360,7 @@ export const processVixtip = onCall(async (request) => {
     const vpEquivalent = Math.ceil(vcAmount * 1.5);
     const sellerXp = calculateXpFromTransaction('VIXTIP_RECEIVED', vpEquivalent, 1);
     if (sellerXp > 0) {
-      await addXpToUserInternal(authorId, sellerXp, 'VIXTIP_RECEIVED', vixtipRef.id);
+      await addXpToUserInternal(authorId, sellerXp, 'VIXTIP_RECEIVED', result.vixtipId || 'unknown');
     }
 
     // Atualizar estatísticas dos usuários
@@ -2449,7 +2479,7 @@ export const processPendingVixtips = onCall(async () => {
         });
 
         // Adicionar XP para ambos os usuários usando nova fórmula (fora da transação)
-        const { calculateXpFromTransaction, addXpToUserInternal } = require('./elo-functions');
+        // Funções de XP já importadas no topo do arquivo
         
         // XP para o comprador (usando VP gasto e tipo vixtip = 1)
         const buyerXp = calculateXpFromTransaction('VIXTIP_SENT', vixtipData.vpAmount, 1);
@@ -2753,5 +2783,35 @@ export const scheduledAutoCompleteServices = onRequest({
     });
   }
 });
+
+/**
+ * Função auxiliar para atualizar elo de usuário
+ */
+async function updateUserEloInternal(userId) {
+  try {
+    const eloModule = await import('./elo-functions.js');
+    const eloResult = await eloModule.calculateUserEloInternal(userId);
+    
+    if (eloResult.success) {
+      const { elo } = eloResult;
+      const userRef = db.collection('users').doc(userId);
+      await userRef.update({
+        elo: {
+          current: elo.current,
+          name: elo.name,
+          order: elo.order,
+          benefits: elo.benefits,
+          lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+        }
+      });
+      logger.info(`Updated elo for user ${userId}: ${elo.current}`);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    logger.warn(`Error updating elo for user ${userId}:`, error);
+    return false;
+  }
+}
 
 logger.info('✅ Wallet functions loaded - Stripe preserved, watermarking removed, Vixtip processing added, withdrawal trigger added, auto-completion functions added');

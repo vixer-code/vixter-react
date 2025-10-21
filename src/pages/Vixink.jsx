@@ -14,6 +14,7 @@ import PurpleSpinner from '../components/PurpleSpinner';
 import MediaViewer from '../components/MediaViewer';
 import AnnouncementsTab from '../components/AnnouncementsTab';
 import UserBadge from '../components/UserBadge';
+import EloBadge from '../components/EloBadge';
 import ExpandableText from '../components/ExpandableText';
 import './Vixies.css';
 
@@ -541,6 +542,7 @@ const Vixink = () => {
                             {post.authorName}
                           </Link>
                           <UserBadge user={author} />
+                          <EloBadge userElo={author?.elo} size="compact" />
                         </div>
                         <span className="post-time">{formatTime(post.timestamp)}</span>
                       </div>

@@ -1,463 +1,206 @@
-/* Elo Badge Styles */
 .elo-badge {
   display: inline-flex;
   align-items: center;
-  background: white;
+  gap: 6px;
+  background: linear-gradient(135deg, var(--elo-color, #8B4513) 0%, rgba(255, 255, 255, 0.1) 100%);
   border: 2px solid var(--elo-color, #8B4513);
-  border-radius: 12px;
-  padding: 8px 12px;
-  font-family: 'Inter', sans-serif;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.elo-badge.clickable {
-  cursor: pointer;
-}
-
-.elo-badge.clickable:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.elo-badge.loading {
-  border-color: #e0e0e0;
-}
-
-.elo-badge.error {
-  border-color: #ff6b6b;
-}
-
-.elo-badge-skeleton {
-  width: 60px;
-  height: 20px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-  border-radius: 4px;
-}
-
-@keyframes loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.elo-badge-content {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.elo-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: bold;
+  border-radius: 20px;
+  padding: 4px 8px;
   font-size: 12px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  cursor: pointer;
   position: relative;
   overflow: hidden;
 }
 
-.elo-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.elo-symbol {
+.elo-badge::before {
+  content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 12px;
-  font-weight: bold;
-  color: white;
-}
-
-.elo-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.elo-name {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--elo-color, #8B4513);
-  line-height: 1;
-}
-
-.elo-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.progress-bar {
+  top: 0;
+  left: -100%;
   width: 100%;
-  height: 4px;
-  background: #e0e0e0;
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progress-fill {
   height: 100%;
-  background: var(--elo-color, #8B4513);
-  transition: width 0.3s ease;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
 }
 
-.progress-text {
-  font-size: 10px;
-  color: #666;
-  line-height: 1;
+.elo-badge:hover::before {
+  left: 100%;
 }
 
-/* Size variants */
-.elo-badge.small {
-  padding: 4px 8px;
-  border-radius: 8px;
+.elo-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-.elo-badge.small .elo-icon {
+.elo-badge-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+}
+
+.elo-badge-image {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.elo-badge-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 16px;
   height: 16px;
   font-size: 10px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.elo-badge.small .elo-image {
-  width: 100%;
-  height: 100%;
+.elo-badge-text {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
 }
 
-.elo-badge.small .elo-symbol {
+/* Tamanhos */
+.elo-badge.small {
+  padding: 2px 6px;
   font-size: 10px;
+  border-radius: 12px;
 }
 
-.elo-badge.small .elo-name {
+.elo-badge.small .elo-badge-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.elo-badge.small .elo-badge-image {
+  width: 12px;
+  height: 12px;
+}
+
+.elo-badge.small .elo-badge-symbol {
+  width: 12px;
+  height: 12px;
+  font-size: 8px;
+}
+
+.elo-badge.small .elo-badge-text {
+  font-size: 9px;
+}
+
+.elo-badge.medium {
+  padding: 4px 8px;
   font-size: 12px;
+  border-radius: 16px;
 }
 
 .elo-badge.large {
-  padding: 12px 16px;
-  border-radius: 16px;
-}
-
-.elo-badge.large .elo-icon {
-  width: 32px;
-  height: 32px;
-  font-size: 16px;
-}
-
-.elo-badge.large .elo-image {
-  width: 100%;
-  height: 100%;
-}
-
-.elo-badge.large .elo-symbol {
-  font-size: 16px;
-}
-
-.elo-badge.large .elo-name {
-  font-size: 16px;
-}
-
-/* Elo Details Styles */
-.elo-details {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  font-family: 'Inter', sans-serif;
-}
-
-.elo-details.loading {
-  min-height: 300px;
-}
-
-.elo-details-skeleton {
-  width: 100%;
-  height: 300px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-  border-radius: 8px;
-}
-
-.elo-details.error {
-  text-align: center;
-  color: #ff6b6b;
-  padding: 40px;
-}
-
-.elo-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.elo-description h3 {
-  margin: 0 0 8px 0;
-  font-size: 24px;
-  font-weight: 700;
-  color: #333;
-}
-
-.elo-description p {
-  margin: 0;
-  color: #666;
+  padding: 6px 12px;
   font-size: 14px;
+  border-radius: 24px;
 }
 
-.elo-progress-section {
-  margin-bottom: 24px;
+.elo-badge.large .elo-badge-icon {
+  width: 24px;
+  height: 24px;
 }
 
-.elo-progress-section h4 {
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
+.elo-badge.large .elo-badge-image {
+  width: 20px;
+  height: 20px;
 }
 
-.progress-metrics {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.progress-metric {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.metric-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.metric-name {
-  font-weight: 500;
-  color: #333;
-  font-size: 14px;
-}
-
-.metric-values {
+.elo-badge.large .elo-badge-symbol {
+  width: 20px;
+  height: 20px;
   font-size: 12px;
-  color: #666;
-  font-weight: 500;
 }
 
-.progress-percentage {
-  font-size: 12px;
-  color: #666;
-  text-align: right;
+.elo-badge.large .elo-badge-text {
+  font-size: 13px;
 }
 
-.elo-stats {
-  margin-top: 24px;
+/* Variantes especiais */
+.elo-badge.ferro {
+  --elo-color: #8B4513;
 }
 
-.elo-stats h4 {
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
+.elo-badge.bronze {
+  --elo-color: #CD7F32;
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+.elo-badge.prata {
+  --elo-color: #C0C0C0;
 }
 
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 8px;
+.elo-badge.ouro {
+  --elo-color: #FFD700;
 }
 
-.stat-label {
-  font-size: 12px;
-  color: #666;
-  font-weight: 500;
+.elo-badge.platina {
+  --elo-color: #E5E4E2;
 }
 
-.stat-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: #333;
+.elo-badge.esmeralda {
+  --elo-color: #50C878;
 }
 
-/* Elo List Styles */
-.elo-list {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  font-family: 'Inter', sans-serif;
+.elo-badge.diamante {
+  --elo-color: #B9F2FF;
 }
 
-.elo-list.loading {
-  min-height: 400px;
+.elo-badge.mestre {
+  --elo-color: #800080;
 }
 
-.elo-list-skeleton {
-  width: 100%;
-  height: 400px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-  border-radius: 8px;
+/* Badge apenas com ícone */
+.elo-badge.icon-only {
+  padding: 4px;
+  border-radius: 50%;
 }
 
-.elo-list.error {
-  text-align: center;
-  color: #ff6b6b;
-  padding: 40px;
+.elo-badge.icon-only .elo-badge-text {
+  display: none;
 }
 
-.elo-list h3 {
-  margin: 0 0 24px 0;
-  font-size: 24px;
-  font-weight: 700;
-  color: #333;
-  text-align: center;
-}
-
-.elo-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
-}
-
-.elo-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: #f8f9fa;
+/* Badge compacto para posts */
+.elo-badge.compact {
+  padding: 2px 6px;
+  font-size: 10px;
   border-radius: 12px;
-  transition: transform 0.2s ease;
+  gap: 4px;
 }
 
-.elo-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.elo-badge.compact .elo-badge-icon {
+  width: 14px;
+  height: 14px;
 }
 
-.elo-item .elo-icon {
-  width: 40px;
-  height: 40px;
-  font-size: 18px;
-  flex-shrink: 0;
+.elo-badge.compact .elo-badge-image {
+  width: 10px;
+  height: 10px;
 }
 
-.elo-item .elo-image {
-  width: 100%;
-  height: 100%;
+.elo-badge.compact .elo-badge-symbol {
+  width: 10px;
+  height: 10px;
+  font-size: 7px;
 }
 
-.elo-item .elo-symbol {
-  font-size: 18px;
-}
-
-.elo-item .elo-info h4 {
-  margin: 0 0 4px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-}
-
-.elo-item .elo-info p {
-  margin: 0;
-  font-size: 12px;
-  color: #666;
-  line-height: 1.4;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .elo-header {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .elo-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .elo-details {
-    padding: 16px;
-  }
-  
-  .elo-list {
-    padding: 16px;
-  }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .elo-badge {
-    background: #2d2d2d;
-    border-color: var(--elo-color, #8B4513);
-  }
-  
-  .elo-name {
-    color: var(--elo-color, #8B4513);
-  }
-  
-  .elo-details,
-  .elo-list {
-    background: #2d2d2d;
-    color: #fff;
-  }
-  
-  .elo-description h3,
-  .elo-progress-section h4,
-  .elo-stats h4,
-  .elo-list h3 {
-    color: #fff;
-  }
-  
-  .elo-description p,
-  .metric-name,
-  .stat-label {
-    color: #ccc;
-  }
-  
-  .metric-values,
-  .progress-percentage {
-    color: #999;
-  }
-  
-  .stat-item,
-  .elo-item {
-    background: #3d3d3d;
-  }
-  
-  .elo-item .elo-info h4 {
-    color: #fff;
-  }
-  
-  .elo-item .elo-info p {
-    color: #ccc;
-  }
+.elo-badge.compact .elo-badge-text {
+  font-size: 8px;
 }

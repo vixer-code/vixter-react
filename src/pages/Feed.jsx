@@ -14,7 +14,9 @@ import PostCreator from '../components/PostCreator';
 import MediaViewer from '../components/MediaViewer';
 import AnnouncementsTab from '../components/AnnouncementsTab';
 import UserBadge from '../components/UserBadge';
+import EloBadge from '../components/EloBadge';
 import ExpandableText from '../components/ExpandableText';
+import { useUserElo } from '../hooks/useElo';
 import './Feed.css';
 
 const Feed = () => {
@@ -613,6 +615,7 @@ const Feed = () => {
                   {post.authorName || user?.displayName || user?.email}
                 </Link>
                 <UserBadge user={user} />
+                <EloBadge userElo={user?.elo} size="compact" />
                 {post.isAdultContent && isKycVerified && (
                   <span className="adult-content-badge">
                     <i className="fas fa-exclamation-triangle"></i>

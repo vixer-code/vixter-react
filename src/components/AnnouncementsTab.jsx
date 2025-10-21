@@ -6,6 +6,7 @@ import { useAdminStatus } from '../hooks/useAdminStatus';
 import { useNotification } from '../contexts/NotificationContext';
 import PostCreator from './PostCreator';
 import UserBadge from './UserBadge';
+import EloBadge from './EloBadge';
 import ExpandableText from './ExpandableText';
 import './AnnouncementsTab.css';
 
@@ -114,6 +115,7 @@ const AnnouncementsTab = ({ feedType }) => {
               <div className="author-name-container">
                 <span className="author-name">{authorName}</span>
                 <UserBadge user={author} />
+                <EloBadge userElo={author?.elo} size="compact" />
               </div>
               <span className="post-time">{formatTimestamp(announcement.createdAt)}</span>
             </div>
