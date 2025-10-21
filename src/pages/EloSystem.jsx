@@ -4,7 +4,7 @@ import { useElo } from '../hooks/useElo';
 import './EloSystem.css';
 
 const EloSystem = () => {
-  const { userProfile, userElo, updateUserElo } = useUser();
+  const { userProfile, userElo } = useUser();
   const { eloConfig, loading: configLoading, error: configError } = useElo();
   const [activeTab, setActiveTab] = useState('my-elo');
 
@@ -18,14 +18,6 @@ const EloSystem = () => {
       </div>
     );
   }
-
-  const handleRefreshElo = async () => {
-    try {
-      await updateUserElo();
-    } catch (error) {
-      console.error('Error refreshing elo:', error);
-    }
-  };
 
   return (
     <div className="elo-system">
@@ -58,8 +50,6 @@ const EloSystem = () => {
               userProfile={userProfile}
               userElo={userElo}
               eloConfig={eloConfig}
-              onRefresh={handleRefreshElo}
-              loading={configLoading}
             />
           </div>
         )}
@@ -74,9 +64,9 @@ const EloSystem = () => {
   );
 };
 
-const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
+const MyEloTab = ({ userProfile, userElo, eloConfig }) => {
   // Se não temos dados básicos, mostrar loading
-  if (!userProfile || !eloConfig) {
+  if (!userProfile) {
     return (
       <div className="elo-loading">
         <div className="loading-spinner"></div>
@@ -85,22 +75,57 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
     );
   }
 
-  // Se userElo não existe, criar elo padrão
-  const currentElo = userElo?.elo || {
-    current: 'ferro',
-    name: 'Ferro',
-    order: 1,
-    benefits: {
-      badgeColor: '#8B4513',
-      description: 'Início da jornada',
-      imageUrl: '/images/iron.png'
-    }
+  // Configuração dos elos chumbada no código
+  const ELO_CONFIG = {
+    ferro: { name: 'Ferro', order: 1, xp: 0, color: '#8B4513', image: '/images/iron.png', description: 'Início da jornada' },
+    bronze: { name: 'Bronze', order: 2, xp: 1250, color: '#CD7F32', image: '/images/bronze.png', description: 'Primeiros passos' },
+    prata: { name: 'Prata', order: 3, xp: 5450, color: '#C0C0C0', image: '/images/silver.png', description: 'Crescimento constante' },
+    ouro: { name: 'Ouro', order: 4, xp: 13950, color: '#FFD700', image: '/images/gold.png', description: 'Excelência em atividade' },
+    platina: { name: 'Platina', order: 5, xp: 29300, color: '#E5E4E2', image: '/images/platinum.png', description: 'Dedicação exemplar' },
+    esmeralda: { name: 'Esmeralda', order: 6, xp: 48100, color: '#50C878', image: '/images/emerald.png', description: 'Maestria em engajamento' },
+    diamante: { name: 'Diamante', order: 7, xp: 70400, color: '#B9F2FF', image: '/images/diamond.png', description: 'Elite da plataforma' },
+    mestre: { name: 'Mestre', order: 8, xp: 98600, color: '#800080', image: '/images/master.png', description: 'Lenda da comunidade' }
   };
-  
+
   const currentXp = userProfile?.stats?.xp || 0;
   
+  // Calcular elo atual baseado no XP automaticamente
+  const calculateCurrentElo = (xp) => {
+    const eloEntries = Object.entries(ELO_CONFIG).sort((a, b) => b[1].xp - a[1].xp);
+    
+    for (const [eloKey, eloData] of eloEntries) {
+      if (xp >= eloData.xp) {
+        return {
+          current: eloKey,
+          name: eloData.name,
+          order: eloData.order,
+          benefits: {
+            badgeColor: eloData.color,
+            description: eloData.description,
+            imageUrl: eloData.image
+          }
+        };
+      }
+    }
+    
+    // Fallback para ferro
+    return {
+      current: 'ferro',
+      name: 'Ferro',
+      order: 1,
+      benefits: {
+        badgeColor: '#8B4513',
+        description: 'Início da jornada',
+        imageUrl: '/images/iron.png'
+      }
+    };
+  };
+
+  // Calcular elo atual automaticamente baseado no XP
+  const currentElo = calculateCurrentElo(currentXp);
+  
   // Encontrar próximo elo
-  const eloEntries = Object.entries(eloConfig).sort((a, b) => a[1].order - b[1].order);
+  const eloEntries = Object.entries(ELO_CONFIG).sort((a, b) => a[1].order - b[1].order);
   const nextEloEntry = eloEntries.find(([_, data]) => data.order === currentElo.order + 1);
   const nextElo = nextEloEntry ? nextEloEntry[1] : null;
   
@@ -108,9 +133,9 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
   let progressPercentage = 0;
   let xpNeeded = 0;
   
-  if (nextElo && nextElo.requirements) {
-    const currentRequiredXp = currentElo.requirements?.xp || 0;
-    const nextRequiredXp = nextElo.requirements?.xp || 0;
+  if (nextElo) {
+    const currentRequiredXp = ELO_CONFIG[currentElo.current]?.xp || 0;
+    const nextRequiredXp = nextElo.xp || 0;
     xpNeeded = nextRequiredXp - currentXp;
     
     if (nextRequiredXp > currentRequiredXp) {
@@ -150,14 +175,6 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
             </div>
           </div>
         </div>
-        
-        <button 
-          className="refresh-elo-button"
-          onClick={onRefresh}
-          disabled={loading}
-        >
-          {loading ? 'Atualizando...' : 'Atualizar Elo'}
-        </button>
       </div>
 
       {/* Progress Section */}
@@ -203,7 +220,7 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
               </div>
               <div className="progress-stat">
                 <span className="stat-label">Próximo Elo</span>
-                <span className="stat-value">{(nextElo.requirements?.xp || 0).toLocaleString()}</span>
+                <span className="stat-value">{(nextElo?.xp || 0).toLocaleString()}</span>
               </div>
               <div className="progress-stat">
                 <span className="stat-label">Progresso</span>
@@ -267,16 +284,19 @@ const MyEloTab = ({ userProfile, userElo, eloConfig, onRefresh, loading }) => {
 };
 
 const EloListTab = ({ eloConfig }) => {
-  if (!eloConfig) {
-    return (
-      <div className="elo-loading">
-        <div className="loading-spinner"></div>
-        <p>Carregando lista de elos...</p>
-      </div>
-    );
-  }
+  // Configuração dos elos chumbada no código
+  const ELO_CONFIG = {
+    ferro: { name: 'Ferro', order: 1, xp: 0, color: '#8B4513', image: '/images/iron.png', description: 'Início da jornada' },
+    bronze: { name: 'Bronze', order: 2, xp: 1250, color: '#CD7F32', image: '/images/bronze.png', description: 'Primeiros passos' },
+    prata: { name: 'Prata', order: 3, xp: 5450, color: '#C0C0C0', image: '/images/silver.png', description: 'Crescimento constante' },
+    ouro: { name: 'Ouro', order: 4, xp: 13950, color: '#FFD700', image: '/images/gold.png', description: 'Excelência em atividade' },
+    platina: { name: 'Platina', order: 5, xp: 29300, color: '#E5E4E2', image: '/images/platinum.png', description: 'Dedicação exemplar' },
+    esmeralda: { name: 'Esmeralda', order: 6, xp: 48100, color: '#50C878', image: '/images/emerald.png', description: 'Maestria em engajamento' },
+    diamante: { name: 'Diamante', order: 7, xp: 70400, color: '#B9F2FF', image: '/images/diamond.png', description: 'Elite da plataforma' },
+    mestre: { name: 'Mestre', order: 8, xp: 98600, color: '#800080', image: '/images/master.png', description: 'Lenda da comunidade' }
+  };
 
-  const eloEntries = Object.entries(eloConfig).sort((a, b) => a[1].order - b[1].order);
+  const eloEntries = Object.entries(ELO_CONFIG).sort((a, b) => a[1].order - b[1].order);
 
   return (
     <div className="elo-list-content">
@@ -286,10 +306,10 @@ const EloListTab = ({ eloConfig }) => {
           <div key={eloKey} className="elo-list-card">
             <div 
               className="elo-list-icon"
-              style={{ backgroundColor: eloData.benefits.badgeColor }}
+              style={{ backgroundColor: eloData.color }}
             >
               <img 
-                src={eloData.benefits.imageUrl} 
+                src={eloData.image} 
                 alt={eloData.name}
                 className="elo-list-image"
                 onError={(e) => {
@@ -303,10 +323,10 @@ const EloListTab = ({ eloConfig }) => {
             </div>
             <div className="elo-list-info">
               <h4 className="elo-list-name">{eloData.name}</h4>
-              <p className="elo-list-description">{eloData.benefits.description}</p>
+              <p className="elo-list-description">{eloData.description}</p>
               <div className="elo-list-requirement">
                 <span className="requirement-label">XP Necessário:</span>
-                <span className="requirement-value">{eloData.requirements?.xp?.toLocaleString() || '0'}</span>
+                <span className="requirement-value">{eloData.xp.toLocaleString()}</span>
               </div>
             </div>
           </div>
