@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { httpsCallable } from 'firebase/functions';
+import { httpsCallable, getFunctions } from 'firebase/functions';
 import { functions } from '../../config/firebase';
+import app from '../../config/firebase';
+
+// Instância específica para funções de elo em us-central1
+const eloFunctions = getFunctions(app, 'us-central1');
 
 /**
  * Hook para gerenciar elos dos usuários
@@ -16,7 +20,7 @@ export const useElo = () => {
       setLoading(true);
       setError(null);
       
-      const initializeConfig = httpsCallable(functions, 'initializeEloConfig');
+      const initializeConfig = httpsCallable(eloFunctions, 'initializeEloConfig');
       const result = await initializeConfig();
       
       if (result.data.success) {
@@ -39,7 +43,7 @@ export const useElo = () => {
       setLoading(true);
       setError(null);
       
-      const updateConfig = httpsCallable(functions, 'updateEloConfig');
+      const updateConfig = httpsCallable(eloFunctions, 'updateEloConfig');
       const result = await updateConfig({ newConfig });
       
       if (result.data.success) {
@@ -62,7 +66,7 @@ export const useElo = () => {
       setLoading(true);
       setError(null);
       
-      const getConfig = httpsCallable(functions, 'getEloConfig');
+      const getConfig = httpsCallable(eloFunctions, 'getEloConfig');
       const result = await getConfig();
       
       if (result.data.success) {
@@ -85,7 +89,7 @@ export const useElo = () => {
       setLoading(true);
       setError(null);
       
-      const syncFunction = httpsCallable(functions, 'syncAllUsersXpAndElo');
+      const syncFunction = httpsCallable(eloFunctions, 'syncAllUsersXpAndElo');
       const result = await syncFunction();
       
       if (result.data.success) {
@@ -138,7 +142,7 @@ export const useUserElo = (userId) => {
       setLoading(true);
       setError(null);
       
-      const calculateElo = httpsCallable(functions, 'calculateUserElo');
+      const calculateElo = httpsCallable(eloFunctions, 'calculateUserElo');
       const result = await calculateElo({ userId: targetUserId });
       
       if (result.data.success) {
@@ -163,7 +167,7 @@ export const useUserElo = (userId) => {
       setLoading(true);
       setError(null);
       
-      const updateElo = httpsCallable(functions, 'updateUserElo');
+      const updateElo = httpsCallable(eloFunctions, 'updateUserElo');
       const result = await updateElo({ userId: targetUserId });
       
       if (result.data.success) {
@@ -191,7 +195,7 @@ export const useUserElo = (userId) => {
       setLoading(true);
       setError(null);
       
-      const getElo = httpsCallable(functions, 'getUserElo');
+      const getElo = httpsCallable(eloFunctions, 'getUserElo');
       const result = await getElo({ userId: targetUserId });
       
       if (result.data.success) {
