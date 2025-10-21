@@ -2010,22 +2010,81 @@ export const calculateWithdrawalFee = onCall({
   memory: "64MiB",
   timeoutSeconds: 30,
 }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
   const { amount } = request.data;
+  const userId = request.auth.uid;
   
   if (!amount || amount <= 0) {
     throw new HttpsError("invalid-argument", "Valor inválido");
   }
 
-  const WITHDRAWAL_FEE_PERCENTAGE = 0.19; // 19%
   const MINIMUM_WITHDRAWAL = 50;
 
   if (amount < MINIMUM_WITHDRAWAL) {
     throw new HttpsError("invalid-argument", `Saque mínimo é ${MINIMUM_WITHDRAWAL} VC`);
   }
 
+  // Obter dados do usuário para calcular taxa baseada no elo
+  const userRef = db.collection('users').doc(userId);
+  const userSnap = await userRef.get();
+  
+  if (!userSnap.exists) {
+    throw new HttpsError("not-found", "Usuário não encontrado");
+  }
+
+  const userData = userSnap.data();
+  const userXp = userData.stats?.xp || 0;
+  
+  // Calcular elo baseado no XP
+  const calculateEloFromXp = (xp) => {
+    const eloConfig = {
+      ferro: { order: 1, xp: 0 },
+      bronze: { order: 2, xp: 1250 },
+      prata: { order: 3, xp: 4200 },
+      ouro: { order: 4, xp: 8500 },
+      platina: { order: 5, xp: 15350 },
+      esmeralda: { order: 6, xp: 18800 },
+      diamante: { order: 7, xp: 22300 },
+      mestre: { order: 8, xp: 28200 }
+    };
+    
+    const eloEntries = Object.entries(eloConfig).sort((a, b) => b[1].xp - a[1].xp);
+    
+    for (const [eloKey, eloData] of eloEntries) {
+      if (xp >= eloData.xp) {
+        return eloKey;
+      }
+    }
+    
+    return 'ferro';
+  };
+
+  const userElo = calculateEloFromXp(userXp);
+  
+  // Calcular taxa baseada no elo (1% menor a cada elo)
+  const eloOrder = {
+    ferro: 1,
+    bronze: 2,
+    prata: 3,
+    ouro: 4,
+    platina: 5,
+    esmeralda: 6,
+    diamante: 7,
+    mestre: 8
+  };
+  
+  const baseFeePercentage = 0.19; // 19% para ferro
+  const eloReduction = (eloOrder[userElo] - 1) * 0.01; // 1% de redução por elo
+  const WITHDRAWAL_FEE_PERCENTAGE = Math.max(0.11, baseFeePercentage - eloReduction); // Mínimo 11%
+
   const feeAmount = Math.round(amount * WITHDRAWAL_FEE_PERCENTAGE);
   const netAmount = amount - feeAmount;
   const brlAmount = netAmount;
+
+  logger.info(`💰 Taxa de saque calculada para usuário ${userId}: ${(WITHDRAWAL_FEE_PERCENTAGE * 100).toFixed(1)}% (Elo: ${userElo}, XP: ${userXp})`);
 
   return {
     success: true,
@@ -2033,7 +2092,9 @@ export const calculateWithdrawalFee = onCall({
     feeAmount: feeAmount,
     netAmount: netAmount,
     brlAmount: brlAmount,
-    feePercentage: WITHDRAWAL_FEE_PERCENTAGE * 100
+    feePercentage: WITHDRAWAL_FEE_PERCENTAGE * 100,
+    userElo: userElo,
+    userXp: userXp
   };
 });
 

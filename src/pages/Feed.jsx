@@ -20,7 +20,7 @@ import './Feed.css';
 
 const Feed = () => {
   const { currentUser } = useAuth();
-  const { userProfile } = useUser();
+  const { userProfile, getUserById } = useUser();
   const { hasBlockBetween } = useBlock();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const { isKycVerified } = useKycStatus();
@@ -574,9 +574,33 @@ const Feed = () => {
     );
   };
 
+  // Função para carregar dados completos do usuário se necessário
+  const loadUserDataIfNeeded = useCallback(async (userId) => {
+    if (!userId || users[userId]?.stats?.xp !== undefined) return;
+    
+    try {
+      const userData = await getUserById(userId);
+      if (userData) {
+        setUsers(prev => ({
+          ...prev,
+          [userId]: userData
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  }, [users, getUserById]);
+
   const renderPost = (post) => {
     const isCurrentUser = currentUser && (post.userId || post.authorId) === currentUser.uid;
-    const user = isCurrentUser ? userProfile : (users[post.userId || post.authorId] || {});
+    const userId = post.userId || post.authorId;
+    const user = isCurrentUser ? userProfile : (users[userId] || {});
+    
+    // Carregar dados completos do usuário se necessário
+    if (!isCurrentUser && userId && (!user.stats || user.stats.xp === undefined)) {
+      loadUserDataIfNeeded(userId);
+    }
+    
     if (!user && !post.authorName) return null;
 
     const isLiked = post.likes && post.likes[currentUser?.uid];
@@ -614,7 +638,7 @@ const Feed = () => {
                   {post.authorName || user?.displayName || user?.email}
                 </Link>
                 <UserBadge user={user} />
-                <EloBadge userXp={user?.stats?.xp} size="compact" />
+                <EloBadge userXp={user?.stats?.xp || user?.xp} size="compact" />
                 {post.isAdultContent && isKycVerified && (
                   <span className="adult-content-badge">
                     <i className="fas fa-exclamation-triangle"></i>

@@ -114,7 +114,7 @@ const EloBadge = ({ userElo, userXp, size = 'medium', showText = true, className
   const eloColor = elo.benefits?.badgeColor || '#8B4513';
 
   return (
-    <div className={`elo-badge-container ${size} ${className}`} title={elo.benefits?.description}>
+    <div className={`elo-badge-container ${size} ${className}`} title={elo.name || 'Elo'}>
       <div className="elo-badge-icon" style={{ backgroundColor: eloColor }}>
         <img 
           src={imageUrl} 
@@ -129,9 +129,6 @@ const EloBadge = ({ userElo, userXp, size = 'medium', showText = true, className
           {eloName.charAt(0)}
         </span>
       </div>
-      {showText && (
-        <span className="elo-badge-name">{eloName}</span>
-      )}
     </div>
   );
 };

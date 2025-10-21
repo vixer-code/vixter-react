@@ -1288,6 +1288,24 @@ const Wallet = () => {
                     <p style={{ margin: '8px 0 0 0', color: '#b0b0b0' }}>Os saques levam entre 1 a 3 dias úteis para serem processados e finalizados.</p>
                   </div>
                 </div>
+                
+                <div className="info-card">
+                  <i className="fas fa-percentage"></i>
+                  <div>
+                    <strong>Taxa de Saque por Elo:</strong>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '8px', marginTop: '8px' }}>
+                      <div style={{ padding: '4px 8px', backgroundColor: '#8B4513', borderRadius: '4px', fontSize: '12px', textAlign: 'center' }}>Ferro: 19%</div>
+                      <div style={{ padding: '4px 8px', backgroundColor: '#CD7F32', borderRadius: '4px', fontSize: '12px', textAlign: 'center' }}>Bronze: 18%</div>
+                      <div style={{ padding: '4px 8px', backgroundColor: '#C0C0C0', borderRadius: '4px', fontSize: '12px', textAlign: 'center' }}>Prata: 17%</div>
+                      <div style={{ padding: '4px 8px', backgroundColor: '#FFD700', borderRadius: '4px', fontSize: '12px', textAlign: 'center' }}>Ouro: 16%</div>
+                      <div style={{ padding: '4px 8px', backgroundColor: '#E5E4E2', borderRadius: '4px', fontSize: '12px', textAlign: 'center' }}>Platina: 15%</div>
+                      <div style={{ padding: '4px 8px', backgroundColor: '#50C878', borderRadius: '4px', fontSize: '12px', textAlign: 'center' }}>Esmeralda: 14%</div>
+                      <div style={{ padding: '4px 8px', backgroundColor: '#B9F2FF', borderRadius: '4px', fontSize: '12px', textAlign: 'center' }}>Diamante: 13%</div>
+                      <div style={{ padding: '4px 8px', backgroundColor: '#800080', borderRadius: '4px', fontSize: '12px', textAlign: 'center' }}>Mestre: 11%</div>
+                    </div>
+                    <p style={{ margin: '8px 0 0 0', color: '#b0b0b0', fontSize: '12px' }}>Sua taxa atual será calculada automaticamente baseada no seu elo.</p>
+                  </div>
+                </div>
               </div>
 
               <div className="input-group">

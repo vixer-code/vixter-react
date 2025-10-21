@@ -81,7 +81,7 @@ const AttachmentDisplay = ({ attachment, checkAttachmentExists, getImageUrl }) =
 
 const Vixies = () => {
   const { currentUser } = useAuth();
-  const { userProfile } = useUser();
+  const { userProfile, getUserById } = useUser();
   const { hasBlockBetween } = useBlock();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const [searchParams] = useSearchParams();
@@ -561,6 +561,20 @@ const Vixies = () => {
               // Use current user profile if it's the current user's post
               const isCurrentUser = currentUser && post.authorId === currentUser.uid;
               const author = isCurrentUser ? userProfile : (users[post.authorId] || {});
+              
+              // Carregar dados completos do usuário se necessário
+              if (!isCurrentUser && post.authorId && (!author.stats || author.stats.xp === undefined)) {
+                getUserById(post.authorId).then(userData => {
+                  if (userData) {
+                    setUsers(prev => ({
+                      ...prev,
+                      [post.authorId]: userData
+                    }));
+                  }
+                }).catch(error => {
+                  console.error('Error loading user data:', error);
+                });
+              }
               const isLiked = currentUser && likes[post.id] && likes[post.id][currentUser.uid];
               const likeCount = likes[post.id] ? Object.keys(likes[post.id]).length : (post.likes || 0);
               
@@ -585,7 +599,7 @@ const Vixies = () => {
                             {post.authorName}
                           </Link>
                           <UserBadge user={author} />
-                          <EloBadge userXp={author?.stats?.xp} size="compact" />
+                          <EloBadge userXp={author?.stats?.xp || author?.xp} size="compact" />
                         </div>
                         <span className="post-time">{formatTime(post.timestamp)}</span>
                       </div>
