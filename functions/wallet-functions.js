@@ -174,28 +174,8 @@ async function updateUserStats(userId, statsUpdate) {
     await userRef.update(updates);
     logger.info(`Updated stats for user ${userId} (${accountType}):`, statsUpdate);
     
-    // Atualizar elo do usuário automaticamente após atualizar stats
-    try {
-      const { calculateUserEloInternal } = require('./elo-functions.js');
-      const eloResult = await calculateUserEloInternal(userId);
-      
-      if (eloResult.success) {
-        const { elo } = eloResult;
-        await userRef.update({
-          elo: {
-            current: elo.current,
-            name: elo.name,
-            order: elo.order,
-            benefits: elo.benefits,
-            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
-          }
-        });
-        logger.info(`Updated elo for user ${userId}: ${elo.current}`);
-      }
-    } catch (eloError) {
-      logger.warn(`Error updating elo for user ${userId}:`, eloError);
-      // Não falhar a operação principal se a atualização de elo falhar
-    }
+    // Elo será atualizado automaticamente pelo trigger onTransactionUpdated
+    // quando as transações forem criadas/atualizadas
     
   } catch (error) {
     logger.error(`Error updating stats for user ${userId}:`, error);
@@ -1307,16 +1287,8 @@ async function autoCompleteDeliveredServicesInternal() {
           try {
             const serviceData = serviceDoc.data();
             
-            // Adicionar XP para o vendedor quando o serviço é auto-completado
-            const { calculateXpFromTransaction, addXpToUserInternal } = require('./elo-functions');
-            
-            // XP para o vendedor (usando VP equivalente e tipo serviço = 2)
-            // Converter VC para VP para usar na fórmula (1 VC = 1.5 VP)
-            const vpEquivalent = Math.ceil(serviceData.vcAmount * 1.5);
-            const sellerXp = calculateXpFromTransaction('SERVICE_SALE_AUTO_COMPLETED', vpEquivalent, 2);
-            if (sellerXp > 0) {
-              await addXpToUserInternal(serviceData.sellerId, sellerXp, 'SERVICE_SALE_AUTO_COMPLETED', serviceDoc.id);
-            }
+            // XP e elo serão atualizados automaticamente pelo trigger onTransactionUpdated
+            // quando as transações forem criadas/atualizadas
             
             await Promise.all([
               // Stats do cliente (comprou um serviço)
@@ -1592,22 +1564,8 @@ async function acceptPackOrderInternal(sellerId, orderId) {
     })
   ]);
 
-  // Adicionar XP para ambos os usuários usando nova fórmula
-  const { calculateXpFromTransaction, addXpToUserInternal } = require('./elo-functions');
-  
-  // XP para o comprador (usando VP gasto e tipo pack = 1.5)
-  const buyerXp = calculateXpFromTransaction('PACK_PURCHASE', order.vpAmount, 1.5);
-  if (buyerXp > 0) {
-    await addXpToUserInternal(order.buyerId, buyerXp, 'PACK_PURCHASE', orderId);
-  }
-  
-  // XP para o vendedor (usando VP equivalente e tipo pack = 1.5)
-  // Converter VC para VP para usar na fórmula (1 VC = 1.5 VP)
-  const vpEquivalent = Math.ceil(order.vcAmount * 1.5);
-  const sellerXp = calculateXpFromTransaction('PACK_SALE', vpEquivalent, 1.5);
-  if (sellerXp > 0) {
-    await addXpToUserInternal(order.sellerId, sellerXp, 'PACK_SALE', orderId);
-  }
+  // XP e elo serão atualizados automaticamente pelo trigger onTransactionUpdated
+  // quando as transações forem criadas/atualizadas
 
   logger.info(`✅ Pack order accepted: ${orderId}`);
   return { success: true };

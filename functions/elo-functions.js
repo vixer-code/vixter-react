@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { logger } from 'firebase-functions';
 import admin from 'firebase-admin';
 
@@ -859,6 +860,72 @@ const testXpSystem = onCall({
   }
 });
 
+/**
+ * Trigger que atualiza o elo automaticamente quando uma transação é criada/atualizada
+ */
+const onTransactionUpdated = onDocumentUpdated({
+  document: "transactions/{transactionId}",
+  region: 'us-central1',
+  memory: "256MiB",
+  timeoutSeconds: 30,
+}, async (event) => {
+  try {
+    const beforeData = event.data?.before?.data();
+    const afterData = event.data?.after?.data();
+    
+    // Verificar se é uma transação válida com userId
+    if (!afterData?.userId) {
+      logger.warn('Transaction without userId, skipping elo update');
+      return;
+    }
+    
+    const userId = afterData.userId;
+    const transactionType = afterData.type;
+    
+    // Verificar se é uma transação que deve gerar XP
+    const xpGeneratingTypes = [
+      'PACK_PURCHASE',
+      'PACK_SALE_COMPLETED', 
+      'SERVICE_PURCHASE',
+      'SERVICE_SALE_COMPLETED',
+      'SERVICE_SALE_AUTO_COMPLETED',
+      'VIXTIP_SENT',
+      'VIXTIP_RECEIVED'
+    ];
+    
+    if (!xpGeneratingTypes.includes(transactionType)) {
+      logger.info(`Transaction type ${transactionType} does not generate XP, skipping elo update`);
+      return;
+    }
+    
+    // Verificar se a transação foi completada
+    if (afterData.status !== 'COMPLETED') {
+      logger.info(`Transaction ${event.params.transactionId} not completed, skipping elo update`);
+      return;
+    }
+    
+    // Verificar se houve mudança relevante (status mudou para COMPLETED)
+    const wasCompleted = beforeData?.status === 'COMPLETED';
+    const isCompleted = afterData.status === 'COMPLETED';
+    
+    if (wasCompleted && isCompleted) {
+      logger.info(`Transaction ${event.params.transactionId} already completed, skipping elo update`);
+      return;
+    }
+    
+    logger.info(`🔄 Updating elo for user ${userId} due to transaction ${event.params.transactionId} (${transactionType})`);
+    
+    // Recalcular elo do usuário
+    await calculateUserEloInternal(userId);
+    
+    logger.info(`✅ Elo updated for user ${userId} after transaction ${event.params.transactionId}`);
+    
+  } catch (error) {
+    logger.error(`❌ Error updating elo for transaction ${event.params.transactionId}:`, error);
+    // Não falhar o trigger se houver erro
+  }
+});
+
 export {
   initializeEloConfig,
   updateEloConfig,
@@ -872,5 +939,6 @@ export {
   addXpToUserInternal,
   syncAllUsersXpAndElo,
   calculateAndSetUserXpFromTransactions,
-  testXpSystem
+  testXpSystem,
+  onTransactionUpdated
 };

@@ -61,6 +61,7 @@ import {
   syncAllUsersXpAndElo,
   calculateAndSetUserXpFromTransactions,
   testXpSystem,
+  onTransactionUpdated
 } from './elo-functions.js';
 
 export {
@@ -115,4 +116,5 @@ export {
   syncAllUsersXpAndElo,
   calculateAndSetUserXpFromTransactions,
   testXpSystem,
+  onTransactionUpdated
 };
