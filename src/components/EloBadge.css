@@ -49,6 +49,13 @@
   backdrop-filter: blur(4px);
 }
 
+/* Proteção contra CSS global */
+.elo-badge .elo-badge-image {
+  width: 16px !important;
+  height: 16px !important;
+  object-fit: contain;
+}
+
 .elo-badge-image {
   width: 16px;
   height: 16px;
@@ -191,8 +198,8 @@
 }
 
 .elo-badge.compact .elo-badge-image {
-  width: 7.5px;
-  height: 7.5px;
+  width: 7.5px !important;
+  height: 7.5px !important;
 }
 
 .elo-badge.compact .elo-badge-symbol {
@@ -225,8 +232,8 @@
 }
 
 .elo-badge.fixed-30 .elo-badge-image {
-  width: 24px;
-  height: 24px;
+  width: 24px !important;
+  height: 24px !important;
 }
 
 .elo-badge.fixed-30 .elo-badge-symbol {
@@ -237,4 +244,24 @@
 
 .elo-badge.fixed-30 .elo-badge-text {
   display: none;
+}
+
+/* Proteção específica contra CSS global de post-header */
+.post-header .elo-badge .elo-badge-image,
+.vixie-header .elo-badge .elo-badge-image,
+.post-author .elo-badge .elo-badge-image {
+  width: inherit !important;
+  height: inherit !important;
+  object-fit: contain !important;
+}
+
+/* Garantir que badges mantenham seus tamanhos específicos */
+.post-header .elo-badge.fixed-30 .elo-badge-image {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+.post-header .elo-badge.compact .elo-badge-image {
+  width: 7.5px !important;
+  height: 7.5px !important;
 }
