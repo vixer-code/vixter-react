@@ -110,6 +110,7 @@ const DEFAULT_ELO_CONFIG = {
  * Inicializa as configurações dos elos no banco de dados
  */
 const initializeEloConfig = onCall({
+  region: 'us-central1',
   memory: "128MiB",
   timeoutSeconds: 30,
 }, async (request) => {
@@ -146,6 +147,7 @@ const initializeEloConfig = onCall({
  * Atualiza as configurações dos elos
  */
 const updateEloConfig = onCall({
+  region: "us-central1",
   memory: "128MiB",
   timeoutSeconds: 30,
 }, async (request) => {
@@ -187,6 +189,7 @@ const updateEloConfig = onCall({
  * Obtém as configurações dos elos
  */
 const getEloConfig = onCall({
+  region: 'us-central1',
   memory: "64MiB",
   timeoutSeconds: 15,
 }, async (request) => {
@@ -320,6 +323,7 @@ const calculateUserEloInternal = async (targetUserId) => {
  * Calcula o elo atual do usuário baseado nas métricas (Cloud Function)
  */
 const calculateUserElo = onCall({
+  region: 'us-central1',
   memory: "128MiB",
   timeoutSeconds: 30,
 }, async (request) => {
@@ -342,6 +346,7 @@ const calculateUserElo = onCall({
  * Atualiza o elo do usuário no documento do usuário
  */
 const updateUserElo = onCall({
+  region: 'us-central1',
   memory: "64MiB",
   timeoutSeconds: 15,
 }, async (request) => {
@@ -395,6 +400,7 @@ const updateUserElo = onCall({
  * Obtém informações do elo de um usuário
  */
 const getUserElo = onCall({
+  region: 'us-central1',
   memory: "64MiB",
   timeoutSeconds: 15,
 }, async (request) => {
@@ -544,6 +550,7 @@ const addXpToUserInternal = async (userId, xpAmount, transactionType, transactio
  * Adiciona XP ao usuário e atualiza o elo (Cloud Function)
  */
 const addXpToUser = onCall({
+  region: 'us-central1',
   memory: "128MiB",
   timeoutSeconds: 30,
 }, async (request) => {
@@ -565,6 +572,7 @@ const addXpToUser = onCall({
  * Sincroniza XP e elo de todos os usuários existentes
  */
 const syncAllUsersXpAndElo = onCall({
+  region: 'us-central1',
   memory: "512MiB",
   timeoutSeconds: 540, // 9 minutos
 }, async (request) => {
@@ -760,6 +768,7 @@ const calculateAndSetUserXpFromTransactions = async (userId) => {
  * Função de teste para verificar o sistema de XP
  */
 const testXpSystem = onCall({
+  region: 'us-central1',
   memory: "128MiB",
   timeoutSeconds: 30,
 }, async (request) => {
