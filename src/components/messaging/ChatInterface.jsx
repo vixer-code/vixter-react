@@ -386,8 +386,14 @@ const ChatInterface = ({ conversation, onClose }) => {
           {conversation?.participants && Object.keys(conversation.participants).length === 2 && (
             <button 
               className="action-button call-button" 
-              onClick={() => setShowCallInterface(true)} 
-              title="Iniciar chamada"
+              onClick={() => {
+                if (isServiceCompleted) {
+                  showError('Esta conversa foi finalizada e não permite mais interações');
+                  return;
+                }
+                setShowCallInterface(true);
+              }} 
+              title={isServiceCompleted ? "Serviço concluído - Chamada não disponível" : "Iniciar chamada"}
             >
               📞
             </button>
