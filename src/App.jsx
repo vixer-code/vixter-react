@@ -18,6 +18,7 @@ import Footer from './components/Footer';
 import MobileFooter from './components/MobileFooter';
 import NotificationContainer from './components/NotificationContainer';
 import UpdateNotification from './components/UpdateNotification';
+import TutorialModal from './components/TutorialModal';
 import ProtectedRoute from './components/ProtectedRoute';
 import { preloadCommonImages } from './utils/imagePreloader';
 import { useVersionCheck } from './hooks/useVersionCheck';
@@ -102,6 +103,7 @@ function AppContent() {
           onUpdate={updateApp}
           onDismiss={dismissUpdate}
         />
+        <TutorialModal />
       </div>
     </Router>
   );

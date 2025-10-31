@@ -1,0 +1,351 @@
+/* Tutorial Modal Styles - Vixter Theme */
+.tutorial-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.tutorial-modal-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: slideIn 0.3s ease-out;
+}
+
+.tutorial-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.tutorial-svg-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 85vh;
+}
+
+.tutorial-svg-image {
+  max-width: 100%;
+  max-height: 85vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 16px;
+}
+
+/* Aceite Step - Botões sobrepostos */
+.aceite-step {
+  position: relative;
+}
+
+.aceite-step .tutorial-button {
+  position: absolute;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #8a2be2, #9932cc);
+  border: 2px solid rgba(138, 43, 226, 0.5);
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+  box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
+  white-space: nowrap;
+}
+
+.aceite-step .tutorial-button:hover {
+  background: linear-gradient(135deg, #9932cc, #8a2be2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(138, 43, 226, 0.5);
+}
+
+.aceite-step .tutorial-button:active {
+  transform: translateY(0);
+}
+
+.aceite-step .video-button {
+  /* Posição aproximada - ajustar conforme necessário baseado no SVG */
+  bottom: 25%;
+  left: 50%;
+  transform: translateX(-50%) translateX(-35%);
+}
+
+.aceite-step .text-button {
+  /* Posição aproximada - ajustar conforme necessário baseado no SVG */
+  bottom: 25%;
+  left: 50%;
+  transform: translateX(-50%) translateX(35%);
+}
+
+/* Video Step */
+.video-step {
+  position: relative;
+}
+
+.tutorial-video-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%;
+  max-width: 600px;
+  aspect-ratio: 16 / 9;
+  z-index: 10;
+}
+
+.tutorial-video {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #000;
+}
+
+.tutorial-actions {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.tutorial-complete-btn {
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #8a2be2, #9932cc);
+  border: 2px solid rgba(138, 43, 226, 0.5);
+  border-radius: 8px;
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
+}
+
+.tutorial-complete-btn:hover {
+  background: linear-gradient(135deg, #9932cc, #8a2be2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(138, 43, 226, 0.5);
+}
+
+.tutorial-terms-link {
+  color: #8a2be2;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.tutorial-terms-link:hover {
+  color: #9932cc;
+  text-decoration: underline;
+}
+
+/* Guia Escrito Step */
+.guia-escrito-step {
+  position: relative;
+}
+
+.tutorial-text-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+  max-width: 800px;
+  height: 60%;
+  max-height: 500px;
+  background: rgba(26, 26, 46, 0.95);
+  border: 2px solid rgba(138, 43, 226, 0.5);
+  border-radius: 12px;
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.tutorial-text-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tutorial-text-container::-webkit-scrollbar-track {
+  background: rgba(138, 43, 226, 0.1);
+  border-radius: 4px;
+}
+
+.tutorial-text-container::-webkit-scrollbar-thumb {
+  background: rgba(138, 43, 226, 0.5);
+  border-radius: 4px;
+}
+
+.tutorial-text-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(138, 43, 226, 0.7);
+}
+
+.tutorial-text-content {
+  color: #ffffff;
+  line-height: 1.6;
+}
+
+.tutorial-text-content h2 {
+  color: #8a2be2;
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.tutorial-text-content p {
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.tutorial-text-content ul {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+.tutorial-text-content li {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.tutorial-text-content strong {
+  color: #8a2be2;
+  font-weight: 600;
+}
+
+.welcome-text {
+  text-align: center;
+  font-size: 1.2rem !important;
+  margin-top: 24px !important;
+  color: #8a2be2 !important;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .tutorial-modal-content {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+
+  .tutorial-svg-image {
+    max-height: 75vh;
+  }
+
+  .aceite-step .tutorial-button {
+    font-size: 14px;
+    padding: 10px 20px;
+  }
+
+  .aceite-step .video-button {
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%) translateX(-40%);
+  }
+
+  .aceite-step .text-button {
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%) translateX(40%);
+  }
+
+  .tutorial-video-container {
+    width: 80%;
+  }
+
+  .tutorial-text-container {
+    width: 85%;
+    height: 65%;
+    max-height: 400px;
+    padding: 16px;
+  }
+
+  .tutorial-text-content h2 {
+    font-size: 1.2rem;
+  }
+
+  .tutorial-text-content p,
+  .tutorial-text-content li {
+    font-size: 13px;
+  }
+
+  .tutorial-complete-btn {
+    padding: 12px 24px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .aceite-step .tutorial-button {
+    font-size: 12px;
+    padding: 8px 16px;
+  }
+
+  .aceite-step .video-button {
+    bottom: 18%;
+    transform: translateX(-50%) translateX(-45%);
+  }
+
+  .aceite-step .text-button {
+    bottom: 18%;
+    transform: translateX(-50%) translateX(45%);
+  }
+
+  .tutorial-text-container {
+    width: 90%;
+    padding: 12px;
+  }
+
+  .tutorial-text-content h2 {
+    font-size: 1rem;
+  }
+
+  .tutorial-text-content p,
+  .tutorial-text-content li {
+    font-size: 12px;
+  }
+}
+
