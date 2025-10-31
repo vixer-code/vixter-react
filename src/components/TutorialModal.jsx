@@ -3,6 +3,10 @@ import { Timestamp } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import './TutorialModal.css';
+import NeonModal from './ui/NeonModal';
+import NeonButton from './ui/NeonButton';
+import OverlaySlot from './ui/OverlaySlot';
+import ScrollPanel from './ui/ScrollPanel';
 
 const TutorialModal = () => {
   const { currentUser } = useAuth();
@@ -67,7 +71,7 @@ const TutorialModal = () => {
   }
 
   return (
-    <div className="tutorial-modal-overlay" onClick={handleClose}>
+    <NeonModal isOpen={!userLoading && isOpen} onClose={handleClose}>
       <div className="tutorial-modal-content" onClick={(e) => e.stopPropagation()}>
         {currentStep === 'aceite' && (
           <div className="tutorial-step aceite-step">
@@ -78,18 +82,12 @@ const TutorialModal = () => {
                 className="tutorial-svg-image"
               />
               {/* Botões sobrepostos */}
-              <button 
-                className="tutorial-button video-button"
-                onClick={handleVideoChoice}
-              >
+              <NeonButton className="tutorial-button video-button" onClick={handleVideoChoice}>
                 Vídeo com áudio
-              </button>
-              <button 
-                className="tutorial-button text-button"
-                onClick={handleTextChoice}
-              >
+              </NeonButton>
+              <NeonButton className="tutorial-button text-button" onClick={handleTextChoice}>
                 Texto com imagens
-              </button>
+              </NeonButton>
             </div>
           </div>
         )}
@@ -103,7 +101,7 @@ const TutorialModal = () => {
                 className="tutorial-svg-image"
               />
               {/* Vídeo sobreposto no meio do SVG */}
-              <div className="tutorial-video-container">
+              <OverlaySlot className="tutorial-video-container" style={{ width: '60%', maxWidth: 600, aspectRatio: '16 / 9' }}>
                 <video 
                   ref={videoRef}
                   src="/tutorials/videoLobby.mp4" 
@@ -113,15 +111,12 @@ const TutorialModal = () => {
                 >
                   Seu navegador não suporta vídeos HTML5.
                 </video>
-              </div>
+              </OverlaySlot>
             </div>
             <div className="tutorial-actions">
-              <button 
-                className="tutorial-complete-btn"
-                onClick={handleCompleteTutorial}
-              >
+              <NeonButton className="tutorial-complete-btn" onClick={handleCompleteTutorial}>
                 Li e Entendi!
-              </button>
+              </NeonButton>
             </div>
           </div>
         )}
@@ -135,8 +130,9 @@ const TutorialModal = () => {
                 className="tutorial-svg-image"
               />
               {/* Conteúdo de texto com scroll */}
-              <div className="tutorial-text-container">
-                <div className="tutorial-text-content">
+              <OverlaySlot>
+                <ScrollPanel className="tutorial-text-container">
+                  <div className="tutorial-text-content">
                   <h2>ATENÇÃO PARA O CONTEÚDO ABAIXO</h2>
                   <p>
                     Como idealizador aqui na Vixter você poderá explorar o mundo Vix, um mundo repleto de interações e possibilidades que está em constantes mudanças e ampliações. Para realizar suas postagens e se conectar com outros idealizadores, você pode ir até o Lobby, lá poderá se expressar, compartilhar ideias e muito mais. Lembrando que o Lobby será constantemente atualizado, para tornar sua experiencia mais imersiva no universo Vix.
@@ -192,15 +188,13 @@ const TutorialModal = () => {
                     Para quaisquer dúvidas relacionadas ao Lobby pode sempre entrar em contato com nosso suporte.
                   </p>
                   <p className="welcome-text"><strong>Seja bem-vindo a Vixter!</strong></p>
-                </div>
-              </div>
+                  </div>
+                </ScrollPanel>
+              </OverlaySlot>
               <div className="tutorial-actions">
-                <button 
-                  className="tutorial-complete-btn"
-                  onClick={handleCompleteTutorial}
-                >
+                <NeonButton className="tutorial-complete-btn" onClick={handleCompleteTutorial}>
                   LI E ENTENDI!
-                </button>
+                </NeonButton>
                 <a 
                   href="/terms" 
                   className="tutorial-terms-link"
@@ -215,7 +209,7 @@ const TutorialModal = () => {
           </div>
         )}
       </div>
-    </div>
+    </NeonModal>
   );
 };
 

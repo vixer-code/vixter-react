@@ -1,0 +1,100 @@
+/* Shared Neon UI styles inspired by tutorial visuals */
+.neon-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(10px);
+  animation: neon-fade-in 0.3s ease-out;
+}
+
+.neon-surface {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: neon-scale-in 0.3s ease-out;
+}
+
+.neon-button {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #8a2be2, #9932cc);
+  border: 2px solid rgba(138, 43, 226, 0.5);
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
+}
+
+.neon-button:hover {
+  background: linear-gradient(135deg, #9932cc, #8a2be2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(138, 43, 226, 0.5);
+}
+
+.neon-button:active {
+  transform: translateY(0);
+}
+
+.neon-terms-link {
+  color: #8a2be2;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.neon-terms-link:hover {
+  color: #9932cc;
+  text-decoration: underline;
+}
+
+.neon-overlay-slot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.neon-scroll-panel {
+  background: rgba(26, 26, 46, 0.95);
+  border: 2px solid rgba(138, 43, 226, 0.5);
+  border-radius: 12px;
+  padding: 20px;
+  color: #fff;
+  overflow-y: auto;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.neon-scroll-panel::-webkit-scrollbar { width: 8px; }
+.neon-scroll-panel::-webkit-scrollbar-track { background: rgba(138,43,226,0.1); border-radius: 4px; }
+.neon-scroll-panel::-webkit-scrollbar-thumb { background: rgba(138,43,226,0.5); border-radius: 4px; }
+.neon-scroll-panel::-webkit-scrollbar-thumb:hover { background: rgba(138,43,226,0.7); }
+
+@keyframes neon-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes neon-scale-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .neon-surface { max-width: 95vw; max-height: 95vh; }
+  .neon-button { padding: 10px 20px; font-size: 14px; }
+}
+
+@media (max-width: 480px) {
+  .neon-button { padding: 8px 16px; font-size: 12px; }
+}
+
+
