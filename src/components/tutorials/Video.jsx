@@ -1,13 +1,46 @@
 import * as React from "react";
-const SvgVideo = (props) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    xmlnsXlink="http://www.w3.org/1999/xlink"
-    width={1522}
-    height={856}
-    viewBox="0 0 1141.5 642"
-    {...props}
-  >
+import { useState, useEffect, useRef } from "react";
+import { ref as storageRef, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../../config/firebase';
+
+const SvgVideo = (props) => {
+  const [videoUrl, setVideoUrl] = useState('');
+  const videoElementRef = useRef(null);
+
+  // Carregar vídeo do Firebase Storage
+  useEffect(() => {
+    const loadVideo = async () => {
+      try {
+        const videoStorageRef = storageRef(storage, 'tutorial/videoLobby.mp4');
+        const url = await getDownloadURL(videoStorageRef);
+        setVideoUrl(url);
+      } catch (error) {
+        console.error('Erro ao carregar vídeo do tutorial:', error);
+      }
+    };
+
+    loadVideo();
+  }, []);
+
+  // Reproduzir vídeo quando a URL estiver disponível
+  useEffect(() => {
+    if (videoUrl && videoElementRef.current) {
+      videoElementRef.current.play().catch(error => {
+        console.error('Erro ao reproduzir vídeo:', error);
+      });
+    }
+  }, [videoUrl]);
+
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        xmlnsXlink="http://www.w3.org/1999/xlink"
+        width={1522}
+        height={856}
+        viewBox="0 0 1141.5 642"
+        {...props}
+      >
     <defs>
       <clipPath id="video_svg__c">
         <path d="M0 .14h1141v641.72H0Zm0 0" />
@@ -307,7 +340,34 @@ const SvgVideo = (props) => (
         d="m880.21 274.508-8.929-11.695v-9l8.93 11.734v-19.488l-8.93-11.7v-8.996l8.93 11.696v-19.485l-8.93-11.699v-9l8.93 11.734v-19.484l-8.93-11.7v-23.882l3.633 3.633v-30.871h-30.871l3.633 3.632h-23.95l-11.663-8.93h-19.489l11.7 8.93h-9l-11.7-8.93H764.09l11.7 8.93h-9l-11.7-8.93h-19.485l11.7 8.93h-9l-11.664-8.93h-19.489l12.602 9.622h128.613l22.223 22.223v128.613l.344.453h.035l9.242 12.078Zm-74.933-145.953-7.613-5.817h13.774l7.613 5.817Zm-28.449 0-7.617-5.817h13.777l7.614 5.817Zm-28.488 0-7.613-5.817h13.777l7.613 5.817Zm-28.485 0-7.578-5.817h13.774l7.617 5.817Zm132.528 1.21h19.07v19.07Zm20.281 52.333 5.816 7.613v13.777l-5.816-7.617Zm0 28.449 5.816 7.617v13.774l-5.816-7.614Zm0 28.484 5.816 7.617v13.774l-5.816-7.613Zm0 42.262V267.52l5.816 7.613v13.773Zm0 0"
       />
     </g>
-  </svg>
-);
+      </svg>
+      {videoUrl && (
+        <video
+          ref={videoElementRef}
+          src={videoUrl}
+          controls
+          style={{
+            position: 'absolute',
+            // Retângulo branco está em translate(298, 152) + path em (.348, .66) com tamanho 549.605 x 324.192
+            // No viewBox "0 0 1141.5 642", isso corresponde a:
+            // x: (298 + 0.348) / 1141.5 = 26.14%
+            // y: (152 + 0.66) / 642 = 23.8%
+            // width: 549.605 / 1141.5 = 48.15%
+            // height: 324.192 / 642 = 50.5%
+            left: '26.14%',
+            top: '23.8%',
+            width: '48.15%',
+            height: '50.5%',
+            objectFit: 'cover',
+            borderRadius: 8,
+            boxShadow: '0 0 24px rgba(0,0,0,0.5)',
+            backgroundColor: '#000'
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
 export default SvgVideo;
 

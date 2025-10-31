@@ -1,14 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Timestamp } from 'firebase/firestore';
-import { ref as storageRef, getDownloadURL } from 'firebase/storage';
-import { storage } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import './TutorialModal.css';
 import NeonModal from './ui/NeonModal';
-import NeonButton from './ui/NeonButton';
-import OverlaySlot from './ui/OverlaySlot';
-import ScrollPanel from './ui/ScrollPanel';
 import Aceite from './tutorials/Aceite';
 import GuiaEscrito from './tutorials/GuiaEscrito';
 import VideoSvg from './tutorials/Video';
@@ -18,8 +13,6 @@ const TutorialModal = () => {
   const { userProfile, updateUserProfile, loading: userLoading } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState('aceite'); // aceite, video, guiaEscrito
-  const videoRef = useRef(null);
-  const [tutorialVideoUrl, setTutorialVideoUrl] = useState('');
 
   // Verificar se o tutorial já foi completado e se deve mostrar
   useEffect(() => {
@@ -30,24 +23,6 @@ const TutorialModal = () => {
       }
     }
   }, [currentUser, userProfile, userLoading]);
-
-  // Carregar URL do vídeo do Firebase Storage
-  useEffect(() => {
-    const loadTutorialVideo = async () => {
-      try {
-        const videoStorageRef = storageRef(storage, 'tutorial/videoLobby.mp4');
-        const url = await getDownloadURL(videoStorageRef);
-        setTutorialVideoUrl(url);
-      } catch (error) {
-        console.error('Erro ao carregar vídeo do tutorial:', error);
-        // Se falhar, não definir a URL (o vídeo não será exibido)
-      }
-    };
-
-    if (currentStep === 'video' || isOpen) {
-      loadTutorialVideo();
-    }
-  }, [currentStep, isOpen]);
 
   // Ao completar o tutorial, salvar no perfil
   const handleCompleteTutorial = async () => {
@@ -67,14 +42,6 @@ const TutorialModal = () => {
   // Navegar para o passo do vídeo
   const handleVideoChoice = () => {
     setCurrentStep('video');
-    // Reproduzir o vídeo quando mudar para este passo
-    setTimeout(() => {
-      if (videoRef.current) {
-        videoRef.current.play().catch(error => {
-          console.error('Erro ao reproduzir vídeo:', error);
-        });
-      }
-    }, 100);
   };
 
   // Navegar para o guia escrito
@@ -137,32 +104,8 @@ const TutorialModal = () => {
 
         {currentStep === 'video' && (
           <div className="tutorial-step video-step">
-            <div className="tutorial-svg-container" style={{ position: 'relative' }} onClick={handleVideoInternalClick}>
+            <div className="tutorial-svg-container" onClick={handleVideoInternalClick}>
               <VideoSvg className="tutorial-svg-image" onComplete={handleCompleteTutorial} />
-              {tutorialVideoUrl ? (
-                <video
-                  ref={videoRef}
-                  src={tutorialVideoUrl}
-                  controls
-                  style={{
-                    position: 'absolute',
-                    // Retângulo branco está em translate(298, 152) + path em (.348, .66) com tamanho 549.605 x 324.192
-                    // No viewBox "0 0 1141.5 642", isso corresponde a:
-                    // x: (298 + 0.348) / 1141.5 = 26.14%
-                    // y: (152 + 0.66) / 642 = 23.8%
-                    // width: 549.605 / 1141.5 = 48.15%
-                    // height: 324.192 / 642 = 50.5%
-                    left: '26.14%',
-                    top: '23.8%',
-                    width: '48.15%',
-                    height: '50.5%',
-                    objectFit: 'cover',
-                    borderRadius: 8,
-                    boxShadow: '0 0 24px rgba(0,0,0,0.5)',
-                    backgroundColor: '#000'
-                  }}
-                />
-              ) : null}
             </div>
           </div>
         )}
