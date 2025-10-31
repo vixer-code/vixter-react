@@ -146,13 +146,20 @@ const TutorialModal = () => {
                   controls
                   style={{
                     position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    width: '80%',
-                    maxWidth: 720,
+                    // Retângulo branco está em translate(298, 152) + path em (.348, .66) com tamanho 549.605 x 324.192
+                    // No viewBox "0 0 1141.5 642", isso corresponde a:
+                    // x: (298 + 0.348) / 1141.5 = 26.14%
+                    // y: (152 + 0.66) / 642 = 23.8%
+                    // width: 549.605 / 1141.5 = 48.15%
+                    // height: 324.192 / 642 = 50.5%
+                    left: '26.14%',
+                    top: '23.8%',
+                    width: '48.15%',
+                    height: '50.5%',
+                    objectFit: 'cover',
                     borderRadius: 8,
-                    boxShadow: '0 0 24px rgba(0,0,0,0.5)'
+                    boxShadow: '0 0 24px rgba(0,0,0,0.5)',
+                    backgroundColor: '#000'
                   }}
                 />
               ) : null}
