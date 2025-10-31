@@ -61,6 +61,36 @@ const TutorialModal = () => {
     setCurrentStep('guiaEscrito');
   };
 
+  // Delegar cliques no SVG do Aceite para os botões internos (vídeo/texto)
+  const handleAceiteClick = (e) => {
+    const target = e.target;
+    if (!target) return;
+    const href = target.getAttribute?.('xlink:href') || target.getAttribute?.('href') || '';
+    if (!href.startsWith('data:image')) return;
+    // Botão "Vídeo com Audio" (prefixo base64 conhecido)
+    if (href.startsWith('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0MAAAEKCA')) {
+      handleVideoChoice();
+      return;
+    }
+    // Botão "texto com imagens" (prefixo base64 conhecido)
+    if (href.startsWith('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA7wAAAEKCA')) {
+      handleTextChoice();
+      return;
+    }
+  };
+
+  // Delegar clique no botão interno do vídeo (barra inferior)
+  const handleVideoInternalClick = (e) => {
+    const target = e.target;
+    if (!target) return;
+    const href = target.getAttribute?.('xlink:href') || target.getAttribute?.('href') || '';
+    if (!href.startsWith('data:image')) return;
+    // Barra/botão inferior do componente de vídeo (prefixo base64 conhecido)
+    if (href.startsWith('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABUYAAADgCA')) {
+      handleCompleteTutorial();
+    }
+  };
+
   // Fechar o modal (não permitir fechar antes de completar)
   const handleClose = () => {
     // Só permitir fechar se o tutorial foi completado
@@ -78,30 +108,23 @@ const TutorialModal = () => {
       <div className="tutorial-modal-content" onClick={(e) => e.stopPropagation()}>
         {currentStep === 'aceite' && (
           <div className="tutorial-step aceite-step">
-            <div className="tutorial-svg-container">
-              <Aceite 
-                className="tutorial-svg-image" 
-                onVideo={handleVideoChoice}
-                onText={handleTextChoice}
-              />
+            <div className="tutorial-svg-container" onClick={handleAceiteClick}>
+              <Aceite className="tutorial-svg-image" onVideo={handleVideoChoice} onText={handleTextChoice} />
             </div>
           </div>
         )}
 
         {currentStep === 'video' && (
           <div className="tutorial-step video-step">
-            <div className="tutorial-svg-container">
+            <div className="tutorial-svg-container" onClick={handleVideoInternalClick}>
               <VideoSvg className="tutorial-svg-image" onComplete={handleCompleteTutorial} />
             </div>
-            {/* Ações internas controladas pelo próprio componente de vídeo */}
           </div>
         )}
 
         {currentStep === 'guiaEscrito' && (
           <div className="tutorial-step guia-escrito-step">
             <div className="tutorial-svg-container">
-              <GuiaEscrito className="tutorial-svg-image" />
-              {/* Conteúdo e botões devem ser internos ao componente */}
               <OverlaySlot>
                 <GuiaEscrito className="tutorial-svg-image" onComplete={handleCompleteTutorial} />
               </OverlaySlot>
