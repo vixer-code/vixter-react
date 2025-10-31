@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Timestamp } from 'firebase/firestore';
+import { ref as storageRef, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
 import './TutorialModal.css';
@@ -17,6 +19,7 @@ const TutorialModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState('aceite'); // aceite, video, guiaEscrito
   const videoRef = useRef(null);
+  const [tutorialVideoUrl, setTutorialVideoUrl] = useState('');
 
   // Verificar se o tutorial já foi completado e se deve mostrar
   useEffect(() => {
@@ -27,6 +30,24 @@ const TutorialModal = () => {
       }
     }
   }, [currentUser, userProfile, userLoading]);
+
+  // Carregar URL do vídeo do Firebase Storage
+  useEffect(() => {
+    const loadTutorialVideo = async () => {
+      try {
+        const videoStorageRef = storageRef(storage, 'tutorial/videoLobby.mp4');
+        const url = await getDownloadURL(videoStorageRef);
+        setTutorialVideoUrl(url);
+      } catch (error) {
+        console.error('Erro ao carregar vídeo do tutorial:', error);
+        // Se falhar, não definir a URL (o vídeo não será exibido)
+      }
+    };
+
+    if (currentStep === 'video' || isOpen) {
+      loadTutorialVideo();
+    }
+  }, [currentStep, isOpen]);
 
   // Ao completar o tutorial, salvar no perfil
   const handleCompleteTutorial = async () => {
@@ -116,8 +137,25 @@ const TutorialModal = () => {
 
         {currentStep === 'video' && (
           <div className="tutorial-step video-step">
-            <div className="tutorial-svg-container" onClick={handleVideoInternalClick}>
+            <div className="tutorial-svg-container" style={{ position: 'relative' }} onClick={handleVideoInternalClick}>
               <VideoSvg className="tutorial-svg-image" onComplete={handleCompleteTutorial} />
+              {tutorialVideoUrl ? (
+                <video
+                  ref={videoRef}
+                  src={tutorialVideoUrl}
+                  controls
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '80%',
+                    maxWidth: 720,
+                    borderRadius: 8,
+                    boxShadow: '0 0 24px rgba(0,0,0,0.5)'
+                  }}
+                />
+              ) : null}
             </div>
           </div>
         )}
@@ -125,9 +163,7 @@ const TutorialModal = () => {
         {currentStep === 'guiaEscrito' && (
           <div className="tutorial-step guia-escrito-step">
             <div className="tutorial-svg-container">
-              <OverlaySlot>
-                <GuiaEscrito className="tutorial-svg-image" onComplete={handleCompleteTutorial} />
-              </OverlaySlot>
+              <GuiaEscrito className="tutorial-svg-image" onComplete={handleCompleteTutorial} />
             </div>
           </div>
         )}
