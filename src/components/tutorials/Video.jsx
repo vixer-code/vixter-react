@@ -191,7 +191,7 @@ const SvgVideo = (props) => {
       </filter>
     </defs>
     <g clipPath="url(#video_svg__c)">
-      <path fill="#fff" d="M0 .14h1141v641.72H0Zm0 0" />
+      <path fill="#000" d="M0 .14h1141v641.72H0Zm0 0" />
     </g>
     <g clipPath="url(#video_svg__d)">
       <g clipPath="url(#video_svg__e)">
