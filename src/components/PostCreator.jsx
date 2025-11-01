@@ -8,6 +8,7 @@ import { ref, push } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import Portal from './Portal';
+import VixiesWarningModal from './VixiesWarningModal';
 import './PostCreator.css';
 
 const PostCreator = ({ 
@@ -39,6 +40,10 @@ const PostCreator = ({
   const [userServices, setUserServices] = useState([]);
   const [userPacks, setUserPacks] = useState([]);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
+
+  // Vixies warning modal state
+  const [showVixiesWarning, setShowVixiesWarning] = useState(false);
+  const [pendingPublish, setPendingPublish] = useState(false);
 
   // Load user's services and packs for attachment
   useEffect(() => {
@@ -241,6 +246,22 @@ const PostCreator = ({
     return url;
   };
 
+  // Verifica se o usuário precisa ver o aviso Vixies
+  const needsVixiesWarning = () => {
+    if (mode !== 'vixies') return false;
+    if (!userProfile || userProfile.accountType !== 'provider') return false;
+    
+    const lastAccepted = userProfile.vixiesWarningAcceptedAt;
+    if (!lastAccepted) return true; // Nunca aceitou
+    
+    // Verifica se aceitou há mais de 7 dias (1 semana)
+    const lastAcceptedDate = lastAccepted.toDate ? lastAccepted.toDate() : new Date(lastAccepted.seconds * 1000);
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    return lastAcceptedDate < oneWeekAgo;
+  };
+
   const handlePublish = async () => {
     if (!currentUser) {
       showError('Você precisa estar logado para postar');
@@ -278,11 +299,18 @@ const PostCreator = ({
       // No restrictions - all users can post
     }
 
-    // Debug authentication
-    console.log('Current user:', currentUser);
-    console.log('User profile:', userProfile);
-    console.log('Mode:', mode);
+    // Verifica se precisa mostrar o aviso Vixies
+    if (needsVixiesWarning()) {
+      setPendingPublish(true);
+      setShowVixiesWarning(true);
+      return;
+    }
 
+    // Prossegue com a publicação normalmente
+    await proceedWithPublish();
+  };
+
+  const proceedWithPublish = async () => {
     const content = postText.trim();
     
     // Validate content
@@ -435,6 +463,21 @@ const PostCreator = ({
     } finally {
       setIsPublishing(false);
     }
+  };
+
+  // Handlers do modal de aviso Vixies
+  const handleVixiesWarningAccept = async () => {
+    setShowVixiesWarning(false);
+    setPendingPublish(false);
+    // O modal já salvou a data de aceite, agora pode publicar
+    await proceedWithPublish();
+  };
+
+  const handleVixiesWarningCancel = () => {
+    setShowVixiesWarning(false);
+    setPendingPublish(false);
+    // Volta para edição (não publica)
+    // Não precisa fazer nada, apenas fecha o modal
   };
 
   const handleFileChange = async (e) => {
@@ -638,6 +681,13 @@ const PostCreator = ({
           {isPublishing ? 'Publicando...' : 'Publicar'}
         </button>
       </div>
+
+      {/* Vixies Warning Modal */}
+      <VixiesWarningModal
+        isOpen={showVixiesWarning}
+        onAccept={handleVixiesWarningAccept}
+        onCancel={handleVixiesWarningCancel}
+      />
 
       {/* Attachment Modal */}
       {showAttachmentModal && (

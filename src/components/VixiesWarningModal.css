@@ -1,0 +1,47 @@
+/* Vixies Warning Modal Styles */
+.vixies-warning-modal-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: slideIn 0.3s ease-out;
+}
+
+.vixies-warning-svg-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 85vh;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.vixies-warning-svg-image {
+  max-width: 100%;
+  max-height: 85vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 16px;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .vixies-warning-modal-content {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+
+  .vixies-warning-svg-image {
+    max-height: 95vh;
+    width: 100vw;
+  }
+}
+

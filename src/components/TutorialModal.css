@@ -191,6 +191,34 @@
   min-height: 100%;
 }
 
+/* Mobile improvements */
+@media (max-width: 768px) {
+  .guia-escrito-step {
+    height: 95vh;
+  }
+  
+  .guia-escrito-step .tutorial-svg-container {
+    max-height: 95vh;
+  }
+  
+  .guia-escrito-step .tutorial-svg-image {
+    max-width: 100%;
+    width: 100vw;
+  }
+  
+  .tutorial-step {
+    width: 100%;
+  }
+  
+  .tutorial-svg-container {
+    max-height: 95vh;
+  }
+  
+  .tutorial-svg-image {
+    max-height: 95vh;
+  }
+}
+
 .tutorial-text-container {
   position: absolute;
   top: 50%;
