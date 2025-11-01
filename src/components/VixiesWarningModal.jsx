@@ -29,76 +29,56 @@ const VixiesWarningModal = ({ isOpen, onAccept, onCancel }) => {
   };
 
   const handleButtonClick = (e) => {
+    // Previne qualquer propagação por padrão
+    e.stopPropagation();
+    
     const target = e.target;
     if (!target) return;
     
-    // Verifica se é uma imagem clicável
-    const href = target.getAttribute?.('xlink:href') || target.getAttribute?.('href') || '';
-    if (!href.startsWith('data:image')) {
-      // Verifica se está dentro de um grupo clicável
-      const parent = target.closest('g');
-      if (!parent) return;
-      
-      const parentImages = parent.querySelectorAll('image');
-      if (parentImages.length === 0) return;
-      
-      const firstImage = parentImages[0];
-      const imageHref = firstImage.getAttribute?.('xlink:href') || firstImage.getAttribute?.('href') || '';
-      if (!imageHref.startsWith('data:image')) return;
-      
-      // Verifica transform para identificar botões
-      const transform = parent.getAttribute?.('transform') || '';
-      
-      // Botão verde de aceite (parte inferior central, área ~996-1141)
-      if (transform.includes('996') || transform.includes('948')) {
-        handleAccept();
-        e.stopPropagation();
-        return;
+    // Procura pelo elemento <g> pai mais próximo que tenha um transform
+    let currentElement = target;
+    let clickedGroup = null;
+    
+    // Procura por um grupo com transform que identifique um botão
+    while (currentElement && currentElement !== e.currentTarget) {
+      if (currentElement.tagName === 'g' || currentElement.tagName === 'G') {
+        const transform = currentElement.getAttribute?.('transform') || '';
+        if (transform) {
+          clickedGroup = currentElement;
+          break;
+        }
       }
-      
-      // Botão vermelho de ajustar (geralmente em outra posição)
-      // Verifica se há botão vermelho na área de 939 ou 14.664
-      if (transform.includes('939') || transform.includes('14.664')) {
-        onCancel();
-        e.stopPropagation();
-        return;
-      }
-    } else {
-      // É uma imagem diretamente
-      const transform = target.closest('g')?.getAttribute?.('transform') || '';
-      
-      // Botão aceite
-      if (transform.includes('996') || transform.includes('948')) {
-        handleAccept();
-        e.stopPropagation();
-        return;
-      }
-      
-      // Botão cancelar/ajustar
-      if (transform.includes('939') || transform.includes('14.664')) {
-        onCancel();
-        e.stopPropagation();
-        return;
-      }
+      currentElement = currentElement.parentElement;
     }
     
-    // Fallback: verifica posição do clique
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickY = e.clientY - rect.top;
-    const svgHeight = rect.height;
-    const clickX = e.clientX - rect.left;
-    const svgWidth = rect.width;
+    // Se não encontrou um grupo, verifica se é uma imagem com um grupo pai
+    if (!clickedGroup) {
+      clickedGroup = target.closest('g[transform]');
+    }
     
-    // Botão aceite (centro inferior - área verde)
-    if (clickY > svgHeight * 0.75 && Math.abs(clickX - svgWidth / 2) < svgWidth * 0.3) {
+    if (!clickedGroup) {
+      // Se não encontrou nenhum grupo com transform, não faz nada
+      // Isso previne cliques acidentais em outras partes do SVG
+      return;
+    }
+    
+    const transform = clickedGroup.getAttribute?.('transform') || '';
+    
+    // Verifica especificamente pelos botões conhecidos
+    // Botão verde de aceite (transform contém 996 ou 948)
+    if (transform.includes('996') || transform.includes('948')) {
       handleAccept();
-      e.stopPropagation();
+      return;
     }
-    // Botão ajustar (pode estar nos cantos ou área superior)
-    else if (clickY < svgHeight * 0.25 || (clickX < svgWidth * 0.2) || (clickX > svgWidth * 0.8)) {
+    
+    // Botão vermelho de cancelar/ajustar (transform contém 939 ou 14.664)
+    if (transform.includes('939') || transform.includes('14.664')) {
       onCancel();
-      e.stopPropagation();
+      return;
     }
+    
+    // Se não corresponde a nenhum botão conhecido, não faz nada
+    // Isso previne cliques acidentais em outras partes do SVG
   };
 
   if (!isOpen) return null;
