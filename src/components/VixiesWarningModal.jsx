@@ -46,19 +46,26 @@ const VixiesWarningModal = ({ isOpen, onAccept, onCancel }) => {
       imageElement = target.closest('image') || target.querySelector('image');
     }
     
+    // Verifica pela cor do elemento ou path para identificar botão verde vs vermelho
+    const fillColor = target.getAttribute?.('fill') || '';
+    const parentFill = target.closest('[fill]')?.getAttribute?.('fill') || '';
+    const isGreen = fillColor === '#00bf63' || parentFill === '#00bf63';
+    const isRed = fillColor === '#ff5757' || parentFill === '#ff5757';
+    
     // Se encontrou uma imagem, verifica o grupo pai que contém o transform
     if (imageElement) {
       const parentGroup = imageElement.closest('g[transform]');
       if (parentGroup) {
         const transform = parentGroup.getAttribute?.('transform') || '';
         
-        // Botão verde de aceite (transform contém 996 ou 948)
+        // Botão de baixo (transform contém 996 ou 948) - deve CANCELAR, não aceitar
+        // O botão de baixo do SVG volta para edição
         if (transform.includes('996') || transform.includes('948')) {
-          handleAccept();
+          onCancel();
           return;
         }
         
-        // Botão vermelho de cancelar/ajustar (transform contém 939 ou 14.664)
+        // Botões laterais de cancelar (transform contém 939 ou 14.664)
         if (transform.includes('939') || transform.includes('14.664')) {
           onCancel();
           return;
@@ -85,17 +92,28 @@ const VixiesWarningModal = ({ isOpen, onAccept, onCancel }) => {
     if (clickedGroup) {
       const transform = clickedGroup.getAttribute?.('transform') || '';
       
-      // Botão verde de aceite (transform contém 996 ou 948)
+      // Botão de baixo (transform contém 996 ou 948) - CANCELAR
       if (transform.includes('996') || transform.includes('948')) {
-        handleAccept();
+        onCancel();
         return;
       }
       
-      // Botão vermelho de cancelar/ajustar (transform contém 939 ou 14.664)
+      // Botões laterais de cancelar (transform contém 939 ou 14.664)
       if (transform.includes('939') || transform.includes('14.664')) {
         onCancel();
         return;
       }
+    }
+    
+    // Verifica pela cor: verde = aceitar, vermelho = cancelar
+    if (isGreen) {
+      handleAccept();
+      return;
+    }
+    
+    if (isRed) {
+      onCancel();
+      return;
     }
     
     // Fallback: usa coordenadas para identificar a área do clique
@@ -115,13 +133,13 @@ const VixiesWarningModal = ({ isOpen, onAccept, onCancel }) => {
     const normalizedX = clickX * scaleX;
     const normalizedY = clickY * scaleY;
     
-    // Botão aceite (centro inferior, área verde) - área mais ampla
+    // Botão de baixo (centro inferior) - CANCELAR (voltar para edição)
     if (normalizedY > 850 && normalizedY < 1141 && normalizedX > 150 && normalizedX < 450) {
-      handleAccept();
+      onCancel();
       return;
     }
     
-    // Botões cancelar (esquerdo ou direito, área vermelha)
+    // Botões cancelar laterais (esquerdo ou direito, área vermelha)
     if (normalizedY > 850 && normalizedY < 1141) {
       // Botão esquerdo
       if (normalizedX >= 0 && normalizedX < 200) {
@@ -133,6 +151,13 @@ const VixiesWarningModal = ({ isOpen, onAccept, onCancel }) => {
         onCancel();
         return;
       }
+    }
+    
+    // Se ainda não identificou, verifica se há botão verde em outra posição
+    // (geralmente no centro superior ou meio do SVG)
+    if (normalizedY > 500 && normalizedY < 850 && normalizedX > 200 && normalizedX < 442) {
+      handleAccept();
+      return;
     }
   };
 
