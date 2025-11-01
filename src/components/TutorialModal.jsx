@@ -24,6 +24,17 @@ const TutorialModal = () => {
     }
   }, [currentUser, userProfile, userLoading]);
 
+  // Previne scroll no body quando o modal estiver aberto
+  useEffect(() => {
+    if (isOpen && currentStep === 'guiaEscrito') {
+      // Bloqueia scroll no body quando o guia escrito está aberto
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isOpen, currentStep]);
+
   // Ao completar o tutorial, salvar no perfil
   const handleCompleteTutorial = async () => {
     if (currentUser) {
