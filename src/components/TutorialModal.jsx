@@ -127,7 +127,6 @@ const TutorialModal = () => {
               <GuiaEscrito 
                 className="tutorial-svg-image" 
                 onComplete={handleCompleteTutorial}
-                style={{ width: '963px', maxWidth: 'none', minWidth: '963px' }}
               />
             </div>
           </div>

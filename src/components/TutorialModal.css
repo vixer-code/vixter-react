@@ -231,13 +231,6 @@
   height: auto !important;
 }
 
-/* Também sobrescreve o container wrapper do GuiaEscrito se houver */
-.guia-escrito-step .tutorial-svg-image > div {
-  width: 963px !important;
-  max-width: 963px !important;
-  min-width: 963px !important;
-}
-
 /* Mobile improvements */
 @media (max-width: 768px) {
   .guia-escrito-step {
@@ -263,12 +256,6 @@
     max-width: 770px !important;
     min-width: 770px !important;
     height: auto !important;
-  }
-  
-  .guia-escrito-step .tutorial-svg-image > div {
-    width: 770px !important;
-    max-width: 770px !important;
-    min-width: 770px !important;
   }
   
   .tutorial-step {
