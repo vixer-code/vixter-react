@@ -182,8 +182,9 @@
   overflow-y: auto;
   overflow-x: auto;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: flex-start;
+  padding: 20px;
   /* Estilização customizada do scrollbar */
   scrollbar-width: thin;
   scrollbar-color: rgba(138, 43, 226, 0.5) rgba(138, 43, 226, 0.1);
@@ -209,16 +210,32 @@
 }
 
 .guia-escrito-step .tutorial-svg-image {
-  /* Aumenta o tamanho do SVG (zoom 1.5x para melhor legibilidade) */
-  width: 150%;
-  max-width: 1350px; /* 900px * 1.5 */
-  min-width: 900px;
-  height: auto;
-  min-height: 100%;
-  /* Garante que o SVG não encolha além do tamanho mínimo */
+  /* Força um tamanho base fixo maior que o viewBox original */
+  /* O viewBox é 642, então vamos usar um múltiplo para zoom */
+  width: 963px !important; /* 642 * 1.5 = 963px */
+  min-width: 963px !important;
+  max-width: 963px !important;
+  height: auto !important;
+  /* Garante que o SVG não encolha */
   flex-shrink: 0;
-  /* Transform para zoom adicional se necessário */
-  transform-origin: top center;
+  /* Preserva a qualidade do SVG */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Sobrescreve estilos inline do SVG - o componente GuiaEscrito tem estilos inline */
+.guia-escrito-step .tutorial-svg-image svg {
+  width: 963px !important;
+  max-width: 963px !important;
+  min-width: 963px !important;
+  height: auto !important;
+}
+
+/* Também sobrescreve o container wrapper do GuiaEscrito se houver */
+.guia-escrito-step .tutorial-svg-image > div {
+  width: 963px !important;
+  max-width: 963px !important;
+  min-width: 963px !important;
 }
 
 /* Mobile improvements */
@@ -234,11 +251,24 @@
   }
   
   .guia-escrito-step .tutorial-svg-image {
-    /* Em mobile, usa zoom menor mas ainda amplia para legibilidade */
-    width: 140%;
-    max-width: none;
-    min-width: 600px;
-    height: auto;
+    /* Em mobile, usa zoom de 1.2x (642 * 1.2 = 770px) */
+    width: 770px !important;
+    min-width: 770px !important;
+    max-width: 770px !important;
+    height: auto !important;
+  }
+  
+  .guia-escrito-step .tutorial-svg-image svg {
+    width: 770px !important;
+    max-width: 770px !important;
+    min-width: 770px !important;
+    height: auto !important;
+  }
+  
+  .guia-escrito-step .tutorial-svg-image > div {
+    width: 770px !important;
+    max-width: 770px !important;
+    min-width: 770px !important;
   }
   
   .tutorial-step {

@@ -124,7 +124,11 @@ const TutorialModal = () => {
         {currentStep === 'guiaEscrito' && (
           <div className="tutorial-step guia-escrito-step">
             <div className="tutorial-svg-container">
-              <GuiaEscrito className="tutorial-svg-image" onComplete={handleCompleteTutorial} />
+              <GuiaEscrito 
+                className="tutorial-svg-image" 
+                onComplete={handleCompleteTutorial}
+                style={{ width: '963px', maxWidth: 'none', minWidth: '963px' }}
+              />
             </div>
           </div>
         )}
