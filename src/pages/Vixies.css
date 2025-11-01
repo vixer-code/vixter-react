@@ -1194,6 +1194,41 @@
   gap: 4px; 
 }
 
+/* Adult Content Badge Styles */
+.author-name-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adult-content-badge {
+  background: rgba(255, 107, 107, 0.2);
+  border: 1px solid rgba(255, 107, 107, 0.4);
+  color: #FF6B6B;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  animation: pulse 2s infinite;
+}
+
+.adult-content-badge i {
+  font-size: 0.6rem;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
 .author-name { 
   font-size: 1.1rem; 
   font-weight: 700; 

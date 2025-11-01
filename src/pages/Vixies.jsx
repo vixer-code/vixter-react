@@ -600,6 +600,12 @@ const Vixies = () => {
                           </Link>
                           <UserBadge user={author} />
                           <EloBadge userXp={author?.stats?.xp || author?.xp} size="fixed-30" />
+                          {post.isAdultContent && isKycVerified && (
+                            <span className="adult-content-badge">
+                              <i className="fas fa-exclamation-triangle"></i>
+                              +18
+                            </span>
+                          )}
                         </div>
                         <span className="post-time">{formatTime(post.timestamp)}</span>
                       </div>

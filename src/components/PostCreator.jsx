@@ -252,14 +252,29 @@ const PostCreator = ({
     if (!userProfile || userProfile.accountType !== 'provider') return false;
     
     const lastAccepted = userProfile.vixiesWarningAcceptedAt;
-    if (!lastAccepted) return true; // Nunca aceitou
+    
+    // Se o campo não existe, é null, undefined ou foi deletado, mostrar aviso
+    if (!lastAccepted || lastAccepted === null || lastAccepted === undefined) {
+      return true;
+    }
+    
+    // Se for um objeto vazio ou inválido, mostrar aviso
+    if (typeof lastAccepted === 'object' && Object.keys(lastAccepted).length === 0) {
+      return true;
+    }
     
     // Verifica se aceitou há mais de 7 dias (1 semana)
-    const lastAcceptedDate = lastAccepted.toDate ? lastAccepted.toDate() : new Date(lastAccepted.seconds * 1000);
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    
-    return lastAcceptedDate < oneWeekAgo;
+    try {
+      const lastAcceptedDate = lastAccepted.toDate ? lastAccepted.toDate() : new Date(lastAccepted.seconds * 1000);
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      
+      return lastAcceptedDate < oneWeekAgo;
+    } catch (error) {
+      // Se houver erro ao processar a data, mostrar aviso
+      console.error('Erro ao processar data do aviso:', error);
+      return true;
+    }
   };
 
   const handlePublish = async () => {
@@ -300,7 +315,15 @@ const PostCreator = ({
     }
 
     // Verifica se precisa mostrar o aviso Vixies
-    if (needsVixiesWarning()) {
+    const shouldShowWarning = needsVixiesWarning();
+    console.log('Verificação aviso Vixies:', {
+      mode,
+      accountType: userProfile?.accountType,
+      lastAccepted: userProfile?.vixiesWarningAcceptedAt,
+      shouldShowWarning
+    });
+    
+    if (shouldShowWarning) {
       setPendingPublish(true);
       setShowVixiesWarning(true);
       return;
