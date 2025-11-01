@@ -682,12 +682,16 @@ const PostCreator = ({
         </button>
       </div>
 
-      {/* Vixies Warning Modal */}
-      <VixiesWarningModal
-        isOpen={showVixiesWarning}
-        onAccept={handleVixiesWarningAccept}
-        onCancel={handleVixiesWarningCancel}
-      />
+      {/* Vixies Warning Modal - usando Portal para renderizar fora da hierarquia */}
+      {showVixiesWarning && (
+        <Portal>
+          <VixiesWarningModal
+            isOpen={showVixiesWarning}
+            onAccept={handleVixiesWarningAccept}
+            onCancel={handleVixiesWarningCancel}
+          />
+        </Portal>
+      )}
 
       {/* Attachment Modal */}
       {showAttachmentModal && (
