@@ -169,7 +169,7 @@
   height: 90vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch; /* Permite que o container ocupe a largura toda */
   justify-content: flex-start;
   overflow: hidden; /* Previne scroll no body */
 }
@@ -212,9 +212,9 @@
 .guia-escrito-step .tutorial-svg-image {
   /* Força um tamanho base fixo maior que o viewBox original */
   /* O viewBox é 642, então vamos usar um múltiplo para zoom */
-  width: 963px !important; /* 642 * 1.5 = 963px */
-  min-width: 963px !important;
-  max-width: 963px !important;
+  width: 1284px !important; /* 642 * 2 = 1284px */
+  min-width: 1284px !important;
+  max-width: 1284px !important;
   height: auto !important;
   /* Garante que o SVG não encolha */
   flex-shrink: 0;
@@ -225,9 +225,9 @@
 
 /* Sobrescreve estilos inline do SVG - o componente GuiaEscrito tem estilos inline */
 .guia-escrito-step .tutorial-svg-image svg {
-  width: 963px !important;
-  max-width: 963px !important;
-  min-width: 963px !important;
+  width: 1284px !important;
+  max-width: 1284px !important;
+  min-width: 1284px !important;
   height: auto !important;
 }
 
