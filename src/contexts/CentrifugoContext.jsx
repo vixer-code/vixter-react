@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Centrifuge } from 'centrifuge';
 import { useAuth } from './AuthContext';
+import { getBackendUrl } from '../utils/apiConfig';
 
 const CentrifugoContext = createContext({});
 
@@ -34,8 +35,8 @@ export const CentrifugoProvider = ({ children }) => {
     }
 
     try {
-      // Use current origin or fallback to backend URL
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+      // Use backend URL from shared config (backend is on separate domain)
+      const backendUrl = getBackendUrl();
       const response = await fetch(`${backendUrl}/api/centrifugo/token`, {
         method: 'POST',
         headers: {
@@ -221,7 +222,7 @@ export const CentrifugoProvider = ({ children }) => {
   // Publish message to a channel (via backend API)
   const publish = useCallback(async (channel, data) => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+      const backendUrl = getBackendUrl();
       const response = await fetch(`${backendUrl}/api/centrifugo/publish`, {
         method: 'POST',
         headers: {
