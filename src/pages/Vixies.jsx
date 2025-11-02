@@ -664,7 +664,7 @@ const Vixies = () => {
                       onClick={() => likePost(post.id, likeCount, likes[post.id] ? Object.keys(likes[post.id]) : [])}
                       className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}
                     >
-                      <span className="pumpkin-icon">🎃</span>
+                      <i className="fas fa-heart"></i>
                       <span>{likeCount}</span>
                     </button>
                     <button className="action-btn tip-btn" onClick={() => tipPost(post)}>

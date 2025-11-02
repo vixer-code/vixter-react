@@ -1,5 +1,8 @@
 // email-templates.js - Templates de Email para SendGrid Vixter
 
+// Get frontend URL from environment or use default
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://vixter.com.br';
+
 /**
  * Template base para todos os emails da Vixter
  * @param {string} title - Título do email
@@ -309,7 +312,7 @@ export function getTicketCreatedTemplate(ticketData) {
     'Ticket de Suporte Criado',
     content,
     'Acessar Central de Suporte',
-    'https://vixter-react.vercel.app/support',
+    `${FRONTEND_URL}/support`,
     'Tempo de resposta: até 24 horas em dias úteis'
   );
 }
@@ -387,7 +390,7 @@ export function getTicketStatusUpdateTemplate(ticketData, newStatus, adminMessag
     'Status do Ticket Atualizado',
     content,
     'Ver Ticket',
-    'https://vixter-react.vercel.app/support',
+    `${FRONTEND_URL}/support`,
     'Para responder, simplesmente responda este email'
   );
 }
@@ -426,7 +429,7 @@ export function getAdminResponseTemplate(ticketData, adminMessage, adminName = '
     'Resposta da Equipe de Suporte',
     content,
     'Ver Ticket',
-    'https://vixter-react.vercel.app/support',
+    `${FRONTEND_URL}/support`,
     'Para continuar a conversa, responda este email'
   );
 }
@@ -470,7 +473,7 @@ export function getTicketResolvedTemplate(ticketData, resolutionMessage = '') {
     'Ticket Resolvido',
     content,
     'Avaliar Atendimento',
-    'https://vixter-react.vercel.app/support',
+    `${FRONTEND_URL}/support`,
     'Este ticket foi marcado como resolvido'
   );
 }
@@ -516,7 +519,7 @@ export function getTicketClosedTemplate(ticketData, closeReason = '') {
     'Ticket Fechado',
     content,
     'Criar Novo Ticket',
-    'https://vixter-react.vercel.app/support',
+    `${FRONTEND_URL}/support`,
     'Este ticket foi fechado'
   );
 }

@@ -23,7 +23,7 @@ const EmailVerificationBanner = () => {
 
     try {
       await sendEmailVerification(currentUser, {
-        url: `https://vixter-react.vercel.app/verify-email`,
+        url: `${window.location.origin}/verify-email`,
         handleCodeInApp: false
       });
       setMessage('Email de verificação enviado! Verifique sua caixa de entrada.');

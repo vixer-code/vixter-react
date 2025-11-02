@@ -27,7 +27,7 @@ const NotificationCenter = () => {
   const getActionIcon = (action) => {
     switch (action) {
       case 'like':
-        return 'pumpkin-icon';
+        return 'fas fa-heart';
       case 'comment':
         return 'fas fa-comment';
       case 'message':
@@ -180,14 +180,10 @@ const NotificationCenter = () => {
                     onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="notification-icon">
-                      {getActionIcon(notification.action) === 'pumpkin-icon' ? (
-                        <span className="pumpkin-icon" style={{ color: getActionColor(notification.action) }}>🎃</span>
-                      ) : (
-                        <i 
-                          className={getActionIcon(notification.action)}
-                          style={{ color: getActionColor(notification.action) }}
-                        ></i>
-                      )}
+                      <i 
+                        className={getActionIcon(notification.action)}
+                        style={{ color: getActionColor(notification.action) }}
+                      ></i>
                     </div>
                     <div className="notification-content">
                       <p className="notification-message">

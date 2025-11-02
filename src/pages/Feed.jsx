@@ -522,7 +522,7 @@ const Feed = () => {
         <div className="comment-content">{comment.content}</div>
         <div className="comment-actions">
           <button className={`comment-action-btn like-btn ${comment.likedBy?.includes(currentUser?.uid) ? 'liked' : ''}`} onClick={() => likeComment(postId, comment)}>
-            <span className="pumpkin-icon">🎃</span>
+            <i className="fas fa-heart"></i>
             <span>{comment.likes || 0}</span>
           </button>
           <button className="comment-action-btn reply-btn" onClick={() => toggleReplyInput(postId, comment.id)}>
@@ -709,7 +709,7 @@ const Feed = () => {
 
         <div className="post-actions">
           <button onClick={() => handleLike(post.id)} className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}>
-            <span className="pumpkin-icon">🎃</span>
+            <i className="fas fa-heart"></i>
             <span>{post.likeCount || Object.keys(post.likes || {}).length || 0}</span>
           </button>
           <button className="action-btn comment-toggle" onClick={() => toggleComments(post.id)}>

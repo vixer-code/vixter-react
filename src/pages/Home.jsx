@@ -124,7 +124,7 @@ const Home = () => {
           <div className="service-card featured">
             <div className="featured-badge">Mais Popular</div>
             <div className="service-icon">
-              <span className="pumpkin-icon">🎃</span>
+              <i className="fas fa-heart"></i>
             </div>
             <h3>Companhia Virtual</h3>
             <p>Contrate companhias virtuais para conversas, jogos, ou apenas para passar o tempo. Nossas Vixies são selecionadas para proporcionar a melhor experiência.</p>

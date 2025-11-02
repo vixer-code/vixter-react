@@ -441,7 +441,7 @@ const Register = () => {
         console.log('[handleSubmit] User emailVerified:', user.emailVerified);
         
         await sendEmailVerification(user, {
-          url: `https://vixter-react.vercel.app/verify-email`,
+          url: `${window.location.origin}/verify-email`,
           handleCodeInApp: false
         });
         console.log('[handleSubmit] Email verification sent successfully');

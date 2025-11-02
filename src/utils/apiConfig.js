@@ -1,4 +1,5 @@
 // API configuration utility
+// Backend can remain on vercel.app if CORS is properly configured
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://vixter-react-llyd.vercel.app';
 
 export const getBackendUrl = () => BACKEND_URL;

@@ -1661,7 +1661,7 @@ const Profile = () => {
 
                       <div className="post-actions">
                         <button onClick={() => handleLike(post.id)} className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}>
-                          <span className="pumpkin-icon">🎃</span>
+                          <i className="fas fa-heart"></i>
                           <span>{post.likeCount || Object.keys(post.likes || {}).length || 0}</span>
                         </button>
                         <button className="action-btn comment-toggle" onClick={() => toggleComments(post.id)}>
@@ -1732,7 +1732,7 @@ const Profile = () => {
                                         onClick={() => likeComment(post.id, comment)}
                                         title={isCommentLiked ? 'Descurtir' : 'Curtir'}
                                       >
-                                        <span className="pumpkin-icon">🎃</span>
+                                        <i className="fas fa-heart"></i>
                                         <span>{comment.likes || 0}</span>
                                       </button>
                                       <button 

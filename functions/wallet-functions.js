@@ -271,7 +271,8 @@ export const createStripeSession = onCall({
       apiVersion: '2024-06-20',
     });
 
-    const baseUrl = 'https://vixter-react.vercel.app';
+    // Use production domain or fallback
+    const baseUrl = process.env.FRONTEND_URL || 'https://vixter.com.br';
 
     // Criar sessão Stripe
     const session = await stripe.checkout.sessions.create({

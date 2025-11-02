@@ -17,11 +17,9 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import MobileFooter from './components/MobileFooter';
 import NotificationContainer from './components/NotificationContainer';
-import UpdateNotification from './components/UpdateNotification';
 import TutorialModal from './components/TutorialModal';
 import ProtectedRoute from './components/ProtectedRoute';
 import { preloadCommonImages } from './utils/imagePreloader';
-import { useVersionCheck } from './hooks/useVersionCheck';
 
 import './App.css';
 
@@ -52,10 +50,8 @@ const Success = lazy(() => import('./pages/Success'));
 const EloSystem = lazy(() => import('./pages/EloSystem'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
-// Componente interno para usar o hook de verificação de versão
+// Componente interno
 function AppContent() {
-  const { isUpdateAvailable, updateApp, dismissUpdate } = useVersionCheck();
-
   return (
     <Router>
       <div className="App">
@@ -98,11 +94,6 @@ function AppContent() {
         <Footer />
         <MobileFooter />
         <NotificationContainer />
-        <UpdateNotification 
-          isVisible={isUpdateAvailable}
-          onUpdate={updateApp}
-          onDismiss={dismissUpdate}
-        />
         <TutorialModal />
       </div>
     </Router>

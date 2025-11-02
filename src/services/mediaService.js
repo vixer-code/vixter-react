@@ -1,4 +1,5 @@
 // Media service for R2 integration
+// Backend can remain on vercel.app if CORS is properly configured
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://vixter-react-llyd.vercel.app';
 
 class MediaService {
