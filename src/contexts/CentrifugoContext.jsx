@@ -34,7 +34,9 @@ export const CentrifugoProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch('https://vixter-react-llyd.vercel.app/api/centrifugo/token', {
+      // Use current origin or fallback to backend URL
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+      const response = await fetch(`${backendUrl}/api/centrifugo/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -219,7 +221,8 @@ export const CentrifugoProvider = ({ children }) => {
   // Publish message to a channel (via backend API)
   const publish = useCallback(async (channel, data) => {
     try {
-      const response = await fetch('https://vixter-react-llyd.vercel.app/api/centrifugo/publish', {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+      const response = await fetch(`${backendUrl}/api/centrifugo/publish`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

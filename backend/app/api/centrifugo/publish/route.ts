@@ -5,6 +5,8 @@ const { publishToChannel } = require('../../../../lib/centrifugo');
 export async function OPTIONS(request: NextRequest) {
   const origin = request.headers.get('origin');
   const allowedOrigins = [
+    'https://vixter.com.br',
+    'https://www.vixter.com.br',
     'https://vixter-react.vercel.app',
     'https://vixter-react-llyd.vercel.app',
     'http://localhost:5173',
@@ -25,6 +27,8 @@ export async function POST(request: NextRequest) {
   // Add CORS headers to response
   const origin = request.headers.get('origin');
   const allowedOrigins = [
+    'https://vixter.com.br',
+    'https://www.vixter.com.br',
     'https://vixter-react.vercel.app',
     'https://vixter-react-llyd.vercel.app',
     'http://localhost:5173',
